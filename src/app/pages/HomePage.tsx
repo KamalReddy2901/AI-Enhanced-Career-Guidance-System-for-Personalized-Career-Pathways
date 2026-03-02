@@ -1,18 +1,23 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { Key, Sparkles, FlaskConical, Scale, Trash2, ChevronDown, FileText, Brain, Swords, Zap, BarChart2, MessageSquare } from 'lucide-react';
+import { Key, Sparkles, FlaskConical, Scale, Trash2, ChevronDown, FileText, Brain, Swords, Zap, BarChart2, MessageSquare, ArrowRight, ExternalLink } from 'lucide-react';
 import { ScrollingTitles } from '../components/ScrollingTitles';
 import { MagnifierSearch } from '../components/MagnifierSearch';
 import { StickFigure } from '../components/StickFigure';
 import { ApiKeyModal } from '../components/ApiKeyModal';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 
 export function HomePage() {
   const navigate = useNavigate();
   const { searchJob, searchJobAI, setCurrentJob, addToHistory, isSearchAnimating, setIsSearchAnimating, setRefinementCount, isAIEnabled, refreshAIStatus, clearAICache } = useApp();
+  const { user, isSupabaseConfigured } = useAuth();
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+
+  // When Supabase is configured, show landing to logged-out users; otherwise show search
+  const showLanding = isSupabaseConfigured && !user;
 
   const handleSearchComplete = useCallback(async (jobTitle: string) => {
     if (isAIEnabled) {
@@ -82,80 +87,118 @@ export function HomePage() {
         </motion.div>
 
         {/* Search */}
-        <motion.div
-          className="w-full max-w-xl"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
-          <MagnifierSearch
-            onSearchComplete={handleSearchComplete}
-            isAnimating={isSearchAnimating}
-            setIsAnimating={setIsSearchAnimating}
-          />
-        </motion.div>
-
-        {/* AI Status + Quick Actions */}
-        <motion.div
-          className="mt-6 flex flex-col items-center gap-3"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-        >
-          {isAIEnabled ? (
-            <>
-              <div className="flex items-center gap-2 font-[Inter] text-black/35" style={{ fontSize: '0.72rem' }}>
-                <Sparkles size={12} className="text-black/40" />
-                <span>AI-powered by Groq &middot; Llama 3.3 70B</span>
-                <button
-                  onClick={() => setShowApiKeyModal(true)}
-                  className="underline underline-offset-2 hover:text-black/60 transition-colors"
-                >
-                  change key
-                </button>
-                <span className="text-black/15">&middot;</span>
-                <button
-                  onClick={clearAICache}
-                  className="underline underline-offset-2 hover:text-black/60 transition-colors flex items-center gap-1"
-                >
-                  <Trash2 size={9} />
-                  clear cache
-                </button>
-              </div>
-
-              {/* Quick action buttons */}
-              <div className="flex gap-2">
-                <motion.button
-                  onClick={() => navigate('/quiz')}
-                  className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
-                  style={{ fontSize: '0.72rem' }}
-                  whileHover={{ y: -1 }}
-                >
-                  <FlaskConical size={12} />
-                  Career Match Quiz
-                </motion.button>
-                <motion.button
-                  onClick={() => navigate('/compare')}
-                  className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
-                  style={{ fontSize: '0.72rem' }}
-                  whileHover={{ y: -1 }}
-                >
-                  <Scale size={12} />
-                  Compare Careers
-                </motion.button>
-              </div>
-            </>
-          ) : (
-            <button
-              onClick={() => setShowApiKeyModal(true)}
-              className="flex items-center gap-2 font-[Inter] text-black/40 hover:text-black/60 transition-colors border border-black/10 px-4 py-2 hover:border-black/25"
-              style={{ fontSize: '0.75rem' }}
+        {showLanding ? (
+          <motion.div
+            className="flex flex-col items-center gap-5"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <motion.button
+              onClick={() => navigate('/auth?mode=signup')}
+              className="flex items-center gap-3 bg-black text-white py-4 px-10 font-[Inter] hover:bg-black/85 transition-colors"
+              style={{ fontSize: '1rem' }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
             >
-              <Key size={13} />
-              Add free Groq API key for AI-powered results
+              Get Started for Free
+              <ArrowRight size={18} />
+            </motion.button>
+            <button
+              onClick={() => navigate('/auth?mode=signin')}
+              className="font-[Inter] text-black/35 hover:text-black/60 transition-colors underline underline-offset-2"
+              style={{ fontSize: '0.82rem' }}
+            >
+              Already have an account? Sign in
             </button>
-          )}
-        </motion.div>
+          </motion.div>
+        ) : (
+          <motion.div
+            className="w-full max-w-xl"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <MagnifierSearch
+              onSearchComplete={handleSearchComplete}
+              isAnimating={isSearchAnimating}
+              setIsAnimating={setIsSearchAnimating}
+            />
+          </motion.div>
+        )}
+
+        {/* AI Status + Quick Actions (only shown when logged in or no auth) */}
+        {!showLanding && (
+          <motion.div
+            className="mt-6 flex flex-col items-center gap-3"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+          >
+            {isAIEnabled ? (
+              <>
+                <div className="flex items-center gap-2 font-[Inter] text-black/35" style={{ fontSize: '0.72rem' }}>
+                  <Sparkles size={12} className="text-black/40" />
+                  <span>AI-powered by Groq &middot; Llama 3.3 70B</span>
+                  <button
+                    onClick={() => setShowApiKeyModal(true)}
+                    className="underline underline-offset-2 hover:text-black/60 transition-colors"
+                  >
+                    change key
+                  </button>
+                  <span className="text-black/15">&middot;</span>
+                  <button
+                    onClick={clearAICache}
+                    className="underline underline-offset-2 hover:text-black/60 transition-colors flex items-center gap-1"
+                  >
+                    <Trash2 size={9} />
+                    clear cache
+                  </button>
+                </div>
+
+                {/* Quick action buttons */}
+                <div className="flex gap-2">
+                  <motion.button
+                    onClick={() => navigate('/quiz')}
+                    className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
+                    style={{ fontSize: '0.72rem' }}
+                    whileHover={{ y: -1 }}
+                  >
+                    <FlaskConical size={12} />
+                    Career Match Quiz
+                  </motion.button>
+                  <motion.button
+                    onClick={() => navigate('/compare')}
+                    className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
+                    style={{ fontSize: '0.72rem' }}
+                    whileHover={{ y: -1 }}
+                  >
+                    <Scale size={12} />
+                    Compare Careers
+                  </motion.button>
+                  <motion.button
+                    onClick={() => navigate('/mood')}
+                    className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
+                    style={{ fontSize: '0.72rem' }}
+                    whileHover={{ y: -1 }}
+                  >
+                    <Brain size={12} />
+                    Mood Match
+                  </motion.button>
+                </div>
+              </>
+            ) : (
+              <button
+                onClick={() => setShowApiKeyModal(true)}
+                className="flex items-center gap-2 font-[Inter] text-black/40 hover:text-black/60 transition-colors border border-black/10 px-4 py-2 hover:border-black/25"
+                style={{ fontSize: '0.75rem' }}
+              >
+                <Key size={13} />
+                Add free Groq API key for AI-powered results
+              </button>
+            )}
+          </motion.div>
+        )}
 
         {/* Scroll indicator */}
         <motion.div
@@ -241,7 +284,7 @@ export function HomePage() {
       </section>
 
       {/* ── WHAT YOU GET ───────────────────────────────────── */}
-      <section className="py-24 px-6 bg-black text-white">
+      <section className="py-24 px-6 border-t border-black/8">
         <div className="max-w-4xl mx-auto">
           <motion.div
             className="text-center mb-16"
@@ -249,15 +292,15 @@ export function HomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <p className="font-[Inter] uppercase tracking-[0.2em] text-white/30 mb-3" style={{ fontSize: '0.65rem' }}>
+            <p className="font-[Inter] uppercase tracking-[0.2em] text-black/30 mb-3" style={{ fontSize: '0.65rem' }}>
               Features
             </p>
-            <h2 className="font-[Playfair_Display] text-white" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)' }}>
+            <h2 className="font-[Playfair_Display] text-black" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)' }}>
               Everything in One Dossier
             </h2>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-px bg-white/10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-px bg-black/8 border border-black/8">
             {[
               {
                 icon: <FileText size={20} />,
@@ -286,23 +329,23 @@ export function HomePage() {
               },
               {
                 icon: <Zap size={20} />,
-                title: 'Instant & Offline',
-                body: 'No account needed. Results cached locally. Works fast, keeps your data on your device.',
+                title: 'Mood Match',
+                body: 'Describe how you feel right now. We find careers that vibe with your current energy.',
               },
             ].map((feat, i) => (
               <motion.div
                 key={feat.title}
-                className="p-8 bg-black hover:bg-white/5 transition-colors"
+                className="p-8 bg-white hover:bg-black/2 transition-colors"
                 initial={{ opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.07 }}
               >
-                <div className="text-white/40 mb-4">{feat.icon}</div>
-                <h3 className="font-[Playfair_Display] text-white mb-2" style={{ fontSize: '1.05rem' }}>
+                <div className="text-black/30 mb-4">{feat.icon}</div>
+                <h3 className="font-[Playfair_Display] text-black mb-2" style={{ fontSize: '1.05rem' }}>
                   {feat.title}
                 </h3>
-                <p className="font-[Inter] text-white/50 leading-relaxed" style={{ fontSize: '0.84rem' }}>
+                <p className="font-[Inter] text-black/50 leading-relaxed" style={{ fontSize: '0.84rem' }}>
                   {feat.body}
                 </p>
               </motion.div>
@@ -345,6 +388,45 @@ export function HomePage() {
                 <div className="h-px flex-1 bg-black/10" />
                 <span className="font-[JetBrains_Mono] text-black/30" style={{ fontSize: '0.72rem' }}>— Kamal Reddy, 2025</span>
               </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── MORE FROM DEVELOPER ────────────────────────────── */}
+      <section className="py-20 px-6 border-t border-black/8">
+        <div className="max-w-3xl mx-auto">
+          <motion.div
+            className="flex flex-col sm:flex-row items-center gap-8"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <div className="shrink-0">
+              <StickFigure pose="coding" size={72} />
+            </div>
+            <div className="flex-1 sm:border-l-2 sm:border-black/8 sm:pl-8 text-center sm:text-left">
+              <p className="font-[Inter] uppercase tracking-[0.2em] text-black/30 mb-2" style={{ fontSize: '0.63rem' }}>
+                More from the developer
+              </p>
+              <h2 className="font-[Playfair_Display] text-black mb-3" style={{ fontSize: '1.5rem' }}>
+                See what else I've built
+              </h2>
+              <p className="font-[Inter] text-black/50 leading-relaxed mb-5" style={{ fontSize: '0.9rem' }}>
+                More projects, experiments, and ideas from Kamal Reddy. Design-led, minimal, useful.
+              </p>
+              <motion.a
+                href="https://kamrede.page/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 border-2 border-black text-black py-2.5 px-6 font-[Inter] hover:bg-black hover:text-white transition-all"
+                style={{ fontSize: '0.85rem' }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Visit kamrede.page
+                <ExternalLink size={14} />
+              </motion.a>
             </div>
           </motion.div>
         </div>

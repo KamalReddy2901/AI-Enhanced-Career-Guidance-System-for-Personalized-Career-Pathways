@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { ChevronLeft, Settings, Volume2, VolumeX, Trash2, Download, Key, Check } from 'lucide-react';
+import { ChevronLeft, Settings, Volume2, VolumeX, Trash2, Download, Key, Check, LogOut, User, LogIn } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { usePreferences } from '../hooks/usePreferences';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { clearAllCache, getApiKey, setApiKey, validateApiKey } from '../services/ai';
 import { toast } from 'sonner';
 import { sounds, enableSound, isSoundOn } from '../utils/sounds';
@@ -13,6 +14,7 @@ export function SettingsPage() {
   const navigate = useNavigate();
   const { preferences, setPreferences, resetPreferences } = usePreferences();
   const { clearHistory, clearAICache, refreshAIStatus } = useApp();
+  const { user, signOut, isSupabaseConfigured } = useAuth();
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [isValidating, setIsValidating] = useState(false);
 
@@ -278,6 +280,56 @@ export function SettingsPage() {
             />
           </div>
         </Section>
+
+        {/* Account — only shown when Supabase is configured */}
+        {isSupabaseConfigured && (
+          <Section title="Account">
+            <div className="border border-black/10 p-6">
+              {user ? (
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-black/5 border border-black/10 flex items-center justify-center">
+                      <User size={16} className="text-black/40" />
+                    </div>
+                    <div>
+                      <p className="font-[Inter] text-black/70" style={{ fontSize: '0.88rem' }}>{user.email}</p>
+                      <p className="font-[Inter] text-black/30" style={{ fontSize: '0.72rem' }}>History synced across devices</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      await signOut();
+                      toast.success('Signed out');
+                      navigate('/');
+                    }}
+                    className="flex items-center gap-2 border border-black/15 px-4 py-2 font-[Inter] text-black/50 hover:text-black hover:border-black/30 transition-all"
+                    style={{ fontSize: '0.82rem' }}
+                  >
+                    <LogOut size={14} />
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <p className="font-[Inter] text-black/60 mb-1" style={{ fontSize: '0.88rem' }}>Not signed in</p>
+                    <p className="font-[Inter] text-black/35" style={{ fontSize: '0.78rem' }}>
+                      Sign in to sync your history across devices
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/auth')}
+                    className="flex items-center gap-2 bg-black text-white px-4 py-2 font-[Inter] hover:bg-black/85 transition-colors"
+                    style={{ fontSize: '0.82rem' }}
+                  >
+                    <LogIn size={14} />
+                    Sign In
+                  </button>
+                </div>
+              )}
+            </div>
+          </Section>
+        )}
 
         {/* About */}
         <Section title="About">

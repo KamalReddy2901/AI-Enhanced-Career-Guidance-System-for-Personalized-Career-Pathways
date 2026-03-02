@@ -4,7 +4,11 @@
   .print\:hidden,
   nav,
   button:not(.print\:show),
-  [role="dialog"] {
+  [role="dialog"],
+  /* Hide confetti on print */
+  .fixed.pointer-events-none.z-50,
+  /* Hide navbar */
+  [class*="backdrop-blur"] {
     display: none !important;
   }
 

@@ -607,38 +607,38 @@ export function SimulationPage() {
               )}
 
               {/* Actions */}
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center">
                 {(aiSummary || !loadingSummary) && (
                   <motion.button
                     onClick={handleDownloadPDF}
-                    className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-6 hover:border-black/40 hover:text-black transition-all font-[Inter]"
+                    className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-6 hover:border-black/40 hover:text-black transition-all font-[Inter] whitespace-nowrap"
                     style={{ fontSize: '0.85rem' }}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <Download size={16} />
-                    Download Assessment PDF
+                    <Download size={16} className="shrink-0" />
+                    Download PDF
                   </motion.button>
                 )}
                 <motion.button
                   onClick={handleRestart}
-                  className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-6 hover:border-black/40 hover:text-black transition-all font-[Inter]"
+                  className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-6 hover:border-black/40 hover:text-black transition-all font-[Inter] whitespace-nowrap"
                   style={{ fontSize: '0.85rem' }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <RotateCcw size={16} />
-                  {isAIEnabled ? 'Generate New Simulation' : 'Retry Simulation'}
+                  <RotateCcw size={16} className="shrink-0" />
+                  {isAIEnabled ? 'New Simulation' : 'Retry'}
                 </motion.button>
                 <motion.button
                   onClick={() => navigate('/')}
-                  className="flex items-center justify-center gap-2 bg-black text-white py-3 px-6 hover:bg-black/85 transition-colors font-[Inter]"
+                  className="flex items-center justify-center gap-2 bg-black text-white py-3 px-6 hover:bg-black/85 transition-colors font-[Inter] whitespace-nowrap"
                   style={{ fontSize: '0.85rem' }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   Explore Another Career
-                  <ArrowRight size={16} />
+                  <ArrowRight size={16} className="shrink-0" />
                 </motion.button>
               </div>
             </motion.div>

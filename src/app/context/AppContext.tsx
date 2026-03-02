@@ -1,6 +1,8 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { generateJobData, type JobData } from '../data/jobs';
 import { generateJobDataAI, hasApiKey, clearAllCache } from '../services/ai';
+import { fetchRemoteHistory, saveHistoryEntry, clearRemoteHistory } from '../services/supabase';
+import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
 
 interface HistoryEntry {
@@ -34,12 +36,40 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [currentJob, setCurrentJob] = useState<JobData | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [refinementCount, setRefinementCount] = useState(0);
   const [isSearchAnimating, setIsSearchAnimating] = useState(false);
   const [isAIEnabled, setIsAIEnabled] = useState(hasApiKey());
   const [comparisonJobs, setComparisonJobs] = useState<[JobData | null, JobData | null]>([null, null]);
+
+  // Sync history from Supabase when user logs in
+  useEffect(() => {
+    if (!user) return;
+    fetchRemoteHistory(user.id).then(entries => {
+      if (entries.length === 0) return;
+      setHistory(prev => {
+        const remoteItems: HistoryEntry[] = entries.map(e => ({
+          id: e.id,
+          jobTitle: e.job_title,
+          timestamp: e.timestamp,
+          jobData: e.job_data as JobData,
+        }));
+        // Merge: remote + local, deduplicate by jobTitle (keep newest)
+        const merged = [...remoteItems, ...prev];
+        const seen = new Set<string>();
+        return merged
+          .filter(h => {
+            const key = h.jobTitle.toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          })
+          .slice(0, 50);
+      });
+    }).catch(() => {});
+  }, [user?.id]);
 
   const refreshAIStatus = useCallback(() => {
     setIsAIEnabled(hasApiKey());
@@ -84,19 +114,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addToHistory = useCallback((jobData: JobData) => {
+    const entry: HistoryEntry = { id: crypto.randomUUID(), jobTitle: jobData.title, timestamp: Date.now(), jobData };
     setHistory(prev => {
       const filtered = prev.filter(h => h.jobTitle.toLowerCase() !== jobData.title.toLowerCase());
-      return [
-        { id: crypto.randomUUID(), jobTitle: jobData.title, timestamp: Date.now(), jobData },
-        ...filtered
-      ].slice(0, 30);
+      return [entry, ...filtered].slice(0, 50);
     });
-  }, []);
+    // Sync to Supabase if logged in
+    if (user) {
+      saveHistoryEntry(user.id, jobData.title, jobData, entry.timestamp).catch(() => {});
+    }
+  }, [user]);
 
   const clearHistory = useCallback(() => {
     setHistory([]);
+    if (user) clearRemoteHistory(user.id).catch(() => {});
     toast.success('History cleared');
-  }, []);
+  }, [user]);
 
   const setComparisonJob = useCallback((index: 0 | 1, job: JobData | null) => {
     setComparisonJobs(prev => {

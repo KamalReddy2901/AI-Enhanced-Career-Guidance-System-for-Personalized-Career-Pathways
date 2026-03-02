@@ -7,6 +7,57 @@ import { useApp } from '../context/AppContext';
 import type { JobData } from '../data/jobs';
 import { toast } from 'sonner';
 
+function CareerSlot({
+  slot,
+  job,
+  isLoading,
+  onClear,
+  onOpen,
+}: {
+  slot: number;
+  job: JobData | null;
+  isLoading: boolean;
+  onClear: () => void;
+  onOpen: () => void;
+}) {
+  return (
+    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: slot * 0.1 }}>
+      {isLoading ? (
+        <div className="border-2 border-dashed border-black/15 p-8 text-center">
+          <Loader2 size={24} className="animate-spin text-black/30 mx-auto mb-2" />
+          <p className="font-[Inter] text-black/30" style={{ fontSize: '0.82rem' }}>Loading...</p>
+        </div>
+      ) : job ? (
+        <div className="border-2 border-black/20 p-6 relative">
+          <button
+            onClick={onClear}
+            className="absolute top-3 right-3 text-black/20 hover:text-black transition-colors"
+          >
+            <X size={16} />
+          </button>
+          <h3 className="font-[Playfair_Display] text-black mb-1 pr-6" style={{ fontSize: '1.2rem' }}>
+            {job.title}
+          </h3>
+          <span className="font-[Inter] text-black/40" style={{ fontSize: '0.72rem' }}>{job.category}</span>
+          <p className="font-[Inter] text-black/50 mt-2" style={{ fontSize: '0.82rem' }}>{job.avgSalary}</p>
+        </div>
+      ) : (
+        <button
+          onClick={onOpen}
+          className="w-full border-2 border-dashed border-black/15 p-8 text-center hover:border-black/30 transition-colors"
+        >
+          <p className="font-[Playfair_Display] text-black/30 mb-1" style={{ fontSize: '1.1rem' }}>
+            {slot === 0 ? 'Career A' : 'Career B'}
+          </p>
+          <p className="font-[Inter] text-black/25" style={{ fontSize: '0.75rem' }}>
+            Click to select
+          </p>
+        </button>
+      )}
+    </motion.div>
+  );
+}
+
 export function ComparisonPage() {
   const navigate = useNavigate();
   const { history, comparisonJobs, setComparisonJob, searchJobAI, searchJob, isAIEnabled, addToHistory } = useApp();
@@ -81,53 +132,30 @@ export function ComparisonPage() {
           </p>
         </motion.div>
 
-        {/* Selection Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 mb-10">
-          {[0, 1].map(slot => {
-            const job = comparisonJobs[slot as 0 | 1];
-            const isLoading = loadingSlot === slot;
-            return (
-              <motion.div key={slot} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: slot * 0.1 }}>
-                {isLoading ? (
-                  <div className="border-2 border-dashed border-black/15 p-8 text-center">
-                    <Loader2 size={24} className="animate-spin text-black/30 mx-auto mb-2" />
-                    <p className="font-[Inter] text-black/30" style={{ fontSize: '0.82rem' }}>Loading...</p>
-                  </div>
-                ) : job ? (
-                  <div className="border-2 border-black/20 p-6 relative">
-                    <button
-                      onClick={() => setComparisonJob(slot as 0 | 1, null)}
-                      className="absolute top-3 right-3 text-black/20 hover:text-black transition-colors"
-                    >
-                      <X size={16} />
-                    </button>
-                    <h3 className="font-[Playfair_Display] text-black mb-1" style={{ fontSize: '1.2rem' }}>
-                      {job.title}
-                    </h3>
-                    <span className="font-[Inter] text-black/40" style={{ fontSize: '0.72rem' }}>{job.category}</span>
-                    <p className="font-[Inter] text-black/50 mt-2" style={{ fontSize: '0.82rem' }}>{job.avgSalary}</p>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => { setShowPicker(slot as 0 | 1); setCustomTitle(''); }}
-                    className="w-full border-2 border-dashed border-black/15 p-8 text-center hover:border-black/30 transition-colors"
-                  >
-                    <p className="font-[Playfair_Display] text-black/30 mb-1" style={{ fontSize: '1.1rem' }}>
-                      {slot === 0 ? 'Career A' : 'Career B'}
-                    </p>
-                    <p className="font-[Inter] text-black/25" style={{ fontSize: '0.75rem' }}>
-                      Click to select
-                    </p>
-                  </button>
-                )}
-              </motion.div>
-            );
-          })}
+        {/* Selection Cards — explicit order so "vs" sits between the two */}
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_80px_1fr] gap-4 mb-10 items-center">
+          {/* Career A */}
+          <CareerSlot
+            slot={0}
+            job={comparisonJobs[0]}
+            isLoading={loadingSlot === 0}
+            onClear={() => setComparisonJob(0, null)}
+            onOpen={() => { setShowPicker(0); setCustomTitle(''); }}
+          />
 
-          {/* VS divider (visible on md+) */}
+          {/* VS divider */}
           <div className="hidden md:flex items-center justify-center">
-            <span className="font-[Playfair_Display] text-black/20 italic" style={{ fontSize: '1.2rem' }}>vs</span>
+            <span className="font-[Playfair_Display] text-black/20 italic" style={{ fontSize: '1.4rem' }}>vs</span>
           </div>
+
+          {/* Career B */}
+          <CareerSlot
+            slot={1}
+            job={comparisonJobs[1]}
+            isLoading={loadingSlot === 1}
+            onClear={() => setComparisonJob(1, null)}
+            onOpen={() => { setShowPicker(1); setCustomTitle(''); }}
+          />
         </div>
 
         {/* Comparison Table */}

@@ -15,6 +15,34 @@ import { downloadDossierPDF } from '../utils/pdfExport';
 import { generateShareUrl, decodeDossier } from '../utils/share';
 import { sounds } from '../utils/sounds';
 
+/**
+ * Break up timeline text into paragraphs.
+ * The AI often returns "Day: Mon: ... Day: Tue: ..." inline without newlines.
+ * This helper inserts paragraph breaks before known label patterns.
+ */
+function formatTimelineContent(text: string): string[] {
+  if (!text) return [];
+
+  // Normalise explicit newlines first
+  let processed = text
+    // Split on "Day: DayName:" or "Day: DayName -" patterns (case-insensitive)
+    .replace(/(?<!\n)\s*(Day:\s*(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)[\s:])/gi, '\n$1')
+    // "Month N:" or "Month N —"
+    .replace(/(?<!\n)\s*(Month\s+\d+[\s:—-])/gi, '\n$1')
+    // Quarters "Q1:", "Q2:", etc.
+    .replace(/(?<!\n)\s*(Q[1-4][\s:—-])/gi, '\n$1')
+    // Numbered items "1." "2." etc. at inline positions
+    .replace(/(?<!\n)\s+(\d+\.\s)/g, '\n$1');
+
+  // Split by double newlines OR single newlines
+  const paragraphs = processed
+    .split(/\n+/)
+    .map(p => p.trim())
+    .filter(Boolean);
+
+  return paragraphs.length > 0 ? paragraphs : [text];
+}
+
 export function JobDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -412,13 +440,13 @@ export function JobDetailPage() {
               <div className="flex items-start gap-4">
                 <StickFigure pose="reading" size={56} />
                 <div className="flex-1 font-[Inter] text-black/65 leading-relaxed" style={{ fontSize: '0.9rem' }}>
-                  {timelineContent[activeTimeline].split('\n\n').map((para, i) => (
+                  {formatTimelineContent(timelineContent[activeTimeline]).map((para, i) => (
                     <motion.p
                       key={i}
-                      className="mb-4 last:mb-0"
+                      className="mb-3 last:mb-0"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      transition={{ delay: i * 0.1 }}
+                      transition={{ delay: i * 0.06 }}
                       dangerouslySetInnerHTML={{
                         __html: para.replace(/\*\*(.*?)\*\*/g, '<strong class="text-black">$1</strong>')
                       }}
