@@ -23,8 +23,11 @@ import { sounds } from '../utils/sounds';
 function formatTimelineContent(text: string): string[] {
   if (!text) return [];
 
-  // Normalise explicit newlines first
+  // Strip markdown bold/italic markers and lonely ** lines
   let processed = text
+    .replace(/\*\*([^*]*)\*\*/g, '$1')   // **bold** → plain
+    .replace(/\*([^*]+)\*/g, '$1')        // *italic* → plain
+    .replace(/^\s*\*+\s*$/gm, '')         // lines that are just ** or *
     // Split on "Day: DayName:" or "Day: DayName -" patterns (case-insensitive)
     .replace(/(?<!\n)\s*(Day:\s*(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)[\s:])/gi, '\n$1')
     // "Month N:" or "Month N —"

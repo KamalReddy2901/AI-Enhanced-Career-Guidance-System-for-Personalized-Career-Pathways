@@ -336,7 +336,7 @@ export async function generateSimulationAI(jobTitle: string, skipCache = false):
   const cacheKey = `sim_${jobTitle.toLowerCase().replace(/\s+/g, '_')}_${skipCache ? Date.now() : 'v1'}`;
 
   if (!skipCache) {
-    const cached = getCached<AISimScenario[]>(`sim_${jobTitle.toLowerCase().replace(/\s+/g, '_')}_v1`);
+    const cached = getCached<AISimScenario[]>(`sim_${jobTitle.toLowerCase().replace(/\s+/g, '_')}_v2`);
     if (cached) {
       toast.success('Loaded simulation from cache', { duration: 1500 });
       return cached;
@@ -356,6 +356,8 @@ Rules:
 - 3 choices each, only 1 correct (what a seasoned pro would do)
 - Explanations teach WHY, referencing real practices
 - Vary which index is correct (0, 1, or 2)
+- CRITICAL: The description must describe the SITUATION/CONTEXT only. Do NOT mention, hint at, or reveal which action is correct. The user must make a genuine decision. Never name the correct choice in the description.
+- Wrong choices must be plausible — things a beginner might actually do
 
 stickFigurePose options: ${poses.join(', ')}
 
@@ -381,7 +383,7 @@ Return JSON object with "scenarios" key containing array of 10:
     }));
   });
 
-  setCache(`sim_${jobTitle.toLowerCase().replace(/\s+/g, '_')}_v1`, result);
+  setCache(`sim_${jobTitle.toLowerCase().replace(/\s+/g, '_')}_v2`, result);
   return result;
 }
 
