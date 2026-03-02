@@ -104,7 +104,7 @@ export function JobOverviewPage() {
           <div className="flex items-center gap-2 mb-3">
             <div className="h-px flex-1 bg-black/10" />
             <span className="font-[Inter] text-black/30 uppercase tracking-[0.2em]" style={{ fontSize: '0.65rem' }}>
-              Case File #{currentJob.id.slice(0, 8)}
+              Case File
             </span>
             <div className="h-px flex-1 bg-black/10" />
           </div>
@@ -119,12 +119,6 @@ export function JobOverviewPage() {
                 <span className="inline-block font-[Inter] text-black/40 border border-black/10 px-2 py-0.5 rounded-sm" style={{ fontSize: '0.72rem' }}>
                   {currentJob.category}
                 </span>
-                {isAIEnabled && (
-                  <span className="inline-flex items-center gap-1 font-[Inter] text-black/30" style={{ fontSize: '0.65rem' }}>
-                    <Sparkles size={10} />
-                    AI-generated
-                  </span>
-                )}
               </div>
             </div>
           </div>

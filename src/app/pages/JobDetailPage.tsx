@@ -46,6 +46,23 @@ function formatTimelineContent(text: string): string[] {
   return paragraphs.length > 0 ? paragraphs : [text];
 }
 
+/** Parse a single timeline paragraph into { label, content } for timeline rendering */
+function parseTimelineEntry(para: string): { label: string; content: string } | null {
+  // Week: "Day: Monday - content" or "Day: Monday: content"
+  const weekMatch = para.match(/^Day:\s*(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s*[-:]+\s*(.*)/i);
+  if (weekMatch) return { label: weekMatch[1], content: weekMatch[2].replace(/^[-\s]+/, '').trim() };
+
+  // Quarter: "Month 1: content" or "Month 1: - content"
+  const quarterMatch = para.match(/^Month\s+(\d+)\s*[:\s-]+\s*(.*)/i);
+  if (quarterMatch) return { label: `Month ${quarterMatch[1]}`, content: quarterMatch[2].replace(/^[-\s]+/, '').trim() };
+
+  // Year: "Q1: content" or "Q1 - content"
+  const yearMatch = para.match(/^(Q[1-4])\s*[:\s-]+\s*(.*)/i);
+  if (yearMatch) return { label: yearMatch[1], content: yearMatch[2].replace(/^[-\s]+/, '').trim() };
+
+  return null;
+}
+
 export function JobDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -440,23 +457,60 @@ export function JobDetailPage() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="flex items-start gap-4">
-                <StickFigure pose="reading" size={56} />
-                <div className="flex-1 font-[Inter] text-black/65 leading-relaxed" style={{ fontSize: '0.9rem' }}>
-                  {formatTimelineContent(timelineContent[activeTimeline]).map((para, i) => (
-                    <motion.p
-                      key={i}
-                      className="mb-3 last:mb-0"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: i * 0.06 }}
-                      dangerouslySetInnerHTML={{
-                        __html: para.replace(/\*\*(.*?)\*\*/g, '<strong class="text-black">$1</strong>')
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
+              {(() => {
+                const paragraphs = formatTimelineContent(timelineContent[activeTimeline]);
+                const entries = paragraphs.map(p => parseTimelineEntry(p)).filter(Boolean) as { label: string; content: string }[];
+
+                if (entries.length > 0) {
+                  return (
+                    <div className="flex items-start gap-5">
+                      <StickFigure pose="reading" size={52} className="shrink-0" />
+                      <div className="flex-1 relative pl-5 border-l-2 border-black/10">
+                        {entries.map((entry, i) => (
+                          <motion.div
+                            key={i}
+                            className="relative mb-6 last:mb-0"
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.07 }}
+                          >
+                            {/* Timeline dot */}
+                            <div className="absolute -left-[22px] top-[5px] w-2.5 h-2.5 rounded-full border-2 border-black/25 bg-[#faf8f5]" />
+                            {/* Label */}
+                            <p className="font-[Playfair_Display] text-black mb-1" style={{ fontSize: '0.95rem' }}>
+                              {entry.label}
+                            </p>
+                            {/* Content */}
+                            <p className="font-[Inter] text-black/55 leading-relaxed" style={{ fontSize: '0.875rem' }}>
+                              {entry.content}
+                            </p>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Fallback: plain paragraphs
+                return (
+                  <div className="flex items-start gap-4">
+                    <StickFigure pose="reading" size={56} />
+                    <div className="flex-1 font-[Inter] text-black/65 leading-relaxed" style={{ fontSize: '0.9rem' }}>
+                      {paragraphs.map((para, i) => (
+                        <motion.p
+                          key={i}
+                          className="mb-3 last:mb-0"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: i * 0.06 }}
+                        >
+                          {para}
+                        </motion.p>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </motion.div>
           </AnimatePresence>
         </motion.div>
