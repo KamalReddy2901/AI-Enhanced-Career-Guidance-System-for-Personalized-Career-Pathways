@@ -1,0 +1,80 @@
+/* Print styles for career dossier */
+@media print {
+  /* Hide navigation and interactive elements */
+  .print\:hidden,
+  nav,
+  button:not(.print\:show),
+  [role="dialog"] {
+    display: none !important;
+  }
+
+  /* Page setup */
+  @page {
+    size: A4 portrait;
+    margin: 1.5cm 2cm;
+  }
+
+  body {
+    background: white !important;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #000 !important;
+  }
+
+  /* Prevent page breaks inside elements */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+    page-break-inside: avoid;
+  }
+
+  p, ul, ol {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Table-like sections */
+  section, article, .border {
+    page-break-inside: avoid;
+  }
+
+  /* Make sure backgrounds are visible */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Ensure proper spacing */
+  .pt-20 {
+    padding-top: 0 !important;
+  }
+
+  /* Links should show URLs */
+  a[href]:after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #666;
+  }
+
+  /* Remove shadows and decorative elements */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Optimize borders */
+  .border, .border-2, .border-t, .border-b {
+    border-color: #000 !important;
+  }
+
+  /* Keep headings with their content */
+  h1, h2, h3, h4 {
+    page-break-after: avoid;
+  }
+
+  /* Add page numbers (browser-dependent) */
+  @page {
+    @bottom-right {
+      content: counter(page) " of " counter(pages);
+    }
+  }
+}

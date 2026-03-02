@@ -1,0 +1,20 @@
+@import 'tailwindcss' source(none);
+@source '../**/*.{js,ts,jsx,tsx}';
+
+@import 'tw-animate-css';
+
+/* Print styles for career dossier */
+@media print {
+  nav, .print\\:hidden, [class*="print:hidden"] {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
