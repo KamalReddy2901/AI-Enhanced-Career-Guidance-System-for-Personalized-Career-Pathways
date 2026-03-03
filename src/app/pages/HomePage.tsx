@@ -1,7 +1,7 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Key, Sparkles, FlaskConical, Scale, Trash2, ChevronDown, FileText, Brain, Swords, Zap, BarChart2, MessageSquare, ArrowRight, ExternalLink, TrendingUp, TrendingDown, Rocket, Loader2 } from 'lucide-react';
+import { Key, Sparkles, FlaskConical, Scale, ChevronDown, FileText, Brain, Swords, Zap, BarChart2, MessageSquare, ArrowRight, ExternalLink, TrendingUp, TrendingDown, Rocket, Loader2, Map, ArrowLeftRight } from 'lucide-react';
 import { ScrollingTitles } from '../components/ScrollingTitles';
 import { MagnifierSearch } from '../components/MagnifierSearch';
 import { StickFigure } from '../components/StickFigure';
@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 
 export function HomePage() {
   const navigate = useNavigate();
-  const { searchJob, searchJobAI, searchJobPreliminary, setCurrentJob, addToHistory, isSearchAnimating, setIsSearchAnimating, setRefinementCount, isAIEnabled, refreshAIStatus, clearAICache, setComparisonJob } = useApp();
+  const { searchJob, searchJobAI, searchJobPreliminary, setCurrentJob, addToHistory, isSearchAnimating, setIsSearchAnimating, setRefinementCount, isAIEnabled, refreshAIStatus, setComparisonJob } = useApp();
   const { user, isSupabaseConfigured } = useAuth();
   const { preferences } = usePreferences();
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
@@ -214,29 +214,10 @@ export function HomePage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
           >
-            {isAIEnabled ? (
-              <>
-                <div className="flex items-center gap-2 font-[Inter] text-black/35" style={{ fontSize: '0.72rem' }}>
-                  <Sparkles size={12} className="text-black/40" />
-                  <span>AI-powered by Groq &middot; Llama 3.3 70B</span>
-                  <button
-                    onClick={() => setShowApiKeyModal(true)}
-                    className="underline underline-offset-2 hover:text-black/60 transition-colors"
-                  >
-                    change key
-                  </button>
-                  <span className="text-black/15">&middot;</span>
-                  <button
-                    onClick={clearAICache}
-                    className="underline underline-offset-2 hover:text-black/60 transition-colors flex items-center gap-1"
-                  >
-                    <Trash2 size={9} />
-                    clear cache
-                  </button>
-                </div>
-
-                {/* Quick action buttons */}
-                <div className="flex gap-2">
+            {/* Quick action buttons */}
+            <div className="flex flex-wrap justify-center gap-2">
+              {isAIEnabled && (
+                <>
                   <motion.button
                     onClick={() => navigate('/quiz')}
                     className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
@@ -247,15 +228,6 @@ export function HomePage() {
                     Career Match Quiz
                   </motion.button>
                   <motion.button
-                    onClick={() => navigate('/compare')}
-                    className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
-                    style={{ fontSize: '0.72rem' }}
-                    whileHover={{ y: -1 }}
-                  >
-                    <Scale size={12} />
-                    Compare Careers
-                  </motion.button>
-                  <motion.button
                     onClick={() => navigate('/mood')}
                     className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
                     style={{ fontSize: '0.72rem' }}
@@ -264,18 +236,47 @@ export function HomePage() {
                     <Brain size={12} />
                     Mood Match
                   </motion.button>
-                </div>
-              </>
-            ) : (
-              <button
-                onClick={() => setShowApiKeyModal(true)}
-                className="flex items-center gap-2 font-[Inter] text-black/40 hover:text-black/60 transition-colors border border-black/10 px-4 py-2 hover:border-black/25"
-                style={{ fontSize: '0.75rem' }}
+                  <motion.button
+                    onClick={() => navigate('/career-transition')}
+                    className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
+                    style={{ fontSize: '0.72rem' }}
+                    whileHover={{ y: -1 }}
+                  >
+                    <ArrowLeftRight size={12} />
+                    Transition
+                  </motion.button>
+                  <motion.button
+                    onClick={() => navigate('/roadmap')}
+                    className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
+                    style={{ fontSize: '0.72rem' }}
+                    whileHover={{ y: -1 }}
+                  >
+                    <Map size={12} />
+                    Roadmap
+                  </motion.button>
+                </>
+              )}
+              <motion.button
+                onClick={() => navigate('/compare')}
+                className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
+                style={{ fontSize: '0.72rem' }}
+                whileHover={{ y: -1 }}
               >
-                <Key size={13} />
-                Add free Groq API key for AI-powered results
-              </button>
-            )}
+                <Scale size={12} />
+                Compare Careers
+              </motion.button>
+              {!isAIEnabled && (
+                <motion.button
+                  onClick={() => setShowApiKeyModal(true)}
+                  className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
+                  style={{ fontSize: '0.72rem' }}
+                  whileHover={{ y: -1 }}
+                >
+                  <Key size={12} />
+                  Enable AI
+                </motion.button>
+              )}
+            </div>
           </motion.div>
         )}
 
@@ -696,7 +697,7 @@ export function HomePage() {
             <span className="font-[Playfair_Display] text-black/60" style={{ fontSize: '0.92rem' }}>Career Sim</span>
           </div>
           <p className="font-[Inter] text-black/30" style={{ fontSize: '0.72rem' }}>
-            Built by Kamal Reddy &middot; v1.0.0 &middot; Powered by Groq
+            Built by Kamal Reddy &middot; v1.0.0
           </p>
           <div className="flex items-center gap-4 font-[Inter] text-black/30" style={{ fontSize: '0.72rem' }}>
             <button onClick={() => navigate('/settings')} className="hover:text-black/50 transition-colors">Settings</button>

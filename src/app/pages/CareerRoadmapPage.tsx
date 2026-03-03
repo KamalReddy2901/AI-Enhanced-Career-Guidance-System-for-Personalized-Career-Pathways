@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Map, Loader2, AlertTriangle, ChevronDown, ChevronUp, TrendingUp, Download, Share2 } from 'lucide-react';
-import { getCareerRoadmap, type CareerRoadmap, hasApiKey } from '../services/ai';
+import { Map, Loader2, AlertTriangle, ChevronDown, ChevronUp, TrendingUp, Download, Share2, Clock, X } from 'lucide-react';
+import { getCareerRoadmap, type CareerRoadmap, hasApiKey, getJobSuggestions } from '../services/ai';
 import { StickFigure } from '../components/StickFigure';
 import { ApiKeyModal } from '../components/ApiKeyModal';
-import { useApp } from '../context/AppContext';
 import { downloadRoadmapPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
+import { JOB_TITLES } from '../data/jobs';
 
 const STAGE_COLORS: Record<string, { dot: string; bg: string; border: string }> = {
   blue:   { dot: 'bg-blue-500',   bg: 'bg-blue-50 dark:bg-blue-950/30',   border: 'border-blue-200 dark:border-blue-800' },
@@ -20,7 +20,6 @@ const STAGE_COLORS: Record<string, { dot: string; bg: string; border: string }> 
 
 export function CareerRoadmapPage() {
   const [searchParams] = useSearchParams();
-  const { history } = useApp();
 
   const [jobTitle, setJobTitle] = useState(() => searchParams.get('job') || '');
   const [roadmap, setRoadmap] = useState<CareerRoadmap | null>(null);
@@ -31,10 +30,38 @@ export function CareerRoadmapPage() {
   const abortRef = useRef<AbortController | null>(null);
 
   const [inputFocused, setInputFocused] = useState(false);
-  const uniqueTitles = Array.from(new Set(history.map(h => h.jobTitle)));
-  const suggestions = inputFocused
-    ? uniqueTitles.filter(t => t.toLowerCase().includes(jobTitle.toLowerCase())).slice(0, 6)
-    : [];
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [fetchingSuggestions, setFetchingSuggestions] = useState(false);
+  const suggestDebounce = useRef<ReturnType<typeof setTimeout>>(null);
+
+  // Roadmap history
+  const [roadmapHistory, setRoadmapHistory] = useState<{ title: string; date: string }[]>(() => {
+    try { return JSON.parse(localStorage.getItem('cs_roadmap_history') || '[]'); } catch { return []; }
+  });
+  const [showRoadmapHistory, setShowRoadmapHistory] = useState(false);
+
+  // AI-powered suggestions
+  useEffect(() => {
+    if (!inputFocused || !jobTitle.trim()) { setSuggestions([]); return; }
+    clearTimeout(suggestDebounce.current!);
+    // Quick local filter first
+    const local = JOB_TITLES.filter(t => t.toLowerCase().includes(jobTitle.toLowerCase())).slice(0, 6);
+    setSuggestions(local);
+    // Then AI suggestions
+    suggestDebounce.current = setTimeout(async () => {
+      if (!hasApiKey()) return;
+      setFetchingSuggestions(true);
+      try {
+        const ai = await getJobSuggestions(jobTitle.trim());
+        if (ai.length) setSuggestions(ai);
+      } catch { /* ignore */ }
+      setFetchingSuggestions(false);
+    }, 350);
+    return () => { clearTimeout(suggestDebounce.current!); setFetchingSuggestions(false); };
+  }, [jobTitle, inputFocused]);
+
+  // Abort in-flight request on unmount
+  useEffect(() => () => { abortRef.current?.abort(); }, []);
 
   // Auto-generate if job param was passed from dossier
   useEffect(() => {
@@ -59,6 +86,13 @@ export function CareerRoadmapPage() {
     try {
       const result = await getCareerRoadmap(jobTitle.trim(), abortRef.current.signal);
       setRoadmap(result);
+      // Save to roadmap history
+      const entry = { title: jobTitle.trim(), date: new Date().toISOString() };
+      setRoadmapHistory(prev => {
+        const updated = [entry, ...prev.filter(h => h.title.toLowerCase() !== jobTitle.trim().toLowerCase())].slice(0, 10);
+        localStorage.setItem('cs_roadmap_history', JSON.stringify(updated));
+        return updated;
+      });
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
         setError((err as Error).message || 'Failed to generate roadmap.');
@@ -92,6 +126,16 @@ export function CareerRoadmapPage() {
           <p className="font-[Inter] text-black/50 dark:text-white/50" style={{ fontSize: '0.9rem' }}>
             Visualise your complete career journey from entry-level to expert — including milestones, salary progression, and key decision points.
           </p>
+          {roadmapHistory.length > 0 && (
+            <button
+              onClick={() => setShowRoadmapHistory(true)}
+              className="mt-4 flex items-center gap-1.5 text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white transition-colors font-[Inter]"
+              style={{ fontSize: '0.75rem' }}
+            >
+              <Clock size={12} />
+              Recent Roadmaps ({roadmapHistory.length})
+            </button>
+          )}
         </motion.div>
 
         {/* Input */}
@@ -119,8 +163,14 @@ export function CareerRoadmapPage() {
                 className="w-full border border-black/15 dark:border-white/15 bg-transparent px-4 py-3 font-[Inter] text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 outline-none focus:border-black/40 dark:focus:border-white/40 transition-colors"
                 style={{ fontSize: '0.92rem' }}
               />
-              {suggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 z-20 border border-black/15 dark:border-white/15 bg-card shadow-md">
+              {inputFocused && (suggestions.length > 0 || (fetchingSuggestions && suggestions.length === 0)) && (
+                <div className="absolute top-full left-0 right-0 z-20 border border-black/15 dark:border-white/15 bg-card shadow-md max-h-48 overflow-y-auto">
+                  {fetchingSuggestions && suggestions.length === 0 && (
+                    <div className="flex items-center gap-2 px-4 py-3 text-black/40 dark:text-white/40">
+                      <Loader2 size={13} className="animate-spin" />
+                      <span className="font-[Inter]" style={{ fontSize: '0.82rem' }}>Finding suggestions…</span>
+                    </div>
+                  )}
                   {suggestions.map(s => (
                     <button
                       key={s}
@@ -396,7 +446,51 @@ export function CareerRoadmapPage() {
         )}
       </div>
 
-      {showApiModal && <ApiKeyModal onClose={() => setShowApiModal(false)} />}
+      {/* Roadmap History Modal */}
+      <AnimatePresence>
+        {showRoadmapHistory && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowRoadmapHistory(false)} />
+            <motion.div
+              className="relative bg-white dark:bg-[#1a1a18] border-2 border-black/20 dark:border-white/20 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] w-full max-w-sm mx-4 max-h-[60vh] flex flex-col"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+            >
+              <div className="p-5 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
+                <h3 className="font-[Playfair_Display] text-black dark:text-white" style={{ fontSize: '1.05rem' }}>Recent Roadmaps</h3>
+                <button onClick={() => setShowRoadmapHistory(false)} className="text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white transition-colors">
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                {roadmapHistory.map((item, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setJobTitle(item.title);
+                      setShowRoadmapHistory(false);
+                    }}
+                    className="w-full text-left p-3 border border-black/8 dark:border-white/8 hover:border-black/20 dark:hover:border-white/20 transition-colors"
+                  >
+                    <p className="font-[Inter] text-black/70 dark:text-white/70" style={{ fontSize: '0.85rem' }}>{item.title}</p>
+                    <p className="font-[Inter] text-black/30 dark:text-white/30 mt-0.5" style={{ fontSize: '0.7rem' }}>
+                      {new Date(item.date).toLocaleDateString()}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {showApiModal && <ApiKeyModal isOpen={showApiModal} onClose={() => setShowApiModal(false)} onKeySet={() => setShowApiModal(false)} />}
     </div>
   );
 }

@@ -60,7 +60,17 @@ export function Navbar() {
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group shrink-0" aria-label="Career Simulation home">
+          <Link
+            to="/"
+            className="flex items-center gap-2 group shrink-0"
+            aria-label="Career Simulation home"
+            onClick={(e) => {
+              if (location.pathname === '/') {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
+          >
             <StickFigure pose="standing" size={26} animate={false} />
             <span
               className="font-[Playfair_Display] tracking-tight text-black dark:text-white group-hover:opacity-70 transition-opacity"

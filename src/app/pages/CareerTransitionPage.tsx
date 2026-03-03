@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, Loader2, ChevronDown, ChevronUp, CheckCircle, XCircle, AlertTriangle, ArrowLeftRight, ExternalLink, Download, Share2 } from 'lucide-react';
-import { getCareerTransition, type CareerTransitionPlan, hasApiKey } from '../services/ai';
+import { ArrowRight, Loader2, ChevronDown, ChevronUp, CheckCircle, XCircle, AlertTriangle, ArrowLeftRight, ExternalLink, Download, Share2, Clock, X } from 'lucide-react';
+import { getCareerTransition, getJobSuggestions, type CareerTransitionPlan, hasApiKey } from '../services/ai';
+import { JOB_TITLES } from '../data/jobs';
 import { StickFigure } from '../components/StickFigure';
 import { ApiKeyModal } from '../components/ApiKeyModal';
-import { useApp } from '../context/AppContext';
 import { downloadTransitionPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 
@@ -18,7 +18,6 @@ const DIFFICULTY_COLOR: Record<string, string> = {
 
 export function CareerTransitionPage() {
   const [searchParams] = useSearchParams();
-  const { history } = useApp();
 
   const [fromCareer, setFromCareer] = useState(() => searchParams.get('from') || '');
   const [toCareer, setToCareer] = useState(() => searchParams.get('to') || '');
@@ -29,18 +28,60 @@ export function CareerTransitionPage() {
   const [expandedPhase, setExpandedPhase] = useState<number | null>(0);
   const abortRef = useRef<AbortController | null>(null);
 
-  // suggestion dropdown state
+  // AI-powered suggestion state
   const [fromFocused, setFromFocused] = useState(false);
   const [toFocused, setToFocused] = useState(false);
+  const [fromSuggestions, setFromSuggestions] = useState<string[]>([]);
+  const [toSuggestions, setToSuggestions] = useState<string[]>([]);
+  const [fetchingFrom, setFetchingFrom] = useState(false);
+  const [fetchingTo, setFetchingTo] = useState(false);
+  const fromDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const uniqueTitles = Array.from(new Set(history.map(h => h.jobTitle)));
+  // Separate transition history
+  const [transitionHistory, setTransitionHistory] = useState<Array<{ from: string; to: string; timestamp: number }>>(() => {
+    try { return JSON.parse(localStorage.getItem('cs_transition_history') || '[]'); } catch { return []; }
+  });
+  const [showTransitionHistory, setShowTransitionHistory] = useState(false);
 
-  const fromSuggestions = fromFocused && fromCareer.length >= 0
-    ? uniqueTitles.filter(t => t.toLowerCase().includes(fromCareer.toLowerCase())).slice(0, 5)
-    : [];
-  const toSuggestions = toFocused && toCareer.length >= 0
-    ? uniqueTitles.filter(t => t.toLowerCase().includes(toCareer.toLowerCase())).slice(0, 5)
-    : [];
+  // AI suggestions for "from" field
+  useEffect(() => {
+    if (!fromFocused || fromCareer.length < 2) { setFromSuggestions([]); return; }
+    if (fromDebounce.current) clearTimeout(fromDebounce.current);
+    if (hasApiKey()) {
+      fromDebounce.current = setTimeout(async () => {
+        setFetchingFrom(true);
+        try { const r = await getJobSuggestions(fromCareer.trim()); setFromSuggestions(r); }
+        catch { setFromSuggestions([]); }
+        finally { setFetchingFrom(false); }
+      }, 350);
+    } else {
+      const q = fromCareer.toLowerCase();
+      setFromSuggestions(JOB_TITLES.filter(t => t.toLowerCase().includes(q)).slice(0, 5));
+    }
+    return () => { if (fromDebounce.current) clearTimeout(fromDebounce.current); setFetchingFrom(false); };
+  }, [fromCareer, fromFocused]);
+
+  // AI suggestions for "to" field
+  useEffect(() => {
+    if (!toFocused || toCareer.length < 2) { setToSuggestions([]); return; }
+    if (toDebounce.current) clearTimeout(toDebounce.current);
+    if (hasApiKey()) {
+      toDebounce.current = setTimeout(async () => {
+        setFetchingTo(true);
+        try { const r = await getJobSuggestions(toCareer.trim()); setToSuggestions(r); }
+        catch { setToSuggestions([]); }
+        finally { setFetchingTo(false); }
+      }, 350);
+    } else {
+      const q = toCareer.toLowerCase();
+      setToSuggestions(JOB_TITLES.filter(t => t.toLowerCase().includes(q)).slice(0, 5));
+    }
+    return () => { if (toDebounce.current) clearTimeout(toDebounce.current); setFetchingTo(false); };
+  }, [toCareer, toFocused]);
+
+  // Abort in-flight request on unmount
+  useEffect(() => () => { abortRef.current?.abort(); }, []);
 
   // Auto-generate if both params are prefilled from URL
   useEffect(() => {
@@ -68,6 +109,13 @@ export function CareerTransitionPage() {
     try {
       const result = await getCareerTransition(fromCareer.trim(), toCareer.trim(), abortRef.current.signal);
       setPlan(result);
+      // Save to transition history
+      setTransitionHistory(prev => {
+        const filtered = prev.filter(h => !(h.from === fromCareer.trim() && h.to === toCareer.trim()));
+        const updated = [{ from: fromCareer.trim(), to: toCareer.trim(), timestamp: Date.now() }, ...filtered].slice(0, 10);
+        localStorage.setItem('cs_transition_history', JSON.stringify(updated));
+        return updated;
+      });
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
         setError((err as Error).message || 'Failed to generate transition plan.');
@@ -101,6 +149,16 @@ export function CareerTransitionPage() {
           <p className="font-[Inter] text-black/50 dark:text-white/50" style={{ fontSize: '0.9rem' }}>
             Enter your current role and your target role to receive a detailed, personalised transition roadmap.
           </p>
+          {transitionHistory.length > 0 && (
+            <button
+              onClick={() => setShowTransitionHistory(true)}
+              className="mt-3 inline-flex items-center gap-1.5 font-[Inter] text-black/35 dark:text-white/35 hover:text-black/60 dark:hover:text-white/60 border border-black/10 dark:border-white/10 px-3 py-1.5 hover:border-black/25 transition-all"
+              style={{ fontSize: '0.72rem' }}
+            >
+              <Clock size={11} />
+              Recent Transitions ({transitionHistory.length})
+            </button>
+          )}
         </motion.div>
 
         {/* Input Form */}
@@ -128,8 +186,13 @@ export function CareerTransitionPage() {
                 className="w-full border border-black/15 dark:border-white/15 bg-transparent px-4 py-3 font-[Inter] text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 outline-none focus:border-black/40 dark:focus:border-white/40 transition-colors"
                 style={{ fontSize: '0.92rem' }}
               />
-              {fromSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 z-20 border border-black/15 dark:border-white/15 bg-card shadow-md">
+              {(fromSuggestions.length > 0 || fetchingFrom) && fromFocused && (
+                <div className="absolute top-full left-0 right-0 z-20 border border-black/15 dark:border-white/15 bg-card shadow-md max-h-48 overflow-y-auto">
+                  {fetchingFrom && fromSuggestions.length === 0 && (
+                    <div className="px-4 py-2.5 flex items-center gap-2 text-black/35 font-[Inter]" style={{ fontSize: '0.8rem' }}>
+                      <Loader2 size={12} className="animate-spin" /> Finding careers...
+                    </div>
+                  )}
                   {fromSuggestions.map(s => (
                     <button
                       key={s}
@@ -165,8 +228,13 @@ export function CareerTransitionPage() {
                 className="w-full border border-black/15 dark:border-white/15 bg-transparent px-4 py-3 font-[Inter] text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 outline-none focus:border-black/40 dark:focus:border-white/40 transition-colors"
                 style={{ fontSize: '0.92rem' }}
               />
-              {toSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 z-20 border border-black/15 dark:border-white/15 bg-card shadow-md">
+              {(toSuggestions.length > 0 || fetchingTo) && toFocused && (
+                <div className="absolute top-full left-0 right-0 z-20 border border-black/15 dark:border-white/15 bg-card shadow-md max-h-48 overflow-y-auto">
+                  {fetchingTo && toSuggestions.length === 0 && (
+                    <div className="px-4 py-2.5 flex items-center gap-2 text-black/35 font-[Inter]" style={{ fontSize: '0.8rem' }}>
+                      <Loader2 size={12} className="animate-spin" /> Finding careers...
+                    </div>
+                  )}
                   {toSuggestions.map(s => (
                     <button
                       key={s}
@@ -514,7 +582,53 @@ export function CareerTransitionPage() {
         )}
       </div>
 
-      {showApiModal && <ApiKeyModal onClose={() => setShowApiModal(false)} />}
+      {/* Transition History Modal */}
+      <AnimatePresence>
+        {showTransitionHistory && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowTransitionHistory(false)} />
+            <motion.div
+              className="relative bg-white dark:bg-[#1a1a18] border-2 border-black/20 dark:border-white/20 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] w-full max-w-sm mx-4 max-h-[60vh] flex flex-col"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+            >
+              <div className="p-5 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
+                <h3 className="font-[Playfair_Display] text-black dark:text-white" style={{ fontSize: '1.05rem' }}>Recent Transitions</h3>
+                <button onClick={() => setShowTransitionHistory(false)} className="text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white transition-colors">
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                {transitionHistory.map((item, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setFromCareer(item.from);
+                      setToCareer(item.to);
+                      setShowTransitionHistory(false);
+                    }}
+                    className="w-full text-left p-3 border border-black/8 dark:border-white/8 hover:border-black/20 dark:hover:border-white/20 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-[Inter] text-black/70 dark:text-white/70" style={{ fontSize: '0.85rem' }}>{item.from}</span>
+                      <ArrowRight size={12} className="text-black/25 dark:text-white/25 shrink-0" />
+                      <span className="font-[Inter] text-black/70 dark:text-white/70" style={{ fontSize: '0.85rem' }}>{item.to}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {showApiModal && <ApiKeyModal isOpen={showApiModal} onClose={() => setShowApiModal(false)} onKeySet={() => setShowApiModal(false)} />}
     </div>
   );
 }

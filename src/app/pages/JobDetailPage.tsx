@@ -5,7 +5,7 @@ import {
   ChevronLeft, Play, MessageCircle, X, Send, Sparkles, Loader2, RefreshCw, Download,
   Briefcase, GraduationCap, Wrench, MapPin, TrendingUp, Lightbulb, ArrowRight,
   Calendar, CalendarDays, CalendarRange, Scale, Star, UserCheck, Share2,
-  BookOpen, Hash, Award, ExternalLink, Activity, Building2
+  BookOpen, Hash, Award, ExternalLink, Activity, Building2, ImageIcon
 } from 'lucide-react';
 import {
   RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip
@@ -20,7 +20,6 @@ import {
 import { toast } from 'sonner';
 import { downloadDossierPDF, generateShareCard } from '../utils/pdfExport';
 import { generateShareUrl, decodeDossier } from '../utils/share';
-import { ImageIcon } from 'lucide-react';
 import { sounds } from '../utils/sounds';
 import { usePreferences } from '../hooks/usePreferences';
 
@@ -95,9 +94,51 @@ export function JobDetailPage() {
   const simulateBtnRef = useRef<HTMLButtonElement>(null);
   const [showJumpBtn, setShowJumpBtn] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [activeSection, setActiveSection] = useState('');
+  const [showDossierNav, setShowDossierNav] = useState(false);
+
+  // Section refs for scroll tracking
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const registerSection = (id: string) => (el: HTMLElement | null) => {
+    sectionRefs.current[id] = el;
+  };
+
+  const DOSSIER_SECTIONS = [
+    { id: 'hiring', label: 'Hiring' },
+    { id: 'about', label: 'About' },
+    { id: 'skills', label: 'Skills' },
+    { id: 'education', label: 'Education' },
+    { id: 'environment', label: 'Environment' },
+    { id: 'career-path', label: 'Career Path' },
+    { id: 'fun-fact', label: 'Fun Fact' },
+    { id: 'timeline', label: 'Timeline' },
+    { id: 'wlb', label: 'Work-Life' },
+    { id: 'learn-more', label: 'Learn More' },
+    { id: 'related', label: 'Related' },
+    { id: 'actions', label: 'Actions' },
+  ];
 
   useEffect(() => {
-    const onScroll = () => setShowBackToTop(window.scrollY > 400);
+    const onScroll = () => {
+      setShowBackToTop(window.scrollY > 400);
+      setShowDossierNav(window.scrollY > 300);
+
+      // Calculate scroll progress
+      const docH = document.documentElement.scrollHeight - window.innerHeight;
+      setScrollProgress(docH > 0 ? Math.min(window.scrollY / docH, 1) : 0);
+
+      // Determine active section
+      const entries = Object.entries(sectionRefs.current).filter(([, el]) => el !== null);
+      let currentSection = '';
+      for (const [id, el] of entries) {
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= 180) currentSection = id;
+        }
+      }
+      setActiveSection(currentSection);
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -111,7 +152,7 @@ export function JobDetailPage() {
     );
     observer.observe(btn);
     return () => observer.disconnect();
-  }, [simulateBtnRef.current]);
+  }, [currentJob?.title]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -299,6 +340,61 @@ export function JobDetailPage() {
 
   return (
     <div className="min-h-screen bg-background pt-20 pb-16">
+      {/* ── SCROLL PROGRESS BAR ───────────────────────────── */}
+      <motion.div
+        className="fixed top-14 left-0 right-0 z-40 h-[3px] bg-black/5 print:hidden"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: showDossierNav ? 1 : 0 }}
+      >
+        <motion.div
+          className="h-full bg-black origin-left"
+          style={{ scaleX: scrollProgress, transformOrigin: 'left' }}
+          transition={{ duration: 0.1 }}
+        />
+      </motion.div>
+
+      {/* ── DOSSIER SECTION NAV ───────────────────────────── */}
+      <AnimatePresence>
+        {showDossierNav && (
+          <motion.div
+            className="fixed top-[calc(3.5rem+3px)] left-0 right-0 z-[39] bg-[#f9f8f7]/95 backdrop-blur-md border-b border-black/6 print:hidden"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.15 }}
+          >
+            <div className="max-w-4xl mx-auto px-4">
+              <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-none py-2" style={{ scrollbarWidth: 'none' }}>
+                {DOSSIER_SECTIONS.filter(s => {
+                  // Only show sections that exist in the DOM
+                  if (s.id === 'hiring') return currentJob.relevantForCompanies && currentJob.topCompanies && currentJob.topCompanies.length > 0;
+                  if (s.id === 'wlb') return wlbData || wlbLoading;
+                  if (s.id === 'learn-more') return learnMore || learnMoreLoading;
+                  if (s.id === 'related') return preferences.showRelatedCareers && (relatedCareers.length > 0 || loadingRelated);
+                  return true;
+                }).map(section => (
+                  <button
+                    key={section.id}
+                    onClick={() => {
+                      const el = sectionRefs.current[section.id];
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    className={`shrink-0 px-2.5 py-1 font-[Inter] transition-all whitespace-nowrap ${
+                      activeSection === section.id
+                        ? 'bg-black text-white'
+                        : 'text-black/40 hover:text-black/70 hover:bg-black/5'
+                    }`}
+                    style={{ fontSize: '0.68rem' }}
+                  >
+                    {section.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-4xl mx-auto px-6">
         {/* Back */}
         <motion.button
@@ -396,7 +492,15 @@ export function JobDetailPage() {
                 <motion.button
                   onClick={async () => {
                     try {
-                      await generateShareCard(currentJob);
+                      const blob = await generateShareCard(currentJob);
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `${currentJob.title.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-share-card.png`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
                       toast.success('Share card downloaded!');
                     } catch {
                       toast.error('Failed to generate share card');
@@ -416,25 +520,25 @@ export function JobDetailPage() {
 
         {/* Who's Hiring */}
         {currentJob.relevantForCompanies && currentJob.topCompanies && currentJob.topCompanies.length > 0 && (
-          <Section title="Who's Hiring" icon={<Building2 size={16} />} delay={0.08}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Section title="Who's Hiring" icon={<Building2 size={16} />} delay={0.08} sectionRef={registerSection('hiring')}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {currentJob.topCompanies.map((company, i) => (
                 <motion.a
                   key={i}
-                  href={company.careerPageUrl}
+                  href={`https://www.google.com/search?q=${encodeURIComponent(company.name + ' ' + currentJob.title + ' careers jobs')}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-start gap-3 p-4 border border-black/10 hover:border-black/25 transition-all group"
+                  className="flex flex-col items-center gap-3 p-5 border border-black/8 hover:border-black/20 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.04)] transition-all group bg-white"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 + i * 0.07 }}
-                  whileHover={{ y: -2 }}
+                  whileHover={{ y: -3, scale: 1.02 }}
                 >
-                  <div className="w-10 h-10 border border-black/10 flex items-center justify-center overflow-hidden shrink-0 bg-white">
+                  <div className="w-14 h-14 rounded-xl border border-black/8 flex items-center justify-center overflow-hidden shrink-0 bg-gradient-to-br from-white to-black/[0.02] shadow-sm">
                     <img
                       src={`https://logo.clearbit.com/${company.domain}`}
                       alt={company.name}
-                      className="w-8 h-8 object-contain"
+                      className="w-10 h-10 object-contain"
                       onError={(e) => {
                         const img = e.target as HTMLImageElement;
                         img.style.display = 'none';
@@ -443,18 +547,15 @@ export function JobDetailPage() {
                       }}
                     />
                     <span
-                      className="font-[Inter] text-black/40 font-semibold items-center justify-center"
-                      style={{ fontSize: '0.72rem', display: 'none' }}
+                      className="font-[Inter] text-black/50 font-bold items-center justify-center"
+                      style={{ fontSize: '0.9rem', display: 'none' }}
                     >
                       {company.name.slice(0, 2).toUpperCase()}
                     </span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1">
-                      <span className="font-[Playfair_Display] text-black" style={{ fontSize: '0.95rem' }}>{company.name}</span>
-                      <ExternalLink size={10} className="text-black/25 group-hover:text-black/50 transition-colors shrink-0" />
-                    </div>
-                    <p className="font-[Inter] text-black/45 mt-0.5" style={{ fontSize: '0.78rem' }}>{company.description}</p>
+                  <div className="text-center min-w-0">
+                    <span className="font-[Inter] text-black font-medium block truncate" style={{ fontSize: '0.85rem' }}>{company.name}</span>
+                    <p className="font-[Inter] text-black/40 mt-0.5 line-clamp-2" style={{ fontSize: '0.7rem', lineHeight: 1.4 }}>{company.description}</p>
                   </div>
                 </motion.a>
               ))}
@@ -463,14 +564,14 @@ export function JobDetailPage() {
         )}
 
         {/* Full Description */}
-        <Section title="About the Role" icon={<Briefcase size={16} />} delay={0.1}>
+        <Section title="About the Role" icon={<Briefcase size={16} />} delay={0.1} sectionRef={registerSection('about')}>
           <p className="font-[Inter] text-black/65 leading-relaxed whitespace-pre-line" style={{ fontSize: '0.92rem' }}>
             {currentJob.fullDescription}
           </p>
         </Section>
 
         {/* Skills */}
-        <Section title="Required Skills" icon={<Wrench size={16} />} delay={0.15}>
+        <Section title="Required Skills" icon={<Wrench size={16} />} delay={0.15} sectionRef={registerSection('skills')}>
           <div className="flex flex-wrap gap-2">
             {currentJob.skills.map((skill, i) => (
               <motion.span
@@ -488,7 +589,7 @@ export function JobDetailPage() {
         </Section>
 
         {/* Education */}
-        <Section title="Education & Qualifications" icon={<GraduationCap size={16} />} delay={0.2}>
+        <Section title="Education & Qualifications" icon={<GraduationCap size={16} />} delay={0.2} sectionRef={registerSection('education')}>
           <div className="space-y-3">
             {currentJob.education.map((edu, i) => (
               <motion.div
@@ -506,28 +607,28 @@ export function JobDetailPage() {
         </Section>
 
         {/* Work Environment */}
-        <Section title="Work Environment" icon={<MapPin size={16} />} delay={0.25}>
+        <Section title="Work Environment" icon={<MapPin size={16} />} delay={0.25} sectionRef={registerSection('environment')}>
           <p className="font-[Inter] text-black/65 leading-relaxed" style={{ fontSize: '0.92rem' }}>
             {currentJob.workEnvironment}
           </p>
         </Section>
 
         {/* Career Path */}
-        <Section title="Career Progression" icon={<TrendingUp size={16} />} delay={0.3}>
+        <Section title="Career Progression" icon={<TrendingUp size={16} />} delay={0.3} sectionRef={registerSection('career-path')}>
           <p className="font-[Inter] text-black/65 leading-relaxed" style={{ fontSize: '0.92rem' }}>
             {currentJob.careerPath}
           </p>
         </Section>
 
         {/* Fun Fact */}
-        <Section title="Did You Know?" icon={<Lightbulb size={16} />} delay={0.35}>
+        <Section title="Did You Know?" icon={<Lightbulb size={16} />} delay={0.35} sectionRef={registerSection('fun-fact')}>
           <p className="font-[Inter] text-black/65 italic" style={{ fontSize: '0.92rem' }}>
             {currentJob.funFact}
           </p>
         </Section>
 
-        {/* Timeline Section */}
         <motion.div
+          ref={registerSection('timeline')}
           className="mt-12 mb-10"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -602,6 +703,7 @@ export function JobDetailPage() {
         {/* ── Work-Life Balance Radar ──────────────────────── */}
         {(wlbData || wlbLoading) && (
           <motion.div
+            ref={registerSection('wlb')}
             className="mt-10 mb-10 print:hidden"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -683,6 +785,7 @@ export function JobDetailPage() {
         {/* ── Learn More ──────────────────────────────────── */}
         {(learnMore || learnMoreLoading) && (
           <motion.div
+            ref={registerSection('learn-more')}
             className="mt-10 mb-10 print:hidden"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -817,6 +920,7 @@ export function JobDetailPage() {
         {/* Related Careers — shown after Learn More */}
         {preferences.showRelatedCareers && (relatedCareers.length > 0 || loadingRelated) && (
           <motion.div
+            ref={registerSection('related')}
             className="mt-10 mb-10 print:hidden"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -872,8 +976,8 @@ export function JobDetailPage() {
           </motion.div>
         )}
 
-        {/* Action Buttons */}
         <motion.div
+          ref={registerSection('actions')}
           className="flex flex-col sm:flex-row gap-4 mt-10 mb-4 print:hidden"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1139,9 +1243,10 @@ export function JobDetailPage() {
   );
 }
 
-function Section({ title, icon, children, delay = 0 }: { title: string; icon: React.ReactNode; children: React.ReactNode; delay?: number }) {
+function Section({ title, icon, children, delay = 0, sectionRef }: { title: string; icon: React.ReactNode; children: React.ReactNode; delay?: number; sectionRef?: (el: HTMLElement | null) => void }) {
   return (
     <motion.div
+      ref={sectionRef}
       className="mb-10"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}

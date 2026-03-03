@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, ArrowRight, X, Scale, Loader2, Download, Share2 } from 'lucide-react';
+import { ChevronLeft, ArrowRight, X, Scale, Loader2, Download, Share2, Search, Sparkles } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import type { JobData } from '../data/jobs';
 import {
   getWorkLifeBalance, getLearnMoreResources, getInterviewDifficulty, getGrowthOutlook, hasApiKey,
+  getJobSuggestions,
   type WorkLifeBalance, type LearnMoreResources, type InterviewDifficulty,
 } from '../services/ai';
+import { JOB_TITLES } from '../data/jobs';
 import { downloadComparisonPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 
@@ -65,6 +67,7 @@ function CareerSlot({
 
 export function ComparisonPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { history, comparisonJobs, setComparisonJob, searchJobAI, searchJob, isAIEnabled, addToHistory } = useApp();
   const [showPicker, setShowPicker] = useState<0 | 1 | null>(null);
   const [customTitle, setCustomTitle] = useState('');
@@ -81,8 +84,71 @@ export function ComparisonPage() {
   const [growthA, setGrowthA] = useState<string | null>(null);
   const [growthB, setGrowthB] = useState<string | null>(null);
   const [growthLoading, setGrowthLoading] = useState(false);
+  // AI suggestions for compare search
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [fetchingSuggestions, setFetchingSuggestions] = useState(false);
+  // Separate compare history
+  const [compareHistory, setCompareHistory] = useState<Array<{ a: string; b: string; timestamp: number }>>(() => {
+    try { return JSON.parse(localStorage.getItem('cs_compare_history') || '[]'); } catch { return []; }
+  });
+  const [showCompareHistory, setShowCompareHistory] = useState(false);
 
   const [jobA, jobB] = comparisonJobs;
+
+  // Load careers from URL params (shared link)
+  useEffect(() => {
+    const paramA = searchParams.get('a');
+    const paramB = searchParams.get('b');
+    if (paramA && !comparisonJobs[0]) {
+      setLoadingSlot(0);
+      (isAIEnabled ? searchJobAI(paramA) : Promise.resolve(searchJob(paramA)))
+        .then(job => { setComparisonJob(0, job); addToHistory(job); })
+        .catch(() => toast.error(`Failed to load "${paramA}"`))
+        .finally(() => setLoadingSlot(prev => prev === 0 ? null : prev));
+    }
+    if (paramB && !comparisonJobs[1]) {
+      setLoadingSlot(prev => prev === null ? 1 : prev);
+      (isAIEnabled ? searchJobAI(paramB) : Promise.resolve(searchJob(paramB)))
+        .then(job => { setComparisonJob(1, job); addToHistory(job); })
+        .catch(() => toast.error(`Failed to load "${paramB}"`))
+        .finally(() => setLoadingSlot(prev => prev === 1 ? null : prev));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Save to compare history when both jobs are set
+  useEffect(() => {
+    if (jobA && jobB) {
+      setCompareHistory(prev => {
+        const filtered = prev.filter(h => !(h.a === jobA.title && h.b === jobB.title));
+        const updated = [{ a: jobA.title, b: jobB.title, timestamp: Date.now() }, ...filtered].slice(0, 10);
+        localStorage.setItem('cs_compare_history', JSON.stringify(updated));
+        return updated;
+      });
+    }
+  }, [jobA?.title, jobB?.title]);
+
+  // AI suggestions for search input
+  useEffect(() => {
+    if (!customTitle.trim() || customTitle.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    if (hasApiKey()) {
+      const timeout = setTimeout(async () => {
+        setFetchingSuggestions(true);
+        try {
+          const results = await getJobSuggestions(customTitle.trim());
+          setSuggestions(results);
+        } catch { setSuggestions([]); }
+        finally { setFetchingSuggestions(false); }
+      }, 350);
+      return () => { clearTimeout(timeout); setFetchingSuggestions(false); };
+    } else {
+      const q = customTitle.toLowerCase();
+      setSuggestions(JOB_TITLES.filter(t => t.toLowerCase().includes(q)).slice(0, 5));
+    }
+  }, [customTitle]);
 
   // Lazy-load WLB and certifications when both jobs are set
   useEffect(() => {
@@ -188,6 +254,16 @@ export function ComparisonPage() {
           <p className="font-[Inter] text-black/40" style={{ fontSize: '0.85rem' }}>
             Compare two careers side by side
           </p>
+          {compareHistory.length > 0 && (
+            <button
+              onClick={() => setShowCompareHistory(true)}
+              className="mt-3 inline-flex items-center gap-1.5 font-[Inter] text-black/35 hover:text-black/60 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all mx-auto"
+              style={{ fontSize: '0.72rem' }}
+            >
+              <Scale size={11} />
+              Recent Comparisons ({compareHistory.length})
+            </button>
+          )}
         </motion.div>
 
         {/* Selection Cards - explicit order so "vs" sits between the two */}
@@ -502,7 +578,7 @@ export function ComparisonPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowPicker(null)} />
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => { setShowPicker(null); setSuggestions([]); }} />
             <motion.div
               className="relative bg-white border-2 border-black/20 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] w-full max-w-md mx-4 max-h-[70vh] flex flex-col"
               initial={{ scale: 0.95, opacity: 0 }}
@@ -515,24 +591,62 @@ export function ComparisonPage() {
                 </h3>
 
                 {/* Custom search */}
-                <div className="flex gap-2">
-                  <input
-                    value={customTitle}
-                    onChange={(e) => setCustomTitle(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleCustomSearch(showPicker)}
-                    placeholder="Type any job title..."
-                    className="flex-1 border border-black/15 px-3 py-2 font-[Inter] text-black/70 placeholder:text-black/25 outline-none focus:border-black/40"
-                    style={{ fontSize: '0.85rem' }}
-                    autoFocus
-                  />
-                  <button
-                    onClick={() => handleCustomSearch(showPicker)}
-                    disabled={!customTitle.trim()}
-                    className="bg-black text-white px-4 py-2 font-[Inter] disabled:bg-black/30 hover:bg-black/85 transition-colors"
-                    style={{ fontSize: '0.82rem' }}
-                  >
-                    <ArrowRight size={16} />
-                  </button>
+                <div className="relative">
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        value={customTitle}
+                        onChange={(e) => setCustomTitle(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleCustomSearch(showPicker)}
+                        placeholder="Search any job title..."
+                        className="w-full border border-black/15 px-3 py-2 font-[Inter] text-black/70 placeholder:text-black/25 outline-none focus:border-black/40"
+                        style={{ fontSize: '0.85rem' }}
+                        autoFocus
+                      />
+                    </div>
+                    <button
+                      onClick={() => handleCustomSearch(showPicker)}
+                      disabled={!customTitle.trim()}
+                      className="bg-black text-white px-4 py-2 font-[Inter] disabled:bg-black/30 hover:bg-black/85 transition-colors"
+                      style={{ fontSize: '0.82rem' }}
+                    >
+                      <Search size={16} />
+                    </button>
+                  </div>
+
+                  {/* AI Suggestions Dropdown */}
+                  {(suggestions.length > 0 || fetchingSuggestions) && customTitle.length >= 2 && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-black/15 shadow-md max-h-48 overflow-y-auto">
+                      {fetchingSuggestions && suggestions.length === 0 && (
+                        <div className="px-4 py-3 flex items-center gap-2 text-black/35 font-[Inter]" style={{ fontSize: '0.8rem' }}>
+                          <Loader2 size={12} className="animate-spin" />
+                          Finding careers...
+                        </div>
+                      )}
+                      {suggestions.map((s, i) => (
+                        <button
+                          key={s + i}
+                          onClick={() => {
+                            setCustomTitle(s);
+                            setSuggestions([]);
+                            // Auto-search
+                            const slot = showPicker;
+                            setLoadingSlot(slot);
+                            setShowPicker(null);
+                            (isAIEnabled ? searchJobAI(s) : Promise.resolve(searchJob(s)))
+                              .then(jobData => { setComparisonJob(slot, jobData); addToHistory(jobData); setCustomTitle(''); })
+                              .catch(() => toast.error('Failed to load career'))
+                              .finally(() => setLoadingSlot(null));
+                          }}
+                          className="w-full text-left px-4 py-2.5 font-[Inter] text-black/70 hover:bg-black/5 transition-colors border-b border-black/5 last:border-0"
+                          style={{ fontSize: '0.85rem' }}
+                        >
+                          {s}
+                          {hasApiKey() && <Sparkles size={9} className="text-black/20 ml-1.5 inline" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -562,6 +676,68 @@ export function ComparisonPage() {
                   <p className="text-center font-[Inter] text-black/30 py-8" style={{ fontSize: '0.85rem' }}>
                     No history yet. Search for a career above.
                   </p>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Compare History Drawer */}
+      <AnimatePresence>
+        {showCompareHistory && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowCompareHistory(false)} />
+            <motion.div
+              className="relative bg-white border-2 border-black/20 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] w-full max-w-sm mx-4 max-h-[60vh] flex flex-col"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+            >
+              <div className="p-5 border-b border-black/10 flex items-center justify-between">
+                <h3 className="font-[Playfair_Display] text-black" style={{ fontSize: '1.05rem' }}>Recent Comparisons</h3>
+                <button onClick={() => setShowCompareHistory(false)} className="text-black/30 hover:text-black transition-colors">
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4">
+                {compareHistory.length === 0 ? (
+                  <p className="text-center font-[Inter] text-black/30 py-8" style={{ fontSize: '0.85rem' }}>
+                    No comparisons yet.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {compareHistory.map((item, i) => (
+                      <button
+                        key={i}
+                        onClick={async () => {
+                          setShowCompareHistory(false);
+                          setLoadingSlot(0);
+                          try {
+                            const [jA, jB] = await Promise.all([
+                              isAIEnabled ? searchJobAI(item.a) : Promise.resolve(searchJob(item.a)),
+                              isAIEnabled ? searchJobAI(item.b) : Promise.resolve(searchJob(item.b)),
+                            ]);
+                            setComparisonJob(0, jA);
+                            setComparisonJob(1, jB);
+                          } catch { toast.error('Failed to reload comparison'); }
+                          finally { setLoadingSlot(null); }
+                        }}
+                        className="w-full text-left p-3 border border-black/8 hover:border-black/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-[Inter] text-black/70" style={{ fontSize: '0.85rem' }}>{item.a}</span>
+                          <span className="font-[Inter] text-black/25" style={{ fontSize: '0.72rem' }}>vs</span>
+                          <span className="font-[Inter] text-black/70" style={{ fontSize: '0.85rem' }}>{item.b}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
             </motion.div>
