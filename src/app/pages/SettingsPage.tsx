@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { useTheme } from 'next-themes';
-import { ChevronLeft, Settings, Volume2, VolumeX, Trash2, Key, Check, LogOut, User, LogIn, Sun, Moon, Monitor } from 'lucide-react';
+import { ChevronLeft, Volume2, VolumeX, Trash2, Key, Check, LogOut, User, LogIn, Sun, Moon, Monitor } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { usePreferences } from '../hooks/usePreferences';
 import { useApp } from '../context/AppContext';
@@ -106,7 +106,7 @@ export function SettingsPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="flex items-center gap-4 mb-6">
-            <Settings size={64} className="text-black/15" />
+            <StickFigure pose="thinking" size={64} />
             <div>
               <h1 className="font-[Playfair_Display] text-black" style={{ fontSize: '2rem' }}>
                 Settings

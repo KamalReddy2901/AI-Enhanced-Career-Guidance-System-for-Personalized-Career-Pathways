@@ -141,7 +141,7 @@ export function JobOverviewPage() {
                 {currentJob.title}
               </h1>
               <div className="flex items-center gap-2">
-                <span className="inline-block font-[Inter] text-black/40 border border-black/10 px-2 py-0.5 rounded-sm" style={{ fontSize: '0.72rem' }}>
+                <span className="inline-block font-[Inter] text-black/40 border border-black/10 px-2 py-0.5" style={{ fontSize: '0.72rem' }}>
                   {currentJob.category}
                 </span>
               </div>

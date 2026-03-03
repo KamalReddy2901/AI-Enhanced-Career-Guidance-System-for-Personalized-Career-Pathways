@@ -181,7 +181,7 @@ export function HistoryPage() {
             History
             {history.length > 0 && (
               <span
-                className={`px-1.5 py-0.5 rounded-sm font-[JetBrains_Mono] ${
+                className={`px-1.5 py-0.5 font-[JetBrains_Mono] ${
                   activeTab === 'history' ? 'bg-white/20 text-white' : 'bg-black/8 text-black/50'
                 }`}
                 style={{ fontSize: '0.6rem' }}
@@ -203,7 +203,7 @@ export function HistoryPage() {
             Saved
             {favorites.length > 0 && (
               <span
-                className={`px-1.5 py-0.5 rounded-sm font-[JetBrains_Mono] ${
+                className={`px-1.5 py-0.5 font-[JetBrains_Mono] ${
                   activeTab === 'saved' ? 'bg-white/20 text-white' : 'bg-black/8 text-black/50'
                 }`}
                 style={{ fontSize: '0.6rem' }}

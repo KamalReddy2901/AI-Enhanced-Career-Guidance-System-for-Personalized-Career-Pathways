@@ -436,7 +436,7 @@ export function JobDetailPage() {
                 {currentJob.title}
               </h1>
               <div className="flex flex-wrap items-center gap-3 mt-2">
-                <span className="font-[Inter] text-black/40 border border-black/10 px-2.5 py-1 rounded-sm" style={{ fontSize: '0.72rem' }}>
+                <span className="font-[Inter] text-black/40 border border-black/10 px-2.5 py-1" style={{ fontSize: '0.72rem' }}>
                   {currentJob.category}
                 </span>
                 <span className="font-[Inter] text-black/40" style={{ fontSize: '0.72rem' }}>&bull;</span>
