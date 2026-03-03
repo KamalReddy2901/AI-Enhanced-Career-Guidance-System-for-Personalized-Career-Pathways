@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Map, Loader2, AlertTriangle, ChevronDown, ChevronUp, TrendingUp } from 'lucide-react';
+import { Map, Loader2, AlertTriangle, ChevronDown, ChevronUp, TrendingUp, Download, Share2 } from 'lucide-react';
 import { getCareerRoadmap, type CareerRoadmap, hasApiKey } from '../services/ai';
 import { StickFigure } from '../components/StickFigure';
 import { ApiKeyModal } from '../components/ApiKeyModal';
 import { useApp } from '../context/AppContext';
+import { downloadRoadmapPDF } from '../utils/pdfExport';
+import { toast } from 'sonner';
 
 const STAGE_COLORS: Record<string, { dot: string; bg: string; border: string }> = {
   blue:   { dot: 'bg-blue-500',   bg: 'bg-blue-50 dark:bg-blue-950/30',   border: 'border-blue-200 dark:border-blue-800' },
@@ -348,6 +350,31 @@ export function CareerRoadmapPage() {
 
               <div className="flex justify-center py-6">
                 <StickFigure pose="celebrating" size={56} animate={false} />
+              </div>
+
+              {/* PDF + Share */}
+              <div className="flex items-center justify-center gap-3 pb-4">
+                <motion.button
+                  onClick={() => { downloadRoadmapPDF(roadmap); toast.success('Downloading roadmap PDF…'); }}
+                  className="flex items-center gap-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white border border-black/10 dark:border-white/10 px-3 py-1.5 hover:border-black/25 dark:hover:border-white/25 transition-all font-[Inter]"
+                  style={{ fontSize: '0.72rem' }}
+                  whileHover={{ y: -1 }}
+                >
+                  <Download size={12} />
+                  Download PDF
+                </motion.button>
+                <motion.button
+                  onClick={() => {
+                    const url = `${window.location.origin}/roadmap?job=${encodeURIComponent(roadmap.title)}`;
+                    navigator.clipboard.writeText(url).then(() => toast.success('Roadmap link copied!')).catch(() => toast.error('Could not copy link'));
+                  }}
+                  className="flex items-center gap-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white border border-black/10 dark:border-white/10 px-3 py-1.5 hover:border-black/25 dark:hover:border-white/25 transition-all font-[Inter]"
+                  style={{ fontSize: '0.72rem' }}
+                  whileHover={{ y: -1 }}
+                >
+                  <Share2 size={12} />
+                  Share
+                </motion.button>
               </div>
             </motion.div>
           )}

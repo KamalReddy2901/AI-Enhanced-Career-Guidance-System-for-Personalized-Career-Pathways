@@ -14,15 +14,45 @@ import { toast } from 'sonner';
 
 export function HomePage() {
   const navigate = useNavigate();
-  const { searchJob, searchJobAI, setCurrentJob, addToHistory, isSearchAnimating, setIsSearchAnimating, setRefinementCount, isAIEnabled, refreshAIStatus, clearAICache } = useApp();
+  const { searchJob, searchJobAI, searchJobPreliminary, setCurrentJob, addToHistory, isSearchAnimating, setIsSearchAnimating, setRefinementCount, isAIEnabled, refreshAIStatus, clearAICache, setComparisonJob } = useApp();
   const { user, isSupabaseConfigured } = useAuth();
   const { preferences } = usePreferences();
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [trending, setTrending] = useState<TrendingCareers | null>(null);
   const [trendingLoading, setTrendingLoading] = useState(false);
   const [searchingCareer, setSearchingCareer] = useState<string | null>(null);
+  const [compareQueue, setCompareQueue] = useState<string[]>([]);
+  const [comparingTitles, setComparingTitles] = useState(false);
   const trendingRef = useRef<HTMLElement | null>(null);
   const trendingFetched = useRef(false);
+
+  const handleQuickCompare = (title: string) => {
+    setCompareQueue(prev => {
+      if (prev.includes(title)) return prev.filter(t => t !== title);
+      if (prev.length >= 2) return [prev[1], title];
+      return [...prev, title];
+    });
+  };
+
+  const handleGoCompare = async () => {
+    if (compareQueue.length < 2) return;
+    setComparingTitles(true);
+    try {
+      const [jA, jB] = await Promise.all([
+        isAIEnabled ? searchJobAI(compareQueue[0]) : searchJob(compareQueue[0]),
+        isAIEnabled ? searchJobAI(compareQueue[1]) : searchJob(compareQueue[1]),
+      ]);
+      setComparisonJob(0, jA);
+      setComparisonJob(1, jB);
+      navigate('/compare');
+    } catch {
+      toast.error('Failed to load careers for comparison');
+    } finally {
+      setComparingTitles(false);
+      setCompareQueue([]);
+    }
+  };
+
 
   // When Supabase is configured, show landing to logged-out users; otherwise show search
   const showLanding = isSupabaseConfigured && !user;
@@ -68,18 +98,16 @@ export function HomePage() {
     }
     setSearchingCareer(jobTitle);
     if (isAIEnabled) {
-      toast.loading(`Building dossier for "${jobTitle}"…`, { id: 'dossier-load' });
+      toast.loading(`Previewing "${jobTitle}"…`, { id: 'dossier-load' });
       try {
-        const jobData = await searchJobAI(jobTitle);
+        const jobData = await searchJobPreliminary(jobTitle);
         setCurrentJob(jobData);
-        addToHistory(jobData);
         setRefinementCount(0);
-        toast.success(`Dossier ready for "${jobTitle}"`, { id: 'dossier-load' });
+        toast.dismiss('dossier-load');
         navigate('/job');
       } catch {
         const jobData = searchJob(jobTitle);
         setCurrentJob(jobData);
-        addToHistory(jobData);
         setRefinementCount(0);
         toast.dismiss('dossier-load');
         navigate('/job');
@@ -89,7 +117,6 @@ export function HomePage() {
     } else {
       const jobData = searchJob(jobTitle);
       setCurrentJob(jobData);
-      addToHistory(jobData);
       setRefinementCount(0);
       setSearchingCareer(null);
       setTimeout(() => navigate('/job'), 200);
@@ -332,10 +359,11 @@ export function HomePage() {
                   <ul className="space-y-3">
                     {trending.rising.map((item, i) => (
                       <motion.li key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}>
+                        <div className="flex items-start gap-2 group/item">
                         <button
                           onClick={() => handleSearchComplete(item.title)}
                           disabled={searchingCareer !== null}
-                          className="text-left group w-full disabled:opacity-60"
+                          className="text-left group flex-1 w-full disabled:opacity-60"
                         >
                           <p className="font-[Playfair_Display] text-black group-hover:underline flex items-center gap-1.5" style={{ fontSize: '0.92rem' }}>
                             {searchingCareer === item.title && <Loader2 size={11} className="animate-spin shrink-0" />}
@@ -343,6 +371,16 @@ export function HomePage() {
                           </p>
                           <p className="font-[Inter] text-black/40 mt-0.5" style={{ fontSize: '0.72rem', lineHeight: 1.5 }}>{item.reason}</p>
                         </button>
+                        <button
+                          onClick={() => handleQuickCompare(item.title)}
+                          title="Add to compare"
+                          className={`mt-0.5 shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity p-0.5 ${
+                            compareQueue.includes(item.title) ? 'text-black opacity-100' : 'text-black/25 hover:text-black/60'
+                          }`}
+                        >
+                          <Scale size={13} />
+                        </button>
+                        </div>
                       </motion.li>
                     ))}
                   </ul>
@@ -357,10 +395,11 @@ export function HomePage() {
                   <ul className="space-y-3">
                     {trending.emerging.map((item, i) => (
                       <motion.li key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 + i * 0.06 }}>
+                        <div className="flex items-start gap-2 group/item">
                         <button
                           onClick={() => handleSearchComplete(item.title)}
                           disabled={searchingCareer !== null}
-                          className="text-left group w-full disabled:opacity-60"
+                          className="text-left group flex-1 w-full disabled:opacity-60"
                         >
                           <p className="font-[Playfair_Display] text-black group-hover:underline flex items-center gap-1.5" style={{ fontSize: '0.92rem' }}>
                             {searchingCareer === item.title && <Loader2 size={11} className="animate-spin shrink-0" />}
@@ -368,6 +407,16 @@ export function HomePage() {
                           </p>
                           <p className="font-[Inter] text-black/40 mt-0.5" style={{ fontSize: '0.72rem', lineHeight: 1.5 }}>{item.reason}</p>
                         </button>
+                        <button
+                          onClick={() => handleQuickCompare(item.title)}
+                          title="Add to compare"
+                          className={`mt-0.5 shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity p-0.5 ${
+                            compareQueue.includes(item.title) ? 'text-black opacity-100' : 'text-black/25 hover:text-black/60'
+                          }`}
+                        >
+                          <Scale size={13} />
+                        </button>
+                        </div>
                       </motion.li>
                     ))}
                   </ul>
@@ -382,10 +431,11 @@ export function HomePage() {
                   <ul className="space-y-3">
                     {trending.declining.map((item, i) => (
                       <motion.li key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + i * 0.06 }}>
+                        <div className="flex items-start gap-2 group/item">
                         <button
                           onClick={() => handleSearchComplete(item.title)}
                           disabled={searchingCareer !== null}
-                          className="text-left group w-full disabled:opacity-60"
+                          className="text-left group flex-1 w-full disabled:opacity-60"
                         >
                           <p className="font-[Playfair_Display] text-black/55 group-hover:underline flex items-center gap-1.5" style={{ fontSize: '0.92rem' }}>
                             {searchingCareer === item.title && <Loader2 size={11} className="animate-spin shrink-0" />}
@@ -393,6 +443,16 @@ export function HomePage() {
                           </p>
                           <p className="font-[Inter] text-black/35 mt-0.5" style={{ fontSize: '0.72rem', lineHeight: 1.5 }}>{item.reason}</p>
                         </button>
+                        <button
+                          onClick={() => handleQuickCompare(item.title)}
+                          title="Add to compare"
+                          className={`mt-0.5 shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity p-0.5 ${
+                            compareQueue.includes(item.title) ? 'text-black opacity-100' : 'text-black/25 hover:text-black/60'
+                          }`}
+                        >
+                          <Scale size={13} />
+                        </button>
+                        </div>
                       </motion.li>
                     ))}
                   </ul>
@@ -650,6 +710,43 @@ export function HomePage() {
         onClose={() => setShowApiKeyModal(false)}
         onKeySet={refreshAIStatus}
       />
+
+      {/* Floating Quick-Compare Bar */}
+      <AnimatePresence>
+        {compareQueue.length > 0 && (
+          <motion.div
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 bg-black text-white px-5 py-3 shadow-xl font-[Inter] print:hidden"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            style={{ fontSize: '0.82rem' }}
+          >
+            <Scale size={15} className="shrink-0" />
+            <span>
+              {compareQueue.length === 1
+                ? `"${compareQueue[0]}" selected — pick one more`
+                : `${compareQueue[0]} vs ${compareQueue[1]}`}
+            </span>
+            {compareQueue.length === 2 && (
+              <button
+                onClick={handleGoCompare}
+                disabled={comparingTitles}
+                className="ml-2 bg-white text-black px-3 py-1 font-semibold disabled:opacity-60 flex items-center gap-1.5"
+                style={{ fontSize: '0.78rem' }}
+              >
+                {comparingTitles ? <Loader2 size={12} className="animate-spin" /> : <ArrowRight size={12} />}
+                Compare
+              </button>
+            )}
+            <button
+              onClick={() => setCompareQueue([])}
+              className="ml-1 text-white/50 hover:text-white transition-colors text-lg leading-none"
+            >
+              ×
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

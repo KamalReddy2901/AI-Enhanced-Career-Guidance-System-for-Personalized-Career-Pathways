@@ -1,4 +1,6 @@
 import jsPDF from 'jspdf';
+import type { JobData } from '../data/jobs';
+import type { WorkLifeBalance, LearnMoreResources } from '../services/ai';
 
 // ─── Shared helpers ────────────────────────────────────────────
 
@@ -505,4 +507,471 @@ export function downloadInterviewPDF(params: {
 
   addFooters(doc, pageWidth, pageHeight, margin);
   doc.save(`${jobTitle.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-interview-prep.pdf`);
+}
+
+// ─── Comparison PDF ────────────────────────────────────────────
+
+export function downloadComparisonPDF(
+  jobA: JobData,
+  jobB: JobData,
+  extras: {
+    wlbA?: WorkLifeBalance | null;
+    wlbB?: WorkLifeBalance | null;
+    learnMoreA?: LearnMoreResources | null;
+    learnMoreB?: LearnMoreResources | null;
+  } = {}
+) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const margin = 18;
+  const colW = (pageWidth - margin * 2 - 30) / 2;
+  const midX = margin + colW + 5;
+  const colBX = midX + 20;
+  let y = margin;
+  const lineH = 5.2;
+
+  const checkPage = (needed: number) => {
+    if (y + needed > pageHeight - margin - 16) {
+      doc.addPage();
+      y = margin;
+    }
+  };
+
+  const writeCell = (text: string, x: number, maxW: number, fontSize = 9.5, color: [number, number, number] = [60, 60, 60]) => {
+    doc.setFontSize(fontSize);
+    doc.setTextColor(...color);
+    const lines = doc.splitTextToSize(text || '—', maxW);
+    doc.text(lines, x, y);
+    return lines.length * lineH;
+  };
+
+  // Top rule
+  doc.setFillColor(0, 0, 0);
+  doc.rect(margin, y, pageWidth - margin * 2, 1, 'F');
+  y += 5;
+
+  // Eyebrow
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(120, 120, 120);
+  doc.text(
+    `CAREER COMPARISON  ·  ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase()}`,
+    margin,
+    y
+  );
+  y += 9;
+
+  // Job titles
+  doc.setFont('times', 'bold');
+  doc.setFontSize(20);
+  doc.setTextColor(0, 0, 0);
+  const titlesH = Math.max(
+    doc.splitTextToSize(jobA.title, colW).length,
+    doc.splitTextToSize(jobB.title, colW).length
+  ) * 8;
+  doc.text(doc.splitTextToSize(jobA.title, colW), margin, y);
+  doc.text(doc.splitTextToSize(jobB.title, colW), colBX, y);
+  y += titlesH + 2;
+
+  // VS divider
+  doc.setFont('times', 'italic');
+  doc.setFontSize(11);
+  doc.setTextColor(180, 180, 180);
+  doc.text('vs', midX, y - titlesH / 2);
+
+  // Meta
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(100, 100, 100);
+  doc.text(`${jobA.category}  ·  ${jobA.avgSalary}`, margin, y);
+  doc.text(`${jobB.category}  ·  ${jobB.avgSalary}`, colBX, y);
+  y += 10;
+
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.3);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 7;
+
+  const rows: Array<{ label: string; a: string; b: string }> = [
+    { label: 'OVERVIEW', a: jobA.shortDescription, b: jobB.shortDescription },
+    { label: 'ENVIRONMENT', a: jobA.workEnvironment, b: jobB.workEnvironment },
+    { label: 'DAILY LIFE', a: jobA.dailyRoutine, b: jobB.dailyRoutine },
+    { label: 'CAREER PATH', a: jobA.careerPath, b: jobB.careerPath },
+    { label: 'EDUCATION', a: jobA.education.join(', '), b: jobB.education.join(', ') },
+    { label: 'SKILLS', a: jobA.skills.join(', '), b: jobB.skills.join(', ') },
+    {
+      label: 'WORK-LIFE BALANCE',
+      a: extras.wlbA ? `Rating: ${extras.wlbA.overallRating}/10 — ${extras.wlbA.pros.slice(0, 2).join('; ')}` : '—',
+      b: extras.wlbB ? `Rating: ${extras.wlbB.overallRating}/10 — ${extras.wlbB.pros.slice(0, 2).join('; ')}` : '—',
+    },
+    {
+      label: 'CERTIFICATIONS',
+      a: extras.learnMoreA ? extras.learnMoreA.certifications.slice(0, 3).join(' / ') : '—',
+      b: extras.learnMoreB ? extras.learnMoreB.certifications.slice(0, 3).join(' / ') : '—',
+    },
+    { label: 'FUN FACT', a: jobA.funFact, b: jobB.funFact },
+  ];
+
+  rows.forEach(({ label, a, b }) => {
+    const aLines = doc.splitTextToSize(a || '—', colW);
+    const bLines = doc.splitTextToSize(b || '—', colW);
+    const cellH = Math.max(aLines.length, bLines.length) * lineH + 10;
+    checkPage(cellH + 8);
+
+    // Label
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(140, 140, 140);
+    doc.text(label, margin, y);
+    y += 4;
+
+    // Values
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(60, 60, 60);
+    doc.text(aLines, margin, y);
+    doc.text(bLines, colBX, y);
+    y += Math.max(aLines.length, bLines.length) * lineH + 6;
+
+    doc.setDrawColor(230, 230, 230);
+    doc.setLineWidth(0.2);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 5;
+  });
+
+  addFooters(doc, pageWidth, pageHeight, margin);
+  const safeTitleA = jobA.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+  const safeTitleB = jobB.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+  doc.save(`compare-${safeTitleA}-vs-${safeTitleB}.pdf`);
+}
+
+// ─── Roadmap PDF ───────────────────────────────────────────────
+
+export function downloadRoadmapPDF(roadmap: {
+  title: string;
+  totalYears: string;
+  stages: Array<{ stage: string; yearsRange: string; role: string; salary: string; milestones: string[]; skills: string[] }>;
+  keyDecisions: Array<{ decision: string; timing: string; impact: string }>;
+  industryOutlook: string;
+}) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const margin = 22;
+  const contentWidth = pageWidth - margin * 2;
+  let y = margin;
+  const lineH = 5.5;
+
+  const checkPage = (needed: number) => {
+    if (y + needed > pageHeight - margin - 16) { doc.addPage(); y = margin; }
+  };
+
+  // Header
+  doc.setFillColor(0, 0, 0);
+  doc.rect(margin, y, contentWidth, 1.2, 'F');
+  y += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(120, 120, 120);
+  doc.text(`CAREER ROADMAP  ·  ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase()}`, margin, y);
+  y += 9;
+  doc.setFont('times', 'bold');
+  doc.setFontSize(26);
+  doc.setTextColor(0, 0, 0);
+  const titleLines = doc.splitTextToSize(`${roadmap.title} Roadmap`, contentWidth);
+  doc.text(titleLines, margin, y);
+  y += titleLines.length * 10 + 2;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(90, 90, 90);
+  doc.text(roadmap.totalYears, margin, y);
+  y += 10;
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.3);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 8;
+
+  // Stages
+  roadmap.stages.forEach((stage, i) => {
+    checkPage(40);
+    doc.setFont('times', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`${i + 1}. ${stage.stage}`, margin, y);
+    y += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`${stage.yearsRange}  ·  ${stage.role}  ·  ${stage.salary}`, margin, y);
+    y += 7;
+
+    stage.milestones.forEach(m => {
+      checkPage(lineH + 2);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9.5);
+      doc.setTextColor(60, 60, 60);
+      const ml = doc.splitTextToSize(`· ${m}`, contentWidth - 6);
+      doc.text(ml, margin + 3, y);
+      y += ml.length * lineH + 1;
+    });
+
+    if (stage.skills.length > 0) {
+      checkPage(lineH + 4);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(120, 120, 120);
+      doc.text(`Skills: ${stage.skills.join(', ')}`, margin + 3, y);
+      y += lineH + 2;
+    }
+    y += 4;
+  });
+
+  // Key decisions
+  if (roadmap.keyDecisions?.length) {
+    checkPage(20);
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.2);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 7;
+    doc.setFont('times', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Key Career Decisions', margin, y);
+    y += 8;
+
+    roadmap.keyDecisions.forEach((kd, i) => {
+      checkPage(18);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(40, 40, 40);
+      const dl = doc.splitTextToSize(`${i + 1}. ${kd.decision}`, contentWidth - 4);
+      doc.text(dl, margin, y);
+      y += dl.length * lineH + 1;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(80, 80, 80);
+      const il = doc.splitTextToSize(`${kd.timing} — ${kd.impact}`, contentWidth - 4);
+      doc.text(il, margin + 2, y);
+      y += il.length * lineH + 4;
+    });
+  }
+
+  // Industry outlook
+  if (roadmap.industryOutlook) {
+    checkPage(18);
+    y += 4;
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(9.5);
+    doc.setTextColor(70, 70, 70);
+    const ol = doc.splitTextToSize(roadmap.industryOutlook, contentWidth);
+    doc.text(ol, margin, y);
+    y += ol.length * lineH + 4;
+  }
+
+  addFooters(doc, pageWidth, pageHeight, margin);
+  doc.save(`${roadmap.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-roadmap.pdf`);
+}
+
+// ─── Transition PDF ────────────────────────────────────────────
+
+export function downloadTransitionPDF(plan: {
+  fromTitle: string;
+  toTitle: string;
+  difficulty: string;
+  timeframe: string;
+  overview: string;
+  transferableSkills: string[];
+  skillGaps: string[];
+  steps: Array<{ phase: string; duration: string; actions: string[] }>;
+  salaryImpact: string;
+  successStory: string;
+}) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const margin = 22;
+  const contentWidth = pageWidth - margin * 2;
+  let y = margin;
+  const lineH = 5.5;
+
+  const checkPage = (needed: number) => {
+    if (y + needed > pageHeight - margin - 16) { doc.addPage(); y = margin; }
+  };
+
+  // Header
+  doc.setFillColor(0, 0, 0);
+  doc.rect(margin, y, contentWidth, 1.2, 'F');
+  y += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(120, 120, 120);
+  doc.text(`CAREER TRANSITION PLAN  ·  ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase()}`, margin, y);
+  y += 9;
+
+  doc.setFont('times', 'bold');
+  doc.setFontSize(24);
+  doc.setTextColor(0, 0, 0);
+  const titleText = `${plan.fromTitle} → ${plan.toTitle}`;
+  const ttl = doc.splitTextToSize(titleText, contentWidth);
+  doc.text(ttl, margin, y);
+  y += ttl.length * 9 + 3;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(90, 90, 90);
+  doc.text(`Difficulty: ${plan.difficulty}  ·  Timeframe: ${plan.timeframe}  ·  Salary Impact: ${plan.salaryImpact}`, margin, y);
+  y += 10;
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.3);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 8;
+
+  // Overview
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(50, 50, 50);
+  const ovl = doc.splitTextToSize(plan.overview, contentWidth);
+  doc.text(ovl, margin, y);
+  y += ovl.length * lineH + 6;
+
+  // Transferable skills
+  checkPage(18);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(100, 100, 100);
+  doc.text('TRANSFERABLE SKILLS', margin, y);
+  y += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9.5);
+  doc.setTextColor(60, 60, 60);
+  plan.transferableSkills.forEach(s => {
+    checkPage(lineH + 1);
+    doc.text(`✓ ${s}`, margin + 2, y);
+    y += lineH + 1;
+  });
+  y += 4;
+
+  // Skill gaps
+  checkPage(18);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(100, 100, 100);
+  doc.text('SKILL GAPS', margin, y);
+  y += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9.5);
+  doc.setTextColor(60, 60, 60);
+  plan.skillGaps.forEach(s => {
+    checkPage(lineH + 1);
+    doc.text(`✗ ${s}`, margin + 2, y);
+    y += lineH + 1;
+  });
+  y += 6;
+
+  // Phases
+  plan.steps.forEach((step, i) => {
+    checkPage(24);
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.2);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 5;
+
+    doc.setFont('times', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Phase ${i + 1}: ${step.phase}`, margin, y);
+    y += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(100, 100, 100);
+    doc.text(step.duration, margin, y);
+    y += 6;
+
+    step.actions.forEach(a => {
+      checkPage(lineH + 2);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9.5);
+      doc.setTextColor(60, 60, 60);
+      const al = doc.splitTextToSize(`· ${a}`, contentWidth - 6);
+      doc.text(al, margin + 3, y);
+      y += al.length * lineH + 1.5;
+    });
+    y += 3;
+  });
+
+  // Success story
+  if (plan.successStory) {
+    checkPage(18);
+    y += 4;
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(9.5);
+    doc.setTextColor(70, 70, 70);
+    const sl = doc.splitTextToSize(`"${plan.successStory}"`, contentWidth);
+    doc.text(sl, margin, y);
+    y += sl.length * lineH + 4;
+  }
+
+  addFooters(doc, pageWidth, pageHeight, margin);
+  const safe = (s: string) => s.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+  doc.save(`transition-${safe(plan.fromTitle)}-to-${safe(plan.toTitle)}.pdf`);
+}
+
+// ─── Share Card (Canvas PNG) ───────────────────────────────────
+
+export async function generateShareCard(job: {
+  title: string;
+  category: string;
+  avgSalary: string;
+  skills: string[];
+}): Promise<Blob> {
+  const W = 600, H = 315;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+
+  // Background
+  ctx.fillStyle = '#f9f8f7';
+  ctx.fillRect(0, 0, W, H);
+
+  // Top rule
+  ctx.fillStyle = '#000';
+  ctx.fillRect(24, 20, W - 48, 2);
+
+  // Eyebrow
+  ctx.font = '10px Inter, Helvetica, sans-serif';
+  ctx.fillStyle = '#999';
+  ctx.fillText('CAREER SIMULATION  ·  DOSSIER', 24, 42);
+
+  // Title
+  ctx.font = 'bold 32px Georgia, serif';
+  ctx.fillStyle = '#000';
+  const titleText = job.title.length > 28 ? job.title.slice(0, 28) + '…' : job.title;
+  ctx.fillText(titleText, 24, 88);
+
+  // Category + Salary
+  ctx.font = '14px Inter, Helvetica, sans-serif';
+  ctx.fillStyle = '#666';
+  ctx.fillText(`${job.category}  ·  ${job.avgSalary}`, 24, 116);
+
+  // Skills
+  ctx.font = '12px Inter, Helvetica, sans-serif';
+  ctx.fillStyle = '#888';
+  const skillText = job.skills.slice(0, 5).join('  ·  ');
+  ctx.fillText(skillText.length > 60 ? skillText.slice(0, 60) + '…' : skillText, 24, 150);
+
+  // Bottom bar
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, H - 40, W, 40);
+  ctx.font = '11px Inter, Helvetica, sans-serif';
+  ctx.fillStyle = '#fff';
+  ctx.fillText('careersim.app', 24, H - 16);
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(blob => {
+      if (blob) resolve(blob);
+      else reject(new Error('Failed to generate share card'));
+    }, 'image/png');
+  });
 }

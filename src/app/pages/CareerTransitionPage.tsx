@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, Loader2, ChevronDown, ChevronUp, CheckCircle, XCircle, AlertTriangle, ArrowLeftRight, ExternalLink } from 'lucide-react';
+import { ArrowRight, Loader2, ChevronDown, ChevronUp, CheckCircle, XCircle, AlertTriangle, ArrowLeftRight, ExternalLink, Download, Share2 } from 'lucide-react';
 import { getCareerTransition, type CareerTransitionPlan, hasApiKey } from '../services/ai';
 import { StickFigure } from '../components/StickFigure';
 import { ApiKeyModal } from '../components/ApiKeyModal';
 import { useApp } from '../context/AppContext';
+import { downloadTransitionPDF } from '../utils/pdfExport';
+import { toast } from 'sonner';
 
 const DIFFICULTY_COLOR: Record<string, string> = {
   Easy: 'text-green-700 bg-green-50 border-green-200',
@@ -466,6 +468,31 @@ export function CareerTransitionPage() {
               {/* Stick figure */}
               <div className="flex justify-center py-4">
                 <StickFigure pose="celebrating" size={56} animate={false} />
+              </div>
+
+              {/* PDF + Share */}
+              <div className="flex items-center justify-center gap-3 pb-4">
+                <motion.button
+                  onClick={() => { downloadTransitionPDF(plan); toast.success('Downloading transition PDF…'); }}
+                  className="flex items-center gap-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white border border-black/10 dark:border-white/10 px-3 py-1.5 hover:border-black/25 dark:hover:border-white/25 transition-all font-[Inter]"
+                  style={{ fontSize: '0.72rem' }}
+                  whileHover={{ y: -1 }}
+                >
+                  <Download size={12} />
+                  Download PDF
+                </motion.button>
+                <motion.button
+                  onClick={() => {
+                    const url = `${window.location.origin}/career-transition?from=${encodeURIComponent(plan.fromTitle)}&to=${encodeURIComponent(plan.toTitle)}`;
+                    navigator.clipboard.writeText(url).then(() => toast.success('Transition link copied!')).catch(() => toast.error('Could not copy link'));
+                  }}
+                  className="flex items-center gap-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white border border-black/10 dark:border-white/10 px-3 py-1.5 hover:border-black/25 dark:hover:border-white/25 transition-all font-[Inter]"
+                  style={{ fontSize: '0.72rem' }}
+                  whileHover={{ y: -1 }}
+                >
+                  <Share2 size={12} />
+                  Share
+                </motion.button>
               </div>
             </motion.div>
           )}

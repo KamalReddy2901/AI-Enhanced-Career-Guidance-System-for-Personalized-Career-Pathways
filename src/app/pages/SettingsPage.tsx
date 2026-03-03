@@ -10,6 +10,11 @@ import { useAuth } from '../context/AuthContext';
 import { clearAllCache, getApiKey, setApiKey, validateApiKey } from '../services/ai';
 import { toast } from 'sonner';
 import { sounds, enableSound, isSoundOn } from '../utils/sounds';
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogAction, AlertDialogCancel,
+} from '../components/ui/alert-dialog';
 
 export function SettingsPage() {
   const navigate = useNavigate();
@@ -32,13 +37,19 @@ export function SettingsPage() {
     }
   };
 
+  const [showClearDialog, setShowClearDialog] = useState(false);
+
   const handleClearAll = () => {
-    if (window.confirm('Clear all local data including history, cache, and preferences? This cannot be undone.')) {
-      clearHistory();
-      clearAllCache();
-      resetPreferences();
-      toast.success('All data cleared');
-    }
+    clearHistory();
+    clearAllCache();
+    resetPreferences();
+    localStorage.removeItem('careersim_onboarded_v1');
+    // Clear simulation cached results
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('sim_result_'))
+      .forEach(k => localStorage.removeItem(k));
+    setShowClearDialog(false);
+    toast.success('All data cleared — reload to start fresh');
   };
 
   const handleUpdateApiKey = async () => {
@@ -66,11 +77,9 @@ export function SettingsPage() {
   };
 
   const handleRemoveApiKey = () => {
-    if (window.confirm('Remove API key? AI features will be disabled.')) {
-      setApiKey('');
-      refreshAIStatus();
-      toast.success('API key removed');
-    }
+    setApiKey('');
+    refreshAIStatus();
+    toast.success('API key removed');
   };
 
   const currentKey = getApiKey();
@@ -294,11 +303,12 @@ export function SettingsPage() {
 
             <ActionButton
               label="Reset Onboarding Tour"
-              description="Show the welcome tour again on next visit to the homepage"
+              description="Show the welcome tour again on next page load"
               icon={<Check size={16} />}
               onClick={() => {
+                localStorage.removeItem('careersim_onboarded_v1');
                 setPreferences({ showOnboarding: true });
-                toast.success('Onboarding tour will show on next homepage visit');
+                toast.success('Onboarding tour will show on next page load');
               }}
             />
           </div>
@@ -322,9 +332,8 @@ export function SettingsPage() {
               description="Remove all previously viewed careers"
               icon={<Trash2 size={16} />}
               onClick={() => {
-                if (window.confirm('Clear all search history?')) {
-                  clearHistory();
-                }
+                clearHistory();
+                toast.success('Search history cleared');
               }}
               danger
             />
@@ -334,20 +343,38 @@ export function SettingsPage() {
               description="Restore default preferences (keeps history and favorites)"
               icon={<Trash2 size={16} />}
               onClick={() => {
-                if (window.confirm('Reset all settings to defaults?')) {
-                  resetPreferences();
-                  toast.success('Settings reset to defaults');
-                }
+                resetPreferences();
+                toast.success('Settings reset to defaults');
               }}
             />
 
-            <ActionButton
-              label="Clear All Data"
-              description="Remove everything: history, cache, settings, API key"
-              icon={<Trash2 size={16} />}
-              onClick={handleClearAll}
-              danger
-            />
+            <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
+              <AlertDialogTrigger asChild>
+                <div>
+                  <ActionButton
+                    label="Clear All Data"
+                    description="Remove everything: history, cache, settings, API key"
+                    icon={<Trash2 size={16} />}
+                    onClick={() => setShowClearDialog(true)}
+                    danger
+                  />
+                </div>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Clear all data?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently remove your history, cache, preferences, simulation results, and API key. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleClearAll} className="bg-red-500 text-white hover:bg-red-600">
+                    Clear Everything
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </Section>
 

@@ -61,12 +61,20 @@ export function SimulationPage() {
   const [loadingSummary, setLoadingSummary] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const simResultKey = (title: string) => `sim_result_${title.toLowerCase().replace(/\s+/g, '_')}`;
+
   useEffect(() => {
-    if (!currentJob) {
-      navigate('/');
-      return;
+    if (!currentJob) { navigate('/'); return; }
+    // Check for saved result — if found, restore and skip straight to completion screen
+    const saved = (() => { try { return JSON.parse(localStorage.getItem(simResultKey(currentJob.title)) || 'null'); } catch { return null; } })();
+    if (saved && saved.scenarios && saved.aiSummary) {
+      setScenarios(saved.scenarios);
+      setCompletedScenarios(saved.completedScenarios);
+      setAiSummary(saved.aiSummary);
+      setIsComplete(true);
+    } else {
+      loadScenarios(false);
     }
-    loadScenarios(false);
   }, [currentJob, navigate]);
 
   // Fire completion sounds
@@ -173,6 +181,15 @@ export function SimulationPage() {
         wasCorrectArr
       );
       setAiSummary(summary);
+      // Persist result for next visit
+      try {
+        localStorage.setItem(simResultKey(currentJob!.title), JSON.stringify({
+          scenarios,
+          completedScenarios: allCompleted,
+          aiSummary: summary,
+          timestamp: Date.now(),
+        }));
+      } catch { /* localStorage full - fine */ }
     } catch {
       // Silently fail - the summary is optional
     } finally {
@@ -187,11 +204,25 @@ export function SimulationPage() {
     setCompletedScenarios([]);
     setIsComplete(false);
     setAiSummary('');
-
+    // New simulation: clear saved result, get fresh scenarios
+    if (currentJob) {
+      localStorage.removeItem(simResultKey(currentJob.title));
+    }
     if (hasApiKey()) {
       await loadScenarios(true);
       toast.success('Fresh simulation generated!');
     }
+  };
+
+  const handleRedo = () => {
+    // Redo: reuse same scenarios, just reset progress
+    setCurrentIndex(-1);
+    setSelectedChoice(null);
+    setShowExplanation(false);
+    setCompletedScenarios([]);
+    setIsComplete(false);
+    setAiSummary('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDownloadPDF = () => {
@@ -550,7 +581,7 @@ export function SimulationPage() {
               {/* AI Summary */}
               {(aiSummary || loadingSummary) && (
                 <motion.div
-                  className="max-w-lg mx-auto border-2 border-black p-6 text-left mb-10 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                  className="max-w-3xl mx-auto border-2 border-black p-8 text-left mb-10 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
@@ -567,9 +598,25 @@ export function SimulationPage() {
                           <span className="font-[Inter]" style={{ fontSize: '0.85rem' }}>Analyzing your choices...</span>
                         </div>
                       ) : (
-                        <p className="font-[Inter] text-black/70 leading-relaxed whitespace-pre-line" style={{ fontSize: '0.88rem' }}>
-                          {aiSummary}
-                        </p>
+                        <div className="font-[Inter] text-black/75 leading-relaxed space-y-3" style={{ fontSize: '0.92rem' }}>
+                          {aiSummary.split('\n').map((line, i) => {
+                            const isSection = /^(STRENGTHS|AREAS TO DEVELOP|AREAS FOR GROWTH|GROWTH AREAS):/i.test(line.trim());
+                            const isBullet = line.trim().startsWith('- ');
+                            if (!line.trim()) return null;
+                            if (isSection) return (
+                              <p key={i} className="font-[Inter] font-semibold text-black uppercase tracking-[0.08em]" style={{ fontSize: '0.72rem', marginTop: '1rem' }}>
+                                {line.trim()}
+                              </p>
+                            );
+                            if (isBullet) return (
+                              <div key={i} className="flex items-start gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-black/50 mt-2 shrink-0" />
+                                <span>{line.trim().slice(2)}</span>
+                              </div>
+                            );
+                            return <p key={i}>{line.trim()}</p>;
+                          })}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -577,7 +624,7 @@ export function SimulationPage() {
               )}
 
               {/* Timeline */}
-              <div className="max-w-lg mx-auto border border-black/10 p-6 text-left mb-10">
+              <div className="max-w-3xl mx-auto border border-black/10 p-6 text-left mb-10">
                 <p className="font-[Inter] text-black/40 uppercase tracking-[0.1em] mb-4" style={{ fontSize: '0.65rem' }}>
                   Day Timeline
                 </p>
@@ -601,7 +648,7 @@ export function SimulationPage() {
 
               {/* Fallback Key Takeaway (non-AI) */}
               {!aiSummary && !loadingSummary && (
-                <div className="max-w-lg mx-auto border-2 border-black p-6 text-left mb-10 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <div className="max-w-3xl mx-auto border-2 border-black p-8 text-left mb-10 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                   <div className="flex items-start gap-4">
                     <StickFigure pose="reading" size={48} />
                     <div>
@@ -644,6 +691,18 @@ export function SimulationPage() {
                   <RotateCcw size={16} className="shrink-0" />
                   {isAIEnabled ? 'New Simulation' : 'Retry'}
                 </motion.button>
+                {scenarios.length > 0 && (
+                  <motion.button
+                    onClick={handleRedo}
+                    className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-6 hover:border-black/40 hover:text-black transition-all font-[Inter] whitespace-nowrap"
+                    style={{ fontSize: '0.85rem' }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <RotateCcw size={16} className="shrink-0" />
+                    Redo This Simulation
+                  </motion.button>
+                )}
                 <motion.button
                   onClick={() => navigate('/')}
                   className="flex items-center justify-center gap-2 bg-black text-white py-3 px-6 hover:bg-black/85 transition-colors font-[Inter] whitespace-nowrap"

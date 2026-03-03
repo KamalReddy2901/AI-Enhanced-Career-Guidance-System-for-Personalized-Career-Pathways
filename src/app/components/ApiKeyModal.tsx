@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Key, ExternalLink, X, Check, Loader2, AlertCircle } from 'lucide-react';
 import { setApiKey, validateApiKey } from '../services/ai';
@@ -14,6 +14,46 @@ export function ApiKeyModal({ isOpen, onClose, onKeySet }: ApiKeyModalProps) {
   const [key, setKey] = useState('');
   const [isValidating, setIsValidating] = useState(false);
   const [error, setError] = useState('');
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  // Focus trap + restore focus
+  useEffect(() => {
+    if (isOpen) {
+      previousFocusRef.current = document.activeElement as HTMLElement;
+      // Focus first input after mount
+      setTimeout(() => {
+        const input = modalRef.current?.querySelector('input');
+        input?.focus();
+      }, 100);
+    } else {
+      previousFocusRef.current?.focus();
+    }
+  }, [isOpen]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      onClose();
+      return;
+    }
+    if (e.key !== 'Tab') return;
+
+    const focusable = modalRef.current?.querySelectorAll<HTMLElement>(
+      'input, button, a[href], [tabindex]:not([tabindex="-1"])'
+    );
+    if (!focusable?.length) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }, [onClose]);
 
   const handleSubmit = async () => {
     if (!key.trim()) return;
@@ -43,6 +83,11 @@ export function ApiKeyModal({ isOpen, onClose, onKeySet }: ApiKeyModalProps) {
         >
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
           <motion.div
+            ref={modalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="apikey-modal-title"
+            onKeyDown={handleKeyDown}
             className="relative bg-white border-2 border-black/20 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] w-full max-w-md mx-4 p-8"
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -50,6 +95,7 @@ export function ApiKeyModal({ isOpen, onClose, onKeySet }: ApiKeyModalProps) {
           >
             <button
               onClick={onClose}
+              aria-label="Close"
               className="absolute top-4 right-4 text-black/30 hover:text-black transition-colors"
             >
               <X size={18} />
@@ -58,7 +104,7 @@ export function ApiKeyModal({ isOpen, onClose, onKeySet }: ApiKeyModalProps) {
             <div className="flex items-center gap-3 mb-6">
               <StickFigure pose="waving" size={48} animate={false} />
               <div>
-                <h2 className="font-[Playfair_Display] text-black" style={{ fontSize: '1.3rem' }}>
+                <h2 id="apikey-modal-title" className="font-[Playfair_Display] text-black" style={{ fontSize: '1.3rem' }}>
                   AI-Powered Mode
                 </h2>
                 <p className="font-[Inter] text-black/40" style={{ fontSize: '0.72rem' }}>

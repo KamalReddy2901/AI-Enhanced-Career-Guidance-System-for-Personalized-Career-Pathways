@@ -90,12 +90,71 @@ async function withRetry<T>(
 
 // ─── Core API Call ─────────────────────────────────────────────
 
+// In-flight request deduplication map
+const pendingRequests = new Map<string, Promise<string>>();
+
 async function callGroq(
   systemPrompt: string,
   userPrompt: string,
   options: { temperature?: number; maxTokens?: number; jsonMode?: boolean; signal?: AbortSignal } = {}
 ): Promise<string> {
   const { temperature = 0.7, maxTokens = 2048, jsonMode = false, signal } = options;
+
+  if (!apiKey) {
+    throw new Error('API key not set. Please add your free Groq API key.');
+  }
+
+  // Deduplication: if same request is already in-flight, return that promise
+  const dedupKey = `${systemPrompt.slice(0, 80)}|${userPrompt.slice(0, 80)}|${temperature}|${maxTokens}`;
+  const existing = pendingRequests.get(dedupKey);
+  if (existing) return existing;
+
+  const request = (async () => {
+    const response = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature,
+        max_tokens: maxTokens,
+        ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      const message = err?.error?.message || `Groq API error: ${response.status}`;
+      throw new Error(message);
+    }
+
+    const data = await response.json();
+    return data.choices[0]?.message?.content || '';
+  })();
+
+  pendingRequests.set(dedupKey, request);
+  try {
+    return await request;
+  } finally {
+    pendingRequests.delete(dedupKey);
+  }
+}
+
+// ─── Streaming Groq for long-running JSON calls ────────────────
+
+export async function callGroqStreaming(
+  systemPrompt: string,
+  userPrompt: string,
+  options: { temperature?: number; maxTokens?: number; signal?: AbortSignal; onProgress?: (chars: number) => void } = {}
+): Promise<string> {
+  const { temperature = 0.7, maxTokens = 4096, signal, onProgress } = options;
 
   if (!apiKey) {
     throw new Error('API key not set. Please add your free Groq API key.');
@@ -116,18 +175,46 @@ async function callGroq(
       ],
       temperature,
       max_tokens: maxTokens,
-      ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
+      stream: true,
+      response_format: { type: 'json_object' },
     }),
   });
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    const message = err?.error?.message || `Groq API error: ${response.status}`;
-    throw new Error(message);
+    throw new Error(err?.error?.message || `Groq API error: ${response.status}`);
   }
 
-  const data = await response.json();
-  return data.choices[0]?.message?.content || '';
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('No response stream');
+
+  const decoder = new TextDecoder();
+  let accumulated = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value, { stream: true });
+    const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
+
+    for (const line of lines) {
+      const json = line.slice(6).trim();
+      if (json === '[DONE]') continue;
+      try {
+        const parsed = JSON.parse(json);
+        const delta = parsed.choices?.[0]?.delta?.content;
+        if (delta) {
+          accumulated += delta;
+          onProgress?.(accumulated.length);
+        }
+      } catch {
+        // skip malformed chunks
+      }
+    }
+  }
+
+  return accumulated;
 }
 
 // ─── Stream Chat ───────────────────────────────────────────────
@@ -207,6 +294,52 @@ Guidelines:
   }
 }
 
+// ─── Preliminary Assessment (fast, 2-field snapshot) ──────────
+
+export interface AIJobPreliminary {
+  category: string;
+  shortDescription: string;
+  avgSalary: string;
+}
+
+export async function generatePreliminaryAssessmentAI(title: string): Promise<AIJobPreliminary> {
+  const currency = (() => {
+    try {
+      return (JSON.parse(localStorage.getItem('careersim_preferences') || '{}').currency as 'INR' | 'USD') || 'INR';
+    } catch { return 'INR' as const; }
+  })();
+  const isIndia = currency === 'INR';
+  const cacheKey = `prelim_${title.toLowerCase().replace(/\s+/g, '_')}_${currency.toLowerCase()}`;
+
+  const cached = getCached<AIJobPreliminary>(cacheKey);
+  if (cached) return cached;
+
+  const result = await withRetry(async () => {
+    const systemPrompt = isIndia
+      ? `You are a career expert specializing in India. Return ONLY valid JSON.`
+      : `You are a career expert. Return ONLY valid JSON.`;
+
+    const salaryFmt = isIndia
+      ? `"avgSalary": "Realistic Indian salary range in LPA e.g. '₹5 LPA – ₹18 LPA'"`
+      : `"avgSalary": "Realistic US salary range e.g. '$55,000 – $120,000'"`;
+
+    const raw = await callGroq(systemPrompt,
+      `Give a brief snapshot for the career: "${title}".
+Return this JSON:
+{
+  "category": "One of: Healthcare, Technology & Engineering, Law & Justice, Finance, Education, Creative Arts, Food & Hospitality, Aviation & Space, Nature & Environment, Leadership & Management, Skilled Trades, Social Services, Professional Services",
+  "shortDescription": "3-4 vivid sentences: what a ${title} actually does day-to-day.",
+  ${salaryFmt}
+}`,
+      { temperature: 0.6, maxTokens: 400, jsonMode: true }
+    );
+    return JSON.parse(raw) as AIJobPreliminary;
+  });
+
+  setCache(cacheKey, result);
+  return result;
+}
+
 // ─── Generate Job Data (Cached + Retry) ────────────────────────
 
 export interface AIJobData {
@@ -223,6 +356,8 @@ export interface AIJobData {
   quarterOverview: string;
   yearOverview: string;
   funFact: string;
+  topCompanies?: Array<{ name: string; domain: string; description: string; careerPageUrl: string }>;
+  relevantForCompanies?: boolean;
 }
 
 export async function generateJobDataAI(title: string, skipCache = false): Promise<AIJobData> {
@@ -278,7 +413,9 @@ Return this exact JSON structure:
   "weekOverview": "Detailed week breakdown with **Day:** formatting and \\n\\n between days. Specific to ${title}.",
   "quarterOverview": "Three-month view with **Month X:** formatting and \\n\\n between months. Specific to ${title}.",
   "yearOverview": "Annual view with **Q1-Q4:** formatting and \\n\\n between quarters. Specific to ${title}.",
-  "funFact": "One genuinely interesting, surprising, and TRUE fact about being a ${title}. Not generic."
+  "funFact": "One genuinely interesting, surprising, and TRUE fact about being a ${title}. Not generic.",
+  "relevantForCompanies": true or false (true for mainstream employed roles like Software Engineer, Doctor, Accountant; false for niche/freelance/unusual roles where company listings are irrelevant),
+  "topCompanies": [if relevantForCompanies is true: 3-5 well-known companies${isIndia ? ' in India' : ''} that hire for this role. Each: {"name":"Company Name","domain":"company.com","description":"One sentence on why they are a great place for a ${title}","careerPageUrl":"https://careers.company.com"}. If relevantForCompanies is false, return []]
 }`;
 
     const raw = await callGroq(systemPrompt, userPrompt, {
@@ -430,17 +567,31 @@ export async function generateSimulationSummary(
   return withRetry(async () => {
     const wrongOnes = scenarioTitles.filter((_, i) => !wasCorrect[i]);
     const rightOnes = scenarioTitles.filter((_, i) => wasCorrect[i]);
+    const pct = totalScenarios > 0 ? Math.round((correctCount / totalScenarios) * 100) : 0;
+    const fitLevel = pct >= 70 ? 'strong natural fit' : pct >= 40 ? 'promising potential' : 'an interesting exploration';
 
     const raw = await callGroq(
-      `You write brief, insightful career assessment summaries. Be encouraging but honest. 3-4 paragraphs. No markdown headers.`,
-      `A user just completed a "Day in the Life" simulation for "${jobTitle}".
-They got ${correctCount} out of ${totalScenarios} correct.
+      `You write sharp, honest, visually engaging career assessment summaries. Use this exact format — no deviations:
 
-Scenarios they nailed: ${rightOnes.join(', ') || 'None'}
-Scenarios they missed: ${wrongOnes.join(', ') || 'None'}
+Line 1: A punchy 1-sentence verdict about their fit. No label, just the sentence.
 
-Write a personalized assessment of how well their instincts align with being a ${jobTitle}. Reference specific scenarios. End with encouragement.`,
-      { temperature: 0.7, maxTokens: 600 }
+STRENGTHS:
+- [specific strength based on what they got right — reference scenario names]
+- [another strength]
+- [another if applicable]
+
+AREAS TO DEVELOP:
+- [honest gap based on what they missed — reference scenario names]
+- [another area]
+
+Final paragraph: 2-3 encouraging sentences about their journey into the field.`,
+      `User completed "${jobTitle}" simulation: ${correctCount}/${totalScenarios} (${pct}%) — ${fitLevel}.
+
+Nailed: ${rightOnes.join(', ') || 'None'}
+Missed: ${wrongOnes.join(', ') || 'None'}
+
+Write the assessment exactly in the format described. Keep each bullet to one clear sentence.`,
+      { temperature: 0.7, maxTokens: 700 }
     );
 
     return raw;
@@ -448,6 +599,30 @@ Write a personalized assessment of how well their instincts align with being a $
 }
 
 // ─── Career Quiz ───────────────────────────────────────────────
+
+export async function getQuizFromScratch(userText: string): Promise<QuizResult> {
+  return withRetry(async () => {
+    const raw = await callGroq(
+      'You are a career counselor AI. Based on a short free-text self-description, identify best-fit careers. Return ONLY valid JSON.',
+      `The user wrote this about themselves: "${userText}"
+
+Based on their personality, interests, and values, suggest 5 best-fit careers.
+
+Return this exact JSON:
+{
+  "personalityInsight": "3-4 sentences describing their career personality and what makes them unique professionally",
+  "careers": [
+    {"title": "Career Title", "matchScore": 92, "reason": "One specific sentence explaining why this fits them personally"},
+    ...
+  ]
+}
+
+Match scores should be realistic (60–97). Order by match score descending.`,
+      { temperature: 0.75, maxTokens: 800, jsonMode: true }
+    );
+    return JSON.parse(raw) as QuizResult;
+  });
+}
 
 export interface QuizResult {
   careers: Array<{

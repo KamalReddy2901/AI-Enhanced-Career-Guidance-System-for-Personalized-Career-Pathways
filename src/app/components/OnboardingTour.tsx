@@ -49,12 +49,22 @@ export function OnboardingTour() {
   const [step, setStep] = useState(0);
 
   useEffect(() => {
-    const done = localStorage.getItem(TOUR_KEY);
-    if (!done) {
-      // Delay slightly so layout settles
-      const t = setTimeout(() => setVisible(true), 800);
-      return () => clearTimeout(t);
-    }
+    const check = () => {
+      const done = localStorage.getItem(TOUR_KEY);
+      if (!done) {
+        const t = setTimeout(() => setVisible(true), 800);
+        return () => clearTimeout(t);
+      }
+    };
+    check();
+    // Re-trigger when Settings resets the tour key
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === TOUR_KEY && e.newValue === null) {
+        setTimeout(() => setVisible(true), 300);
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   const dismiss = () => {

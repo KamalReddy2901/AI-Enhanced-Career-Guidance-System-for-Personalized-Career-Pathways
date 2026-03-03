@@ -146,10 +146,8 @@ export function HistoryPage() {
               {activeTab === 'saved' && favorites.length > 0 && (
                 <motion.button
                   onClick={() => {
-                    if (window.confirm('Clear all saved careers?')) {
-                      clearFavorites();
-                      toast.success('Saved careers cleared');
-                    }
+                    clearFavorites();
+                    toast.success('Saved careers cleared');
                   }}
                   className="flex items-center gap-1.5 text-black/30 hover:text-black transition-colors font-[Inter] border border-black/10 px-2.5 py-1.5 hover:border-black/25"
                   style={{ fontSize: '0.72rem' }}

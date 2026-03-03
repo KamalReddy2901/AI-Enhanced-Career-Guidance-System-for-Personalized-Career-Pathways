@@ -3,6 +3,9 @@ import { Outlet, useNavigate, useLocation } from 'react-router';
 import { Toaster } from 'sonner';
 import { Navbar } from '../components/Navbar';
 import { OnboardingTour } from '../components/OnboardingTour';
+import { Breadcrumb } from '../components/Breadcrumb';
+import { BottomNav } from '../components/BottomNav';
+import { InstallPrompt } from '../components/InstallPrompt';
 import { useAuth } from '../context/AuthContext';
 
 // Routes that are always public (no login required)
@@ -95,6 +98,7 @@ export function RootLayout() {
       </a>
       <Navbar />
       <main id="main-content">
+        <Breadcrumb />
         <Outlet />
       </main>
       <Toaster
@@ -110,6 +114,8 @@ export function RootLayout() {
         }}
       />
       <OnboardingTour />
+      <BottomNav />
+      <InstallPrompt />
     </div>
   );
 }

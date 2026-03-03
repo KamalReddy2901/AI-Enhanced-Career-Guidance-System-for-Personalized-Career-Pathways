@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Check, RefreshCw, ArrowRight, ChevronLeft, Sparkles } from 'lucide-react';
+import { Check, RefreshCw, ArrowRight, ChevronLeft, Sparkles, Loader2 } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import { refineJobDescription, hasApiKey } from '../services/ai';
@@ -9,10 +9,11 @@ import { toast } from 'sonner';
 
 export function JobOverviewPage() {
   const navigate = useNavigate();
-  const { currentJob, setCurrentJob, refinementCount, setRefinementCount, isAIEnabled } = useApp();
+  const { currentJob, setCurrentJob, refinementCount, setRefinementCount, isAIEnabled, searchJobAI, searchJob, addToHistory } = useApp();
   const [showRefinement, setShowRefinement] = useState(false);
   const [refinementText, setRefinementText] = useState('');
   const [isRefining, setIsRefining] = useState(false);
+  const [isLoadingFull, setIsLoadingFull] = useState(false);
   const [description, setDescription] = useState(currentJob?.shortDescription || '');
   const [refinementHistory, setRefinementHistory] = useState<string[]>([]);
 
@@ -30,8 +31,32 @@ export function JobOverviewPage() {
 
   if (!currentJob) return null;
 
-  const handleConfirm = () => {
-    navigate('/job/detail');
+  const handleConfirm = async () => {
+    if (!currentJob) return;
+    // If this is already a full dossier (has fullDescription), go straight to detail
+    if (currentJob.fullDescription) {
+      addToHistory(currentJob);
+      navigate('/job/detail');
+      return;
+    }
+    // Otherwise, generate the full dossier now
+    setIsLoadingFull(true);
+    const tid = toast.loading(`Building full dossier for “${currentJob.title}”…`);
+    try {
+      const fullJob = isAIEnabled ? await searchJobAI(currentJob.title) : searchJob(currentJob.title);
+      setCurrentJob(fullJob);
+      addToHistory(fullJob);
+      toast.success('Dossier ready!', { id: tid });
+      navigate('/job/detail');
+    } catch {
+      toast.error('Failed to load full dossier — using template', { id: tid });
+      const fallback = searchJob(currentJob.title);
+      setCurrentJob(fallback);
+      addToHistory(fallback);
+      navigate('/job/detail');
+    } finally {
+      setIsLoadingFull(false);
+    }
   };
 
   const handleRefine = async () => {
@@ -164,16 +189,26 @@ export function JobOverviewPage() {
         >
           <motion.button
             onClick={handleConfirm}
-            className="flex-1 flex items-center justify-center gap-2 bg-black text-white py-3.5 px-6 hover:bg-black/85 transition-colors font-[Inter]"
+            disabled={isLoadingFull}
+            className="flex-1 flex items-center justify-center gap-2 bg-black text-white py-3.5 px-6 hover:bg-black/85 transition-colors font-[Inter] disabled:bg-black/50"
             style={{ fontSize: '0.88rem' }}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
+            whileHover={isLoadingFull ? {} : { scale: 1.01 }}
+            whileTap={isLoadingFull ? {} : { scale: 0.99 }}
           >
-            <Check size={18} />
-            Yes, this is the role I'm looking for
+            {isLoadingFull ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Loading full dossier…
+              </>
+            ) : (
+              <>
+                <Check size={18} />
+                Yes, this is the role I’m looking for
+              </>
+            )}
           </motion.button>
 
-          {refinementCount < 5 && (
+          {refinementCount < 5 && !isLoadingFull && (
             <motion.button
               onClick={() => setShowRefinement(!showRefinement)}
               className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3.5 px-6 hover:border-black/40 hover:text-black transition-all font-[Inter]"

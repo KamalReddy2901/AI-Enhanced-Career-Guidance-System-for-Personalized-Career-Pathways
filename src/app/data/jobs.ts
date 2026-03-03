@@ -1,3 +1,10 @@
+export interface TopCompany {
+  name: string;
+  domain: string;
+  description: string;
+  careerPageUrl: string;
+}
+
 export interface JobData {
   id: string;
   title: string;
@@ -14,6 +21,9 @@ export interface JobData {
   quarterOverview: string;
   yearOverview: string;
   funFact: string;
+  // Optional enrichment fields
+  topCompanies?: TopCompany[];
+  relevantForCompanies?: boolean;
 }
 
 export const JOB_TITLES: string[] = [

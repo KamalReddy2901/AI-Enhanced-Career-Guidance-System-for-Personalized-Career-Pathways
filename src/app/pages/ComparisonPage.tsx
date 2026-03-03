@@ -1,10 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, ArrowRight, X, Scale, Loader2 } from 'lucide-react';
+import { ChevronLeft, ArrowRight, X, Scale, Loader2, Download, Share2 } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import type { JobData } from '../data/jobs';
+import {
+  getWorkLifeBalance, getLearnMoreResources, hasApiKey,
+  type WorkLifeBalance, type LearnMoreResources
+} from '../services/ai';
+import { downloadComparisonPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 
 function CareerSlot({
@@ -64,8 +69,45 @@ export function ComparisonPage() {
   const [showPicker, setShowPicker] = useState<0 | 1 | null>(null);
   const [customTitle, setCustomTitle] = useState('');
   const [loadingSlot, setLoadingSlot] = useState<0 | 1 | null>(null);
+  const [wlbA, setWlbA] = useState<WorkLifeBalance | null>(null);
+  const [wlbB, setWlbB] = useState<WorkLifeBalance | null>(null);
+  const [learnMoreA, setLearnMoreA] = useState<LearnMoreResources | null>(null);
+  const [learnMoreB, setLearnMoreB] = useState<LearnMoreResources | null>(null);
+  const [wlbLoading, setWlbLoading] = useState(false);
+  const [learnLoading, setLearnLoading] = useState(false);
 
   const [jobA, jobB] = comparisonJobs;
+
+  // Lazy-load WLB and certifications when both jobs are set
+  useEffect(() => {
+    if (!jobA || !jobB || !hasApiKey()) return;
+    setWlbLoading(true);
+    Promise.all([getWorkLifeBalance(jobA.title), getWorkLifeBalance(jobB.title)])
+      .then(([a, b]) => { setWlbA(a); setWlbB(b); })
+      .catch(() => {})
+      .finally(() => setWlbLoading(false));
+    setLearnLoading(true);
+    Promise.all([getLearnMoreResources(jobA.title), getLearnMoreResources(jobB.title)])
+      .then(([a, b]) => { setLearnMoreA(a); setLearnMoreB(b); })
+      .catch(() => {})
+      .finally(() => setLearnLoading(false));
+  }, [jobA?.title, jobB?.title]);
+
+  const handleShare = () => {
+    const params = new URLSearchParams();
+    if (jobA) params.set('a', jobA.title);
+    if (jobB) params.set('b', jobB.title);
+    const url = `${window.location.origin}/compare?${params.toString()}`;
+    navigator.clipboard.writeText(url).then(() => {
+      toast.success('Compare link copied!', { description: 'Share this link to show the same comparison' });
+    }).catch(() => toast.error('Could not copy link'));
+  };
+
+  const handleDownloadPDF = () => {
+    if (!jobA || !jobB) return;
+    downloadComparisonPDF(jobA, jobB, { wlbA, wlbB, learnMoreA, learnMoreB });
+    toast.success('Downloading comparison PDF…');
+  };
 
   const handlePickFromHistory = (entry: { jobData: JobData }, slot: 0 | 1) => {
     setComparisonJob(slot, entry.jobData);
@@ -179,8 +221,35 @@ export function ComparisonPage() {
                 </div>
               </div>
 
+              {/* PDF + Share buttons */}
+              <div className="grid grid-cols-[1fr_120px_1fr] gap-0 border-b border-black/8">
+                <div />
+                <div className="p-3 flex flex-col gap-2 items-center bg-black/3">
+                  <button
+                    onClick={handleDownloadPDF}
+                    className="flex items-center gap-1 text-black/40 hover:text-black transition-colors font-[Inter]"
+                    style={{ fontSize: '0.68rem' }}
+                  >
+                    <Download size={11} /> PDF
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    className="flex items-center gap-1 text-black/40 hover:text-black transition-colors font-[Inter]"
+                    style={{ fontSize: '0.68rem' }}
+                  >
+                    <Share2 size={11} /> Share
+                  </button>
+                </div>
+                <div />
+              </div>
+
               <CompareRow label="Salary" valueA={jobA.avgSalary} valueB={jobB.avgSalary} />
               <CompareRow label="Category" valueA={jobA.category} valueB={jobB.category} />
+              <CompareRow
+                label="Overview"
+                valueA={<span className="text-black/55" style={{ fontSize: '0.8rem' }}>{jobA.shortDescription}</span>}
+                valueB={<span className="text-black/55" style={{ fontSize: '0.8rem' }}>{jobB.shortDescription}</span>}
+              />
               <CompareRow
                 label="Skills"
                 valueA={
@@ -229,6 +298,78 @@ export function ComparisonPage() {
                 valueA={<span className="italic">{jobA.funFact}</span>}
                 valueB={<span className="italic">{jobB.funFact}</span>}
               />
+
+              {/* Work-Life Balance */}
+              {(wlbLoading || wlbA || wlbB) && (
+                <CompareRow
+                  label="Work-Life Balance"
+                  valueA={
+                    wlbLoading ? (
+                      <Loader2 size={12} className="animate-spin text-black/25" />
+                    ) : wlbA ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-[Inter] text-black/50" style={{ fontSize: '0.8rem' }}>
+                            Rating: {wlbA.overallRating}/10
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          {wlbA.pros.slice(0, 2).map((p, i) => (
+                            <span key={i} className="font-[Inter] text-black/45" style={{ fontSize: '0.75rem' }}>+ {p}</span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null
+                  }
+                  valueB={
+                    wlbLoading ? (
+                      <Loader2 size={12} className="animate-spin text-black/25" />
+                    ) : wlbB ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-[Inter] text-black/50" style={{ fontSize: '0.8rem' }}>
+                            Rating: {wlbB.overallRating}/10
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          {wlbB.pros.slice(0, 2).map((p, i) => (
+                            <span key={i} className="font-[Inter] text-black/45" style={{ fontSize: '0.75rem' }}>+ {p}</span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null
+                  }
+                />
+              )}
+
+              {/* Certifications */}
+              {(learnLoading || learnMoreA || learnMoreB) && (
+                <CompareRow
+                  label="Certifications"
+                  valueA={
+                    learnLoading ? (
+                      <Loader2 size={12} className="animate-spin text-black/25" />
+                    ) : learnMoreA ? (
+                      <div className="flex flex-col gap-0.5">
+                        {learnMoreA.certifications.slice(0, 3).map((c, i) => (
+                          <span key={i} className="font-[Inter] text-black/50" style={{ fontSize: '0.75rem' }}>· {c}</span>
+                        ))}
+                      </div>
+                    ) : null
+                  }
+                  valueB={
+                    learnLoading ? (
+                      <Loader2 size={12} className="animate-spin text-black/25" />
+                    ) : learnMoreB ? (
+                      <div className="flex flex-col gap-0.5">
+                        {learnMoreB.certifications.slice(0, 3).map((c, i) => (
+                          <span key={i} className="font-[Inter] text-black/50" style={{ fontSize: '0.75rem' }}>· {c}</span>
+                        ))}
+                      </div>
+                    ) : null
+                  }
+                />
+              )}
             </motion.div>
           )}
         </AnimatePresence>

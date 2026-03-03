@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { generateJobData, type JobData } from '../data/jobs';
-import { generateJobDataAI, hasApiKey, clearAllCache } from '../services/ai';
+import { generateJobDataAI, generatePreliminaryAssessmentAI, hasApiKey, clearAllCache } from '../services/ai';
 import { fetchRemoteHistory, saveHistoryEntry, clearRemoteHistory } from '../services/supabase';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
@@ -17,6 +17,7 @@ interface AppContextType {
   setCurrentJob: (job: JobData | null) => void;
   searchJob: (title: string) => JobData;
   searchJobAI: (title: string, skipCache?: boolean) => Promise<JobData>;
+  searchJobPreliminary: (title: string) => Promise<JobData>;
   history: HistoryEntry[];
   addToHistory: (jobData: JobData) => void;
   clearHistory: () => void;
@@ -75,6 +76,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setIsAIEnabled(hasApiKey());
   }, []);
 
+  const searchJobPreliminary = useCallback(async (title: string): Promise<JobData> => {
+    if (!hasApiKey()) {
+      return generateJobData(title);
+    }
+    try {
+      const prelim = await generatePreliminaryAssessmentAI(title);
+      const id = title.toLowerCase().replace(/\s+/g, '-');
+      return {
+        id, title,
+        category: prelim.category || 'Professional Services',
+        shortDescription: prelim.shortDescription,
+        fullDescription: '',
+        avgSalary: prelim.avgSalary,
+        education: [],
+        skills: [],
+        dailyRoutine: '',
+        workEnvironment: '',
+        careerPath: '',
+        weekOverview: '',
+        quarterOverview: '',
+        yearOverview: '',
+        funFact: '',
+      };
+    } catch {
+      return generateJobData(title);
+    }
+  }, []);
+
   const searchJob = useCallback((title: string): JobData => {
     return generateJobData(title);
   }, []);
@@ -103,6 +132,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         quarterOverview: aiData.quarterOverview,
         yearOverview: aiData.yearOverview,
         funFact: aiData.funFact,
+        topCompanies: aiData.topCompanies,
+        relevantForCompanies: aiData.relevantForCompanies,
       };
     } catch (error) {
       console.error('AI generation failed:', error);
@@ -150,6 +181,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCurrentJob,
       searchJob,
       searchJobAI,
+      searchJobPreliminary,
       history,
       addToHistory,
       clearHistory,

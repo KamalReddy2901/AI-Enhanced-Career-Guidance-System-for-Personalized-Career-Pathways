@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, ArrowRight, Sparkles, Loader2, RotateCcw } from 'lucide-react';
+import { ChevronLeft, ArrowRight, Sparkles, Loader2, RotateCcw, MessageSquare, ListChecks } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
-import { getQuizResults, hasApiKey, type QuizResult } from '../services/ai';
+import { getQuizResults, getQuizFromScratch, hasApiKey, type QuizResult } from '../services/ai';
 import { toast } from 'sonner';
 
 const QUESTIONS = [
@@ -82,12 +82,14 @@ const QUESTIONS = [
 
 export function QuizPage() {
   const navigate = useNavigate();
-  const { searchJobAI, searchJob, setCurrentJob, addToHistory, setRefinementCount, isAIEnabled } = useApp();
+  const { searchJobAI, searchJob, searchJobPreliminary, setCurrentJob, addToHistory, setRefinementCount, isAIEnabled } = useApp();
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<QuizResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isExploring, setIsExploring] = useState<string | null>(null);
+  const [scratchMode, setScratchMode] = useState(false);
+  const [scratchText, setScratchText] = useState('');
 
   const progress = ((currentQ) / QUESTIONS.length) * 100;
 
@@ -126,9 +128,8 @@ export function QuizPage() {
   const handleExploreCareer = async (title: string) => {
     setIsExploring(title);
     try {
-      const jobData = isAIEnabled ? await searchJobAI(title) : searchJob(title);
+      const jobData = isAIEnabled ? await searchJobPreliminary(title) : searchJob(title);
       setCurrentJob(jobData);
-      addToHistory(jobData);
       setRefinementCount(0);
       navigate('/job');
     } catch {
@@ -138,10 +139,25 @@ export function QuizPage() {
     }
   };
 
+  const submitScratch = async () => {
+    if (!scratchText.trim()) return;
+    if (!hasApiKey()) { toast.error('API key required — add your free Groq key in Settings'); return; }
+    setIsLoading(true);
+    try {
+      const quizResult = await getQuizFromScratch(scratchText.trim());
+      setResult(quizResult);
+    } catch (error) {
+      toast.error('Failed to analyze your description', { description: error instanceof Error ? error.message : 'Please try again' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleRestart = () => {
     setCurrentQ(0);
     setAnswers({});
     setResult(null);
+    setScratchText('');
   };
 
   return (
@@ -174,8 +190,34 @@ export function QuizPage() {
           </p>
         </motion.div>
 
-        {/* Progress bar */}
+        {/* Mode toggle — only show before results or taking the quiz */}
         {!result && !isLoading && (
+          <motion.div
+            className="flex gap-2 mb-8 border border-black/10 p-1"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <button
+              onClick={() => setScratchMode(false)}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 font-[Inter] transition-colors ${!scratchMode ? 'bg-black text-white' : 'text-black/50 hover:text-black'}`}
+              style={{ fontSize: '0.82rem' }}
+            >
+              <ListChecks size={14} />
+              Guided Quiz
+            </button>
+            <button
+              onClick={() => setScratchMode(true)}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 font-[Inter] transition-colors ${scratchMode ? 'bg-black text-white' : 'text-black/50 hover:text-black'}`}
+              style={{ fontSize: '0.82rem' }}
+            >
+              <MessageSquare size={14} />
+              Start from Scratch
+            </button>
+          </motion.div>
+        )}
+
+        {/* Progress bar — guided mode only */}
+        {!result && !isLoading && !scratchMode && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
               <span className="font-[Inter] text-black/30" style={{ fontSize: '0.72rem' }}>
@@ -196,8 +238,55 @@ export function QuizPage() {
         )}
 
         <AnimatePresence mode="wait">
-          {/* Questions */}
-          {!result && !isLoading && (
+          {/* Scratch mode panel */}
+          {!result && !isLoading && scratchMode && (
+            <motion.div
+              key="scratch"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="border-2 border-black/10 p-8 mb-6">
+                <div className="flex items-start gap-4 mb-6">
+                  <StickFigure pose="thinking" size={56} />
+                  <div>
+                    <h2 className="font-[Playfair_Display] text-black mb-1" style={{ fontSize: '1.3rem' }}>Tell me about yourself</h2>
+                    <p className="font-[Inter] text-black/40" style={{ fontSize: '0.85rem' }}>
+                      What do you enjoy? What are you good at? What matters to you in a career? Write freely — AI will figure out the rest.
+                    </p>
+                  </div>
+                </div>
+                <textarea
+                  value={scratchText}
+                  onChange={e => setScratchText(e.target.value)}
+                  placeholder="e.g. I love solving puzzles and I'm really good at explaining complex things to people. I enjoy working independently but I also like collaborating on big ideas. I care a lot about making a real difference — not just earning money..."
+                  className="w-full border border-black/15 p-4 font-[Inter] text-black/70 placeholder:text-black/25 resize-none outline-none focus:border-black/40 transition-colors"
+                  rows={6}
+                  style={{ fontSize: '0.9rem' }}
+                />
+                <div className="flex items-center justify-between mt-4">
+                  <span className="font-[Inter] text-black/30" style={{ fontSize: '0.72rem' }}>
+                    {scratchText.length < 50 ? `Write at least ${50 - scratchText.length} more characters` : `${scratchText.length} characters — ready!`}
+                  </span>
+                  <motion.button
+                    onClick={submitScratch}
+                    disabled={scratchText.length < 50}
+                    className="flex items-center gap-2 bg-black text-white px-6 py-3 disabled:bg-black/30 font-[Inter] hover:bg-black/85 transition-colors"
+                    style={{ fontSize: '0.85rem' }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Sparkles size={14} />
+                    Find My Careers
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Guided Questions */}
+          {!result && !isLoading && !scratchMode && (
             <motion.div
               key={`q-${currentQ}`}
               initial={{ opacity: 0, x: 30 }}

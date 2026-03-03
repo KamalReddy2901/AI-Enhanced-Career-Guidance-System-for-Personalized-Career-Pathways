@@ -231,6 +231,7 @@ export function InterviewPrepPage() {
                               e.stopPropagation();
                               togglePrepared(i);
                             }}
+                            aria-label={isPrepared ? 'Mark as not prepared' : 'Mark as prepared'}
                             className="shrink-0 mt-0.5"
                           >
                             {isPrepared ? (

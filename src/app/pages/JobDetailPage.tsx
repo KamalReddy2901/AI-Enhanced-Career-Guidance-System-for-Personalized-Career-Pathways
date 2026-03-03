@@ -5,7 +5,7 @@ import {
   ChevronLeft, Play, MessageCircle, X, Send, Sparkles, Loader2, RefreshCw, Download,
   Briefcase, GraduationCap, Wrench, MapPin, TrendingUp, Lightbulb, ArrowRight,
   Calendar, CalendarDays, CalendarRange, Scale, Star, UserCheck, Share2,
-  BookOpen, Hash, Award, ExternalLink, Activity
+  BookOpen, Hash, Award, ExternalLink, Activity, Building2
 } from 'lucide-react';
 import {
   RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip
@@ -18,8 +18,9 @@ import {
   type RelatedCareer, type LearnMoreResources, type WorkLifeBalance
 } from '../services/ai';
 import { toast } from 'sonner';
-import { downloadDossierPDF } from '../utils/pdfExport';
+import { downloadDossierPDF, generateShareCard } from '../utils/pdfExport';
 import { generateShareUrl, decodeDossier } from '../utils/share';
+import { ImageIcon } from 'lucide-react';
 import { sounds } from '../utils/sounds';
 import { usePreferences } from '../hooks/usePreferences';
 
@@ -93,6 +94,13 @@ export function JobDetailPage() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const simulateBtnRef = useRef<HTMLButtonElement>(null);
   const [showJumpBtn, setShowJumpBtn] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowBackToTop(window.scrollY > 400);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     const btn = simulateBtnRef.current;
@@ -385,10 +393,74 @@ export function JobDetailPage() {
                   <Share2 size={12} />
                   Share
                 </motion.button>
+                <motion.button
+                  onClick={async () => {
+                    try {
+                      await generateShareCard(currentJob);
+                      toast.success('Share card downloaded!');
+                    } catch {
+                      toast.error('Failed to generate share card');
+                    }
+                  }}
+                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all font-[Inter]"
+                  style={{ fontSize: '0.72rem' }}
+                  whileHover={{ y: -1 }}
+                >
+                  <ImageIcon size={12} />
+                  Share Card
+                </motion.button>
               </div>
             </div>
           </div>
         </motion.div>
+
+        {/* Who's Hiring */}
+        {currentJob.relevantForCompanies && currentJob.topCompanies && currentJob.topCompanies.length > 0 && (
+          <Section title="Who's Hiring" icon={<Building2 size={16} />} delay={0.08}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {currentJob.topCompanies.map((company, i) => (
+                <motion.a
+                  key={i}
+                  href={company.careerPageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-3 p-4 border border-black/10 hover:border-black/25 transition-all group"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 + i * 0.07 }}
+                  whileHover={{ y: -2 }}
+                >
+                  <div className="w-10 h-10 border border-black/10 flex items-center justify-center overflow-hidden shrink-0 bg-white">
+                    <img
+                      src={`https://logo.clearbit.com/${company.domain}`}
+                      alt={company.name}
+                      className="w-8 h-8 object-contain"
+                      onError={(e) => {
+                        const img = e.target as HTMLImageElement;
+                        img.style.display = 'none';
+                        const sibling = img.nextElementSibling as HTMLElement | null;
+                        if (sibling) sibling.style.display = 'flex';
+                      }}
+                    />
+                    <span
+                      className="font-[Inter] text-black/40 font-semibold items-center justify-center"
+                      style={{ fontSize: '0.72rem', display: 'none' }}
+                    >
+                      {company.name.slice(0, 2).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1">
+                      <span className="font-[Playfair_Display] text-black" style={{ fontSize: '0.95rem' }}>{company.name}</span>
+                      <ExternalLink size={10} className="text-black/25 group-hover:text-black/50 transition-colors shrink-0" />
+                    </div>
+                    <p className="font-[Inter] text-black/45 mt-0.5" style={{ fontSize: '0.78rem' }}>{company.description}</p>
+                  </div>
+                </motion.a>
+              ))}
+            </div>
+          </Section>
+        )}
 
         {/* Full Description */}
         <Section title="About the Role" icon={<Briefcase size={16} />} delay={0.1}>
@@ -859,14 +931,15 @@ export function JobDetailPage() {
             Build My Roadmap
           </motion.button>
           <motion.button
-            onClick={() => navigate(`/career-transition?from=${encodeURIComponent(currentJob.title)}`)}
+            onClick={() => navigate(`/career-transition?to=${encodeURIComponent(currentJob.title)}`)}
             className="flex items-center justify-center gap-2 border border-black/15 dark:border-white/15 text-black/55 dark:text-white/55 py-3 px-4 hover:border-black/35 dark:hover:border-white/35 hover:text-black dark:hover:text-white transition-all font-[Inter]"
             style={{ fontSize: '0.85rem' }}
+            aria-label="Plan a career transition into this role"
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
           >
             <ArrowRight size={15} />
-            Plan a Career Change
+            Transition Into This Role
           </motion.button>
         </div>
       </div>
@@ -886,6 +959,24 @@ export function JobDetailPage() {
           >
             <Play size={14} />
             Jump to Simulation
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* Back to top */}
+      <AnimatePresence>
+        {showBackToTop && (
+          <motion.button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            aria-label="Back to top"
+            className="fixed bottom-20 sm:bottom-6 left-4 z-30 flex items-center justify-center w-9 h-9 border border-black/20 bg-background/90 backdrop-blur-sm text-black/50 hover:text-black hover:border-black/40 transition-colors shadow-sm print:hidden"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <ChevronLeft size={14} className="rotate-90" />
           </motion.button>
         )}
       </AnimatePresence>
