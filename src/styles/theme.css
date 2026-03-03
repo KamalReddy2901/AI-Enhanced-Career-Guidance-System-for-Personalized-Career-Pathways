@@ -2,6 +2,8 @@
 
 :root {
   --font-size: 16px;
+  --theme-black: #000000;
+  --theme-white: #ffffff;
   --background: #f9f8f7;
   --foreground: oklch(0.145 0 0);
   --card: #f7f6f4;
@@ -41,10 +43,51 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
-/* Dark mode is handled exclusively via filter: invert(1) hue-rotate(180deg) in index.css
-   — no CSS variable overrides here to avoid double-transformation artifacts. */
+.dark {
+  --theme-black: #ffffff;
+  --theme-white: #111110;
+  --background: #111110;
+  --foreground: oklch(0.985 0 0);
+  --card: #161615;
+  --card-foreground: oklch(0.985 0 0);
+  --popover: #1c1c1c;
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: #f0f0f0;
+  --primary-foreground: #030213;
+  --secondary: #27272a;
+  --secondary-foreground: #fafafa;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
+  --destructive: #7f1d1d;
+  --destructive-foreground: #fafafa;
+  --border: rgba(255, 255, 255, 0.15);
+  --input: transparent;
+  --input-background: #2a2a2a;
+  --switch-background: #52525b;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: rgba(255, 255, 255, 0.7);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: #f0f0f0;
+  --sidebar-primary-foreground: oklch(0.205 0 0);
+  --sidebar-accent: oklch(0.26 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.26 0 0);
+  --sidebar-ring: rgba(255, 255, 255, 0.7);
+}
 
 @theme inline {
+  --color-black: var(--theme-black);
+  --color-white: var(--theme-white);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -96,7 +139,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     /* Multi-layer newsprint texture — fine grain + coarse fibres + crumple gradients + vignette */
-    background-color: #f9f8f7;
+    background-color: var(--background);
     background-image:
       /* Fine newsprint grain */
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='6' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.13'/%3E%3C/svg%3E"),
@@ -113,17 +156,6 @@
     background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat, no-repeat;
     background-size: 160px 160px, 400px 400px, cover, cover, cover, cover;
     background-attachment: fixed, fixed, fixed, fixed, fixed, fixed;
-  }
-
-  /* Dark mode: true colour invert — mirrors the "invert display" OS setting */
-  html.dark {
-    filter: invert(1) hue-rotate(180deg);
-  }
-  /* Re-invert images/videos/iframes so they stay natural */
-  html.dark img,
-  html.dark video,
-  html.dark iframe {
-    filter: invert(1) hue-rotate(180deg);
   }
 
   html {
@@ -199,11 +231,7 @@
 
 /* ─── Focus rings (keyboard nav) ───────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid rgba(0, 0, 0, 0.65);
-  outline-offset: 2px;
-}
-.dark :focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.65);
+  outline: 2px solid var(--theme-black, rgba(0, 0, 0, 0.65));
   outline-offset: 2px;
 }
 
