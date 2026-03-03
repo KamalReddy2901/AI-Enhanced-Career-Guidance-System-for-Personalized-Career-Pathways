@@ -6,6 +6,7 @@ import { useTheme } from 'next-themes';
 import { useApp } from '../context/AppContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { StickFigure } from './StickFigure';
+import { sounds } from '../utils/sounds';
 
 export function Navbar() {
   const location = useLocation();
@@ -100,7 +101,7 @@ export function Navbar() {
             {/* Dark mode toggle */}
             {mounted && (
               <button
-                onClick={() => setTheme(isDark ? 'light' : 'dark')}
+                onClick={() => { sounds.toggle(); setTheme(isDark ? 'light' : 'dark'); }}
                 className="ml-1 p-2 text-black/40 hover:text-black transition-colors"
                 aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
                 title={isDark ? 'Light mode' : 'Dark mode'}
@@ -122,7 +123,7 @@ export function Navbar() {
               </button>
             )}
             <button
-              onClick={() => setMenuOpen(prev => !prev)}
+              onClick={() => { sounds.toggle(); setMenuOpen(prev => !prev); }}
               className="p-2 text-black/60 hover:text-black transition-colors"
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={menuOpen}
@@ -155,6 +156,7 @@ export function Navbar() {
                 <Link
                   key={link.to}
                   to={link.to}
+                  onClick={() => sounds.navigate()}
                   className={`flex items-center gap-3 px-4 py-3 font-[Inter] transition-all ${
                     link.active
                       ? 'bg-black text-white'
@@ -188,6 +190,7 @@ function NavLink({
   return (
     <Link
       to={to}
+      onClick={() => sounds.navigate()}
       className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 transition-all font-[Inter] ${
         active
           ? 'bg-black text-white'

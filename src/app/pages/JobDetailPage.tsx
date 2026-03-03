@@ -260,6 +260,7 @@ export function JobDetailPage() {
       quarterOverview: currentJob.quarterOverview,
       yearOverview: currentJob.yearOverview,
     });
+    sounds.download();
     toast.success('Downloading dossier PDF…');
   };
 

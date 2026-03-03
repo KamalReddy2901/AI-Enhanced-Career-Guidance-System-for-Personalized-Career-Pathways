@@ -8,6 +8,7 @@ import { StickFigure } from '../components/StickFigure';
 import { ApiKeyModal } from '../components/ApiKeyModal';
 import { downloadTransitionPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
+import { sounds } from '../utils/sounds';
 
 const DIFFICULTY_COLOR: Record<string, string> = {
   Easy: 'text-green-700 bg-green-50 border-green-200',
@@ -408,7 +409,7 @@ export function CareerTransitionPage() {
                   {plan.steps.map((step, i) => (
                     <div key={i} className="border border-black/10 dark:border-white/10">
                       <button
-                        onClick={() => setExpandedPhase(expandedPhase === i ? null : i)}
+                        onClick={() => { setExpandedPhase(expandedPhase === i ? null : i); expandedPhase === i ? sounds.collapse() : sounds.expand(); }}
                         className="w-full flex items-center justify-between p-5 text-left hover:bg-black/2 dark:hover:bg-white/2 transition-colors"
                         aria-expanded={expandedPhase === i}
                       >
@@ -617,7 +618,7 @@ export function CareerTransitionPage() {
               {/* PDF + Share */}
               <div className="flex items-center justify-center gap-3 pb-4">
                 <motion.button
-                  onClick={() => { downloadTransitionPDF(plan); toast.success('Downloading transition PDF…'); }}
+                  onClick={() => { downloadTransitionPDF(plan); sounds.download(); toast.success('Downloading transition PDF…'); }}
                   className="flex items-center gap-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white border border-black/10 dark:border-white/10 px-3 py-1.5 hover:border-black/25 dark:hover:border-white/25 transition-all font-[Inter]"
                   style={{ fontSize: '0.72rem' }}
                   whileHover={{ y: -1 }}

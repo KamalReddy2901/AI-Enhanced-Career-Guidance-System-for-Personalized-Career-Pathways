@@ -4,7 +4,8 @@ type Pose =
   | 'waking' | 'walking' | 'sitting' | 'presenting' | 'thinking'
   | 'working' | 'talking' | 'eating' | 'celebrating' | 'tired'
   | 'running' | 'reading' | 'standing' | 'searching' | 'waving'
-  | 'coding' | 'coffee' | 'highfive';
+  | 'coding' | 'coffee' | 'highfive'
+  | 'typing' | 'jumping' | 'interviewing' | 'confused';
 
 interface StickFigureProps {
   pose: Pose;
@@ -604,6 +605,123 @@ function renderPose(pose: Pose) {
           </motion.g>
           <path d="M 25 30 Q 30 35 35 30" fill="none" strokeWidth={1.5} />
           <path d="M 85 30 Q 90 35 95 30" fill="none" strokeWidth={1.5} />
+        </g>
+      );
+
+    // TYPING — figure seated at keyboard, fingers bouncing rapidly
+    case 'typing':
+      return (
+        <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
+          <GroundShadow cx={60} cy={112} />
+          <circle cx="60" cy="20" r="10" />
+          <line x1="60" y1="30" x2="60" y2="64" />
+          {/* Left arm bouncing to keyboard */}
+          <motion.line x1="60" y1="44" x2="43" y2="72"
+            animate={{ y2: [72, 70, 74, 71, 72] }}
+            transition={{ repeat: Infinity, duration: 0.4, ease: 'linear' }} />
+          {/* Right arm bouncing to keyboard */}
+          <motion.line x1="60" y1="44" x2="77" y2="72"
+            animate={{ y2: [72, 74, 70, 73, 72] }}
+            transition={{ repeat: Infinity, duration: 0.4, ease: 'linear', delay: 0.1 }} />
+          {/* Keyboard */}
+          <rect x="30" y="75" width="60" height="8" rx="2" strokeWidth={1.5} />
+          <line x1="38" y1="79" x2="82" y2="79" strokeWidth={1} />
+          {/* Seated legs */}
+          <line x1="55" y1="64" x2="44" y2="84" />
+          <line x1="65" y1="64" x2="76" y2="84" />
+          <line x1="44" y1="84" x2="44" y2="100" />
+          <line x1="76" y1="84" x2="76" y2="100" />
+          {/* Concentration dot */}
+          <motion.circle cx="60" cy="7" r="2" fill={s} stroke="none"
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ repeat: Infinity, duration: 0.8 }} />
+        </g>
+      );
+
+    // JUMPING — figure leaping with arms and legs spread wide
+    case 'jumping':
+      return (
+        <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
+          <GroundShadow cx={60} cy={116} />
+          <motion.g
+            animate={{ y: [0, -14, 0] }}
+            transition={{ repeat: Infinity, duration: 0.65, ease: 'easeInOut' }}
+          >
+            <circle cx="60" cy="22" r="10" />
+            <line x1="60" y1="32" x2="60" y2="66" />
+            {/* Arms flung wide up */}
+            <line x1="60" y1="46" x2="34" y2="34" />
+            <line x1="60" y1="46" x2="86" y2="34" />
+            {/* Legs spread mid-jump */}
+            <line x1="60" y1="66" x2="40" y2="88" />
+            <line x1="60" y1="66" x2="80" y2="88" />
+          </motion.g>
+          {/* Energy sparkles */}
+          <motion.circle cx="22" cy="56" r="3" fill={s} stroke="none"
+            animate={{ opacity: [0, 1, 0], r: [1.5, 3, 1.5] }}
+            transition={{ repeat: Infinity, duration: 0.65, delay: 0.2 }} />
+          <motion.circle cx="98" cy="56" r="3" fill={s} stroke="none"
+            animate={{ opacity: [0, 1, 0], r: [1.5, 3, 1.5] }}
+            transition={{ repeat: Infinity, duration: 0.65, delay: 0.4 }} />
+        </g>
+      );
+
+    // INTERVIEWING — formal standing with briefcase, composed posture
+    case 'interviewing':
+      return (
+        <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
+          <GroundShadow />
+          <motion.circle cx="60" cy="22" r="10"
+            animate={{ cy: [22, 21.5, 22] }}
+            transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }} />
+          <BreathingTorso x1={60} y1={32} x2={60} y2={70} stroke={s} strokeWidth={sw} />
+          {/* Left arm holding briefcase */}
+          <line x1="60" y1="46" x2="40" y2="66" />
+          {/* Briefcase */}
+          <rect x="26" y="64" width="20" height="14" rx="2" strokeWidth={2} />
+          <line x1="31" y1="64" x2="31" y2="60" strokeWidth={1.5} />
+          <line x1="41" y1="64" x2="41" y2="60" strokeWidth={1.5} />
+          <line x1="31" y1="60" x2="41" y2="60" strokeWidth={1.5} />
+          <line x1="36" y1="68" x2="36" y2="72" strokeWidth={1.5} />
+          {/* Right arm slightly extended in greeting gesture */}
+          <motion.line x1="60" y1="46" x2="80" y2="60"
+            animate={{ x2: [80, 82, 80], y2: [60, 58, 60] }}
+            transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }} />
+          {/* Professional upright legs */}
+          <line x1="60" y1="70" x2="52" y2="100" />
+          <line x1="60" y1="70" x2="68" y2="100" />
+        </g>
+      );
+
+    // CONFUSED — head tilting, hand on head, question mark
+    case 'confused':
+      return (
+        <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
+          <GroundShadow />
+          {/* Tilting head */}
+          <motion.g
+            animate={{ rotate: [0, 14, 7, 14, 0] }}
+            transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut' }}
+            style={{ transformOrigin: '60px 32px' }}
+          >
+            <circle cx="60" cy="22" r="10" />
+          </motion.g>
+          <line x1="60" y1="32" x2="60" y2="70" />
+          {/* Left arm hanging naturally */}
+          <line x1="60" y1="46" x2="42" y2="65" />
+          {/* Right arm raised to head — scratching */}
+          <motion.line x1="60" y1="46" x2="76" y2="26"
+            animate={{ x2: [76, 78, 74, 76], y2: [26, 24, 28, 26] }}
+            transition={{ repeat: Infinity, duration: 1.1, ease: 'easeInOut' }} />
+          {/* Question mark */}
+          <motion.text x="80" y="24" fontSize="16" fill="currentColor" stroke="none"
+            fontFamily="serif" fontWeight="bold"
+            animate={{ opacity: [0.4, 1, 0.4], y: [24, 21, 24] }}
+            transition={{ repeat: Infinity, duration: 1.1, ease: 'easeInOut' }}
+          >?</motion.text>
+          {/* Legs */}
+          <line x1="60" y1="70" x2="50" y2="100" />
+          <line x1="60" y1="70" x2="70" y2="100" />
         </g>
       );
 

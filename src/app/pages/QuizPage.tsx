@@ -6,6 +6,7 @@ import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import { getQuizResults, getQuizFromScratch, hasApiKey, type QuizResult } from '../services/ai';
 import { toast } from 'sonner';
+import { sounds } from '../utils/sounds';
 
 const QUESTIONS = [
   {
@@ -94,6 +95,7 @@ export function QuizPage() {
   const progress = ((currentQ) / QUESTIONS.length) * 100;
 
   const handleAnswer = (answer: string) => {
+    sounds.quizAnswer();
     const q = QUESTIONS[currentQ];
     const newAnswers = { ...answers, [q.question]: answer };
     setAnswers(newAnswers);
@@ -116,6 +118,7 @@ export function QuizPage() {
     try {
       const quizResult = await getQuizResults(finalAnswers);
       setResult(quizResult);
+      sounds.reveal();
     } catch (error) {
       toast.error('Failed to analyze quiz results', {
         description: error instanceof Error ? error.message : 'Please try again',
@@ -146,6 +149,7 @@ export function QuizPage() {
     try {
       const quizResult = await getQuizFromScratch(scratchText.trim());
       setResult(quizResult);
+      sounds.reveal();
     } catch (error) {
       toast.error('Failed to analyze your description', { description: error instanceof Error ? error.message : 'Please try again' });
     } finally {
@@ -357,7 +361,7 @@ export function QuizPage() {
               {/* Personality Insight */}
               <div className="border-2 border-black p-6 mb-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <div className="flex items-start gap-4">
-                  <StickFigure pose="presenting" size={56} animate={false} />
+                  <StickFigure pose="jumping" size={56} />
                   <div>
                     <p className="font-[Inter] text-black/40 uppercase tracking-[0.1em] mb-2" style={{ fontSize: '0.65rem' }}>
                       Your Work Personality

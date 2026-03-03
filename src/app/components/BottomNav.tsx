@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Home, Brain, Clock, Settings, FlaskConical } from 'lucide-react';
 import { hapticTap } from '../utils/haptic';
+import { sounds } from '../utils/sounds';
 
 const NAV_ITEMS = [
   { path: '/', icon: Home, label: 'Home' },
@@ -34,6 +35,7 @@ export function BottomNav() {
 
   const handleNav = (path: string) => {
     hapticTap();
+    sounds.navigate();
     navigate(path);
   };
 

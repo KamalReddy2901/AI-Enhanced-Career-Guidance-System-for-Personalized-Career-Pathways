@@ -164,8 +164,8 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
       {/* Search Input */}
       <div className="relative">
         <motion.div
-          className="relative flex items-center bg-white border-2 border-black/20 rounded-none overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)]"
-          animate={phase === 'scanning' ? { borderColor: ['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.6)', 'rgba(0,0,0,0.2)'] } : {}}
+          className="relative flex items-center bg-background border-2 border-black/25 rounded-none overflow-hidden shadow-[3px_3px_0px_0px_rgba(0,0,0,0.12)]"
+          animate={phase === 'scanning' ? { borderColor: ['rgba(0,0,0,0.25)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.25)'] } : {}}
           transition={phase === 'scanning' ? { repeat: Infinity, duration: 1.5 } : {}}
         >
           <input
@@ -182,7 +182,7 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
             placeholder="Enter any job title..."
             disabled={isAnimating}
             className="w-full px-5 py-4 bg-transparent text-black placeholder:text-black/30 font-[Playfair_Display] outline-none disabled:opacity-50"
-            style={{ fontSize: '1.1rem' }}
+            style={{ fontSize: '1.1rem', caretColor: 'rgba(0,0,0,0.5)' }}
           />
           <motion.button
             onClick={() => startSearch()}
@@ -201,7 +201,7 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
       <AnimatePresence>
         {showSuggestions && phase === 'idle' && (suggestions.length > 0 || isFetchingSuggestions) && (
           <motion.div
-            className="absolute left-0 right-0 mt-1 z-20 bg-white border-2 border-black/15 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.06)]"
+            className="absolute left-0 right-0 mt-1 z-20 bg-background border-2 border-black/15 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.06)]"
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
@@ -273,7 +273,7 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            <div className="bg-white border-2 border-black/20 p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.1)]">
+            <div className="bg-background border-2 border-black/20 p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.1)]">
               <div className="flex items-center gap-4 mb-4">
                 <motion.div
                   animate={{ rotate: [-5, 5, -5], x: [0, 3, 0] }}

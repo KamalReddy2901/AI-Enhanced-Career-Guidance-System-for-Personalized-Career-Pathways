@@ -13,6 +13,7 @@ import {
 import { JOB_TITLES } from '../data/jobs';
 import { downloadComparisonPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
+import { sounds } from '../utils/sounds';
 
 function CareerSlot({
   slot,
@@ -188,6 +189,7 @@ export function ComparisonPage() {
   const handleDownloadPDF = () => {
     if (!jobA || !jobB) return;
     downloadComparisonPDF(jobA, jobB, { wlbA, wlbB, learnMoreA, learnMoreB });
+    sounds.download();
     toast.success('Downloading comparison PDF…');
   };
 
@@ -204,6 +206,7 @@ export function ComparisonPage() {
       const jobData = isAIEnabled ? await searchJobAI(customTitle.trim()) : searchJob(customTitle.trim());
       setComparisonJob(slot, jobData);
       addToHistory(jobData);
+      sounds.addCompare();
       setCustomTitle('');
     } catch {
       toast.error('Failed to load career');

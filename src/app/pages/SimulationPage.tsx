@@ -242,6 +242,7 @@ export function SimulationPage() {
         return { time: s.time, title: s.title, wasCorrect: completed?.wasCorrect ?? false };
       }),
     });
+    sounds.download();
     toast.success('Downloading assessment PDF…');
   };
 

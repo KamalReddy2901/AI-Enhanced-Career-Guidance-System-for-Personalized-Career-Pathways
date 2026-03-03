@@ -6,6 +6,7 @@ import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import { hasApiKey, getApiKey } from '../services/ai';
 import { toast } from 'sonner';
+import { sounds } from '../utils/sounds';
 
 interface MoodMatch {
   title: string;
@@ -68,9 +69,11 @@ export function MoodMatchPage() {
     }
     setLoading(true);
     setMatches([]);
+    sounds.search();
     try {
       const result = await getMoodMatches(mood.trim());
       setMatches(result);
+      sounds.reveal();
     } catch {
       toast.error('Could not generate matches. Try again.');
     } finally {
@@ -176,7 +179,7 @@ export function MoodMatchPage() {
               {moodPrompts.map(p => (
                 <button
                   key={p}
-                  onClick={() => setMood(p)}
+                  onClick={() => { setMood(p); sounds.select(); }}
                   className="font-[Inter] text-black/45 border border-black/10 px-3 py-1.5 hover:border-black/30 hover:text-black/65 transition-all text-left"
                   style={{ fontSize: '0.78rem' }}
                 >
@@ -215,9 +218,12 @@ export function MoodMatchPage() {
               className="space-y-4"
             >
               <div className="flex items-center justify-between mb-2">
-                <p className="font-[Inter] text-black/30 uppercase tracking-[0.12em]" style={{ fontSize: '0.63rem' }}>
-                  3 careers that match your vibe
-                </p>
+                <div className="flex items-center gap-3 mb-2">
+                  <StickFigure pose="celebrating" size={48} />
+                  <p className="font-[Inter] text-black/30 uppercase tracking-[0.12em]" style={{ fontSize: '0.63rem' }}>
+                    3 careers that match your vibe
+                  </p>
+                </div>
                 <button
                   onClick={() => { setMood(''); setMatches([]); }}
                   className="font-[Inter] text-black/25 hover:text-black/50 transition-colors flex items-center gap-1"

@@ -7,6 +7,7 @@ import { StickFigure } from '../components/StickFigure';
 import { ApiKeyModal } from '../components/ApiKeyModal';
 import { downloadRoadmapPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
+import { sounds } from '../utils/sounds';
 import { JOB_TITLES } from '../data/jobs';
 
 const STAGE_COLORS: Record<string, { dot: string; bg: string; border: string }> = {
@@ -281,7 +282,7 @@ export function CareerRoadmapPage() {
                         {/* Card */}
                         <div className={`flex-1 border ${colors.border} ${colors.bg} mb-1`}>
                           <button
-                            onClick={() => setExpandedStage(isExpanded ? null : i)}
+                            onClick={() => { setExpandedStage(isExpanded ? null : i); isExpanded ? sounds.collapse() : sounds.expand(); }}
                             className="w-full flex items-center justify-between p-4 text-left"
                             aria-expanded={isExpanded}
                           >
@@ -405,7 +406,7 @@ export function CareerRoadmapPage() {
               {/* PDF + Share */}
               <div className="flex items-center justify-center gap-3 pb-4">
                 <motion.button
-                  onClick={() => { downloadRoadmapPDF(roadmap); toast.success('Downloading roadmap PDF…'); }}
+                  onClick={() => { downloadRoadmapPDF(roadmap); sounds.download(); toast.success('Downloading roadmap PDF…'); }}
                   className="flex items-center gap-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white border border-black/10 dark:border-white/10 px-3 py-1.5 hover:border-black/25 dark:hover:border-white/25 transition-all font-[Inter]"
                   style={{ fontSize: '0.72rem' }}
                   whileHover={{ y: -1 }}

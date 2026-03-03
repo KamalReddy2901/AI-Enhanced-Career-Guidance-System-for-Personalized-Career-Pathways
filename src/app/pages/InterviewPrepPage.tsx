@@ -8,6 +8,7 @@ import { hasApiKey } from '../services/ai';
 import { generateInterviewQuestions, type InterviewQuestion } from '../services/interview';
 import { downloadInterviewPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
+import { sounds } from '../utils/sounds';
 
 export function InterviewPrepPage() {
   const navigate = useNavigate();
@@ -57,6 +58,7 @@ export function InterviewPrepPage() {
   };
 
   const togglePrepared = (index: number) => {
+    sounds.toggle();
     const newSet = new Set(preparedQuestions);
     if (newSet.has(index)) {
       newSet.delete(index);
@@ -136,6 +138,7 @@ export function InterviewPrepPage() {
                       questions,
                       preparedCount: preparedQuestions.size,
                     });
+                    sounds.download();
                     toast.success('Downloading interview prep PDF…');
                   }}
                   className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all font-[Inter]"
@@ -173,6 +176,7 @@ export function InterviewPrepPage() {
             animate={{ opacity: 1 }}
           >
             <Loader2 size={36} className="animate-spin text-black/30 mx-auto mb-4" />
+            <StickFigure pose="typing" size={72} className="mx-auto mb-4" />
             <p className="font-[Inter] text-black/40" style={{ fontSize: '0.88rem' }}>
               Generating interview questions...
             </p>
@@ -222,7 +226,7 @@ export function InterviewPrepPage() {
                       transition={{ delay: i * 0.05 }}
                     >
                       <div
-                        onClick={() => setSelectedQuestion(isOpen ? null : i)}
+                        onClick={() => { setSelectedQuestion(isOpen ? null : i); isOpen ? sounds.collapse() : sounds.expand(); }}
                         className="w-full text-left p-5 hover:bg-black/2 transition-colors cursor-pointer"
                       >
                         <div className="flex items-start gap-3">
