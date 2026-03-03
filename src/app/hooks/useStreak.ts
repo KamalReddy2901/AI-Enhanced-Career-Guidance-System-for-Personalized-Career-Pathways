@@ -36,12 +36,12 @@ export function useStreak() {
     const today = todayStr();
 
     if (data.lastActiveDate === today) {
-      // Already tracked today — just load
+      // Already tracked today - just load
       setStreak(data);
       return;
     }
 
-    // New day — update streak
+    // New day - update streak
     const isConsecutive = data.lastActiveDate === yesterdayStr();
 
     data = {

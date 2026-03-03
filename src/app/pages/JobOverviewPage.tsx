@@ -65,7 +65,7 @@ export function JobOverviewPage() {
       setShowRefinement(false);
     } catch (error) {
       console.error('Refinement failed:', error);
-      toast.error('AI refinement failed — using fallback');
+      toast.error('AI refinement failed - using fallback');
       // Fallback
       const refined = applyRefinementFallback(currentJob.title, description, refinementText);
       setDescription(refined);
@@ -205,7 +205,7 @@ export function JobOverviewPage() {
                   </h3>
                   <p className="font-[Inter] text-black/40 mb-4" style={{ fontSize: '0.8rem' }}>
                     {isAIEnabled
-                      ? "Describe your specific situation — location, work style, specialization, industry, company size — and AI will rewrite the description to match."
+                      ? "Describe your specific situation - location, work style, specialization, industry, company size - and AI will rewrite the description to match."
                       : "Is it a different location, work style, specialization, or industry focus? Help us narrow it down."
                     }
                   </p>
@@ -273,7 +273,7 @@ function applyRefinementFallback(title: string, currentDesc: string, refinement:
     additions += ` In this context, the role is situated in a rural or small-town setting, where the professional often serves as a generalist.`;
   }
   if (r.includes('startup') || r.includes('small company')) {
-    additions += ` Within a startup environment, this role takes on a broader scope — wearing multiple hats and directly influencing the company's direction.`;
+    additions += ` Within a startup environment, this role takes on a broader scope - wearing multiple hats and directly influencing the company's direction.`;
   }
   if (r.includes('corporate') || r.includes('large company')) {
     additions += ` In a corporate setting, this role is more specialized with clearly defined responsibilities and structured advancement.`;
@@ -283,7 +283,7 @@ function applyRefinementFallback(title: string, currentDesc: string, refinement:
   }
 
   if (!additions) {
-    additions = ` Based on the context — "${refinement}" — this role takes on a more specialized character tailored to these requirements.`;
+    additions = ` Based on the context - "${refinement}" - this role takes on a more specialized character tailored to these requirements.`;
   }
 
   return currentDesc + additions;

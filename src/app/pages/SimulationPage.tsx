@@ -112,7 +112,7 @@ export function SimulationPage() {
         if (!skipCache) toast.success('Simulation ready!');
       } catch (error) {
         console.error('AI simulation generation failed:', error);
-        toast.error('AI failed — using template scenarios');
+        toast.error('AI failed - using template scenarios');
         setScenarios(generateSimulation(currentJob.title));
       } finally {
         clearInterval(interval);
@@ -174,7 +174,7 @@ export function SimulationPage() {
       );
       setAiSummary(summary);
     } catch {
-      // Silently fail — the summary is optional
+      // Silently fail - the summary is optional
     } finally {
       setLoadingSummary(false);
     }
@@ -338,7 +338,7 @@ export function SimulationPage() {
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-black/30 mt-0.5">2.</span>
-                      Pick what you'd do — there are no penalties
+                      Pick what you'd do - there are no penalties
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-black/30 mt-0.5">3.</span>
@@ -467,7 +467,7 @@ export function SimulationPage() {
                         <div className="flex-1">
                           <span className="font-[Inter] text-black/40 uppercase tracking-[0.1em]" style={{ fontSize: '0.65rem' }}>
                             {selectedChoice === currentScenario.correctChoiceIndex
-                              ? 'Good instinct — here\'s why'
+                              ? 'Good instinct - here\'s why'
                               : 'Here\'s what actually happens'
                             }
                           </span>
@@ -595,10 +595,10 @@ export function SimulationPage() {
                         Key Takeaway
                       </p>
                       <p className="font-[Inter] text-black/70" style={{ fontSize: '0.9rem' }}>
-                        Being a {currentJob.title} is more than just technical skills — it's about judgment, communication, and daily decisions.
+                        Being a {currentJob.title} is more than just technical skills - it's about judgment, communication, and daily decisions.
                         {correctCount >= scenarios.length * 0.7
                           ? ' Your instincts align well with the profession.'
-                          : ' Many answers might have surprised you — that\'s the value of this exercise.'
+                          : ' Many answers might have surprised you - that\'s the value of this exercise.'
                         }
                       </p>
                     </div>

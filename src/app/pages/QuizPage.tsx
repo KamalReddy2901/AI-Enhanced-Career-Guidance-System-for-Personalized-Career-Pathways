@@ -22,7 +22,7 @@ const QUESTIONS = [
     id: 'problemSolving',
     question: 'When faced with a complex problem, you...',
     options: [
-      'Break it down analytically — data and logic guide me',
+      'Break it down analytically - data and logic guide me',
       'Talk to people, gather perspectives, find consensus',
       'Trust my gut and experiment until something works',
       'Research deeply, read everything available, then decide',
@@ -42,7 +42,7 @@ const QUESTIONS = [
     id: 'stress',
     question: 'How do you handle high-pressure situations?',
     options: [
-      'I thrive on pressure — it brings out my best',
+      'I thrive on pressure - it brings out my best',
       'I prefer steady, predictable work with minimal surprises',
       'I can handle bursts of pressure if there\'s downtime after',
       'I stay calm and methodical, no matter the chaos around me',
@@ -52,10 +52,10 @@ const QUESTIONS = [
     id: 'learning',
     question: 'How do you prefer to learn new skills?',
     options: [
-      'Hands-on practice — I learn by doing',
-      'Reading and studying — I want the theory first',
-      'From a mentor — I learn best from people',
-      'Self-directed online — I like going at my own pace',
+      'Hands-on practice - I learn by doing',
+      'Reading and studying - I want the theory first',
+      'From a mentor - I learn best from people',
+      'Self-directed online - I like going at my own pace',
     ],
   },
   {
@@ -75,7 +75,7 @@ const QUESTIONS = [
       'Financial security and growth potential',
       'Creativity and self-expression',
       'Helping others and making the world better',
-      'Mastery — being the best at what I do',
+      'Mastery - being the best at what I do',
     ],
   },
 ];
@@ -99,7 +99,7 @@ export function QuizPage() {
     if (currentQ < QUESTIONS.length - 1) {
       setCurrentQ(prev => prev + 1);
     } else {
-      // Last question — get results
+      // Last question - get results
       submitQuiz(newAnswers);
     }
   };

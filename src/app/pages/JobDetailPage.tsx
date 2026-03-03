@@ -30,10 +30,10 @@ function formatTimelineContent(text: string): string[] {
     .replace(/^\s*\*+\s*$/gm, '')         // lines that are just ** or *
     // Split on "Day: DayName:" or "Day: DayName -" patterns (case-insensitive)
     .replace(/(?<!\n)\s*(Day:\s*(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)[\s:])/gi, '\n$1')
-    // "Month N:" or "Month N —"
-    .replace(/(?<!\n)\s*(Month\s+\d+[\s:—-])/gi, '\n$1')
+    // "Month N:" or "Month N -"
+    .replace(/(?<!\n)\s*(Month\s+\d+[\s:\-])/gi, '\n$1')
     // Quarters "Q1:", "Q2:", etc.
-    .replace(/(?<!\n)\s*(Q[1-4][\s:—-])/gi, '\n$1')
+    .replace(/(?<!\n)\s*(Q[1-4][\s:\-])/gi, '\n$1')
     // Numbered items "1." "2." etc. at inline positions
     .replace(/(?<!\n)\s+(\d+\.\s)/g, '\n$1');
 
@@ -149,7 +149,7 @@ export function JobDetailPage() {
       sounds.share();
       toast.success('Share link copied to clipboard!', { description: 'Anyone with this link can view this career dossier' });
     }).catch(() => {
-      toast.error('Could not copy link — please copy manually', { description: url });
+      toast.error('Could not copy link - please copy manually', { description: url });
     });
   };
 
@@ -193,7 +193,7 @@ export function JobDetailPage() {
   const handleCompare = () => {
     setComparisonJob(0, currentJob);
     navigate('/compare');
-    toast.info('Career A set — pick Career B to compare');
+    toast.info('Career A set - pick Career B to compare');
   };
 
   const handleAskQuestion = async () => {

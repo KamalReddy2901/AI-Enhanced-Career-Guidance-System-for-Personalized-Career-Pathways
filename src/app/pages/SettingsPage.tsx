@@ -54,7 +54,7 @@ export function SettingsPage() {
         setApiKeyInput('');
         toast.success('API key updated successfully!');
       } else {
-        toast.error('Invalid API key — please check and try again');
+        toast.error('Invalid API key - please check and try again');
       }
     } catch {
       toast.error('Failed to validate API key');
@@ -223,12 +223,12 @@ export function SettingsPage() {
               description="Choose salary display currency and regional career context"
               value={preferences.currency}
               options={[
-                { value: 'INR', label: '₹ INR — Indian Rupees (India context)' },
-                { value: 'USD', label: '$ USD — US Dollars (Global context)' },
+                { value: 'INR', label: '₹ INR - Indian Rupees (India context)' },
+                { value: 'USD', label: '$ USD - US Dollars (Global context)' },
               ]}
               onChange={(value) => {
                 setPreferences({ currency: value as 'INR' | 'USD' });
-                toast.success(`Switched to ${value} — new searches will use ${value === 'INR' ? 'Indian' : 'US'} context`, { duration: 3000 });
+                toast.success(`Switched to ${value} - new searches will use ${value === 'INR' ? 'Indian' : 'US'} context`, { duration: 3000 });
               }}
             />
           </div>
@@ -281,7 +281,7 @@ export function SettingsPage() {
           </div>
         </Section>
 
-        {/* Account — only shown when Supabase is configured */}
+        {/* Account - only shown when Supabase is configured */}
         {isSupabaseConfigured && (
           <Section title="Account">
             <div className="border border-black/10 p-6">

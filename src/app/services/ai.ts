@@ -42,7 +42,7 @@ function setCache<T>(key: string, data: T) {
   try {
     localStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ data, timestamp: Date.now() }));
   } catch {
-    // localStorage full — clear old entries
+    // localStorage full - clear old entries
     clearOldCache();
   }
 }
@@ -246,19 +246,19 @@ export async function generateJobDataAI(title: string, skipCache = false): Promi
 
   const result = await withRetry(async () => {
     const systemPrompt = isIndia
-      ? `You are a career research expert specializing in the Indian job market. Generate a comprehensive, accurate career dossier tailored to India. Return ONLY valid JSON, no markdown. Be specific to this EXACT role — not generic career advice. Tailor all content to the Indian context: reference Indian education (IITs, NITs, AIIMS, IIMs, UPSC, CA/ICAI exams, state board exams, etc.), Indian job market conditions, typical Indian workplace culture, career progression as it works in India, and realistic Indian salary figures in INR (LPA format).`
-      : `You are a career research expert. Generate a comprehensive, accurate career dossier. Return ONLY valid JSON, no markdown. Be specific to this EXACT role — not generic career advice.`;
+      ? `You are a career research expert specializing in the Indian job market. Generate a comprehensive, accurate career dossier tailored to India. Return ONLY valid JSON, no markdown. Be specific to this EXACT role - not generic career advice. Tailor all content to the Indian context: reference Indian education (IITs, NITs, AIIMS, IIMs, UPSC, CA/ICAI exams, state board exams, etc.), Indian job market conditions, typical Indian workplace culture, career progression as it works in India, and realistic Indian salary figures in INR (LPA format).`
+      : `You are a career research expert. Generate a comprehensive, accurate career dossier. Return ONLY valid JSON, no markdown. Be specific to this EXACT role - not generic career advice.`;
 
     const salaryInstruction = isIndia
       ? `"avgSalary": "Realistic Indian salary range in INR using LPA format, e.g. '₹6 LPA - ₹25 LPA' or '₹8,00,000 - ₹35,00,000 per annum'. Base it on real Indian pay scales for this role."`
       : `"avgSalary": "Realistic US salary range like '$XX,000 - $XXX,000' based on experience levels"`;
 
     const educationInstruction = isIndia
-      ? `"education": ["Array of 5 specific education/qualification requirements relevant to India — e.g., specific Indian degrees, entrance exams (JEE, NEET, UPSC, CAT, GATE, etc.), certifications, or Indian licensing bodies"]`
+      ? `"education": ["Array of 5 specific education/qualification requirements relevant to India - e.g., specific Indian degrees, entrance exams (JEE, NEET, UPSC, CAT, GATE, etc.), certifications, or Indian licensing bodies"]`
       : `"education": ["Array of 5 specific education/qualification requirements for this exact role"]`;
 
     const contextNote = isIndia
-      ? `\n\nIMPORTANT: All content must reflect Indian realities — Indian companies, Indian career trajectories, Indian work culture (including WFH trends post-COVID, startup ecosystem, PSU vs private sector, etc.), and Indian education pathways.`
+      ? `\n\nIMPORTANT: All content must reflect Indian realities - Indian companies, Indian career trajectories, Indian work culture (including WFH trends post-COVID, startup ecosystem, PSU vs private sector, etc.), and Indian education pathways.`
       : '';
 
     const userPrompt = `Generate a detailed career dossier for: "${title}"${contextNote}
@@ -270,9 +270,9 @@ Return this exact JSON structure:
   "fullDescription": "A detailed 4-paragraph description covering: what the role actually involves, day-to-day realities, impact and rewards, and how the profession has evolved. Use \\n\\n between paragraphs.",
   ${salaryInstruction},
   ${educationInstruction},
-  "skills": ["Array of 8-12 specific skills needed — mix of technical and soft skills unique to this role"],
+  "skills": ["Array of 8-12 specific skills needed - mix of technical and soft skills unique to this role"],
   "dailyRoutine": "A vivid, specific description of a typical day for a ${title}. Include actual times, real tasks, and industry-specific details. 4-5 sentences.",
-  "workEnvironment": "Specific description of where and how a ${title} works — physical environment, team structure, pace, culture. 3-4 sentences.",
+  "workEnvironment": "Specific description of where and how a ${title} works - physical environment, team structure, pace, culture. 3-4 sentences.",
   "careerPath": "Realistic career progression from entry-level to senior/expert for a ${title}. Include specific titles, year ranges, and transition points. 4-5 sentences.",
   "weekOverview": "Detailed week breakdown with **Day:** formatting and \\n\\n between days. Specific to ${title}.",
   "quarterOverview": "Three-month view with **Month X:** formatting and \\n\\n between months. Specific to ${title}.",
@@ -302,7 +302,7 @@ export async function refineJobDescription(
   previousRefinements: string[]
 ): Promise<string> {
   return withRetry(async () => {
-    const systemPrompt = `You are a career research expert helping someone understand a specific variant of a profession. Rewrite and improve the job description incorporating the user's specific context. Return ONLY the new description text — no JSON, no markdown, no quotes. The description should be 4-6 sentences, specific and vivid.`;
+    const systemPrompt = `You are a career research expert helping someone understand a specific variant of a profession. Rewrite and improve the job description incorporating the user's specific context. Return ONLY the new description text - no JSON, no markdown, no quotes. The description should be 4-6 sentences, specific and vivid.`;
 
     const previousContext = previousRefinements.length > 0
       ? `\nPrevious refinements: ${previousRefinements.join('; ')}`
@@ -351,13 +351,13 @@ export async function generateSimulationAI(jobTitle: string, skipCache = false):
     const userPrompt = `Create exactly 10 "day in the life" scenarios for a "${jobTitle}".
 
 Rules:
-- SPECIFIC to ${jobTitle} — real jargon, real tools, real situations
+- SPECIFIC to ${jobTitle} - real jargon, real tools, real situations
 - Chronological through a full day (morning to evening)
 - 3 choices each, only 1 correct (what a seasoned pro would do)
 - Explanations teach WHY, referencing real practices
 - Vary which index is correct (0, 1, or 2)
 - CRITICAL: The description must describe the SITUATION/CONTEXT only. Do NOT mention, hint at, or reveal which action is correct. The user must make a genuine decision. Never name the correct choice in the description.
-- Wrong choices must be plausible — things a beginner might actually do
+- Wrong choices must be plausible - things a beginner might actually do
 
 stickFigurePose options: ${poses.join(', ')}
 
@@ -509,7 +509,7 @@ export async function getJobSuggestions(partial: string): Promise<string[]> {
   try {
     const raw = await callGroq(
       'You are a job title autocomplete assistant. Return ONLY valid JSON. Be creative and diverse.',
-      `Suggest exactly 7 real, specific job titles that match or relate to "${partial}". Include a mix of common and niche professions. Sort by relevance — most relevant first.
+      `Suggest exactly 7 real, specific job titles that match or relate to "${partial}". Include a mix of common and niche professions. Sort by relevance - most relevant first.
 
 Return: {"suggestions": ["Title 1", "Title 2", "Title 3", "Title 4", "Title 5", "Title 6", "Title 7"]}`,
       { temperature: 0.4, maxTokens: 200, jsonMode: true }

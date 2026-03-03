@@ -106,7 +106,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       };
     } catch (error) {
       console.error('AI generation failed:', error);
-      toast.error('AI generation failed — using template data', {
+      toast.error('AI generation failed - using template data', {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
       return generateJobData(title);
@@ -141,7 +141,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const clearAICache = useCallback(() => {
     clearAllCache();
-    toast.success('AI cache cleared — fresh data on next search');
+    toast.success('AI cache cleared - fresh data on next search');
   }, []);
 
   return (

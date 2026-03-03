@@ -22,7 +22,7 @@ export function AuthPage() {
 
   const redirect = searchParams.get('redirect') ?? '/';
 
-  // Already logged in — redirect
+  // Already logged in - redirect
   useEffect(() => {
     if (!loading && user) {
       navigate(redirect, { replace: true });
@@ -251,15 +251,15 @@ export function AuthPage() {
                   </p>
                   <ul className="space-y-2 font-[Inter] text-black/45" style={{ fontSize: '0.82rem' }}>
                     <li className="flex items-start gap-2">
-                      <span className="text-black/25 mt-0.5">—</span>
+                      <span className="text-black/25 mt-0.5">-</span>
                       History synced across all your devices
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-black/25 mt-0.5">—</span>
+                      <span className="text-black/25 mt-0.5">-</span>
                       Full AI career dossiers, simulations & interview prep
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-black/25 mt-0.5">—</span>
+                      <span className="text-black/25 mt-0.5">-</span>
                       Completely free, no credit card required
                     </li>
                   </ul>

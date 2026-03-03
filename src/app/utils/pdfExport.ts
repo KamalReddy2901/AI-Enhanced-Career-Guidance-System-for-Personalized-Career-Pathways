@@ -163,13 +163,13 @@ export function downloadDossierPDF(job: {
   doc.text(factLines, margin, y);
   y += factLines.length * lineH + 10;
 
-  section('Life in the Role — A Week');
+  section('Life in the Role - A Week');
   body(job.weekOverview);
 
-  section('Life in the Role — A Quarter');
+  section('Life in the Role - A Quarter');
   body(job.quarterOverview);
 
-  section('Life in the Role — A Year');
+  section('Life in the Role - A Year');
   body(job.yearOverview);
 
   addFooters(doc, pageWidth, pageHeight, margin);

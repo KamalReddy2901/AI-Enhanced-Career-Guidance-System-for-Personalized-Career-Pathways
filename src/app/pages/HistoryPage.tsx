@@ -38,7 +38,7 @@ export function HistoryPage() {
       toast.success(`"${jobTitle}" set as Career A`);
     } else if (!comparisonJobs[1]) {
       setComparisonJob(1, jobData);
-      toast.success(`"${jobTitle}" set as Career B — ready to compare!`);
+      toast.success(`"${jobTitle}" set as Career B - ready to compare!`);
       navigate('/compare');
     } else {
       setComparisonJob(0, comparisonJobs[1]);

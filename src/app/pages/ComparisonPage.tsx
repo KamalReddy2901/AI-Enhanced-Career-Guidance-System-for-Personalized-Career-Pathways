@@ -132,7 +132,7 @@ export function ComparisonPage() {
           </p>
         </motion.div>
 
-        {/* Selection Cards — explicit order so "vs" sits between the two */}
+        {/* Selection Cards - explicit order so "vs" sits between the two */}
         <div className="grid grid-cols-1 md:grid-cols-[1fr_80px_1fr] gap-4 mb-10 items-center">
           {/* Career A */}
           <CareerSlot

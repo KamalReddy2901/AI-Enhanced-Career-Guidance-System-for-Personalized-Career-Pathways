@@ -270,7 +270,7 @@ function generateYearOverview(title: string): string {
 function generateFunFact(title: string): string {
   const facts = [
     `The average ${title} makes approximately 35,000 decisions per year related to their work.`,
-    `Most ${title}s report that their most valuable skill wasn't taught in school — it was learned on the job.`,
+    `Most ${title}s report that their most valuable skill wasn't taught in school - it was learned on the job.`,
     `The profession of ${title} has evolved more in the last 10 years than in the previous 50.`,
     `A survey found that 73% of ${title}s would choose the same career path if starting over.`,
     `The busiest day of the week for most ${title}s is Tuesday, not Monday as commonly believed.`,

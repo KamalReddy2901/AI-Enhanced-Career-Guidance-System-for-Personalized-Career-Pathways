@@ -244,7 +244,7 @@ export function HomePage() {
                 step: '01',
                 pose: 'searching' as const,
                 title: 'Search Any Career',
-                body: 'Type any job title — from Software Engineer to Forensic Pathologist. Career Sim knows 250+ professions in depth.',
+                body: 'Type any job title - from Software Engineer to Forensic Pathologist. Career Sim knows 250+ professions in depth.',
               },
               {
                 step: '02',
@@ -305,7 +305,7 @@ export function HomePage() {
               {
                 icon: <FileText size={20} />,
                 title: 'Full AI Dossier',
-                body: 'Salary ranges, education path, daily routine, work culture — real data powered by Llama 3.3.',
+                body: 'Salary ranges, education path, daily routine, work culture - real data powered by Llama 3.3.',
               },
               {
                 icon: <Swords size={20} />,
@@ -325,7 +325,7 @@ export function HomePage() {
               {
                 icon: <BarChart2 size={20} />,
                 title: 'Side-by-Side Compare',
-                body: 'Stack any two careers against each other — salary, skills, lifestyle, and growth potential.',
+                body: 'Stack any two careers against each other - salary, skills, lifestyle, and growth potential.',
               },
               {
                 icon: <Zap size={20} />,
@@ -375,10 +375,10 @@ export function HomePage() {
               </h2>
               <div className="space-y-4 font-[Inter] text-black/65 leading-relaxed" style={{ fontSize: '0.95rem' }}>
                 <p>
-                  I am Kamal Reddy. I always wondered what it'd be like to live as different careers out there — a forensic analyst, a marine biologist, an investment banker. Not in a "I want to be that" way, but in a "what does Tuesday actually look like for them?" way.
+                  I am Kamal Reddy. I always wondered what it'd be like to live as different careers out there - a forensic analyst, a marine biologist, an investment banker. Not in a "I want to be that" way, but in a "what does Tuesday actually look like for them?" way.
                 </p>
                 <p>
-                  There's no good answer to that question online. Job descriptions are sanitized. Salary sites are noisy. Reddit threads are biased. I wanted something that just let you <em>feel it</em> — even for five minutes.
+                  There's no good answer to that question online. Job descriptions are sanitized. Salary sites are noisy. Reddit threads are biased. I wanted something that just let you <em>feel it</em> - even for five minutes.
                 </p>
                 <p>
                   So I built Career Sim. It's the tool I wish existed when I was figuring things out. Pick a career, read the dossier, live a day, answer an interview question. Then do it again for a completely different career. Compare them. Decide.
@@ -386,7 +386,7 @@ export function HomePage() {
               </div>
               <div className="mt-8 flex items-center gap-4">
                 <div className="h-px flex-1 bg-black/10" />
-                <span className="font-[JetBrains_Mono] text-black/30" style={{ fontSize: '0.72rem' }}>— Kamal Reddy, 2025</span>
+                <span className="font-[JetBrains_Mono] text-black/30" style={{ fontSize: '0.72rem' }}>- Kamal Reddy, 2025</span>
               </div>
             </div>
           </motion.div>

@@ -108,7 +108,7 @@ Return this exact JSON structure:
   ]
 }
 
-Make questions SPECIFIC to ${jobTitle} — not generic. Include industry jargon, real tools, real scenarios.`;
+Make questions SPECIFIC to ${jobTitle} - not generic. Include industry jargon, real tools, real scenarios.`;
 
   try {
     const raw = await callGroq(systemPrompt, userPrompt);

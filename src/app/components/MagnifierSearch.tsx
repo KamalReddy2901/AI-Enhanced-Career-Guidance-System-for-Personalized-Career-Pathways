@@ -389,7 +389,7 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
           transition={{ delay: 0.5 }}
         >
           {hasApiKey()
-            ? 'Type any profession — even made-up ones. AI will research it for you.'
+            ? 'Type any profession - even made-up ones. AI will research it for you.'
             : 'Type any profession. We\'ll investigate it for you.'
           }
         </motion.p>
