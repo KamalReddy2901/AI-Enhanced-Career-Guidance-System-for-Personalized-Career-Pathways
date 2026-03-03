@@ -91,6 +91,19 @@ export function JobDetailPage() {
   const [wlbData, setWlbData] = useState<WorkLifeBalance | null>(null);
   const [wlbLoading, setWlbLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const simulateBtnRef = useRef<HTMLButtonElement>(null);
+  const [showJumpBtn, setShowJumpBtn] = useState(false);
+
+  useEffect(() => {
+    const btn = simulateBtnRef.current;
+    if (!btn) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowJumpBtn(!entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(btn);
+    return () => observer.disconnect();
+  }, [simulateBtnRef.current]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -514,64 +527,6 @@ export function JobDetailPage() {
           </AnimatePresence>
         </motion.div>
 
-        {/* Related Careers */}
-        {(relatedCareers.length > 0 || loadingRelated) && (
-          <motion.div
-            className="mt-10 mb-10 print:hidden"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-px flex-1 bg-black/10" />
-              <span className="font-[Playfair_Display] text-black flex items-center gap-2" style={{ fontSize: '1.15rem' }}>
-                Related Careers
-                <Sparkles size={12} className="text-black/25" />
-              </span>
-              <div className="h-px flex-1 bg-black/10" />
-            </div>
-
-            {loadingRelated ? (
-              <div className="flex items-center justify-center gap-2 py-6 text-black/30">
-                <Loader2 size={16} className="animate-spin" />
-                <span className="font-[Inter]" style={{ fontSize: '0.82rem' }}>Finding related careers...</span>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {relatedCareers.slice(0, 5).map((career, i) => (
-                  <motion.button
-                    key={career.title}
-                    onClick={() => handleExploreRelated(career.title)}
-                    disabled={exploringRelated !== null}
-                    className="text-left border border-black/10 p-4 hover:border-black/25 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] transition-all group disabled:opacity-50"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 + i * 0.05 }}
-                    whileHover={{ y: -2 }}
-                  >
-                    <h4 className="font-[Playfair_Display] text-black group-hover:underline mb-1" style={{ fontSize: '0.95rem' }}>
-                      {exploringRelated === career.title ? (
-                        <span className="flex items-center gap-2">
-                          <Loader2 size={14} className="animate-spin" />
-                          Loading...
-                        </span>
-                      ) : (
-                        career.title
-                      )}
-                    </h4>
-                    <p className="font-[Inter] text-black/30 mb-1" style={{ fontSize: '0.68rem' }}>
-                      {career.similarity}
-                    </p>
-                    <p className="font-[Inter] text-black/50" style={{ fontSize: '0.78rem' }}>
-                      {career.description}
-                    </p>
-                  </motion.button>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        )}
-
         {/* ── Work-Life Balance Radar ──────────────────────── */}
         {(wlbData || wlbLoading) && (
           <motion.div
@@ -713,8 +668,18 @@ export function JobDetailPage() {
                     <ul className="space-y-2.5">
                       {learnMore.certifications.map((cert, i) => (
                         <li key={i}>
-                          <p className="font-[Inter] text-black dark:text-white" style={{ fontSize: '0.82rem' }}>{cert.name}</p>
-                          <p className="font-[Inter] text-black/40 dark:text-white/40" style={{ fontSize: '0.72rem' }}>{cert.provider}</p>
+                          <a
+                            href={`https://www.google.com/search?q=${encodeURIComponent(cert.name + ' certification ' + cert.provider)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group flex items-start gap-1.5"
+                          >
+                            <ExternalLink size={11} className="text-black/20 dark:text-white/20 mt-1 shrink-0 group-hover:text-black dark:group-hover:text-white transition-colors" />
+                            <div>
+                              <p className="font-[Inter] text-black dark:text-white group-hover:underline" style={{ fontSize: '0.82rem' }}>{cert.name}</p>
+                              <p className="font-[Inter] text-black/40 dark:text-white/40" style={{ fontSize: '0.72rem' }}>{cert.provider}</p>
+                            </div>
+                          </a>
                         </li>
                       ))}
                     </ul>
@@ -754,9 +719,19 @@ export function JobDetailPage() {
                     <ul className="space-y-2.5">
                       {learnMore.books.map((book, i) => (
                         <li key={i}>
-                          <p className="font-[Inter] text-black dark:text-white font-medium" style={{ fontSize: '0.82rem' }}>{book.title}</p>
-                          <p className="font-[Inter] text-black/40 dark:text-white/40" style={{ fontSize: '0.72rem' }}>by {book.author}</p>
-                          <p className="font-[Inter] text-black/50 dark:text-white/50" style={{ fontSize: '0.72rem' }}>{book.why}</p>
+                          <a
+                            href={`https://www.google.com/search?q=${encodeURIComponent(book.title + ' by ' + book.author)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group flex items-start gap-1.5"
+                          >
+                            <ExternalLink size={11} className="text-black/20 dark:text-white/20 mt-1 shrink-0 group-hover:text-black dark:group-hover:text-white transition-colors" />
+                            <div>
+                              <p className="font-[Inter] text-black dark:text-white font-medium group-hover:underline" style={{ fontSize: '0.82rem' }}>{book.title}</p>
+                              <p className="font-[Inter] text-black/40 dark:text-white/40" style={{ fontSize: '0.72rem' }}>by {book.author}</p>
+                              <p className="font-[Inter] text-black/50 dark:text-white/50" style={{ fontSize: '0.72rem' }}>{book.why}</p>
+                            </div>
+                          </a>
                         </li>
                       ))}
                     </ul>
@@ -767,14 +742,73 @@ export function JobDetailPage() {
           </motion.div>
         )}
 
+        {/* Related Careers — shown after Learn More */}
+        {preferences.showRelatedCareers && (relatedCareers.length > 0 || loadingRelated) && (
+          <motion.div
+            className="mt-10 mb-10 print:hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.55 }}
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-px flex-1 bg-black/10" />
+              <span className="font-[Playfair_Display] text-black flex items-center gap-2" style={{ fontSize: '1.15rem' }}>
+                Related Careers
+                <Sparkles size={12} className="text-black/25" />
+              </span>
+              <div className="h-px flex-1 bg-black/10" />
+            </div>
+
+            {loadingRelated ? (
+              <div className="flex items-center justify-center gap-2 py-6 text-black/30">
+                <Loader2 size={16} className="animate-spin" />
+                <span className="font-[Inter]" style={{ fontSize: '0.82rem' }}>Finding related careers...</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {relatedCareers.slice(0, 5).map((career, i) => (
+                  <motion.button
+                    key={career.title}
+                    onClick={() => handleExploreRelated(career.title)}
+                    disabled={exploringRelated !== null}
+                    className="text-left border border-black/10 p-4 hover:border-black/25 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] transition-all group disabled:opacity-50"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 + i * 0.05 }}
+                    whileHover={{ y: -2 }}
+                  >
+                    <h4 className="font-[Playfair_Display] text-black group-hover:underline mb-1" style={{ fontSize: '0.95rem' }}>
+                      {exploringRelated === career.title ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 size={14} className="animate-spin" />
+                          Loading...
+                        </span>
+                      ) : (
+                        career.title
+                      )}
+                    </h4>
+                    <p className="font-[Inter] text-black/30 mb-1" style={{ fontSize: '0.68rem' }}>
+                      {career.similarity}
+                    </p>
+                    <p className="font-[Inter] text-black/50" style={{ fontSize: '0.78rem' }}>
+                      {career.description}
+                    </p>
+                  </motion.button>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+
         {/* Action Buttons */}
         <motion.div
-          className="flex flex-col sm:flex-row gap-4 mt-10 mb-20 sm:mb-10 print:hidden"
+          className="flex flex-col sm:flex-row gap-4 mt-10 mb-4 print:hidden"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
           <motion.button
+            ref={simulateBtnRef}
             onClick={() => navigate('/simulation')}
             className="flex-1 flex items-center justify-center gap-3 bg-black text-white py-4 px-6 hover:bg-black/85 transition-colors font-[Inter] group"
             style={{ fontSize: '0.95rem' }}
@@ -811,7 +845,50 @@ export function JobDetailPage() {
             {isAIEnabled && <Sparkles size={12} className="text-black/30" />}
           </motion.button>
         </motion.div>
+
+        {/* Roadmap + Transition CTAs */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-20 sm:mb-10 print:hidden">
+          <motion.button
+            onClick={() => navigate(`/roadmap?job=${encodeURIComponent(currentJob.title)}`)}
+            className="flex items-center justify-center gap-2 border border-black/15 dark:border-white/15 text-black/55 dark:text-white/55 py-3 px-4 hover:border-black/35 dark:hover:border-white/35 hover:text-black dark:hover:text-white transition-all font-[Inter]"
+            style={{ fontSize: '0.85rem' }}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+          >
+            <TrendingUp size={15} />
+            Build My Roadmap
+          </motion.button>
+          <motion.button
+            onClick={() => navigate(`/career-transition?from=${encodeURIComponent(currentJob.title)}`)}
+            className="flex items-center justify-center gap-2 border border-black/15 dark:border-white/15 text-black/55 dark:text-white/55 py-3 px-4 hover:border-black/35 dark:hover:border-white/35 hover:text-black dark:hover:text-white transition-all font-[Inter]"
+            style={{ fontSize: '0.85rem' }}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+          >
+            <ArrowRight size={15} />
+            Plan a Career Change
+          </motion.button>
+        </div>
       </div>
+
+      {/* Floating "Jump to Simulation" button */}
+      <AnimatePresence>
+        {showJumpBtn && (
+          <motion.button
+            onClick={() => simulateBtnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+            className="fixed bottom-20 sm:bottom-6 right-4 z-30 flex items-center gap-2 bg-black dark:bg-white text-white dark:text-black px-4 py-2.5 shadow-lg font-[Inter] print:hidden"
+            style={{ fontSize: '0.82rem' }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+          >
+            <Play size={14} />
+            Jump to Simulation
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Chat Panel */}
       <AnimatePresence>

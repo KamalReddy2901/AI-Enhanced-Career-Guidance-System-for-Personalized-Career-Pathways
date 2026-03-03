@@ -253,6 +253,54 @@ export function SettingsPage() {
                 toast.success(`Switched to ${value} - new searches will use ${value === 'INR' ? 'Indian' : 'US'} context`, { duration: 3000 });
               }}
             />
+
+            <ToggleSetting
+              label="Show Related Careers"
+              description="Display related career suggestions at the bottom of each dossier"
+              enabled={preferences.showRelatedCareers}
+              onToggle={() => setPreferences({ showRelatedCareers: !preferences.showRelatedCareers })}
+            />
+
+            <SelectSetting
+              label="Default Dossier Section"
+              description="Which section to show first when opening a career dossier"
+              value={preferences.defaultDossierTab}
+              options={[
+                { value: 'timeline', label: 'Day Timeline' },
+                { value: 'wlb', label: 'Work-Life Balance' },
+                { value: 'learn', label: 'Learn More Resources' },
+              ]}
+              onChange={(value) => setPreferences({ defaultDossierTab: value as 'wlb' | 'learn' | 'timeline' })}
+            />
+
+            <SelectSetting
+              label="Roadmap Detail Level"
+              description="How much detail to generate in Career Roadmaps"
+              value={preferences.roadmapDetailLevel}
+              options={[
+                { value: 'essential', label: 'Essential — Key milestones only' },
+                { value: 'detailed', label: 'Detailed — Milestones + skills (default)' },
+                { value: 'comprehensive', label: 'Comprehensive — Full decision points' },
+              ]}
+              onChange={(value) => setPreferences({ roadmapDetailLevel: value as 'essential' | 'detailed' | 'comprehensive' })}
+            />
+
+            <ToggleSetting
+              label="Auto-load Trending Careers"
+              description="Automatically fetch trending careers when the homepage loads"
+              enabled={preferences.autoLoadTrending}
+              onToggle={() => setPreferences({ autoLoadTrending: !preferences.autoLoadTrending })}
+            />
+
+            <ActionButton
+              label="Reset Onboarding Tour"
+              description="Show the welcome tour again on next visit to the homepage"
+              icon={<Check size={16} />}
+              onClick={() => {
+                setPreferences({ showOnboarding: true });
+                toast.success('Onboarding tour will show on next homepage visit');
+              }}
+            />
           </div>
         </Section>
 

@@ -20,7 +20,9 @@ export function StickFigure({ pose, size = 120, className = '', animate = true }
       height={size}
       viewBox="0 0 120 120"
       fill="none"
-      className={className}
+      overflow="hidden"
+      className={`block shrink-0 ${className}`}
+      style={{ overflow: 'hidden' }}
       initial={animate ? { opacity: 0, y: 10 } : {}}
       animate={animate ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.5 }}

@@ -1,9 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Map, Loader2, AlertTriangle, ChevronDown, ChevronUp, TrendingUp } from 'lucide-react';
 import { getCareerRoadmap, type CareerRoadmap, hasApiKey } from '../services/ai';
 import { StickFigure } from '../components/StickFigure';
 import { ApiKeyModal } from '../components/ApiKeyModal';
+import { useApp } from '../context/AppContext';
 
 const STAGE_COLORS: Record<string, { dot: string; bg: string; border: string }> = {
   blue:   { dot: 'bg-blue-500',   bg: 'bg-blue-50 dark:bg-blue-950/30',   border: 'border-blue-200 dark:border-blue-800' },
@@ -15,13 +17,28 @@ const STAGE_COLORS: Record<string, { dot: string; bg: string; border: string }> 
 };
 
 export function CareerRoadmapPage() {
-  const [jobTitle, setJobTitle] = useState('');
+  const [searchParams] = useSearchParams();
+  const { history } = useApp();
+
+  const [jobTitle, setJobTitle] = useState(() => searchParams.get('job') || '');
   const [roadmap, setRoadmap] = useState<CareerRoadmap | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showApiModal, setShowApiModal] = useState(false);
   const [expandedStage, setExpandedStage] = useState<number | null>(0);
   const abortRef = useRef<AbortController | null>(null);
+
+  const [inputFocused, setInputFocused] = useState(false);
+  const uniqueTitles = Array.from(new Set(history.map(h => h.jobTitle)));
+  const suggestions = inputFocused
+    ? uniqueTitles.filter(t => t.toLowerCase().includes(jobTitle.toLowerCase())).slice(0, 6)
+    : [];
+
+  // Auto-generate if job param was passed from dossier
+  useEffect(() => {
+    if (searchParams.get('job')) handleGenerate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleGenerate = async () => {
     if (!jobTitle.trim()) return;
@@ -85,15 +102,36 @@ export function CareerRoadmapPage() {
           <label className="block font-[Inter] text-black/40 dark:text-white/40 mb-2 uppercase tracking-[0.1em]" style={{ fontSize: '0.62rem' }}>
             Career / Job Title
           </label>
-          <div className="flex gap-3">
-            <input
-              value={jobTitle}
-              onChange={e => setJobTitle(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleGenerate()}
-              placeholder="e.g. Data Scientist"
-              className="flex-1 border border-black/15 dark:border-white/15 bg-transparent px-4 py-3 font-[Inter] text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 outline-none focus:border-black/40 dark:focus:border-white/40 transition-colors"
-              style={{ fontSize: '0.92rem' }}
-            />
+          <div className="flex gap-3 relative">
+            <div className="flex-1 relative">
+              <input
+                value={jobTitle}
+                onChange={e => setJobTitle(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') { setInputFocused(false); handleGenerate(); }
+                  if (e.key === 'Escape') setInputFocused(false);
+                }}
+                onFocus={() => setInputFocused(true)}
+                onBlur={() => setTimeout(() => setInputFocused(false), 150)}
+                placeholder="e.g. Data Scientist"
+                className="w-full border border-black/15 dark:border-white/15 bg-transparent px-4 py-3 font-[Inter] text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 outline-none focus:border-black/40 dark:focus:border-white/40 transition-colors"
+                style={{ fontSize: '0.92rem' }}
+              />
+              {suggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 z-20 border border-black/15 dark:border-white/15 bg-card shadow-md">
+                  {suggestions.map(s => (
+                    <button
+                      key={s}
+                      onMouseDown={() => { setJobTitle(s); setInputFocused(false); }}
+                      className="w-full text-left px-4 py-2.5 font-[Inter] text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-b border-black/5 dark:border-white/5 last:border-0"
+                      style={{ fontSize: '0.85rem' }}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <motion.button
               onClick={handleGenerate}
               disabled={!jobTitle.trim() || loading}

@@ -245,10 +245,21 @@ export function HistoryPage() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {history.map((entry, i) => (
+                  {history.map((entry, i) => {
+                    const cat = (entry.jobData.category || '').toLowerCase();
+                    const accentBorder = cat.includes('tech') || cat.includes('software') || cat.includes('data')
+                      ? 'border-l-4 border-l-blue-300'
+                      : cat.includes('health') || cat.includes('medical')
+                        ? 'border-l-4 border-l-green-300'
+                        : cat.includes('finance') || cat.includes('business')
+                          ? 'border-l-4 border-l-amber-300'
+                          : cat.includes('creative') || cat.includes('design') || cat.includes('art')
+                            ? 'border-l-4 border-l-purple-300'
+                            : '';
+                    return (
                     <motion.div
                       key={entry.id}
-                      className="border border-black/10 hover:border-black/25 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.04)] transition-all group"
+                      className={`border border-black/10 hover:border-black/25 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.04)] transition-all group ${accentBorder}`}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.04 }}
@@ -326,7 +337,8 @@ export function HistoryPage() {
                         </div>
                       </button>
                     </motion.div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </motion.div>

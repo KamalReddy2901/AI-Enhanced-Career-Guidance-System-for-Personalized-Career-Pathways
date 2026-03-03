@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, Clock, ArrowRight, RotateCcw, CheckCircle2, XCircle, Sparkles, Loader2, Download } from 'lucide-react';
+import { ChevronLeft, Clock, ArrowRight, RotateCcw, CheckCircle2, XCircle, Sparkles, Loader2, Download, TrendingUp } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import { generateSimulation, type SimulationScenario } from '../data/simulations';
@@ -639,6 +639,30 @@ export function SimulationPage() {
                 >
                   Explore Another Career
                   <ArrowRight size={16} className="shrink-0" />
+                </motion.button>
+              </div>
+
+              {/* Roadmap + Transition CTAs */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 max-w-md mx-auto">
+                <motion.button
+                  onClick={() => navigate(`/roadmap?job=${encodeURIComponent(currentJob!.title)}`)}
+                  className="flex items-center justify-center gap-2 border border-black/15 text-black/55 py-2.5 px-4 hover:border-black/35 hover:text-black transition-all font-[Inter]"
+                  style={{ fontSize: '0.82rem' }}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                >
+                  <TrendingUp size={14} />
+                  Build My Roadmap
+                </motion.button>
+                <motion.button
+                  onClick={() => navigate(`/career-transition?to=${encodeURIComponent(currentJob!.title)}`)}
+                  className="flex items-center justify-center gap-2 border border-black/15 text-black/55 py-2.5 px-4 hover:border-black/35 hover:text-black transition-all font-[Inter]"
+                  style={{ fontSize: '0.82rem' }}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                >
+                  <ArrowRight size={14} />
+                  Transition Into This Role
                 </motion.button>
               </div>
             </motion.div>

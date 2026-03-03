@@ -291,10 +291,23 @@ export function QuizPage() {
                 </div>
 
                 <div className="space-y-3">
-                  {result.careers.map((career, i) => (
+                  {result.careers.map((career, i) => {
+                    const matchPct = career.matchScore;
+                    const accentClass = matchPct >= 80
+                      ? 'border-l-4 border-l-green-400'
+                      : matchPct >= 60
+                        ? 'border-l-4 border-l-blue-400'
+                        : 'border-l-4 border-l-amber-400';
+                    const scoreClass = matchPct >= 80
+                      ? 'bg-green-50 text-green-700'
+                      : matchPct >= 60
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'bg-amber-50 text-amber-700';
+
+                    return (
                     <motion.div
                       key={career.title}
-                      className="border-2 border-black/10 p-5 hover:border-black/25 transition-all"
+                      className={`border-2 border-black/10 p-5 hover:border-black/25 transition-all ${accentClass}`}
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.1 }}
@@ -308,11 +321,11 @@ export function QuizPage() {
                             <h3 className="font-[Playfair_Display] text-black" style={{ fontSize: '1.15rem' }}>
                               {career.title}
                             </h3>
-                            <div className="flex items-center gap-1 bg-black/5 px-2 py-0.5">
-                              <span className="font-[JetBrains_Mono] text-black/60" style={{ fontSize: '0.75rem' }}>
+                            <div className={`flex items-center gap-1 px-2 py-0.5 ${scoreClass}`}>
+                              <span className="font-[JetBrains_Mono]" style={{ fontSize: '0.75rem' }}>
                                 {career.matchScore}%
                               </span>
-                              <span className="font-[Inter] text-black/30" style={{ fontSize: '0.65rem' }}>match</span>
+                              <span className="font-[Inter] opacity-60" style={{ fontSize: '0.65rem' }}>match</span>
                             </div>
                           </div>
                           <p className="font-[Inter] text-black/50" style={{ fontSize: '0.85rem' }}>
@@ -339,14 +352,15 @@ export function QuizPage() {
                       {/* Match bar */}
                       <div className="mt-3 h-1 bg-black/8 rounded-full overflow-hidden">
                         <motion.div
-                          className="h-full bg-black rounded-full"
+                          className={`h-full rounded-full ${matchPct >= 80 ? 'bg-green-500' : matchPct >= 60 ? 'bg-blue-500' : 'bg-amber-500'}`}
                           initial={{ width: 0 }}
                           animate={{ width: `${career.matchScore}%` }}
                           transition={{ delay: 0.3 + i * 0.1, duration: 0.6 }}
                         />
                       </div>
                     </motion.div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 

@@ -619,14 +619,16 @@ export async function getCareerTransition(
   toTitle: string,
   signal?: AbortSignal
 ): Promise<CareerTransitionPlan> {
-  const cacheKey = `transition_${fromTitle.toLowerCase().replace(/\s+/g, '_')}_to_${toTitle.toLowerCase().replace(/\s+/g, '_')}`;
+  const currency = (() => { try { return (JSON.parse(localStorage.getItem('careersim_preferences') || '{}').currency as 'INR' | 'USD') || 'INR'; } catch { return 'INR' as const; } })();
+  const isIndia = currency === 'INR';
+  const cacheKey = `transition_${fromTitle.toLowerCase().replace(/\s+/g, '_')}_to_${toTitle.toLowerCase().replace(/\s+/g, '_')}_${currency.toLowerCase()}`;
   const cached = getCached<CareerTransitionPlan>(cacheKey);
   if (cached) return cached;
 
   return withRetry(async () => {
     const raw = await callGroq(
       'You are a career transition coach. Return ONLY valid JSON. Be specific and practical.',
-      `Create a detailed career transition plan from "${fromTitle}" to "${toTitle}". Return this exact JSON:
+      `Create a detailed career transition plan from "${fromTitle}" to "${toTitle}"${isIndia ? ' in the Indian job market context. Use INR (LPA format) for salary figures, reference Indian certifications, companies and platforms where relevant.' : ''}. Return this exact JSON:
 {
   "fromTitle": "${fromTitle}",
   "toTitle": "${toTitle}",
@@ -638,7 +640,7 @@ export async function getCareerTransition(
   "steps": [
     {"phase": "Phase Name", "duration": "X months", "actions": ["action 1", "action 2", "action 3"]}
   ],
-  "salaryImpact": "e.g. +20% increase expected after 2 years",
+  "salaryImpact": "${isIndia ? 'e.g. ₹8 LPA → ₹14 LPA expected after 18 months' : 'e.g. +20% increase expected after 2 years'}",
   "successStory": "A realistic example of someone who made this transition successfully (1-2 sentences)"
 }
 Include 3-4 phases. Be honest about difficulty and realistic about timeframes.`,
@@ -670,14 +672,24 @@ export interface CareerRoadmap {
 }
 
 export async function getCareerRoadmap(jobTitle: string, signal?: AbortSignal): Promise<CareerRoadmap> {
-  const cacheKey = `roadmap_${jobTitle.toLowerCase().replace(/\s+/g, '_')}`;
+  const prefs = (() => { try { return JSON.parse(localStorage.getItem('careersim_preferences') || '{}') as Record<string, string>; } catch { return {} as Record<string, string>; } })();
+  const currency = (prefs.currency as 'INR' | 'USD') || 'INR';
+  const detailLevel = (prefs.roadmapDetailLevel as 'essential' | 'detailed' | 'comprehensive') || 'detailed';
+  const isIndia = currency === 'INR';
+  const cacheKey = `roadmap_${jobTitle.toLowerCase().replace(/\s+/g, '_')}_${currency.toLowerCase()}_${detailLevel}`;
   const cached = getCached<CareerRoadmap>(cacheKey);
   if (cached) return cached;
+
+  const detailInstruction = detailLevel === 'essential'
+    ? 'Be concise — only include the most important milestones (2 per stage max).'
+    : detailLevel === 'comprehensive'
+      ? 'Be comprehensive — include 4-5 milestones per stage, detailed skills, and thorough key decisions.'
+      : 'Be moderately detailed — include 3 milestones and 3 skills per stage.';
 
   return withRetry(async () => {
     const raw = await callGroq(
       'You are a career development strategist. Return ONLY valid JSON. Be specific to this profession.',
-      `Create a comprehensive career roadmap for "${jobTitle}". Return this exact JSON:
+      `Create a comprehensive career roadmap for "${jobTitle}"${isIndia ? ' in the Indian job market. Use INR (LPA format) for salaries, reference relevant Indian companies, certifications (e.g. GATE, CA, UPSC where relevant), and realistic Indian career progression timelines.' : ''}. ${detailInstruction} Return this exact JSON:
 {
   "title": "${jobTitle}",
   "totalYears": "e.g. 20+ years to reach peak",
@@ -686,7 +698,7 @@ export async function getCareerRoadmap(jobTitle: string, signal?: AbortSignal): 
       "stage": "Entry Level",
       "yearsRange": "0-2 years",
       "role": "Specific job title at this stage",
-      "salary": "Realistic salary range",
+      "salary": "${isIndia ? 'e.g. ₹4-7 LPA' : 'e.g. $60k-80k'}",
       "milestones": ["milestone 1", "milestone 2"],
       "skills": ["skill to learn 1", "skill to learn 2"],
       "color": "one of: blue|green|yellow|orange|red|purple"

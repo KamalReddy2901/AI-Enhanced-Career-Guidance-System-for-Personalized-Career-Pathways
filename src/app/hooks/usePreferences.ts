@@ -9,6 +9,10 @@ export interface UserPreferences {
   compactMode: boolean;
   autoSaveNotes: boolean;
   currency: 'INR' | 'USD';
+  showRelatedCareers: boolean;
+  defaultDossierTab: 'wlb' | 'learn' | 'timeline';
+  roadmapDetailLevel: 'essential' | 'detailed' | 'comprehensive';
+  autoLoadTrending: boolean;
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -18,6 +22,10 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   compactMode: false,
   autoSaveNotes: true,
   currency: 'INR',
+  showRelatedCareers: true,
+  defaultDossierTab: 'timeline',
+  roadmapDetailLevel: 'detailed',
+  autoLoadTrending: true,
 };
 
 export function usePreferences() {

@@ -1,9 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, Loader2, ChevronDown, ChevronUp, CheckCircle, XCircle, AlertTriangle, ArrowLeftRight } from 'lucide-react';
+import { ArrowRight, Loader2, ChevronDown, ChevronUp, CheckCircle, XCircle, AlertTriangle, ArrowLeftRight, ExternalLink } from 'lucide-react';
 import { getCareerTransition, type CareerTransitionPlan, hasApiKey } from '../services/ai';
 import { StickFigure } from '../components/StickFigure';
 import { ApiKeyModal } from '../components/ApiKeyModal';
+import { useApp } from '../context/AppContext';
 
 const DIFFICULTY_COLOR: Record<string, string> = {
   Easy: 'text-green-700 bg-green-50 border-green-200',
@@ -13,14 +15,38 @@ const DIFFICULTY_COLOR: Record<string, string> = {
 };
 
 export function CareerTransitionPage() {
-  const [fromCareer, setFromCareer] = useState('');
-  const [toCareer, setToCareer] = useState('');
+  const [searchParams] = useSearchParams();
+  const { history } = useApp();
+
+  const [fromCareer, setFromCareer] = useState(() => searchParams.get('from') || '');
+  const [toCareer, setToCareer] = useState(() => searchParams.get('to') || '');
   const [plan, setPlan] = useState<CareerTransitionPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showApiModal, setShowApiModal] = useState(false);
   const [expandedPhase, setExpandedPhase] = useState<number | null>(0);
   const abortRef = useRef<AbortController | null>(null);
+
+  // suggestion dropdown state
+  const [fromFocused, setFromFocused] = useState(false);
+  const [toFocused, setToFocused] = useState(false);
+
+  const uniqueTitles = Array.from(new Set(history.map(h => h.jobTitle)));
+
+  const fromSuggestions = fromFocused && fromCareer.length >= 0
+    ? uniqueTitles.filter(t => t.toLowerCase().includes(fromCareer.toLowerCase())).slice(0, 5)
+    : [];
+  const toSuggestions = toFocused && toCareer.length >= 0
+    ? uniqueTitles.filter(t => t.toLowerCase().includes(toCareer.toLowerCase())).slice(0, 5)
+    : [];
+
+  // Auto-generate if both params are prefilled from URL
+  useEffect(() => {
+    const from = searchParams.get('from');
+    const to = searchParams.get('to');
+    if (from && to) handleGenerate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleGenerate = async () => {
     if (!fromCareer.trim() || !toCareer.trim()) return;
@@ -83,36 +109,74 @@ export function CareerTransitionPage() {
           transition={{ delay: 0.1 }}
         >
           <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-4 items-center">
-            <div>
+            <div className="relative">
               <label className="block font-[Inter] text-black/40 dark:text-white/40 mb-2 uppercase tracking-[0.1em]" style={{ fontSize: '0.62rem' }}>
                 Current Career
               </label>
               <input
                 value={fromCareer}
                 onChange={e => setFromCareer(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleGenerate()}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') { setFromFocused(false); handleGenerate(); }
+                  if (e.key === 'Escape') setFromFocused(false);
+                }}
+                onFocus={() => setFromFocused(true)}
+                onBlur={() => setTimeout(() => setFromFocused(false), 150)}
                 placeholder="e.g. Software Engineer"
                 className="w-full border border-black/15 dark:border-white/15 bg-transparent px-4 py-3 font-[Inter] text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 outline-none focus:border-black/40 dark:focus:border-white/40 transition-colors"
                 style={{ fontSize: '0.92rem' }}
               />
+              {fromSuggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 z-20 border border-black/15 dark:border-white/15 bg-card shadow-md">
+                  {fromSuggestions.map(s => (
+                    <button
+                      key={s}
+                      onMouseDown={() => { setFromCareer(s); setFromFocused(false); }}
+                      className="w-full text-left px-4 py-2.5 font-[Inter] text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-b border-black/5 dark:border-white/5 last:border-0"
+                      style={{ fontSize: '0.85rem' }}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex justify-center">
               <ArrowRight size={20} className="text-black/20 dark:text-white/20" />
             </div>
 
-            <div>
+            <div className="relative">
               <label className="block font-[Inter] text-black/40 dark:text-white/40 mb-2 uppercase tracking-[0.1em]" style={{ fontSize: '0.62rem' }}>
                 Target Career
               </label>
               <input
                 value={toCareer}
                 onChange={e => setToCareer(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleGenerate()}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') { setToFocused(false); handleGenerate(); }
+                  if (e.key === 'Escape') setToFocused(false);
+                }}
+                onFocus={() => setToFocused(true)}
+                onBlur={() => setTimeout(() => setToFocused(false), 150)}
                 placeholder="e.g. Product Manager"
                 className="w-full border border-black/15 dark:border-white/15 bg-transparent px-4 py-3 font-[Inter] text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 outline-none focus:border-black/40 dark:focus:border-white/40 transition-colors"
                 style={{ fontSize: '0.92rem' }}
               />
+              {toSuggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 z-20 border border-black/15 dark:border-white/15 bg-card shadow-md">
+                  {toSuggestions.map(s => (
+                    <button
+                      key={s}
+                      onMouseDown={() => { setToCareer(s); setToFocused(false); }}
+                      className="w-full text-left px-4 py-2.5 font-[Inter] text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-b border-black/5 dark:border-white/5 last:border-0"
+                      style={{ fontSize: '0.85rem' }}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -322,7 +386,7 @@ export function CareerTransitionPage() {
 
               {/* Success story */}
               {plan.successStory && (
-                <div className="border-l-2 border-black/20 dark:border-white/20 pl-5 py-2 mb-4">
+                <div className="border-l-2 border-black/20 dark:border-white/20 pl-5 py-2 mb-6">
                   <p className="font-[Inter] text-black/40 dark:text-white/40 mb-1 uppercase tracking-[0.1em]" style={{ fontSize: '0.6rem' }}>
                     Real World Example
                   </p>
@@ -331,6 +395,73 @@ export function CareerTransitionPage() {
                   </p>
                 </div>
               )}
+
+              {/* Real stories section */}
+              <div className="border border-black/10 dark:border-white/10 p-5 mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <ExternalLink size={14} className="text-black/40 dark:text-white/40" />
+                  <p className="font-[Inter] text-black/40 dark:text-white/40 uppercase tracking-[0.1em]" style={{ fontSize: '0.62rem' }}>
+                    Real People Who Made This Transition
+                  </p>
+                </div>
+                <p className="font-[Inter] text-black/50 dark:text-white/50 mb-4" style={{ fontSize: '0.82rem', lineHeight: 1.6 }}>
+                  Read firsthand accounts from people who transitioned from {plan.fromTitle} to {plan.toTitle}.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <a
+                    href={`https://www.reddit.com/search/?q=${encodeURIComponent(`${plan.fromTitle} to ${plan.toTitle} career change transition`)}&type=link`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
+                  >
+                    <span className="text-orange-600 font-bold" style={{ fontSize: '1rem' }}>r/</span>
+                    <div>
+                      <p className="font-[Inter] text-orange-800 dark:text-orange-300 font-medium" style={{ fontSize: '0.82rem' }}>Reddit Stories</p>
+                      <p className="font-[Inter] text-orange-600/70 dark:text-orange-400/70" style={{ fontSize: '0.72rem' }}>r/cscareerquestions, r/learnprogramming &amp; more</p>
+                    </div>
+                    <ExternalLink size={11} className="text-orange-500 ml-auto shrink-0" />
+                  </a>
+                  <a
+                    href={`https://www.reddit.com/search/?q=${encodeURIComponent(`I transitioned from ${plan.fromTitle} to ${plan.toTitle}`)}&type=link`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
+                  >
+                    <span className="text-orange-600 font-bold" style={{ fontSize: '1rem' }}>r/</span>
+                    <div>
+                      <p className="font-[Inter] text-orange-800 dark:text-orange-300 font-medium" style={{ fontSize: '0.82rem' }}>"I did it" Posts</p>
+                      <p className="font-[Inter] text-orange-600/70 dark:text-orange-400/70" style={{ fontSize: '0.72rem' }}>Personal transition success stories</p>
+                    </div>
+                    <ExternalLink size={11} className="text-orange-500 ml-auto shrink-0" />
+                  </a>
+                  <a
+                    href={`https://www.google.com/search?q=${encodeURIComponent(`"${plan.fromTitle}" to "${plan.toTitle}" career transition story experience`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                  >
+                    <span className="text-blue-600 font-bold" style={{ fontSize: '0.9rem' }}>G</span>
+                    <div>
+                      <p className="font-[Inter] text-blue-800 dark:text-blue-300 font-medium" style={{ fontSize: '0.82rem' }}>Articles &amp; Blog Posts</p>
+                      <p className="font-[Inter] text-blue-600/70 dark:text-blue-400/70" style={{ fontSize: '0.72rem' }}>Medium, Dev.to, LinkedIn articles</p>
+                    </div>
+                    <ExternalLink size={11} className="text-blue-500 ml-auto shrink-0" />
+                  </a>
+                  <a
+                    href={`https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(`${plan.fromTitle} to ${plan.toTitle} transition`)}&origin=GLOBAL_SEARCH_HEADER`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                  >
+                    <span className="text-blue-700 font-bold" style={{ fontSize: '0.9rem', fontFamily: 'sans-serif' }}>in</span>
+                    <div>
+                      <p className="font-[Inter] text-blue-800 dark:text-blue-300 font-medium" style={{ fontSize: '0.82rem' }}>LinkedIn Posts</p>
+                      <p className="font-[Inter] text-blue-600/70 dark:text-blue-400/70" style={{ fontSize: '0.72rem' }}>Real professionals sharing their journey</p>
+                    </div>
+                    <ExternalLink size={11} className="text-blue-500 ml-auto shrink-0" />
+                  </a>
+                </div>
+              </div>
 
               {/* Stick figure */}
               <div className="flex justify-center py-4">
