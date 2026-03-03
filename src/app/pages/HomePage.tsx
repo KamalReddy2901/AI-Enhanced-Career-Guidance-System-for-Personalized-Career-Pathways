@@ -45,7 +45,7 @@ export function HomePage() {
   }, [searchJob, searchJobAI, setCurrentJob, addToHistory, navigate, setRefinementCount, isAIEnabled]);
 
   return (
-    <div className="relative bg-white">
+    <div className="relative bg-background">
       {/* ── HERO SECTION ───────────────────────────────────── */}
       <div className="min-h-screen relative overflow-hidden">
       <ScrollingTitles paused={isSearchAnimating} dimmed={isSearchAnimating} />
@@ -320,7 +320,7 @@ export function HomePage() {
               {
                 icon: <Brain size={20} />,
                 title: 'Career Quiz',
-                body: 'Answer 15 questions about your values, pace, and interests. Get matched to careers that fit.',
+                body: 'Answer 7 questions about your values, pace, and interests. Get matched to careers that fit.',
               },
               {
                 icon: <BarChart2 size={20} />,
@@ -335,7 +335,7 @@ export function HomePage() {
             ].map((feat, i) => (
               <motion.div
                 key={feat.title}
-                className="p-8 bg-white hover:bg-black/2 transition-colors"
+                className="p-8 bg-background hover:bg-black/2 transition-colors"
                 initial={{ opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -386,7 +386,7 @@ export function HomePage() {
               </div>
               <div className="mt-8 flex items-center gap-4">
                 <div className="h-px flex-1 bg-black/10" />
-                <span className="font-[JetBrains_Mono] text-black/30" style={{ fontSize: '0.72rem' }}>- Kamal Reddy, 2025</span>
+                <span className="font-[JetBrains_Mono] text-black/30" style={{ fontSize: '0.72rem' }}>- Kamal Reddy</span>
               </div>
             </div>
           </motion.div>

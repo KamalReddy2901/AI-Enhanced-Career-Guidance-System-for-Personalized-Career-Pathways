@@ -55,14 +55,14 @@ export function AuthPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 size={24} className="animate-spin text-black/30" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Top strip */}
       <div className="border-b border-black/8 py-4 px-6 flex items-center justify-between">
         <button

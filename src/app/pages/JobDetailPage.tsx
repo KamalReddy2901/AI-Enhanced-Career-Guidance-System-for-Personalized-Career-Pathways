@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { downloadDossierPDF } from '../utils/pdfExport';
 import { generateShareUrl, decodeDossier } from '../utils/share';
 import { sounds } from '../utils/sounds';
+import { usePreferences } from '../hooks/usePreferences';
 
 /**
  * Break up timeline text into paragraphs.
@@ -68,7 +69,8 @@ export function JobDetailPage() {
   const location = useLocation();
   const { currentJob, setCurrentJob, searchJobAI, searchJob, addToHistory, setRefinementCount, isAIEnabled, setComparisonJob } = useApp();
   const { addFavorite, removeFavorite, isFavorite } = useFavorites();
-  const [activeTimeline, setActiveTimeline] = useState<'week' | 'quarter' | 'year'>('week');
+  const { preferences } = usePreferences();
+  const [activeTimeline, setActiveTimeline] = useState<'week' | 'quarter' | 'year'>(preferences.defaultView);
   const [showChat, setShowChat] = useState(false);
   const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'assistant'; text: string }[]>([]);
   const [chatInput, setChatInput] = useState('');
@@ -249,7 +251,7 @@ export function JobDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white pt-20 pb-16">
+    <div className="min-h-screen bg-background pt-20 pb-16">
       <div className="max-w-4xl mx-auto px-6">
         {/* Back */}
         <motion.button

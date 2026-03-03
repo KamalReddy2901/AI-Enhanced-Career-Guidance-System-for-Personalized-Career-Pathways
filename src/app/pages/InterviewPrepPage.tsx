@@ -70,7 +70,7 @@ export function InterviewPrepPage() {
 
   if (!isAIEnabled) {
     return (
-      <div className="min-h-screen bg-white pt-20 pb-16">
+      <div className="min-h-screen bg-background pt-20 pb-16">
         <div className="max-w-3xl mx-auto px-6 text-center py-20">
           <StickFigure pose="reading" size={80} className="mx-auto mb-6" />
           <h2 className="font-[Playfair_Display] text-black mb-3" style={{ fontSize: '1.6rem' }}>
@@ -93,7 +93,7 @@ export function InterviewPrepPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white pt-20 pb-16">
+    <div className="min-h-screen bg-background pt-20 pb-16">
       <div className="max-w-4xl mx-auto px-6">
         {/* Back */}
         <motion.button

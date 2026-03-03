@@ -7,7 +7,7 @@ export function NotFoundPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-white pt-20 pb-16 flex items-center justify-center px-6">
+    <div className="min-h-screen bg-background pt-20 pb-16 flex items-center justify-center px-6">
       <motion.div
         className="text-center max-w-md"
         initial={{ opacity: 0, y: 20 }}

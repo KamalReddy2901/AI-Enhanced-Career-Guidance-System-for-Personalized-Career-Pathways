@@ -80,7 +80,7 @@ export function JobOverviewPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white pt-20 pb-16">
+    <div className="min-h-screen bg-background pt-20 pb-16">
       <div className="max-w-3xl mx-auto px-6">
         {/* Back button */}
         <motion.button
@@ -131,7 +131,7 @@ export function JobOverviewPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <div className="absolute -top-3 left-6 bg-white px-3">
+          <div className="absolute -top-3 left-6 bg-background px-3">
             <span className="font-[Inter] text-black/40 uppercase tracking-[0.15em]" style={{ fontSize: '0.65rem' }}>
               Preliminary Assessment
             </span>

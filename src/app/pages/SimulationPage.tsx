@@ -213,11 +213,11 @@ export function SimulationPage() {
   const correctCount = completedScenarios.filter(s => s.wasCorrect).length;
 
   return (
-    <div className="min-h-screen bg-white" ref={containerRef}>
+    <div className="min-h-screen bg-background" ref={containerRef}>
       {/* Progress Bar */}
       {currentIndex >= 0 && !isComplete && (
         <motion.div
-          className="fixed top-14 left-0 right-0 z-40 bg-white/80 backdrop-blur-sm border-b border-black/5"
+          className="fixed top-14 left-0 right-0 z-40 bg-[#f5ede0]/80 backdrop-blur-sm border-b border-black/5"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >

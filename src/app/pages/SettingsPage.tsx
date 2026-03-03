@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { ChevronLeft, Settings, Volume2, VolumeX, Trash2, Download, Key, Check, LogOut, User, LogIn } from 'lucide-react';
+import { ChevronLeft, Settings, Volume2, VolumeX, Trash2, Key, Check, LogOut, User, LogIn } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { usePreferences } from '../hooks/usePreferences';
 import { useApp } from '../context/AppContext';
@@ -74,7 +74,7 @@ export function SettingsPage() {
   const currentKey = getApiKey();
 
   return (
-    <div className="min-h-screen bg-white pt-20 pb-16">
+    <div className="min-h-screen bg-background pt-20 pb-16">
       <div className="max-w-2xl mx-auto px-6">
         {/* Back */}
         <motion.button
@@ -202,13 +202,6 @@ export function SettingsPage() {
                 { value: 'year', label: '1 Year' },
               ]}
               onChange={(value) => setPreferences({ defaultView: value as 'week' | 'quarter' | 'year' })}
-            />
-
-            <ToggleSetting
-              label="Compact Mode"
-              description="Use a more condensed layout throughout the app"
-              enabled={preferences.compactMode}
-              onToggle={() => setPreferences({ compactMode: !preferences.compactMode })}
             />
 
             <ToggleSetting
@@ -348,7 +341,7 @@ export function SettingsPage() {
                   <span>&bull;</span>
                   <span>Powered by Groq (Llama 3.3 70B)</span>
                   <span>&bull;</span>
-                  <a href="https://github.com" className="underline hover:text-black/60">GitHub</a>
+                  <a href="https://github.com/KamalReddy2901/career-sim" target="_blank" rel="noopener noreferrer" className="underline hover:text-black/60">GitHub</a>
                 </div>
               </div>
             </div>

@@ -65,8 +65,8 @@ export const JOB_TITLES: string[] = [
   "Influencer Marketing Manager", "SEO Specialist", "Copywriter", "Publicist", "Event Planner",
   "Wedding Planner", "Travel Agent", "Tour Guide", "Hotel Manager", "Restaurant Manager",
   "Barista", "Butcher", "Baker", "Fishmonger", "Food Critic",
-  "Winemaker", "Chocolatier", "Food Scientist", "Agricultural Scientist", "Farmer",
-  "Rancher", "Fisherman", "Beekeeper", "Arborist", "Horticulturist",
+  "Chocolatier", "Food Scientist", "Agricultural Scientist", "Farmer", "Rancher",
+  "Fisherman", "Arborist", "Horticulturist",
 ];
 
 export function generateJobData(title: string): JobData {
@@ -275,7 +275,8 @@ function generateFunFact(title: string): string {
     `A survey found that 73% of ${title}s would choose the same career path if starting over.`,
     `The busiest day of the week for most ${title}s is Tuesday, not Monday as commonly believed.`,
   ];
-  return facts[Math.floor(Math.random() * facts.length)];
+  // Deterministic pick based on title length to avoid changing on re-render
+  return facts[title.length % facts.length];
 }
 
 export function findClosestJob(query: string): string {

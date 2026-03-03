@@ -103,7 +103,7 @@ export function MoodMatchPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white pt-20 pb-16">
+    <div className="min-h-screen bg-background pt-20 pb-16">
       <div className="max-w-2xl mx-auto px-6">
         <motion.button
           onClick={() => navigate('/')}
