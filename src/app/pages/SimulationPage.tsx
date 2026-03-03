@@ -9,6 +9,7 @@ import { generateSimulationAI, generateSimulationSummary, hasApiKey } from '../s
 import { downloadAssessmentPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
+import { hapticLight, hapticWarn, hapticSuccess } from '../utils/haptic';
 
 // Black confetti particles that fall on simulation completion
 function BlackConfetti({ active }: { active: boolean }) {
@@ -141,6 +142,8 @@ export function SimulationPage() {
     setSelectedChoice(choiceIndex);
     const wasCorrect = choiceIndex === currentScenario?.correctChoiceIndex;
     setCompletedScenarios(prev => [...prev, { index: currentIndex, wasCorrect }]);
+    // Haptic feedback
+    if (wasCorrect) hapticLight(); else hapticWarn();
 
     setTimeout(() => {
       setShowExplanation(true);
@@ -149,6 +152,7 @@ export function SimulationPage() {
 
   const handleNext = () => {
     if (currentIndex >= scenarios.length - 1) {
+      hapticSuccess();
       setIsComplete(true);
       // Generate AI summary
       if (hasApiKey()) {

@@ -602,8 +602,8 @@ export function downloadComparisonPDF(
     { label: 'SKILLS', a: jobA.skills.join(', '), b: jobB.skills.join(', ') },
     {
       label: 'WORK-LIFE BALANCE',
-      a: extras.wlbA ? `Rating: ${extras.wlbA.overallRating}/10 — ${extras.wlbA.pros.slice(0, 2).join('; ')}` : '—',
-      b: extras.wlbB ? `Rating: ${extras.wlbB.overallRating}/10 — ${extras.wlbB.pros.slice(0, 2).join('; ')}` : '—',
+      a: extras.wlbA ? `Score: ${extras.wlbA.overallScore}/100 — ${extras.wlbA.summary}` : '—',
+      b: extras.wlbB ? `Score: ${extras.wlbB.overallScore}/100 — ${extras.wlbB.summary}` : '—',
     },
     {
       label: 'CERTIFICATIONS',

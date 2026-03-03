@@ -6,8 +6,8 @@ import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import type { JobData } from '../data/jobs';
 import {
-  getWorkLifeBalance, getLearnMoreResources, hasApiKey,
-  type WorkLifeBalance, type LearnMoreResources
+  getWorkLifeBalance, getLearnMoreResources, getInterviewDifficulty, getGrowthOutlook, hasApiKey,
+  type WorkLifeBalance, type LearnMoreResources, type InterviewDifficulty,
 } from '../services/ai';
 import { downloadComparisonPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
@@ -75,6 +75,12 @@ export function ComparisonPage() {
   const [learnMoreB, setLearnMoreB] = useState<LearnMoreResources | null>(null);
   const [wlbLoading, setWlbLoading] = useState(false);
   const [learnLoading, setLearnLoading] = useState(false);
+  const [diffA, setDiffA] = useState<InterviewDifficulty | null>(null);
+  const [diffB, setDiffB] = useState<InterviewDifficulty | null>(null);
+  const [diffLoading, setDiffLoading] = useState(false);
+  const [growthA, setGrowthA] = useState<string | null>(null);
+  const [growthB, setGrowthB] = useState<string | null>(null);
+  const [growthLoading, setGrowthLoading] = useState(false);
 
   const [jobA, jobB] = comparisonJobs;
 
@@ -91,6 +97,16 @@ export function ComparisonPage() {
       .then(([a, b]) => { setLearnMoreA(a); setLearnMoreB(b); })
       .catch(() => {})
       .finally(() => setLearnLoading(false));
+    setDiffLoading(true);
+    Promise.all([getInterviewDifficulty(jobA.title), getInterviewDifficulty(jobB.title)])
+      .then(([a, b]) => { setDiffA(a); setDiffB(b); })
+      .catch(() => {})
+      .finally(() => setDiffLoading(false));
+    setGrowthLoading(true);
+    Promise.all([getGrowthOutlook(jobA.title), getGrowthOutlook(jobB.title)])
+      .then(([a, b]) => { setGrowthA(a); setGrowthB(b); })
+      .catch(() => {})
+      .finally(() => setGrowthLoading(false));
   }, [jobA?.title, jobB?.title]);
 
   const handleShare = () => {
@@ -310,7 +326,7 @@ export function ComparisonPage() {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <span className="font-[Inter] text-black/50" style={{ fontSize: '0.8rem' }}>
-                            Rating: {wlbA.overallRating}/10
+                            Rating: {wlbA.overallScore}/100
                           </span>
                         </div>
                         <div className="flex flex-col gap-0.5">
@@ -328,7 +344,7 @@ export function ComparisonPage() {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <span className="font-[Inter] text-black/50" style={{ fontSize: '0.8rem' }}>
-                            Rating: {wlbB.overallRating}/10
+                            Rating: {wlbB.overallScore}/100
                           </span>
                         </div>
                         <div className="flex flex-col gap-0.5">
@@ -366,6 +382,99 @@ export function ComparisonPage() {
                           <span key={i} className="font-[Inter] text-black/50" style={{ fontSize: '0.75rem' }}>· {c}</span>
                         ))}
                       </div>
+                    ) : null
+                  }
+                />
+              )}
+
+              {/* Subreddits */}
+              {(learnLoading || learnMoreA || learnMoreB) && (
+                <CompareRow
+                  label="Communities"
+                  valueA={
+                    learnLoading ? (
+                      <Loader2 size={12} className="animate-spin text-black/25" />
+                    ) : learnMoreA ? (
+                      <div className="flex flex-col gap-0.5">
+                        {learnMoreA.subreddits.slice(0, 3).map((r, i) => (
+                          <a key={i} href={`https://reddit.com/r/${r.name.replace(/^r\//, '')}`} target="_blank" rel="noopener noreferrer"
+                            className="font-[Inter] text-black/50 hover:text-black transition-colors underline underline-offset-2" style={{ fontSize: '0.75rem' }}>
+                            r/{r.name.replace(/^r\//, '')}
+                          </a>
+                        ))}
+                      </div>
+                    ) : null
+                  }
+                  valueB={
+                    learnLoading ? (
+                      <Loader2 size={12} className="animate-spin text-black/25" />
+                    ) : learnMoreB ? (
+                      <div className="flex flex-col gap-0.5">
+                        {learnMoreB.subreddits.slice(0, 3).map((r, i) => (
+                          <a key={i} href={`https://reddit.com/r/${r.name.replace(/^r\//, '')}`} target="_blank" rel="noopener noreferrer"
+                            className="font-[Inter] text-black/50 hover:text-black transition-colors underline underline-offset-2" style={{ fontSize: '0.75rem' }}>
+                            r/{r.name.replace(/^r\//, '')}
+                          </a>
+                        ))}
+                      </div>
+                    ) : null
+                  }
+                />
+              )}
+
+              {/* Interview Difficulty */}
+              {(diffLoading || diffA || diffB) && (
+                <CompareRow
+                  label="Interview"
+                  valueA={
+                    diffLoading ? (
+                      <Loader2 size={12} className="animate-spin text-black/25" />
+                    ) : diffA ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-0.5">
+                          {Array.from({ length: 5 }, (_, i) => (
+                            <span key={i} className={i < diffA.score ? 'text-black/70' : 'text-black/15'} style={{ fontSize: '0.9rem' }}>●</span>
+                          ))}
+                          <span className="font-[Inter] text-black/45 ml-1.5" style={{ fontSize: '0.72rem' }}>{diffA.label}</span>
+                        </div>
+                        <p className="font-[Inter] text-black/40" style={{ fontSize: '0.72rem' }}>{diffA.notes}</p>
+                      </div>
+                    ) : null
+                  }
+                  valueB={
+                    diffLoading ? (
+                      <Loader2 size={12} className="animate-spin text-black/25" />
+                    ) : diffB ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-0.5">
+                          {Array.from({ length: 5 }, (_, i) => (
+                            <span key={i} className={i < diffB.score ? 'text-black/70' : 'text-black/15'} style={{ fontSize: '0.9rem' }}>●</span>
+                          ))}
+                          <span className="font-[Inter] text-black/45 ml-1.5" style={{ fontSize: '0.72rem' }}>{diffB.label}</span>
+                        </div>
+                        <p className="font-[Inter] text-black/40" style={{ fontSize: '0.72rem' }}>{diffB.notes}</p>
+                      </div>
+                    ) : null
+                  }
+                />
+              )}
+
+              {/* Growth Outlook */}
+              {(growthLoading || growthA || growthB) && (
+                <CompareRow
+                  label="Outlook"
+                  valueA={
+                    growthLoading ? (
+                      <Loader2 size={12} className="animate-spin text-black/25" />
+                    ) : growthA ? (
+                      <span className="font-[Inter] text-black/55 italic" style={{ fontSize: '0.8rem' }}>{growthA}</span>
+                    ) : null
+                  }
+                  valueB={
+                    growthLoading ? (
+                      <Loader2 size={12} className="animate-spin text-black/25" />
+                    ) : growthB ? (
+                      <span className="font-[Inter] text-black/55 italic" style={{ fontSize: '0.8rem' }}>{growthB}</span>
                     ) : null
                   }
                 />

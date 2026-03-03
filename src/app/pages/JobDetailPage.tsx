@@ -1100,6 +1100,7 @@ export function JobDetailPage() {
       <div className="fixed bottom-0 left-0 right-0 z-30 sm:hidden bg-[#f9f8f7]/95 dark:bg-[#161614]/95 backdrop-blur-md border-t border-black/10 dark:border-white/10 flex print:hidden">
         <button
           onClick={() => { sounds.click(); navigate(`/simulation?job=${encodeURIComponent(currentJob?.title ?? '')}`); }}
+          aria-label="Start day-in-the-life simulation"
           className="flex-1 flex flex-col items-center gap-1 py-3 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
         >
           <Play size={17} />
@@ -1108,6 +1109,7 @@ export function JobDetailPage() {
         {isAIEnabled && (
           <button
             onClick={() => { sounds.click(); navigate(`/interview-prep?job=${encodeURIComponent(currentJob?.title ?? '')}`); }}
+            aria-label="Go to interview prep"
             className="flex-1 flex flex-col items-center gap-1 py-3 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
           >
             <UserCheck size={17} />
@@ -1117,6 +1119,7 @@ export function JobDetailPage() {
         {isAIEnabled && (
           <button
             onClick={() => { setShowChat(true); sounds.slide(); }}
+            aria-label="Ask AI about this career"
             className="flex-1 flex flex-col items-center gap-1 py-3 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
           >
             <MessageCircle size={17} />
@@ -1125,6 +1128,7 @@ export function JobDetailPage() {
         )}
         <button
           onClick={handleShare}
+          aria-label="Copy share link for this dossier"
           className="flex-1 flex flex-col items-center gap-1 py-3 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
         >
           <Share2 size={17} />

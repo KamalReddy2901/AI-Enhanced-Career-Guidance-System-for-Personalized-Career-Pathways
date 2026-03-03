@@ -801,7 +801,7 @@ export async function getCareerTransition(
   if (cached) return cached;
 
   return withRetry(async () => {
-    const raw = await callGroq(
+    const raw = await callGroqStreaming(
       'You are a career transition coach. Return ONLY valid JSON. Be specific and practical.',
       `Create a detailed career transition plan from "${fromTitle}" to "${toTitle}"${isIndia ? ' in the Indian job market context. Use INR (LPA format) for salary figures, reference Indian certifications, companies and platforms where relevant.' : ''}. Return this exact JSON:
 {
@@ -819,7 +819,7 @@ export async function getCareerTransition(
   "successStory": "A realistic example of someone who made this transition successfully (1-2 sentences)"
 }
 Include 3-4 phases. Be honest about difficulty and realistic about timeframes.`,
-      { temperature: 0.6, maxTokens: 1200, jsonMode: true, signal }
+      { temperature: 0.6, maxTokens: 1200, signal }
     );
 
     const result = JSON.parse(raw) as CareerTransitionPlan;
@@ -862,7 +862,7 @@ export async function getCareerRoadmap(jobTitle: string, signal?: AbortSignal): 
       : 'Be moderately detailed — include 3 milestones and 3 skills per stage.';
 
   return withRetry(async () => {
-    const raw = await callGroq(
+    const raw = await callGroqStreaming(
       'You are a career development strategist. Return ONLY valid JSON. Be specific to this profession.',
       `Create a comprehensive career roadmap for "${jobTitle}"${isIndia ? ' in the Indian job market. Use INR (LPA format) for salaries, reference relevant Indian companies, certifications (e.g. GATE, CA, UPSC where relevant), and realistic Indian career progression timelines.' : ''}. ${detailInstruction} Return this exact JSON:
 {
@@ -885,7 +885,7 @@ export async function getCareerRoadmap(jobTitle: string, signal?: AbortSignal): 
   "industryOutlook": "2-3 sentences on where this career is heading over the next decade"
 }
 Include 5 stages (Entry, Junior, Mid-level, Senior, Expert/Leadership). Use distinct colors for each stage.`,
-      { temperature: 0.6, maxTokens: 1400, jsonMode: true, signal }
+      { temperature: 0.6, maxTokens: 1400, signal }
     );
 
     const result = JSON.parse(raw) as CareerRoadmap;
@@ -907,6 +907,62 @@ export interface WorkLifeBalance {
   bestFor: string;
   worstFor: string;
 }
+
+// ─── Interview Difficulty ──────────────────────────────────────
+
+export interface InterviewDifficulty {
+  score: number; // 1-5
+  label: string; // e.g. "Moderately Hard"
+  notes: string; // one sentence
+}
+
+export async function getInterviewDifficulty(jobTitle: string, signal?: AbortSignal): Promise<InterviewDifficulty> {
+  const cacheKey = `interview_diff_${jobTitle.toLowerCase().replace(/\s+/g, '_')}`;
+  const cached = getCached<InterviewDifficulty>(cacheKey);
+  if (cached) return cached;
+
+  return withRetry(async () => {
+    const raw = await callGroq(
+      'You are a recruiting expert. Return ONLY valid JSON.',
+      `Rate the typical interview difficulty for "${jobTitle}" on a 1-5 scale. Return this exact JSON:
+{
+  "score": 3,
+  "label": "Moderately Hard",
+  "notes": "One sentence on what makes interviews challenging or easy for this role."
+}
+Score: 1 = Very Easy, 2 = Easy, 3 = Moderate, 4 = Hard, 5 = Very Hard.`,
+      { temperature: 0.4, maxTokens: 200, jsonMode: true, signal }
+    );
+
+    const result = JSON.parse(raw) as InterviewDifficulty;
+    setCache(cacheKey, result);
+    return result;
+  });
+}
+
+// ─── Growth Outlook ────────────────────────────────────────────
+
+export async function getGrowthOutlook(jobTitle: string, signal?: AbortSignal): Promise<string> {
+  const cacheKey = `growth_outlook_${jobTitle.toLowerCase().replace(/\s+/g, '_')}`;
+  const cached = getCached<string>(cacheKey);
+  if (cached) return cached;
+
+  return withRetry(async () => {
+    const raw = await callGroq(
+      'You are a labour market analyst. Return ONLY valid JSON.',
+      `Provide a one-sentence growth outlook for the "${jobTitle}" career over the next decade. Return this exact JSON:
+{"outlook": "One sentence describing whether the role is growing, stable, or declining and why."}`,
+      { temperature: 0.5, maxTokens: 150, jsonMode: true, signal }
+    );
+
+    const parsed = JSON.parse(raw) as { outlook: string };
+    const result = parsed.outlook || '';
+    setCache(cacheKey, result);
+    return result;
+  });
+}
+
+// ─── Work-Life Balance Radar ────────────────────────────────────
 
 export async function getWorkLifeBalance(jobTitle: string, signal?: AbortSignal): Promise<WorkLifeBalance> {
   const cacheKey = `wlb_${jobTitle.toLowerCase().replace(/\s+/g, '_')}`;
