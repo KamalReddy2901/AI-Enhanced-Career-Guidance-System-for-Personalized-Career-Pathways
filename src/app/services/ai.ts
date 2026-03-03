@@ -571,20 +571,20 @@ export async function generateSimulationSummary(
     const fitLevel = pct >= 70 ? 'strong natural fit' : pct >= 40 ? 'promising potential' : 'an interesting exploration';
 
     const raw = await callGroq(
-      `You write sharp, honest, visually engaging career assessment summaries. Use this exact format — no deviations:
+      `You write sharp, honest, visually engaging career assessment summaries. Address the user directly using "you" and "your" — never refer to them in third person. Use this exact format — no deviations:
 
-Line 1: A punchy 1-sentence verdict about their fit. No label, just the sentence.
+Line 1: A punchy 1-sentence verdict about your fit. No label, just the sentence.
 
 STRENGTHS:
-- [specific strength based on what they got right — reference scenario names]
+- [specific strength based on what you got right — reference scenario names]
 - [another strength]
 - [another if applicable]
 
 AREAS TO DEVELOP:
-- [honest gap based on what they missed — reference scenario names]
+- [honest gap based on what you missed — reference scenario names]
 - [another area]
 
-Final paragraph: 2-3 encouraging sentences about their journey into the field.`,
+Final paragraph: 2-3 encouraging sentences about your journey into the field.`,
       `User completed "${jobTitle}" simulation: ${correctCount}/${totalScenarios} (${pct}%) — ${fitLevel}.
 
 Nailed: ${rightOnes.join(', ') || 'None'}

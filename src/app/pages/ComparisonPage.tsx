@@ -270,14 +270,14 @@ export function ComparisonPage() {
                 label="Skills"
                 valueA={
                   <div className="flex flex-wrap gap-1">
-                    {jobA.skills.slice(0, 6).map(s => (
+                    {(jobA.skills || []).slice(0, 6).map(s => (
                       <span key={s} className="border border-black/10 px-2 py-0.5 text-black/50" style={{ fontSize: '0.72rem' }}>{s}</span>
                     ))}
                   </div>
                 }
                 valueB={
                   <div className="flex flex-wrap gap-1">
-                    {jobB.skills.slice(0, 6).map(s => (
+                    {(jobB.skills || []).slice(0, 6).map(s => (
                       <span key={s} className="border border-black/10 px-2 py-0.5 text-black/50" style={{ fontSize: '0.72rem' }}>{s}</span>
                     ))}
                   </div>
@@ -287,7 +287,7 @@ export function ComparisonPage() {
                 label="Education"
                 valueA={
                   <ul className="space-y-1">
-                    {jobA.education.slice(0, 3).map((e, i) => (
+                    {(jobA.education || []).slice(0, 3).map((e, i) => (
                       <li key={i} className="flex items-start gap-1.5">
                         <span className="w-1 h-1 rounded-full bg-black/30 mt-2 shrink-0" />
                         <span style={{ fontSize: '0.8rem' }}>{e}</span>
@@ -297,7 +297,7 @@ export function ComparisonPage() {
                 }
                 valueB={
                   <ul className="space-y-1">
-                    {jobB.education.slice(0, 3).map((e, i) => (
+                    {(jobB.education || []).slice(0, 3).map((e, i) => (
                       <li key={i} className="flex items-start gap-1.5">
                         <span className="w-1 h-1 rounded-full bg-black/30 mt-2 shrink-0" />
                         <span style={{ fontSize: '0.8rem' }}>{e}</span>
