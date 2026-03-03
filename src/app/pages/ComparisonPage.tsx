@@ -400,16 +400,13 @@ export function ComparisonPage() {
                       <Loader2 size={12} className="animate-spin text-black/25" />
                     ) : wlbA ? (
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-[Inter] text-black/50" style={{ fontSize: '0.8rem' }}>
-                            Rating: {wlbA.overallScore}/100
-                          </span>
+                        <span className="font-[Inter] font-medium text-black/60" style={{ fontSize: '0.85rem' }}>
+                          {wlbA.overallScore}/100
+                        </span>
+                        <div className="w-24 h-1 bg-black/10 mt-1 mb-1">
+                          <div className="h-full bg-black/50" style={{ width: `${wlbA.overallScore}%` }} />
                         </div>
-                        <div className="flex flex-col gap-0.5">
-                          {wlbA.pros.slice(0, 2).map((p, i) => (
-                            <span key={i} className="font-[Inter] text-black/45" style={{ fontSize: '0.75rem' }}>+ {p}</span>
-                          ))}
-                        </div>
+                        <p className="font-[Inter] text-black/45" style={{ fontSize: '0.72rem', lineHeight: 1.5 }}>{wlbA.bestFor}</p>
                       </div>
                     ) : null
                   }
@@ -418,16 +415,13 @@ export function ComparisonPage() {
                       <Loader2 size={12} className="animate-spin text-black/25" />
                     ) : wlbB ? (
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-[Inter] text-black/50" style={{ fontSize: '0.8rem' }}>
-                            Rating: {wlbB.overallScore}/100
-                          </span>
+                        <span className="font-[Inter] font-medium text-black/60" style={{ fontSize: '0.85rem' }}>
+                          {wlbB.overallScore}/100
+                        </span>
+                        <div className="w-24 h-1 bg-black/10 mt-1 mb-1">
+                          <div className="h-full bg-black/50" style={{ width: `${wlbB.overallScore}%` }} />
                         </div>
-                        <div className="flex flex-col gap-0.5">
-                          {wlbB.pros.slice(0, 2).map((p, i) => (
-                            <span key={i} className="font-[Inter] text-black/45" style={{ fontSize: '0.75rem' }}>+ {p}</span>
-                          ))}
-                        </div>
+                        <p className="font-[Inter] text-black/45" style={{ fontSize: '0.72rem', lineHeight: 1.5 }}>{wlbB.bestFor}</p>
                       </div>
                     ) : null
                   }
@@ -444,7 +438,7 @@ export function ComparisonPage() {
                     ) : learnMoreA ? (
                       <div className="flex flex-col gap-0.5">
                         {learnMoreA.certifications.slice(0, 3).map((c, i) => (
-                          <span key={i} className="font-[Inter] text-black/50" style={{ fontSize: '0.75rem' }}>· {c}</span>
+                          <span key={i} className="font-[Inter] text-black/50" style={{ fontSize: '0.75rem' }}>· {c.name}</span>
                         ))}
                       </div>
                     ) : null
@@ -455,7 +449,7 @@ export function ComparisonPage() {
                     ) : learnMoreB ? (
                       <div className="flex flex-col gap-0.5">
                         {learnMoreB.certifications.slice(0, 3).map((c, i) => (
-                          <span key={i} className="font-[Inter] text-black/50" style={{ fontSize: '0.75rem' }}>· {c}</span>
+                          <span key={i} className="font-[Inter] text-black/50" style={{ fontSize: '0.75rem' }}>· {c.name}</span>
                         ))}
                       </div>
                     ) : null

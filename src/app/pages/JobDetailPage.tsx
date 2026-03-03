@@ -5,7 +5,7 @@ import {
   ChevronLeft, Play, MessageCircle, X, Send, Sparkles, Loader2, RefreshCw, Download,
   Briefcase, GraduationCap, Wrench, MapPin, TrendingUp, Lightbulb, ArrowRight,
   Calendar, CalendarDays, CalendarRange, Scale, Star, UserCheck, Share2,
-  BookOpen, Hash, Award, ExternalLink, Activity, Building2, ImageIcon
+  BookOpen, Hash, Award, ExternalLink, Activity, Building2
 } from 'lucide-react';
 import {
   RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip
@@ -18,7 +18,7 @@ import {
   type RelatedCareer, type LearnMoreResources, type WorkLifeBalance
 } from '../services/ai';
 import { toast } from 'sonner';
-import { downloadDossierPDF, generateShareCard } from '../utils/pdfExport';
+import { downloadDossierPDF } from '../utils/pdfExport';
 import { generateShareUrl, decodeDossier } from '../utils/share';
 import { sounds } from '../utils/sounds';
 import { usePreferences } from '../hooks/usePreferences';
@@ -105,7 +105,6 @@ export function JobDetailPage() {
   };
 
   const DOSSIER_SECTIONS = [
-    { id: 'hiring', label: 'Hiring' },
     { id: 'about', label: 'About' },
     { id: 'skills', label: 'Skills' },
     { id: 'education', label: 'Education' },
@@ -128,13 +127,15 @@ export function JobDetailPage() {
       const docH = document.documentElement.scrollHeight - window.innerHeight;
       setScrollProgress(docH > 0 ? Math.min(window.scrollY / docH, 1) : 0);
 
-      // Determine active section
+      // Determine active section — a section is active when its top is at or just below the fixed headers
+      // Navbar 56 px + progress bar 3 px + dossier nav ~40 px + spacing = ~110 px
+      const HEADER_OFFSET = 110;
       const entries = Object.entries(sectionRefs.current).filter(([, el]) => el !== null);
       let currentSection = '';
       for (const [id, el] of entries) {
         if (el) {
           const rect = el.getBoundingClientRect();
-          if (rect.top <= 180) currentSection = id;
+          if (rect.top <= HEADER_OFFSET + 16) currentSection = id;
         }
       }
       setActiveSection(currentSection);
@@ -367,7 +368,6 @@ export function JobDetailPage() {
               <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-none py-2" style={{ scrollbarWidth: 'none' }}>
                 {DOSSIER_SECTIONS.filter(s => {
                   // Only show sections that exist in the DOM
-                  if (s.id === 'hiring') return currentJob.relevantForCompanies && currentJob.topCompanies && currentJob.topCompanies.length > 0;
                   if (s.id === 'wlb') return wlbData || wlbLoading;
                   if (s.id === 'learn-more') return learnMore || learnMoreLoading;
                   if (s.id === 'related') return preferences.showRelatedCareers && (relatedCareers.length > 0 || loadingRelated);
@@ -377,7 +377,12 @@ export function JobDetailPage() {
                     key={section.id}
                     onClick={() => {
                       const el = sectionRefs.current[section.id];
-                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      if (el) {
+                        // Navbar 56px + progress bar 3px + dossier nav ~40px = ~99px, add 8px breathing room
+                        const HEADER_OFFSET = 107;
+                        const top = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+                        window.scrollTo({ top, behavior: 'smooth' });
+                      }
                     }}
                     className={`shrink-0 px-2.5 py-1 font-[Inter] transition-all whitespace-nowrap ${
                       activeSection === section.id
@@ -439,6 +444,41 @@ export function JobDetailPage() {
                 </span>
               </div>
 
+              {/* Top Companies — compact inline clickable logos */}
+              {currentJob.topCompanies && currentJob.topCompanies.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                  <span className="font-[Inter] text-black/25 uppercase tracking-[0.1em] shrink-0" style={{ fontSize: '0.58rem' }}>Hiring at:</span>
+                  {currentJob.topCompanies.slice(0, 6).map((company, i) => (
+                    <a
+                      key={i}
+                      href={`https://www.google.com/search?q=${encodeURIComponent(company.name + ' ' + currentJob.title + ' jobs')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={company.name}
+                      className="flex items-center gap-1.5 border border-black/12 px-2 py-1 hover:border-black/30 hover:bg-black/3 transition-all group"
+                    >
+                      <div className="w-4 h-4 flex items-center justify-center overflow-hidden shrink-0">
+                        <img
+                          src={`https://logo.clearbit.com/${company.domain}`}
+                          alt={company.name}
+                          className="w-4 h-4 object-contain"
+                          onError={(e) => {
+                            const img = e.target as HTMLImageElement;
+                            img.style.display = 'none';
+                            const span = img.nextElementSibling as HTMLElement | null;
+                            if (span) span.style.display = 'inline';
+                          }}
+                        />
+                        <span className="font-[Inter] text-black/50 font-bold" style={{ fontSize: '0.52rem', display: 'none' }}>
+                          {company.name.slice(0, 2).toUpperCase()}
+                        </span>
+                      </div>
+                      <span className="font-[Inter] text-black/50 group-hover:text-black transition-colors" style={{ fontSize: '0.7rem' }}>{company.name}</span>
+                    </a>
+                  ))}
+                </div>
+              )}
+
               {/* Action bar */}
               <div className="flex flex-wrap gap-2 mt-4 print:hidden">
                 {isAIEnabled && (
@@ -489,79 +529,11 @@ export function JobDetailPage() {
                   <Share2 size={12} />
                   Share
                 </motion.button>
-                <motion.button
-                  onClick={async () => {
-                    try {
-                      const blob = await generateShareCard(currentJob);
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `${currentJob.title.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-share-card.png`;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      URL.revokeObjectURL(url);
-                      toast.success('Share card downloaded!');
-                    } catch {
-                      toast.error('Failed to generate share card');
-                    }
-                  }}
-                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all font-[Inter]"
-                  style={{ fontSize: '0.72rem' }}
-                  whileHover={{ y: -1 }}
-                >
-                  <ImageIcon size={12} />
-                  Share Card
-                </motion.button>
+
               </div>
             </div>
           </div>
         </motion.div>
-
-        {/* Who's Hiring */}
-        {currentJob.relevantForCompanies && currentJob.topCompanies && currentJob.topCompanies.length > 0 && (
-          <Section title="Who's Hiring" icon={<Building2 size={16} />} delay={0.08} sectionRef={registerSection('hiring')}>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {currentJob.topCompanies.map((company, i) => (
-                <motion.a
-                  key={i}
-                  href={`https://www.google.com/search?q=${encodeURIComponent(company.name + ' ' + currentJob.title + ' careers jobs')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex flex-col items-center gap-3 p-5 border border-black/8 hover:border-black/20 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.04)] transition-all group bg-white"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 + i * 0.07 }}
-                  whileHover={{ y: -3, scale: 1.02 }}
-                >
-                  <div className="w-14 h-14 rounded-xl border border-black/8 flex items-center justify-center overflow-hidden shrink-0 bg-gradient-to-br from-white to-black/[0.02] shadow-sm">
-                    <img
-                      src={`https://logo.clearbit.com/${company.domain}`}
-                      alt={company.name}
-                      className="w-10 h-10 object-contain"
-                      onError={(e) => {
-                        const img = e.target as HTMLImageElement;
-                        img.style.display = 'none';
-                        const sibling = img.nextElementSibling as HTMLElement | null;
-                        if (sibling) sibling.style.display = 'flex';
-                      }}
-                    />
-                    <span
-                      className="font-[Inter] text-black/50 font-bold items-center justify-center"
-                      style={{ fontSize: '0.9rem', display: 'none' }}
-                    >
-                      {company.name.slice(0, 2).toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="text-center min-w-0">
-                    <span className="font-[Inter] text-black font-medium block truncate" style={{ fontSize: '0.85rem' }}>{company.name}</span>
-                    <p className="font-[Inter] text-black/40 mt-0.5 line-clamp-2" style={{ fontSize: '0.7rem', lineHeight: 1.4 }}>{company.description}</p>
-                  </div>
-                </motion.a>
-              ))}
-            </div>
-          </Section>
-        )}
 
         {/* Full Description */}
         <Section title="About the Role" icon={<Briefcase size={16} />} delay={0.1} sectionRef={registerSection('about')}>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, Clock, ArrowRight, Trash2, Scale, Star, Edit2, X, Check, Search } from 'lucide-react';
+import { ChevronLeft, Clock, ArrowRight, Trash2, Scale, Star, Edit2, X, Check, Search, Map, ArrowLeftRight } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import { useFavorites } from '../hooks/useFavorites';
@@ -245,66 +245,60 @@ export function HistoryPage() {
                 <div className="space-y-2">
                   {history.map((entry, i) => {
                     const cat = (entry.jobData.category || '').toLowerCase();
-                    const accentBorder = cat.includes('tech') || cat.includes('software') || cat.includes('data')
-                      ? 'border-l-4 border-l-blue-300'
-                      : cat.includes('health') || cat.includes('medical')
-                        ? 'border-l-4 border-l-green-300'
-                        : cat.includes('finance') || cat.includes('business')
-                          ? 'border-l-4 border-l-amber-300'
-                          : cat.includes('creative') || cat.includes('design') || cat.includes('art')
-                            ? 'border-l-4 border-l-purple-300'
-                            : '';
+                    // Rich color coding by career category
+                    const colorConfig = cat.includes('tech') || cat.includes('software') || cat.includes('data') || cat.includes('engineer')
+                      ? { border: 'border-l-blue-400', dot: 'bg-blue-400', badge: 'bg-blue-50 text-blue-700 border-blue-200' }
+                      : cat.includes('health') || cat.includes('medical') || cat.includes('nurs') || cat.includes('doctor')
+                        ? { border: 'border-l-emerald-400', dot: 'bg-emerald-400', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
+                        : cat.includes('finance') || cat.includes('business') || cat.includes('account') || cat.includes('bank')
+                          ? { border: 'border-l-amber-400', dot: 'bg-amber-400', badge: 'bg-amber-50 text-amber-700 border-amber-200' }
+                          : cat.includes('creative') || cat.includes('design') || cat.includes('art') || cat.includes('media')
+                            ? { border: 'border-l-purple-400', dot: 'bg-purple-400', badge: 'bg-purple-50 text-purple-700 border-purple-200' }
+                            : cat.includes('education') || cat.includes('teach') || cat.includes('academic')
+                              ? { border: 'border-l-rose-400', dot: 'bg-rose-400', badge: 'bg-rose-50 text-rose-700 border-rose-200' }
+                              : cat.includes('law') || cat.includes('legal') || cat.includes('justice')
+                                ? { border: 'border-l-slate-500', dot: 'bg-slate-500', badge: 'bg-slate-100 text-slate-700 border-slate-300' }
+                                : cat.includes('science') || cat.includes('research') || cat.includes('bio')
+                                  ? { border: 'border-l-cyan-400', dot: 'bg-cyan-400', badge: 'bg-cyan-50 text-cyan-700 border-cyan-200' }
+                                  : { border: 'border-l-black/20', dot: 'bg-black/20', badge: 'bg-black/5 text-black/50 border-black/10' };
                     return (
                     <motion.div
                       key={entry.id}
-                      className={`border border-black/10 hover:border-black/25 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.04)] transition-all group ${accentBorder}`}
+                      className={`border border-black/10 hover:border-black/25 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.04)] transition-all group border-l-4 ${colorConfig.border}`}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.04 }}
                     >
                       <button
                         onClick={() => handleSelectJob(entry.jobData, entry.jobTitle)}
-                        className="w-full text-left p-4"
+                        className="w-full text-left p-4 pb-2"
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 border border-black/8 flex items-center justify-center shrink-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-3 flex-1 min-w-0">
+                            <div className="w-8 h-8 border border-black/8 flex items-center justify-center shrink-0 mt-0.5">
                               <span className="font-[JetBrains_Mono] text-black/25" style={{ fontSize: '0.72rem' }}>
                                 {String(i + 1).padStart(2, '0')}
                               </span>
                             </div>
-                            <div>
+                            <div className="flex-1 min-w-0">
                               <h3 className="font-[Playfair_Display] text-black group-hover:underline" style={{ fontSize: '1.05rem' }}>
                                 {entry.jobTitle}
                               </h3>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="font-[Inter] text-black/30" style={{ fontSize: '0.7rem' }}>
+                              <div className="flex flex-wrap items-center gap-2 mt-1">
+                                <span className={`font-[Inter] px-1.5 py-0.5 border text-xs ${colorConfig.badge}`} style={{ fontSize: '0.65rem' }}>
                                   {entry.jobData.category}
                                 </span>
-                                <span className="text-black/15">·</span>
                                 <span className="font-[Inter] text-black/30" style={{ fontSize: '0.7rem' }}>
                                   {entry.jobData.avgSalary}
                                 </span>
-                                <span className="text-black/15">·</span>
-                                <span className="font-[Inter] text-black/25 flex items-center gap-1" style={{ fontSize: '0.7rem' }}>
+                                <span className="font-[Inter] text-black/25 flex items-center gap-1" style={{ fontSize: '0.65rem' }}>
                                   <Clock size={9} />
                                   {formatTime(entry.timestamp)}
                                 </span>
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAddToCompare(entry.jobData, entry.jobTitle);
-                              }}
-                              className="hidden group-hover:flex items-center gap-1 text-black/25 hover:text-black/60 transition-colors font-[Inter]"
-                              style={{ fontSize: '0.65rem' }}
-                            >
-                              <Scale size={10} />
-                              Compare
-                            </button>
+                          <div className="flex items-center gap-2 shrink-0">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -321,19 +315,52 @@ export function HistoryPage() {
                               className={`transition-colors ${
                                 isFavorite(entry.jobTitle)
                                   ? 'text-black'
-                                  : 'hidden group-hover:flex text-black/25 hover:text-black/60'
+                                  : 'text-black/20 hover:text-black/60'
                               }`}
                               title={isFavorite(entry.jobTitle) ? 'Remove from saved' : 'Save career'}
                             >
-                              <Star
-                                size={13}
-                                fill={isFavorite(entry.jobTitle) ? 'currentColor' : 'none'}
-                              />
+                              <Star size={13} fill={isFavorite(entry.jobTitle) ? 'currentColor' : 'none'} />
                             </button>
                             <ArrowRight size={15} className="text-black/15 group-hover:text-black transition-colors" />
                           </div>
                         </div>
                       </button>
+                      {/* Quick-action buttons — always visible */}
+                      <div className="flex items-center gap-1 px-4 pb-3 pt-1 flex-wrap">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToCompare(entry.jobData, entry.jobTitle);
+                          }}
+                          className="flex items-center gap-1 text-black/35 hover:text-black/70 transition-colors font-[Inter] border border-black/8 px-2 py-1 hover:border-black/25"
+                          style={{ fontSize: '0.63rem' }}
+                        >
+                          <Scale size={9} />
+                          Compare
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/career-transition?to=${encodeURIComponent(entry.jobTitle)}`);
+                          }}
+                          className="flex items-center gap-1 text-black/35 hover:text-black/70 transition-colors font-[Inter] border border-black/8 px-2 py-1 hover:border-black/25"
+                          style={{ fontSize: '0.63rem' }}
+                        >
+                          <ArrowLeftRight size={9} />
+                          Transition
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/roadmap?job=${encodeURIComponent(entry.jobTitle)}`);
+                          }}
+                          className="flex items-center gap-1 text-black/35 hover:text-black/70 transition-colors font-[Inter] border border-black/8 px-2 py-1 hover:border-black/25"
+                          style={{ fontSize: '0.63rem' }}
+                        >
+                          <Map size={9} />
+                          Roadmap
+                        </button>
+                      </div>
                     </motion.div>
                     );
                   })}

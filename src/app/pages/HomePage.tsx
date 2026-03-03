@@ -495,7 +495,7 @@ export function HomePage() {
             </h2>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border border-black/10">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-0 border border-black/10">
             {[
               {
                 step: '01',
@@ -515,10 +515,16 @@ export function HomePage() {
                 title: 'Live the Day',
                 body: 'Step into the role through interactive simulations, interview prep drills, and a quiz that matches careers to your personality.',
               },
+              {
+                step: '04',
+                pose: 'celebrating' as const,
+                title: 'Track & Decide',
+                body: 'Save favourites, compare careers side-by-side, plan a transition, and build a roadmap — all in one place.',
+              },
             ].map((item, i) => (
               <motion.div
                 key={item.step}
-                className={`p-8 border-black/10 ${i < 2 ? 'md:border-r' : ''} ${i > 0 ? 'border-t md:border-t-0' : ''}`}
+                className={`p-8 border-black/10 ${i < 3 ? 'md:border-r' : ''} ${i > 0 ? 'border-t md:border-t-0' : ''}`}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -553,8 +559,11 @@ export function HomePage() {
               Features
             </p>
             <h2 className="font-[Playfair_Display] text-black" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)' }}>
-              Everything in One Dossier
+              Everything You Need to Decide
             </h2>
+            <p className="font-[Inter] text-black/40 mt-3 max-w-xl mx-auto" style={{ fontSize: '0.9rem', lineHeight: 1.7 }}>
+              Nine tools, one app — from your first search to your final career decision.
+            </p>
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-px bg-black/8 border border-black/8">
@@ -563,42 +572,69 @@ export function HomePage() {
                 icon: <FileText size={20} />,
                 title: 'Full AI Dossier',
                 body: 'Salary ranges, education path, daily routine, work culture - real data powered by Llama 3.3.',
+                tag: 'Core',
               },
               {
                 icon: <Swords size={20} />,
                 title: 'Day Simulation',
                 body: 'Make decisions a professional makes from 8am to 8pm. See how you think under pressure.',
+                tag: 'Immersive',
               },
               {
                 icon: <MessageSquare size={20} />,
                 title: 'Interview Prep',
                 body: 'Practice tough interview questions with AI feedback calibrated to the specific role.',
+                tag: 'Practice',
               },
               {
                 icon: <Brain size={20} />,
                 title: 'Career Quiz',
                 body: 'Answer 7 questions about your values, pace, and interests. Get matched to careers that fit.',
+                tag: 'Discovery',
               },
               {
                 icon: <BarChart2 size={20} />,
                 title: 'Side-by-Side Compare',
                 body: 'Stack any two careers against each other - salary, skills, lifestyle, and growth potential.',
+                tag: 'Analysis',
               },
               {
                 icon: <Zap size={20} />,
                 title: 'Mood Match',
                 body: 'Describe how you feel right now. We find careers that vibe with your current energy.',
+                tag: 'Discovery',
+              },
+              {
+                icon: <ArrowLeftRight size={20} />,
+                title: 'Career Transition Planner',
+                body: 'Already in a career? Map out the exact steps, timeline, and skills needed to switch roles.',
+                tag: 'Planning',
+              },
+              {
+                icon: <Map size={20} />,
+                title: 'Career Roadmap Builder',
+                body: 'Get a personalised step-by-step roadmap from where you are today to your target role.',
+                tag: 'Planning',
+              },
+              {
+                icon: <Sparkles size={20} />,
+                title: 'History & Favourites',
+                body: 'Every career you explore is saved. Revisit, compare, or pick up where you left off anytime.',
+                tag: 'Tracking',
               },
             ].map((feat, i) => (
               <motion.div
                 key={feat.title}
-                className="p-8 bg-background hover:bg-black/2 transition-colors"
+                className="p-8 bg-background hover:bg-black/2 transition-colors group"
                 initial={{ opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.07 }}
+                transition={{ delay: i * 0.06 }}
               >
-                <div className="text-black/30 mb-4">{feat.icon}</div>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="text-black/30 group-hover:text-black/55 transition-colors">{feat.icon}</div>
+                  <span className="font-[JetBrains_Mono] text-black/20 uppercase" style={{ fontSize: '0.58rem', letterSpacing: '0.08em' }}>{feat.tag}</span>
+                </div>
                 <h3 className="font-[Playfair_Display] text-black mb-2" style={{ fontSize: '1.05rem' }}>
                   {feat.title}
                 </h3>

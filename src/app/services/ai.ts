@@ -965,31 +965,42 @@ export async function getGrowthOutlook(jobTitle: string, signal?: AbortSignal): 
 // ─── Work-Life Balance Radar ────────────────────────────────────
 
 export async function getWorkLifeBalance(jobTitle: string, signal?: AbortSignal): Promise<WorkLifeBalance> {
-  const cacheKey = `wlb_${jobTitle.toLowerCase().replace(/\s+/g, '_')}`;
+  const cacheKey = `wlb2_${jobTitle.toLowerCase().replace(/\s+/g, '_')}`;
   const cached = getCached<WorkLifeBalance>(cacheKey);
   if (cached) return cached;
 
   return withRetry(async () => {
     const raw = await callGroq(
-      'You are a workplace wellness researcher. Return ONLY valid JSON. Base scores on real data about this profession.',
-      `Evaluate the work-life balance for "${jobTitle}" across multiple dimensions. Return this exact JSON:
+      'You are a workplace wellness researcher with deep knowledge of different professions. Return ONLY valid JSON. Every score MUST be based on real, profession-specific data — do NOT copy the example placeholder values.',
+      `Evaluate the realistic work-life balance for a "${jobTitle}" based on what professionals in this field commonly report.
+
+IMPORTANT: Replace ALL placeholder numbers below with real, accurate scores for "${jobTitle}". The example numbers (42, 37, etc.) are just JSON structure guides — replace every single one.
+
+Score scale: 0-100 where higher = BETTER quality of life in that dimension.
+Research-based examples to guide you (NOT to copy):
+- Surgeon: Work Hours ~25 (extremely long), Stress ~20 (very high stress), Flexibility ~15
+- Software Engineer: Work Hours ~62, Flexibility ~78, Stress ~55
+- Elementary Teacher: Social Life ~72, Work Hours ~55, Mental Health ~48
+- Investment Banker: Work Hours ~18, Social Life ~22, Flexibility ~20
+- Yoga Instructor: Work Hours ~70, Flexibility ~85, Social Life ~78
+
+Return this JSON structure with REAL scores for "${jobTitle}":
 {
   "metrics": [
-    {"subject": "Work Hours", "score": 70, "description": "Brief explanation of typical hours"},
-    {"subject": "Flexibility", "score": 60, "description": "Remote/flexible work options"},
-    {"subject": "Stress Level", "score": 50, "description": "Typical stress factors (higher = lower stress)"},
-    {"subject": "Job Security", "score": 80, "description": "Employment stability"},
-    {"subject": "Social Life", "score": 65, "description": "Impact on personal relationships and free time"},
-    {"subject": "Physical Health", "score": 55, "description": "Physical demands and health impact"},
-    {"subject": "Mental Health", "score": 60, "description": "Cognitive/emotional demands"}
+    {"subject": "Work Hours", "score": 42, "description": "Typical weekly hours and schedule demands for ${jobTitle}"},
+    {"subject": "Flexibility", "score": 37, "description": "Remote/hybrid work options and schedule autonomy"},
+    {"subject": "Stress Level", "score": 51, "description": "Typical pressure, deadlines, emotional load (higher = lower stress)"},
+    {"subject": "Job Security", "score": 63, "description": "Employment stability and demand outlook"},
+    {"subject": "Social Life", "score": 58, "description": "Impact on personal relationships and personal time"},
+    {"subject": "Physical Health", "score": 44, "description": "Physical demands, ergonomics, and health impact"},
+    {"subject": "Mental Health", "score": 47, "description": "Cognitive load, burnout risk, emotional demands"}
   ],
-  "overallScore": 65,
-  "summary": "2-3 sentences summarising the overall work-life balance for this role",
-  "bestFor": "Type of person who thrives in this role's lifestyle",
-  "worstFor": "Type of person who would struggle with this lifestyle"
-}
-Scores are 0-100 (higher is BETTER for quality of life). Be honest and accurate.`,
-      { temperature: 0.5, maxTokens: 800, jsonMode: true, signal }
+  "overallScore": 49,
+  "summary": "Write 2-3 specific, honest sentences about work-life balance for ${jobTitle} based on real professional reports",
+  "bestFor": "Describe the type of person whose lifestyle suits this career",
+  "worstFor": "Describe the type of person who would find this career's lifestyle difficult"
+}`,
+      { temperature: 0.7, maxTokens: 900, jsonMode: true, signal }
     );
 
     const result = JSON.parse(raw) as WorkLifeBalance;

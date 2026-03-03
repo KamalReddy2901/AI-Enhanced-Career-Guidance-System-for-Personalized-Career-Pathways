@@ -456,81 +456,157 @@ export function CareerTransitionPage() {
 
               {/* Success story */}
               {plan.successStory && (
-                <div className="border-l-2 border-black/20 dark:border-white/20 pl-5 py-2 mb-6">
-                  <p className="font-[Inter] text-black/40 dark:text-white/40 mb-1 uppercase tracking-[0.1em]" style={{ fontSize: '0.6rem' }}>
-                    Real World Example
-                  </p>
-                  <p className="font-[Inter] text-black/60 dark:text-white/60 italic" style={{ fontSize: '0.88rem', lineHeight: 1.7 }}>
-                    "{plan.successStory}"
-                  </p>
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-px flex-1 bg-black/10" />
+                    <span className="font-[Inter] text-black/40 uppercase tracking-[0.12em]" style={{ fontSize: '0.62rem' }}>
+                      Real World Example
+                    </span>
+                    <div className="h-px flex-1 bg-black/10" />
+                  </div>
+                  <div className="border-2 border-black/10 p-6 relative overflow-hidden">
+                    {/* Decorative quote mark */}
+                    <span
+                      className="absolute top-3 left-4 font-[Playfair_Display] text-black/6 select-none pointer-events-none"
+                      style={{ fontSize: '5rem', lineHeight: 1 }}
+                      aria-hidden
+                    >
+                      &ldquo;
+                    </span>
+                    <div className="relative">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 bg-black/8 flex items-center justify-center">
+                          <span className="font-[Inter] text-black/50 font-bold" style={{ fontSize: '0.75rem' }}>
+                            {plan.fromTitle.slice(0, 1)}&rarr;{plan.toTitle.slice(0, 1)}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-[Inter] text-black/55 font-medium" style={{ fontSize: '0.8rem' }}>
+                            {plan.fromTitle} → {plan.toTitle}
+                          </p>
+                          <p className="font-[Inter] text-black/30" style={{ fontSize: '0.65rem' }}>Transition Story</p>
+                        </div>
+                      </div>
+                      <p className="font-[Playfair_Display] text-black/70 leading-relaxed" style={{ fontSize: '1rem', lineHeight: 1.8 }}>
+                        {plan.successStory}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 
               {/* Real stories section */}
-              <div className="border border-black/10 dark:border-white/10 p-5 mb-6">
+              <div className="mb-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <ExternalLink size={14} className="text-black/40 dark:text-white/40" />
-                  <p className="font-[Inter] text-black/40 dark:text-white/40 uppercase tracking-[0.1em]" style={{ fontSize: '0.62rem' }}>
+                  <div className="h-px flex-1 bg-black/10" />
+                  <span className="font-[Inter] text-black/40 uppercase tracking-[0.12em]" style={{ fontSize: '0.62rem' }}>
                     Real People Who Made This Transition
-                  </p>
+                  </span>
+                  <div className="h-px flex-1 bg-black/10" />
                 </div>
-                <p className="font-[Inter] text-black/50 dark:text-white/50 mb-4" style={{ fontSize: '0.82rem', lineHeight: 1.6 }}>
-                  Read firsthand accounts from people who transitioned from {plan.fromTitle} to {plan.toTitle}.
+                <p className="font-[Inter] text-black/45 mb-4 text-center" style={{ fontSize: '0.8rem', lineHeight: 1.6 }}>
+                  Firsthand accounts and stories from people who went from{' '}
+                  <span className="font-semibold text-black/60">{plan.fromTitle}</span> to{' '}
+                  <span className="font-semibold text-black/60">{plan.toTitle}</span>.
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+
+                {/* Reddit — two cards side by side */}
+                <div className="mb-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <a
-                    href={`https://www.reddit.com/search/?q=${encodeURIComponent(`${plan.fromTitle} to ${plan.toTitle} career change transition`)}&type=link`}
+                    href={`https://www.reddit.com/search/?q=${encodeURIComponent(`${plan.fromTitle} to ${plan.toTitle} career change`)}&type=link&sort=top`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
+                    className="group flex gap-3 p-4 border border-[#FF4500]/25 bg-[#FF4500]/5 hover:bg-[#FF4500]/10 transition-colors"
                   >
-                    <span className="text-orange-600 font-bold" style={{ fontSize: '1rem' }}>r/</span>
-                    <div>
-                      <p className="font-[Inter] text-orange-800 dark:text-orange-300 font-medium" style={{ fontSize: '0.82rem' }}>Reddit Stories</p>
-                      <p className="font-[Inter] text-orange-600/70 dark:text-orange-400/70" style={{ fontSize: '0.72rem' }}>r/cscareerquestions, r/learnprogramming &amp; more</p>
+                    <div className="w-9 h-9 shrink-0 flex items-center justify-center bg-[#FF4500] text-white font-black rounded-full" style={{ fontSize: '0.85rem' }}>
+                      r/
                     </div>
-                    <ExternalLink size={11} className="text-orange-500 ml-auto shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-[Inter] font-semibold text-[#c13f00]" style={{ fontSize: '0.82rem' }}>Transition Discussions</p>
+                      <p className="font-[Inter] text-[#FF4500]/60" style={{ fontSize: '0.7rem', lineHeight: 1.5 }}>
+                        Top posts about this career change — sorted by most helpful
+                      </p>
+                    </div>
+                    <ExternalLink size={11} className="text-[#FF4500]/50 group-hover:text-[#FF4500] transition-colors mt-0.5 shrink-0" />
                   </a>
                   <a
-                    href={`https://www.reddit.com/search/?q=${encodeURIComponent(`I transitioned from ${plan.fromTitle} to ${plan.toTitle}`)}&type=link`}
+                    href={`https://www.reddit.com/search/?q=${encodeURIComponent(`"I made the switch" OR "I transitioned" ${plan.fromTitle} ${plan.toTitle}`)}&type=link`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
+                    className="group flex gap-3 p-4 border border-[#FF4500]/25 bg-[#FF4500]/5 hover:bg-[#FF4500]/10 transition-colors"
                   >
-                    <span className="text-orange-600 font-bold" style={{ fontSize: '1rem' }}>r/</span>
-                    <div>
-                      <p className="font-[Inter] text-orange-800 dark:text-orange-300 font-medium" style={{ fontSize: '0.82rem' }}>"I did it" Posts</p>
-                      <p className="font-[Inter] text-orange-600/70 dark:text-orange-400/70" style={{ fontSize: '0.72rem' }}>Personal transition success stories</p>
+                    <div className="w-9 h-9 shrink-0 flex items-center justify-center bg-[#FF4500] text-white font-black rounded-full" style={{ fontSize: '0.85rem' }}>
+                      r/
                     </div>
-                    <ExternalLink size={11} className="text-orange-500 ml-auto shrink-0" />
-                  </a>
-                  <a
-                    href={`https://www.google.com/search?q=${encodeURIComponent(`"${plan.fromTitle}" to "${plan.toTitle}" career transition story experience`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                  >
-                    <span className="text-blue-600 font-bold" style={{ fontSize: '0.9rem' }}>G</span>
-                    <div>
-                      <p className="font-[Inter] text-blue-800 dark:text-blue-300 font-medium" style={{ fontSize: '0.82rem' }}>Articles &amp; Blog Posts</p>
-                      <p className="font-[Inter] text-blue-600/70 dark:text-blue-400/70" style={{ fontSize: '0.72rem' }}>Medium, Dev.to, LinkedIn articles</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-[Inter] font-semibold text-[#c13f00]" style={{ fontSize: '0.82rem' }}>"I Made the Switch" Posts</p>
+                      <p className="font-[Inter] text-[#FF4500]/60" style={{ fontSize: '0.7rem', lineHeight: 1.5 }}>
+                        Personal success stories from Redditors who did it
+                      </p>
                     </div>
-                    <ExternalLink size={11} className="text-blue-500 ml-auto shrink-0" />
-                  </a>
-                  <a
-                    href={`https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(`${plan.fromTitle} to ${plan.toTitle} transition`)}&origin=GLOBAL_SEARCH_HEADER`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                  >
-                    <span className="text-blue-700 font-bold" style={{ fontSize: '0.9rem', fontFamily: 'sans-serif' }}>in</span>
-                    <div>
-                      <p className="font-[Inter] text-blue-800 dark:text-blue-300 font-medium" style={{ fontSize: '0.82rem' }}>LinkedIn Posts</p>
-                      <p className="font-[Inter] text-blue-600/70 dark:text-blue-400/70" style={{ fontSize: '0.72rem' }}>Real professionals sharing their journey</p>
-                    </div>
-                    <ExternalLink size={11} className="text-blue-500 ml-auto shrink-0" />
+                    <ExternalLink size={11} className="text-[#FF4500]/50 group-hover:text-[#FF4500] transition-colors mt-0.5 shrink-0" />
                   </a>
                 </div>
+
+                {/* LinkedIn + YouTube side by side */}
+                <div className="mb-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <a
+                    href={`https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(`${plan.fromTitle} to ${plan.toTitle} career transition`)}&origin=GLOBAL_SEARCH_HEADER`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex gap-3 p-4 border border-[#0077B5]/25 bg-[#0077B5]/5 hover:bg-[#0077B5]/10 transition-colors"
+                  >
+                    <div className="w-9 h-9 shrink-0 flex items-center justify-center bg-[#0077B5] text-white font-black rounded" style={{ fontSize: '1rem', fontFamily: 'sans-serif' }}>
+                      in
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-[Inter] font-semibold text-[#005d8c]" style={{ fontSize: '0.82rem' }}>LinkedIn Posts</p>
+                      <p className="font-[Inter] text-[#0077B5]/60" style={{ fontSize: '0.7rem', lineHeight: 1.5 }}>
+                        Professionals sharing their transition journey publicly
+                      </p>
+                    </div>
+                    <ExternalLink size={11} className="text-[#0077B5]/50 group-hover:text-[#0077B5] transition-colors mt-0.5 shrink-0" />
+                  </a>
+                  <a
+                    href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${plan.fromTitle} to ${plan.toTitle} career change story`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex gap-3 p-4 border border-[#FF0000]/25 bg-[#FF0000]/5 hover:bg-[#FF0000]/10 transition-colors"
+                  >
+                    <div className="w-9 h-9 shrink-0 flex items-center justify-center bg-[#FF0000] text-white rounded" style={{ fontSize: '0.65rem' }}>
+                      {/* Simple triangle play icon */}
+                      <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-[Inter] font-semibold text-[#cc0000]" style={{ fontSize: '0.82rem' }}>YouTube Vlogs</p>
+                      <p className="font-[Inter] text-[#FF0000]/60" style={{ fontSize: '0.7rem', lineHeight: 1.5 }}>
+                        Video diaries and interviews from real career changers
+                      </p>
+                    </div>
+                    <ExternalLink size={11} className="text-[#FF0000]/50 group-hover:text-[#FF0000] transition-colors mt-0.5 shrink-0" />
+                  </a>
+                </div>
+
+                {/* Google — full width */}
+                <a
+                  href={`https://www.google.com/search?q=${encodeURIComponent(`"${plan.fromTitle}" to "${plan.toTitle}" career transition story`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex gap-3 p-4 border border-black/10 bg-black/3 hover:bg-black/6 transition-colors"
+                >
+                  <div className="w-9 h-9 shrink-0 flex items-center justify-center border border-black/10 bg-white font-bold text-black" style={{ fontSize: '0.9rem' }}>
+                    G
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-[Inter] font-semibold text-black/65" style={{ fontSize: '0.82rem' }}>Articles &amp; Blogs</p>
+                    <p className="font-[Inter] text-black/40" style={{ fontSize: '0.7rem', lineHeight: 1.5 }}>
+                      Medium, Dev.to, personal blogs — written deep-dives into this exact transition
+                    </p>
+                  </div>
+                  <ExternalLink size={11} className="text-black/30 group-hover:text-black/60 transition-colors mt-0.5 shrink-0" />
+                </a>
               </div>
 
               {/* Stick figure */}

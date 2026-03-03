@@ -41,7 +41,7 @@ export function BottomNav() {
     <AnimatePresence>
       {visible && (
         <motion.nav
-          className="fixed bottom-0 left-0 right-0 z-40 sm:hidden bg-background/95 backdrop-blur-md border-t border-black/10 dark:border-white/10 print:hidden"
+          className="fixed bottom-0 left-0 right-0 z-40 sm:hidden bg-background/95 backdrop-blur-md border-t border-black/10 print:hidden"
           initial={{ y: 60 }}
           animate={{ y: 0 }}
           exit={{ y: 60 }}
@@ -59,7 +59,7 @@ export function BottomNav() {
                   key={path}
                   onClick={() => handleNav(path)}
                   className={`flex flex-col items-center justify-center gap-0.5 w-full h-full transition-colors ${
-                    isActive ? 'text-black dark:text-white' : 'text-black/30 dark:text-white/30'
+                    isActive ? 'text-black' : 'text-black/30'
                   }`}
                   aria-label={label}
                   aria-current={isActive ? 'page' : undefined}

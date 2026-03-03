@@ -51,7 +51,7 @@ export function Navbar() {
   return (
     <>
       <motion.nav
-        className="fixed top-0 left-0 right-0 z-50 bg-[#f9f8f7]/92 dark:bg-[#161614]/92 backdrop-blur-md border-b border-black/8 dark:border-white/8"
+        className="fixed top-0 left-0 right-0 z-50 bg-[#f9f8f7]/92 backdrop-blur-md border-b border-black/8"
         initial={{ y: -60 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
@@ -73,7 +73,7 @@ export function Navbar() {
           >
             <StickFigure pose="standing" size={26} animate={false} />
             <span
-              className="font-[Playfair_Display] tracking-tight text-black dark:text-white group-hover:opacity-70 transition-opacity"
+              className="font-[Playfair_Display] tracking-tight text-black group-hover:opacity-70 transition-opacity"
               style={{ fontSize: '1.05rem' }}
             >
               Career<span className="opacity-35">Sim</span>
@@ -89,7 +89,7 @@ export function Navbar() {
             {/* AI badge */}
             {isAIEnabled && (
               <div
-                className="ml-1 flex items-center gap-1 px-2 py-1 bg-black/3 dark:bg-white/5 text-black/25 dark:text-white/25"
+                className="ml-1 flex items-center gap-1 px-2 py-1 bg-black/3 text-black/25"
                 style={{ fontSize: '0.6rem' }}
               >
                 <Sparkles size={9} />
@@ -101,7 +101,7 @@ export function Navbar() {
             {mounted && (
               <button
                 onClick={() => setTheme(isDark ? 'light' : 'dark')}
-                className="ml-1 p-2 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors"
+                className="ml-1 p-2 text-black/40 hover:text-black transition-colors"
                 aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
                 title={isDark ? 'Light mode' : 'Dark mode'}
               >
@@ -115,7 +115,7 @@ export function Navbar() {
             {mounted && (
               <button
                 onClick={() => setTheme(isDark ? 'light' : 'dark')}
-                className="p-2 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors"
+                className="p-2 text-black/40 hover:text-black transition-colors"
                 aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 {isDark ? <Sun size={16} /> : <Moon size={16} />}
@@ -123,7 +123,7 @@ export function Navbar() {
             )}
             <button
               onClick={() => setMenuOpen(prev => !prev)}
-              className="p-2 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
+              className="p-2 text-black/60 hover:text-black transition-colors"
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={menuOpen}
             >
@@ -134,7 +134,7 @@ export function Navbar() {
 
         {/* Keyboard shortcut hint */}
         <div className="hidden sm:block absolute right-6 -bottom-5 pointer-events-none">
-          <span className="font-[JetBrains_Mono] text-black/12 dark:text-white/12" style={{ fontSize: '0.52rem' }}>
+          <span className="font-[JetBrains_Mono] text-black/12" style={{ fontSize: '0.52rem' }}>
             Ctrl+K search · Esc back
           </span>
         </div>
@@ -144,7 +144,7 @@ export function Navbar() {
       <AnimatePresence>
         {menuOpen && (
           <motion.div
-            className="fixed top-14 left-0 right-0 z-40 bg-[#f9f8f7]/98 dark:bg-[#161614]/98 backdrop-blur-md border-b border-black/8 dark:border-white/8 shadow-lg md:hidden"
+            className="fixed top-14 left-0 right-0 z-40 bg-[#f9f8f7]/98 backdrop-blur-md border-b border-black/8 shadow-lg md:hidden"
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
@@ -157,8 +157,8 @@ export function Navbar() {
                   to={link.to}
                   className={`flex items-center gap-3 px-4 py-3 font-[Inter] transition-all ${
                     link.active
-                      ? 'bg-black dark:bg-white text-white dark:text-black'
-                      : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5 hover:text-black dark:hover:text-white'
+                      ? 'bg-black text-white'
+                      : 'text-black/60 hover:bg-black/5 hover:text-black'
                   }`}
                   style={{ fontSize: '0.88rem' }}
                 >
@@ -190,8 +190,8 @@ function NavLink({
       to={to}
       className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 transition-all font-[Inter] ${
         active
-          ? 'bg-black dark:bg-white text-white dark:text-black'
-          : 'text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+          ? 'bg-black text-white'
+          : 'text-black/55 hover:text-black hover:bg-black/5'
       }`}
       style={{ fontSize: '0.78rem' }}
     >
