@@ -4,9 +4,9 @@
   --font-size: 16px;
   --theme-black: #000000;
   --theme-white: #ffffff;
-  --background: #f2ece0;
+  --background: #f9f8f7;
   --foreground: oklch(0.145 0 0);
-  --card: #ede9dd;
+  --card: #f5f4f2;
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
@@ -142,26 +142,24 @@
     background-color: var(--background);
     background-image:
       /* Fine newsprint grain — tight & dense */
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)' opacity='0.18'/%3E%3C/svg%3E"),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)' opacity='0.26'/%3E%3C/svg%3E"),
       /* Coarse paper fibres — long strands */
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='500'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.08 0.25' numOctaves='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='500' height='500' filter='url(%23c)' opacity='0.11'/%3E%3C/svg%3E"),
-      /* Warm sepia age layer */
-      linear-gradient(180deg, rgba(180,140,80,0.055) 0%, rgba(160,120,60,0.03) 100%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='500'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.08 0.25' numOctaves='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='500' height='500' filter='url(%23c)' opacity='0.15'/%3E%3C/svg%3E"),
       /* Primary crumple crease — top-left highlight */
-      linear-gradient(127deg, rgba(255,255,255,0.22) 0%, transparent 35%),
+      linear-gradient(127deg, rgba(255,255,255,0.30) 0%, transparent 35%),
       /* Primary crumple shadow — bottom-right */
-      linear-gradient(307deg, rgba(0,0,0,0.075) 0%, transparent 38%),
+      linear-gradient(307deg, rgba(0,0,0,0.09) 0%, transparent 38%),
       /* Secondary crumple — mid-page diagonal */
-      linear-gradient(155deg, transparent 30%, rgba(255,255,255,0.09) 42%, rgba(0,0,0,0.03) 48%, transparent 58%),
+      linear-gradient(155deg, transparent 30%, rgba(255,255,255,0.12) 42%, rgba(0,0,0,0.04) 48%, transparent 58%),
       /* Tertiary crumple — opposing angle */
-      linear-gradient(235deg, transparent 35%, rgba(255,255,255,0.07) 44%, rgba(0,0,0,0.025) 50%, transparent 60%),
+      linear-gradient(235deg, transparent 35%, rgba(255,255,255,0.09) 44%, rgba(0,0,0,0.03) 50%, transparent 60%),
       /* Fine horizontal banding (paper grain direction) */
-      repeating-linear-gradient(180deg, transparent 0px, transparent 3px, rgba(0,0,0,0.012) 3px, rgba(0,0,0,0.012) 4px),
+      repeating-linear-gradient(180deg, transparent 0px, transparent 3px, rgba(0,0,0,0.015) 3px, rgba(0,0,0,0.015) 4px),
       /* Edge vignette */
       radial-gradient(ellipse 115% 115% at 50% 50%, transparent 38%, rgba(0,0,0,0.09) 100%);
-    background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat, no-repeat;
-    background-size: 180px 180px, 500px 500px, cover, cover, cover, cover, cover, 100% 4px, cover;
-    background-attachment: fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed;
+    background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat, no-repeat;
+    background-size: 180px 180px, 500px 500px, cover, cover, cover, cover, 100% 4px, cover;
+    background-attachment: fixed, fixed, fixed, fixed, fixed, fixed, fixed, fixed;
   }
 
   html {

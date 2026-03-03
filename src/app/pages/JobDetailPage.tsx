@@ -739,13 +739,13 @@ export function JobDetailPage() {
                       {wlbData.summary}
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
-                        <p className="font-[Inter] text-green-700 dark:text-green-300 mb-1" style={{ fontSize: '0.62rem', letterSpacing: '0.1em' }}>BEST FOR</p>
-                        <p className="font-[Inter] text-black/65 dark:text-white/65" style={{ fontSize: '0.82rem' }}>{wlbData.bestFor}</p>
+                      <div className="p-3 bg-emerald-50 border border-emerald-200">
+                        <p className="font-[Inter] text-emerald-700 mb-1" style={{ fontSize: '0.62rem', letterSpacing: '0.1em' }}>BEST FOR</p>
+                        <p className="font-[Inter] text-black/65" style={{ fontSize: '0.82rem' }}>{wlbData.bestFor}</p>
                       </div>
-                      <div className="p-3 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800">
-                        <p className="font-[Inter] text-orange-700 dark:text-orange-300 mb-1" style={{ fontSize: '0.62rem', letterSpacing: '0.1em' }}>CHALLENGING FOR</p>
-                        <p className="font-[Inter] text-black/65 dark:text-white/65" style={{ fontSize: '0.82rem' }}>{wlbData.worstFor}</p>
+                      <div className="p-3 bg-rose-50 border border-rose-200">
+                        <p className="font-[Inter] text-rose-700 mb-1" style={{ fontSize: '0.62rem', letterSpacing: '0.1em' }}>CHALLENGING FOR</p>
+                        <p className="font-[Inter] text-black/65" style={{ fontSize: '0.82rem' }}>{wlbData.worstFor}</p>
                       </div>
                     </div>
                   </div>

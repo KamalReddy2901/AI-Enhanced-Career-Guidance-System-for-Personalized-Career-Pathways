@@ -108,8 +108,8 @@ const InterviewPreview = () => (
       </p>
     </div>
     <div className="flex items-center gap-1">
-      <div className="h-1 flex-1 bg-green-200 rounded-full" />
-      <span className="font-[JetBrains_Mono] text-green-600" style={{ fontSize: '0.52rem' }}>Strong answer</span>
+      <div className="h-1 flex-1 bg-emerald-200 rounded-full" />
+      <span className="font-[JetBrains_Mono] text-emerald-600" style={{ fontSize: '0.52rem' }}>Strong answer</span>
     </div>
   </div>
 );
@@ -148,8 +148,8 @@ const RoadmapPreview = () => (
 const HistoryPreview = () => (
   <div className="w-full space-y-1">
     {[
-      { title: 'UX Designer', dot: 'bg-purple-300' },
-      { title: 'Data Scientist', dot: 'bg-blue-300' },
+      { title: 'UX Designer', dot: 'bg-violet-300' },
+      { title: 'Data Scientist', dot: 'bg-violet-400' },
       { title: 'Nurse Practitioner', dot: 'bg-emerald-300' },
     ].map(item => (
       <div key={item.title} className="flex items-center gap-2 p-1.5 border border-black/8">

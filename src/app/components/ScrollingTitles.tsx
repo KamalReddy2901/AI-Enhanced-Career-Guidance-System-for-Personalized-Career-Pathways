@@ -82,7 +82,7 @@ function ScrollRow({
               key={`${item.text}-${j}`}
               className={`inline-block px-4 py-1 font-[Playfair_Display] whitespace-nowrap select-none transition-all duration-500 ${
                 isHighlighted
-                  ? 'text-black opacity-100 bg-yellow-200/80 rounded px-3 py-0.5 scale-110'
+                  ? 'text-black opacity-100 bg-amber-200/80 rounded px-3 py-0.5 scale-110'
                   : 'text-black/80'
               }`}
               style={{ fontSize: `${item.size}rem` }}

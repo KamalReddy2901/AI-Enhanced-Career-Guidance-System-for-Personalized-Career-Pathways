@@ -353,9 +353,9 @@ export function HomePage() {
               >
                 {/* Rising */}
                 <div>
-                  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-green-200">
-                    <TrendingUp size={15} className="text-green-600" />
-                    <span className="font-[Inter] text-green-700 font-medium" style={{ fontSize: '0.78rem', letterSpacing: '0.08em' }}>RISING</span>
+                  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-emerald-200">
+                    <TrendingUp size={15} className="text-emerald-600" />
+                    <span className="font-[Inter] text-emerald-700 font-medium" style={{ fontSize: '0.78rem', letterSpacing: '0.08em' }}>RISING</span>
                   </div>
                   <ul className="space-y-3">
                     {trending.rising.map((item, i) => (
@@ -389,9 +389,9 @@ export function HomePage() {
 
                 {/* Emerging */}
                 <div>
-                  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-blue-200">
-                    <Rocket size={15} className="text-blue-600" />
-                    <span className="font-[Inter] text-blue-700 font-medium" style={{ fontSize: '0.78rem', letterSpacing: '0.08em' }}>EMERGING</span>
+                  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-violet-200">
+                    <Rocket size={15} className="text-violet-600" />
+                    <span className="font-[Inter] text-violet-700 font-medium" style={{ fontSize: '0.78rem', letterSpacing: '0.08em' }}>EMERGING</span>
                   </div>
                   <ul className="space-y-3">
                     {trending.emerging.map((item, i) => (
@@ -425,9 +425,9 @@ export function HomePage() {
 
                 {/* Declining */}
                 <div>
-                  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-orange-200">
-                    <TrendingDown size={15} className="text-orange-500" />
-                    <span className="font-[Inter] text-orange-700 font-medium" style={{ fontSize: '0.78rem', letterSpacing: '0.08em' }}>DECLINING</span>
+                  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-rose-200">
+                    <TrendingDown size={15} className="text-rose-500" />
+                    <span className="font-[Inter] text-rose-600 font-medium" style={{ fontSize: '0.78rem', letterSpacing: '0.08em' }}>DECLINING</span>
                   </div>
                   <ul className="space-y-3">
                     {trending.declining.map((item, i) => (

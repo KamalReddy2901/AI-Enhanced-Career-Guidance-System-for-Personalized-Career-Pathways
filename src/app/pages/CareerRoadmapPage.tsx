@@ -11,12 +11,12 @@ import { sounds } from '../utils/sounds';
 import { JOB_TITLES } from '../data/jobs';
 
 const STAGE_COLORS: Record<string, { dot: string; bg: string; border: string }> = {
-  blue:   { dot: 'bg-blue-500',   bg: 'bg-blue-50 dark:bg-blue-950/30',   border: 'border-blue-200 dark:border-blue-800' },
-  green:  { dot: 'bg-green-500',  bg: 'bg-green-50 dark:bg-green-950/30', border: 'border-green-200 dark:border-green-800' },
-  yellow: { dot: 'bg-yellow-500', bg: 'bg-yellow-50 dark:bg-yellow-950/30',border: 'border-yellow-200 dark:border-yellow-800' },
-  orange: { dot: 'bg-orange-500', bg: 'bg-orange-50 dark:bg-orange-950/30',border: 'border-orange-200 dark:border-orange-800' },
-  red:    { dot: 'bg-red-500',    bg: 'bg-red-50 dark:bg-red-950/30',     border: 'border-red-200 dark:border-red-800' },
-  purple: { dot: 'bg-purple-500', bg: 'bg-purple-50 dark:bg-purple-950/30',border: 'border-purple-200 dark:border-purple-800' },
+  blue:   { dot: 'bg-violet-500',  bg: 'bg-violet-50',  border: 'border-violet-200' },
+  green:  { dot: 'bg-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+  yellow: { dot: 'bg-amber-500',   bg: 'bg-amber-50',   border: 'border-amber-200' },
+  orange: { dot: 'bg-orange-400',  bg: 'bg-orange-50',  border: 'border-orange-200' },
+  red:    { dot: 'bg-rose-500',    bg: 'bg-rose-50',    border: 'border-rose-200' },
+  purple: { dot: 'bg-violet-400',  bg: 'bg-violet-50',  border: 'border-violet-200' },
 };
 
 export function CareerRoadmapPage() {
@@ -211,12 +211,12 @@ export function CareerRoadmapPage() {
         {/* Error */}
         {error && (
           <motion.div
-            className="mb-6 p-4 border border-red-200 bg-red-50 flex items-start gap-3"
+            className="mb-6 p-4 border border-rose-200 bg-rose-50 flex items-start gap-3"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <AlertTriangle size={16} className="text-red-500 mt-0.5 shrink-0" />
-            <p className="font-[Inter] text-red-700" style={{ fontSize: '0.85rem' }}>{error}</p>
+            <AlertTriangle size={16} className="text-rose-500 mt-0.5 shrink-0" />
+            <p className="font-[Inter] text-rose-700" style={{ fontSize: '0.85rem' }}>{error}</p>
           </motion.div>
         )}
 

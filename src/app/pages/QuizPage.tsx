@@ -387,14 +387,14 @@ export function QuizPage() {
                   {result.careers.map((career, i) => {
                     const matchPct = career.matchScore;
                     const accentClass = matchPct >= 80
-                      ? 'border-l-4 border-l-green-400'
+                      ? 'border-l-4 border-l-emerald-400'
                       : matchPct >= 60
-                        ? 'border-l-4 border-l-blue-400'
+                        ? 'border-l-4 border-l-violet-400'
                         : 'border-l-4 border-l-amber-400';
                     const scoreClass = matchPct >= 80
-                      ? 'bg-green-50 text-green-700'
+                      ? 'bg-emerald-50 text-emerald-700'
                       : matchPct >= 60
-                        ? 'bg-blue-50 text-blue-700'
+                        ? 'bg-violet-50 text-violet-700'
                         : 'bg-amber-50 text-amber-700';
 
                     return (
@@ -445,7 +445,7 @@ export function QuizPage() {
                       {/* Match bar */}
                       <div className="mt-3 h-1 bg-black/8 rounded-full overflow-hidden">
                         <motion.div
-                          className={`h-full rounded-full ${matchPct >= 80 ? 'bg-green-500' : matchPct >= 60 ? 'bg-blue-500' : 'bg-amber-500'}`}
+                          className={`h-full rounded-full ${matchPct >= 80 ? 'bg-emerald-500' : matchPct >= 60 ? 'bg-violet-500' : 'bg-amber-500'}`}
                           initial={{ width: 0 }}
                           animate={{ width: `${career.matchScore}%` }}
                           transition={{ delay: 0.3 + i * 0.1, duration: 0.6 }}

@@ -11,10 +11,10 @@ import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
 
 const DIFFICULTY_COLOR: Record<string, string> = {
-  Easy: 'text-green-700 bg-green-50 border-green-200',
-  Medium: 'text-yellow-700 bg-yellow-50 border-yellow-200',
-  Hard: 'text-orange-700 bg-orange-50 border-orange-200',
-  'Very Hard': 'text-red-700 bg-red-50 border-red-200',
+  Easy: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+  Medium: 'text-amber-700 bg-amber-50 border-amber-200',
+  Hard: 'text-orange-600 bg-orange-50 border-orange-200',
+  'Very Hard': 'text-rose-700 bg-rose-50 border-rose-200',
 };
 
 export function CareerTransitionPage() {
@@ -297,12 +297,12 @@ export function CareerTransitionPage() {
         {/* Error */}
         {error && (
           <motion.div
-            className="mb-6 p-4 border border-red-200 bg-red-50 flex items-start gap-3"
+            className="mb-6 p-4 border border-rose-200 bg-rose-50 flex items-start gap-3"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <AlertTriangle size={16} className="text-red-500 mt-0.5 shrink-0" />
-            <p className="font-[Inter] text-red-700" style={{ fontSize: '0.85rem' }}>{error}</p>
+            <AlertTriangle size={16} className="text-rose-500 mt-0.5 shrink-0" />
+            <p className="font-[Inter] text-rose-700" style={{ fontSize: '0.85rem' }}>{error}</p>
           </motion.div>
         )}
 
@@ -370,14 +370,14 @@ export function CareerTransitionPage() {
               {/* Skills analysis */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                 <div className="border border-black/10 dark:border-white/10 p-5">
-                  <h3 className="font-[Playfair_Display] text-black dark:text-white mb-3 flex items-center gap-2" style={{ fontSize: '1rem' }}>
-                    <CheckCircle size={16} className="text-green-600" />
+                  <h3 className="font-[Playfair_Display] text-black mb-3 flex items-center gap-2" style={{ fontSize: '1rem' }}>
+                    <CheckCircle size={16} className="text-emerald-600" />
                     Transferable Skills
                   </h3>
                   <ul className="space-y-2">
                     {plan.transferableSkills.map((skill, i) => (
                       <li key={i} className="flex items-start gap-2">
-                        <span className="text-green-500 mt-1">•</span>
+                        <span className="text-emerald-500 mt-1">•</span>
                         <span className="font-[Inter] text-black/65 dark:text-white/65" style={{ fontSize: '0.85rem' }}>{skill}</span>
                       </li>
                     ))}
@@ -385,14 +385,14 @@ export function CareerTransitionPage() {
                 </div>
 
                 <div className="border border-black/10 dark:border-white/10 p-5">
-                  <h3 className="font-[Playfair_Display] text-black dark:text-white mb-3 flex items-center gap-2" style={{ fontSize: '1rem' }}>
-                    <XCircle size={16} className="text-orange-500" />
+                  <h3 className="font-[Playfair_Display] text-black mb-3 flex items-center gap-2" style={{ fontSize: '1rem' }}>
+                    <XCircle size={16} className="text-rose-500" />
                     Skill Gaps to Bridge
                   </h3>
                   <ul className="space-y-2">
                     {plan.skillGaps.map((gap, i) => (
                       <li key={i} className="flex items-start gap-2">
-                        <span className="text-orange-400 mt-1">•</span>
+                        <span className="text-rose-400 mt-1">•</span>
                         <span className="font-[Inter] text-black/65 dark:text-white/65" style={{ fontSize: '0.85rem' }}>{gap}</span>
                       </li>
                     ))}

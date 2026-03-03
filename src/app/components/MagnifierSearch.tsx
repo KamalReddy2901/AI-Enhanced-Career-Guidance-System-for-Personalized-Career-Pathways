@@ -237,7 +237,7 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
                   {matchIndex >= 0 ? (
                     <>
                       {title.slice(0, matchIndex)}
-                      <span className={i === selectedSuggestion ? 'underline' : 'bg-yellow-100/70'}>
+                      <span className={i === selectedSuggestion ? 'underline' : 'bg-amber-100/70'}>
                         {title.slice(matchIndex, matchIndex + query.length)}
                       </span>
                       {title.slice(matchIndex + query.length)}
