@@ -93,9 +93,9 @@ async function withRetry<T>(
 async function callGroq(
   systemPrompt: string,
   userPrompt: string,
-  options: { temperature?: number; maxTokens?: number; jsonMode?: boolean } = {}
+  options: { temperature?: number; maxTokens?: number; jsonMode?: boolean; signal?: AbortSignal } = {}
 ): Promise<string> {
-  const { temperature = 0.7, maxTokens = 2048, jsonMode = false } = options;
+  const { temperature = 0.7, maxTokens = 2048, jsonMode = false, signal } = options;
 
   if (!apiKey) {
     throw new Error('API key not set. Please add your free Groq API key.');
@@ -103,6 +103,7 @@ async function callGroq(
 
   const response = await fetch(GROQ_API_URL, {
     method: 'POST',
+    signal,
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
@@ -530,4 +531,226 @@ Return: {"suggestions": ["Title 1", "Title 2", "Title 3", "Title 4", "Title 5", 
   } catch {
     return [];
   }
+}
+
+// ─── Trending Careers ──────────────────────────────────────────
+
+export interface TrendingCareers {
+  rising: Array<{ title: string; reason: string }>;
+  declining: Array<{ title: string; reason: string }>;
+  emerging: Array<{ title: string; reason: string }>;
+}
+
+export async function getTrendingCareers(signal?: AbortSignal): Promise<TrendingCareers> {
+  const cacheKey = 'trending_careers_v1';
+  const cached = getCached<TrendingCareers>(cacheKey);
+  if (cached) return cached;
+
+  return withRetry(async () => {
+    const raw = await callGroq(
+      'You are a career trends analyst. Return ONLY valid JSON. Base trends on current job market data (AI adoption, automation, demographic shifts, green economy, remote work).',
+      `List the current career trajectory trends. Return this exact JSON:
+{
+  "rising": [{"title": "Job Title", "reason": "1 sentence why it is growing fast"}],
+  "declining": [{"title": "Job Title", "reason": "1 sentence why it faces decline"}],
+  "emerging": [{"title": "Job Title", "reason": "1 sentence describing this new role"}]
+}
+Each array should have exactly 5 items. Be specific and accurate.`,
+      { temperature: 0.5, maxTokens: 800, jsonMode: true, signal }
+    );
+
+    const result = JSON.parse(raw) as TrendingCareers;
+    setCache(cacheKey, result);
+    return result;
+  });
+}
+
+// ─── Learn More Resources ──────────────────────────────────────
+
+export interface LearnMoreResources {
+  subreddits: Array<{ name: string; description: string }>;
+  searchTerms: Array<{ term: string; context: string }>;
+  certifications: Array<{ name: string; provider: string }>;
+  books: Array<{ title: string; author: string; why: string }>;
+}
+
+export async function getLearnMoreResources(jobTitle: string, signal?: AbortSignal): Promise<LearnMoreResources> {
+  const cacheKey = `learn_more_${jobTitle.toLowerCase().replace(/\s+/g, '_')}`;
+  const cached = getCached<LearnMoreResources>(cacheKey);
+  if (cached) return cached;
+
+  return withRetry(async () => {
+    const raw = await callGroq(
+      'You are a career research librarian. Return ONLY valid JSON. Suggest real, accurate resources.',
+      `For someone interested in becoming a "${jobTitle}", suggest learning resources. Return this exact JSON:
+{
+  "subreddits": [{"name": "r/subredditname", "description": "What this community covers"}],
+  "searchTerms": [{"term": "search phrase", "context": "What you would learn from this search"}],
+  "certifications": [{"name": "Certification Name", "provider": "Issuing organization"}],
+  "books": [{"title": "Book Title", "author": "Author Name", "why": "One sentence on why it is relevant"}]
+}
+Each array should have 3-4 items. Only include real, verifiable resources.`,
+      { temperature: 0.4, maxTokens: 800, jsonMode: true, signal }
+    );
+
+    const result = JSON.parse(raw) as LearnMoreResources;
+    setCache(cacheKey, result);
+    return result;
+  });
+}
+
+// ─── Career Transition Plan ────────────────────────────────────
+
+export interface CareerTransitionPlan {
+  fromTitle: string;
+  toTitle: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard' | 'Very Hard';
+  timeframe: string;
+  overview: string;
+  transferableSkills: string[];
+  skillGaps: string[];
+  steps: Array<{ phase: string; duration: string; actions: string[] }>;
+  salaryImpact: string;
+  successStory: string;
+}
+
+export async function getCareerTransition(
+  fromTitle: string,
+  toTitle: string,
+  signal?: AbortSignal
+): Promise<CareerTransitionPlan> {
+  const cacheKey = `transition_${fromTitle.toLowerCase().replace(/\s+/g, '_')}_to_${toTitle.toLowerCase().replace(/\s+/g, '_')}`;
+  const cached = getCached<CareerTransitionPlan>(cacheKey);
+  if (cached) return cached;
+
+  return withRetry(async () => {
+    const raw = await callGroq(
+      'You are a career transition coach. Return ONLY valid JSON. Be specific and practical.',
+      `Create a detailed career transition plan from "${fromTitle}" to "${toTitle}". Return this exact JSON:
+{
+  "fromTitle": "${fromTitle}",
+  "toTitle": "${toTitle}",
+  "difficulty": "Easy|Medium|Hard|Very Hard",
+  "timeframe": "e.g. 6-12 months",
+  "overview": "2-3 sentences summarising the transition journey",
+  "transferableSkills": ["skill 1", "skill 2", "skill 3"],
+  "skillGaps": ["gap 1", "gap 2", "gap 3"],
+  "steps": [
+    {"phase": "Phase Name", "duration": "X months", "actions": ["action 1", "action 2", "action 3"]}
+  ],
+  "salaryImpact": "e.g. +20% increase expected after 2 years",
+  "successStory": "A realistic example of someone who made this transition successfully (1-2 sentences)"
+}
+Include 3-4 phases. Be honest about difficulty and realistic about timeframes.`,
+      { temperature: 0.6, maxTokens: 1200, jsonMode: true, signal }
+    );
+
+    const result = JSON.parse(raw) as CareerTransitionPlan;
+    setCache(cacheKey, result);
+    return result;
+  });
+}
+
+// ─── Career Roadmap ────────────────────────────────────────────
+
+export interface CareerRoadmap {
+  title: string;
+  totalYears: string;
+  stages: Array<{
+    stage: string;
+    yearsRange: string;
+    role: string;
+    salary: string;
+    milestones: string[];
+    skills: string[];
+    color: string;
+  }>;
+  keyDecisions: Array<{ decision: string; timing: string; impact: string }>;
+  industryOutlook: string;
+}
+
+export async function getCareerRoadmap(jobTitle: string, signal?: AbortSignal): Promise<CareerRoadmap> {
+  const cacheKey = `roadmap_${jobTitle.toLowerCase().replace(/\s+/g, '_')}`;
+  const cached = getCached<CareerRoadmap>(cacheKey);
+  if (cached) return cached;
+
+  return withRetry(async () => {
+    const raw = await callGroq(
+      'You are a career development strategist. Return ONLY valid JSON. Be specific to this profession.',
+      `Create a comprehensive career roadmap for "${jobTitle}". Return this exact JSON:
+{
+  "title": "${jobTitle}",
+  "totalYears": "e.g. 20+ years to reach peak",
+  "stages": [
+    {
+      "stage": "Entry Level",
+      "yearsRange": "0-2 years",
+      "role": "Specific job title at this stage",
+      "salary": "Realistic salary range",
+      "milestones": ["milestone 1", "milestone 2"],
+      "skills": ["skill to learn 1", "skill to learn 2"],
+      "color": "one of: blue|green|yellow|orange|red|purple"
+    }
+  ],
+  "keyDecisions": [
+    {"decision": "Specialise vs generalise", "timing": "Years 3-5", "impact": "Affects earning potential and flexibility"}
+  ],
+  "industryOutlook": "2-3 sentences on where this career is heading over the next decade"
+}
+Include 5 stages (Entry, Junior, Mid-level, Senior, Expert/Leadership). Use distinct colors for each stage.`,
+      { temperature: 0.6, maxTokens: 1400, jsonMode: true, signal }
+    );
+
+    const result = JSON.parse(raw) as CareerRoadmap;
+    setCache(cacheKey, result);
+    return result;
+  });
+}
+
+// ─── Work-Life Balance Radar ────────────────────────────────────
+
+export interface WorkLifeBalance {
+  metrics: Array<{
+    subject: string;
+    score: number;
+    description: string;
+  }>;
+  overallScore: number;
+  summary: string;
+  bestFor: string;
+  worstFor: string;
+}
+
+export async function getWorkLifeBalance(jobTitle: string, signal?: AbortSignal): Promise<WorkLifeBalance> {
+  const cacheKey = `wlb_${jobTitle.toLowerCase().replace(/\s+/g, '_')}`;
+  const cached = getCached<WorkLifeBalance>(cacheKey);
+  if (cached) return cached;
+
+  return withRetry(async () => {
+    const raw = await callGroq(
+      'You are a workplace wellness researcher. Return ONLY valid JSON. Base scores on real data about this profession.',
+      `Evaluate the work-life balance for "${jobTitle}" across multiple dimensions. Return this exact JSON:
+{
+  "metrics": [
+    {"subject": "Work Hours", "score": 70, "description": "Brief explanation of typical hours"},
+    {"subject": "Flexibility", "score": 60, "description": "Remote/flexible work options"},
+    {"subject": "Stress Level", "score": 50, "description": "Typical stress factors (higher = lower stress)"},
+    {"subject": "Job Security", "score": 80, "description": "Employment stability"},
+    {"subject": "Social Life", "score": 65, "description": "Impact on personal relationships and free time"},
+    {"subject": "Physical Health", "score": 55, "description": "Physical demands and health impact"},
+    {"subject": "Mental Health", "score": 60, "description": "Cognitive/emotional demands"}
+  ],
+  "overallScore": 65,
+  "summary": "2-3 sentences summarising the overall work-life balance for this role",
+  "bestFor": "Type of person who thrives in this role's lifestyle",
+  "worstFor": "Type of person who would struggle with this lifestyle"
+}
+Scores are 0-100 (higher is BETTER for quality of life). Be honest and accurate.`,
+      { temperature: 0.5, maxTokens: 800, jsonMode: true, signal }
+    );
+
+    const result = JSON.parse(raw) as WorkLifeBalance;
+    setCache(cacheKey, result);
+    return result;
+  });
 }

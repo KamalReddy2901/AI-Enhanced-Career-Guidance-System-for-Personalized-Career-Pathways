@@ -4,12 +4,19 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   ChevronLeft, Play, MessageCircle, X, Send, Sparkles, Loader2, RefreshCw, Download,
   Briefcase, GraduationCap, Wrench, MapPin, TrendingUp, Lightbulb, ArrowRight,
-  Calendar, CalendarDays, CalendarRange, Scale, Star, UserCheck, Share2
+  Calendar, CalendarDays, CalendarRange, Scale, Star, UserCheck, Share2,
+  BookOpen, Hash, Award, ExternalLink, Activity
 } from 'lucide-react';
+import {
+  RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip
+} from 'recharts';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import { useFavorites } from '../hooks/useFavorites';
-import { streamChat, hasApiKey, getRelatedCareers, type RelatedCareer } from '../services/ai';
+import {
+  streamChat, hasApiKey, getRelatedCareers, getLearnMoreResources, getWorkLifeBalance,
+  type RelatedCareer, type LearnMoreResources, type WorkLifeBalance
+} from '../services/ai';
 import { toast } from 'sonner';
 import { downloadDossierPDF } from '../utils/pdfExport';
 import { generateShareUrl, decodeDossier } from '../utils/share';
@@ -79,6 +86,10 @@ export function JobDetailPage() {
   const [relatedCareers, setRelatedCareers] = useState<RelatedCareer[]>([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
   const [exploringRelated, setExploringRelated] = useState<string | null>(null);
+  const [learnMore, setLearnMore] = useState<LearnMoreResources | null>(null);
+  const [learnMoreLoading, setLearnMoreLoading] = useState(false);
+  const [wlbData, setWlbData] = useState<WorkLifeBalance | null>(null);
+  const [wlbLoading, setWlbLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -107,6 +118,21 @@ export function JobDetailPage() {
         .catch(() => {})
         .finally(() => setLoadingRelated(false));
     }
+  }, [currentJob?.title]);
+
+  // Load Learn More & Work-Life Balance lazily
+  useEffect(() => {
+    if (!currentJob || !hasApiKey()) return;
+    setLearnMoreLoading(true);
+    getLearnMoreResources(currentJob.title)
+      .then(setLearnMore)
+      .catch(() => {})
+      .finally(() => setLearnMoreLoading(false));
+    setWlbLoading(true);
+    getWorkLifeBalance(currentJob.title)
+      .then(setWlbData)
+      .catch(() => {})
+      .finally(() => setWlbLoading(false));
   }, [currentJob?.title]);
 
   if (!currentJob) {
@@ -546,9 +572,204 @@ export function JobDetailPage() {
           </motion.div>
         )}
 
+        {/* ── Work-Life Balance Radar ──────────────────────── */}
+        {(wlbData || wlbLoading) && (
+          <motion.div
+            className="mt-10 mb-10 print:hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
+              <span className="font-[Playfair_Display] text-black dark:text-white flex items-center gap-2" style={{ fontSize: '1.15rem' }}>
+                Work-Life Balance
+                <Activity size={14} className="text-black/25 dark:text-white/25" />
+              </span>
+              <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
+            </div>
+
+            {wlbLoading ? (
+              <div className="flex items-center justify-center gap-2 py-6 text-black/30 dark:text-white/30">
+                <Loader2 size={16} className="animate-spin" />
+                <span className="font-[Inter]" style={{ fontSize: '0.82rem' }}>Analysing work-life balance…</span>
+              </div>
+            ) : wlbData ? (
+              <div className="border border-black/10 dark:border-white/10 p-6">
+                <div className="flex flex-col md:flex-row gap-8 items-start">
+                  {/* Radar chart */}
+                  <div className="w-full md:w-72 shrink-0">
+                    <ResponsiveContainer width="100%" height={260}>
+                      <RadarChart data={wlbData.metrics}>
+                        <PolarGrid stroke="rgba(0,0,0,0.1)" />
+                        <PolarAngleAxis
+                          dataKey="subject"
+                          tick={{ fontFamily: 'Inter', fontSize: 11, fill: 'rgba(0,0,0,0.5)' }}
+                        />
+                        <Radar
+                          name="Score"
+                          dataKey="score"
+                          stroke="rgba(0,0,0,0.7)"
+                          fill="rgba(0,0,0,0.08)"
+                          strokeWidth={1.5}
+                        />
+                        <Tooltip
+                          formatter={(v: number) => [`${v}/100`, 'Score']}
+                          contentStyle={{ fontFamily: 'Inter', fontSize: '0.75rem', border: '1px solid rgba(0,0,0,0.15)', borderRadius: 0 }}
+                        />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  {/* Summary */}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="text-3xl font-[Playfair_Display] text-black dark:text-white">
+                        {wlbData.overallScore}
+                      </div>
+                      <div>
+                        <p className="font-[Inter] text-black/35 dark:text-white/35" style={{ fontSize: '0.65rem', letterSpacing: '0.1em' }}>OVERALL SCORE /100</p>
+                        <div className="w-32 h-1.5 bg-black/10 dark:bg-white/10 mt-1">
+                          <div className="h-full bg-black dark:bg-white" style={{ width: `${wlbData.overallScore}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                    <p className="font-[Inter] text-black/60 dark:text-white/60 mb-4 leading-relaxed" style={{ fontSize: '0.88rem' }}>
+                      {wlbData.summary}
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
+                        <p className="font-[Inter] text-green-700 dark:text-green-300 mb-1" style={{ fontSize: '0.62rem', letterSpacing: '0.1em' }}>BEST FOR</p>
+                        <p className="font-[Inter] text-black/65 dark:text-white/65" style={{ fontSize: '0.82rem' }}>{wlbData.bestFor}</p>
+                      </div>
+                      <div className="p-3 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800">
+                        <p className="font-[Inter] text-orange-700 dark:text-orange-300 mb-1" style={{ fontSize: '0.62rem', letterSpacing: '0.1em' }}>CHALLENGING FOR</p>
+                        <p className="font-[Inter] text-black/65 dark:text-white/65" style={{ fontSize: '0.82rem' }}>{wlbData.worstFor}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </motion.div>
+        )}
+
+        {/* ── Learn More ──────────────────────────────────── */}
+        {(learnMore || learnMoreLoading) && (
+          <motion.div
+            className="mt-10 mb-10 print:hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
+              <span className="font-[Playfair_Display] text-black dark:text-white flex items-center gap-2" style={{ fontSize: '1.15rem' }}>
+                Learn More
+                <BookOpen size={14} className="text-black/25 dark:text-white/25" />
+              </span>
+              <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
+            </div>
+
+            {learnMoreLoading ? (
+              <div className="flex items-center justify-center gap-2 py-6 text-black/30 dark:text-white/30">
+                <Loader2 size={16} className="animate-spin" />
+                <span className="font-[Inter]" style={{ fontSize: '0.82rem' }}>Finding resources…</span>
+              </div>
+            ) : learnMore ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Subreddits */}
+                {learnMore.subreddits.length > 0 && (
+                  <div className="border border-black/10 dark:border-white/10 p-5">
+                    <h4 className="font-[Inter] text-black/35 dark:text-white/35 uppercase tracking-[0.1em] mb-3 flex items-center gap-1.5" style={{ fontSize: '0.62rem' }}>
+                      <Hash size={11} /> Subreddits
+                    </h4>
+                    <ul className="space-y-2.5">
+                      {learnMore.subreddits.map((sr, i) => (
+                        <li key={i}>
+                          <a
+                            href={`https://reddit.com/${sr.name}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-start gap-2 group"
+                          >
+                            <ExternalLink size={12} className="text-black/25 dark:text-white/25 mt-1 shrink-0 group-hover:text-black dark:group-hover:text-white transition-colors" />
+                            <div>
+                              <p className="font-[Inter] text-black dark:text-white group-hover:underline" style={{ fontSize: '0.82rem' }}>{sr.name}</p>
+                              <p className="font-[Inter] text-black/40 dark:text-white/40" style={{ fontSize: '0.72rem' }}>{sr.description}</p>
+                            </div>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Certifications */}
+                {learnMore.certifications.length > 0 && (
+                  <div className="border border-black/10 dark:border-white/10 p-5">
+                    <h4 className="font-[Inter] text-black/35 dark:text-white/35 uppercase tracking-[0.1em] mb-3 flex items-center gap-1.5" style={{ fontSize: '0.62rem' }}>
+                      <Award size={11} /> Certifications
+                    </h4>
+                    <ul className="space-y-2.5">
+                      {learnMore.certifications.map((cert, i) => (
+                        <li key={i}>
+                          <p className="font-[Inter] text-black dark:text-white" style={{ fontSize: '0.82rem' }}>{cert.name}</p>
+                          <p className="font-[Inter] text-black/40 dark:text-white/40" style={{ fontSize: '0.72rem' }}>{cert.provider}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Search terms */}
+                {learnMore.searchTerms.length > 0 && (
+                  <div className="border border-black/10 dark:border-white/10 p-5">
+                    <h4 className="font-[Inter] text-black/35 dark:text-white/35 uppercase tracking-[0.1em] mb-3 flex items-center gap-1.5" style={{ fontSize: '0.62rem' }}>
+                      <ArrowRight size={11} /> Search Terms
+                    </h4>
+                    <ul className="space-y-2.5">
+                      {learnMore.searchTerms.map((st, i) => (
+                        <li key={i}>
+                          <a
+                            href={`https://www.google.com/search?q=${encodeURIComponent(st.term)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group"
+                          >
+                            <p className="font-[Inter] text-black dark:text-white group-hover:underline" style={{ fontSize: '0.82rem' }}>"{st.term}"</p>
+                            <p className="font-[Inter] text-black/40 dark:text-white/40" style={{ fontSize: '0.72rem' }}>{st.context}</p>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Books */}
+                {learnMore.books.length > 0 && (
+                  <div className="border border-black/10 dark:border-white/10 p-5">
+                    <h4 className="font-[Inter] text-black/35 dark:text-white/35 uppercase tracking-[0.1em] mb-3 flex items-center gap-1.5" style={{ fontSize: '0.62rem' }}>
+                      <BookOpen size={11} /> Recommended Books
+                    </h4>
+                    <ul className="space-y-2.5">
+                      {learnMore.books.map((book, i) => (
+                        <li key={i}>
+                          <p className="font-[Inter] text-black dark:text-white font-medium" style={{ fontSize: '0.82rem' }}>{book.title}</p>
+                          <p className="font-[Inter] text-black/40 dark:text-white/40" style={{ fontSize: '0.72rem' }}>by {book.author}</p>
+                          <p className="font-[Inter] text-black/50 dark:text-white/50" style={{ fontSize: '0.72rem' }}>{book.why}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </motion.div>
+        )}
+
         {/* Action Buttons */}
         <motion.div
-          className="flex flex-col sm:flex-row gap-4 mt-10 print:hidden"
+          className="flex flex-col sm:flex-row gap-4 mt-10 mb-20 sm:mb-10 print:hidden"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
@@ -706,6 +927,42 @@ export function JobDetailPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Mobile floating action bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 sm:hidden bg-[#f9f8f7]/95 dark:bg-[#161614]/95 backdrop-blur-md border-t border-black/10 dark:border-white/10 flex print:hidden">
+        <button
+          onClick={() => { sounds.click(); navigate(`/simulation?job=${encodeURIComponent(currentJob?.title ?? '')}`); }}
+          className="flex-1 flex flex-col items-center gap-1 py-3 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
+        >
+          <Play size={17} />
+          <span style={{ fontSize: '0.58rem', letterSpacing: '0.05em' }} className="font-[Inter] uppercase">Simulate</span>
+        </button>
+        {isAIEnabled && (
+          <button
+            onClick={() => { sounds.click(); navigate(`/interview-prep?job=${encodeURIComponent(currentJob?.title ?? '')}`); }}
+            className="flex-1 flex flex-col items-center gap-1 py-3 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
+          >
+            <UserCheck size={17} />
+            <span style={{ fontSize: '0.58rem', letterSpacing: '0.05em' }} className="font-[Inter] uppercase">Interview</span>
+          </button>
+        )}
+        {isAIEnabled && (
+          <button
+            onClick={() => { setShowChat(true); sounds.slide(); }}
+            className="flex-1 flex flex-col items-center gap-1 py-3 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
+          >
+            <MessageCircle size={17} />
+            <span style={{ fontSize: '0.58rem', letterSpacing: '0.05em' }} className="font-[Inter] uppercase">Ask AI</span>
+          </button>
+        )}
+        <button
+          onClick={handleShare}
+          className="flex-1 flex flex-col items-center gap-1 py-3 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
+        >
+          <Share2 size={17} />
+          <span style={{ fontSize: '0.58rem', letterSpacing: '0.05em' }} className="font-[Inter] uppercase">Share</span>
+        </button>
+      </div>
     </div>
   );
 }

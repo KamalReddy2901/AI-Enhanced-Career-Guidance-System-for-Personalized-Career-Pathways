@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { ChevronLeft, Settings, Volume2, VolumeX, Trash2, Key, Check, LogOut, User, LogIn } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { ChevronLeft, Settings, Volume2, VolumeX, Trash2, Key, Check, LogOut, User, LogIn, Sun, Moon, Monitor } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { usePreferences } from '../hooks/usePreferences';
 import { useApp } from '../context/AppContext';
@@ -12,6 +13,7 @@ import { sounds, enableSound, isSoundOn } from '../utils/sounds';
 
 export function SettingsPage() {
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
   const { preferences, setPreferences, resetPreferences } = usePreferences();
   const { clearHistory, clearAICache, refreshAIStatus } = useApp();
   const { user, signOut, isSupabaseConfigured } = useAuth();
@@ -106,6 +108,33 @@ export function SettingsPage() {
             </div>
           </div>
         </motion.div>
+
+        {/* Appearance Section */}
+        <Section title="Appearance">
+          <div className="space-y-3">
+            <p className="font-[Inter] text-black/40 dark:text-white/40 mb-4" style={{ fontSize: '0.82rem' }}>
+              Choose how Career Simulation looks to you.
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              {([{ value: 'light', label: 'Light', icon: <Sun size={18} /> }, { value: 'dark', label: 'Dark', icon: <Moon size={18} /> }, { value: 'system', label: 'System', icon: <Monitor size={18} /> }] as const).map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setTheme(opt.value)}
+                  className={`flex flex-col items-center gap-2.5 py-5 border transition-all font-[Inter] ${
+                    theme === opt.value
+                      ? 'border-black dark:border-white bg-black/5 dark:bg-white/5 text-black dark:text-white'
+                      : 'border-black/10 dark:border-white/10 text-black/40 dark:text-white/40 hover:border-black/30 dark:hover:border-white/30'
+                  }`}
+                  style={{ fontSize: '0.78rem' }}
+                >
+                  {opt.icon}
+                  {opt.label}
+                  {theme === opt.value && <Check size={12} />}
+                </button>
+              ))}
+            </div>
+          </div>
+        </Section>
 
         {/* API Key Section */}
         <Section title="AI Configuration">

@@ -1,13 +1,14 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import { motion } from 'motion/react';
-import { Key, Sparkles, FlaskConical, Scale, Trash2, ChevronDown, FileText, Brain, Swords, Zap, BarChart2, MessageSquare, ArrowRight, ExternalLink } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Key, Sparkles, FlaskConical, Scale, Trash2, ChevronDown, FileText, Brain, Swords, Zap, BarChart2, MessageSquare, ArrowRight, ExternalLink, TrendingUp, TrendingDown, Rocket, Loader2 } from 'lucide-react';
 import { ScrollingTitles } from '../components/ScrollingTitles';
 import { MagnifierSearch } from '../components/MagnifierSearch';
 import { StickFigure } from '../components/StickFigure';
 import { ApiKeyModal } from '../components/ApiKeyModal';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
+import { getTrendingCareers, type TrendingCareers, hasApiKey } from '../services/ai';
 import { toast } from 'sonner';
 
 export function HomePage() {
@@ -15,9 +16,44 @@ export function HomePage() {
   const { searchJob, searchJobAI, setCurrentJob, addToHistory, isSearchAnimating, setIsSearchAnimating, setRefinementCount, isAIEnabled, refreshAIStatus, clearAICache } = useApp();
   const { user, isSupabaseConfigured } = useAuth();
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [trending, setTrending] = useState<TrendingCareers | null>(null);
+  const [trendingLoading, setTrendingLoading] = useState(false);
+  const trendingRef = useRef<HTMLElement | null>(null);
+  const trendingFetched = useRef(false);
 
   // When Supabase is configured, show landing to logged-out users; otherwise show search
   const showLanding = isSupabaseConfigured && !user;
+
+  // Auto-load trending when the section scrolls into view (AI only)
+  useEffect(() => {
+    if (!hasApiKey() || trendingFetched.current) return;
+    const el = trendingRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && !trendingFetched.current) {
+        trendingFetched.current = true;
+        setTrendingLoading(true);
+        getTrendingCareers()
+          .then(data => setTrending(data))
+          .catch(() => null)
+          .finally(() => setTrendingLoading(false));
+      }
+    }, { threshold: 0.2 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAIEnabled]);
+
+  const handleLoadTrending = () => {
+    if (!hasApiKey()) { setShowApiKeyModal(true); return; }
+    if (trendingFetched.current) return;
+    trendingFetched.current = true;
+    setTrendingLoading(true);
+    getTrendingCareers()
+      .then(data => setTrending(data))
+      .catch(() => null)
+      .finally(() => setTrendingLoading(false));
+  };
 
   const handleSearchComplete = useCallback(async (jobTitle: string) => {
     if (isAIEnabled) {
@@ -390,6 +426,175 @@ export function HomePage() {
               </div>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* ── WHAT'S TRENDING ────────────────────────────────── */}
+      <section
+        ref={trendingRef as React.RefObject<HTMLElement>}
+        className="py-24 px-6 border-t border-black/8"
+        aria-label="What's trending in careers"
+      >
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-10"
+          >
+            <p className="font-[Inter] uppercase tracking-[0.2em] text-black/30 mb-2" style={{ fontSize: '0.65rem' }}>
+              AI Career Intelligence
+            </p>
+            <h2 className="font-[Playfair_Display] text-black dark:text-white" style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)' }}>
+              What's Trending in Careers
+            </h2>
+          </motion.div>
+
+          {/* Load trigger if AI is available but didn't auto-load */}
+          {!hasApiKey() && !trending && (
+            <div className="text-center py-8">
+              <p className="font-[Inter] text-black/35 dark:text-white/35 mb-4" style={{ fontSize: '0.85rem' }}>
+                Enable AI to see live career trend data
+              </p>
+              <button
+                onClick={() => setShowApiKeyModal(true)}
+                className="font-[Inter] text-black/50 dark:text-white/50 border border-black/20 dark:border-white/20 px-5 py-2.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                style={{ fontSize: '0.82rem' }}
+              >
+                Add API Key
+              </button>
+            </div>
+          )}
+
+          {/* Loading */}
+          {trendingLoading && (
+            <div className="flex items-center justify-center gap-3 py-12">
+              <Loader2 size={18} className="animate-spin text-black/30 dark:text-white/30" />
+              <span className="font-[Inter] text-black/35 dark:text-white/35" style={{ fontSize: '0.85rem' }}>Pulling latest career data…</span>
+            </div>
+          )}
+
+          {/* Trending grid */}
+          <AnimatePresence>
+            {trending && (
+              <motion.div
+                className="grid grid-cols-1 md:grid-cols-3 gap-6"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4 }}
+              >
+                {/* Rising */}
+                <div>
+                  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-black/10 dark:border-white/10">
+                    <TrendingUp size={15} className="text-green-600" />
+                    <span className="font-[Inter] text-black dark:text-white font-medium" style={{ fontSize: '0.82rem', letterSpacing: '0.05em' }}>
+                      RISING
+                    </span>
+                  </div>
+                  <ul className="space-y-3">
+                    {trending.rising.map((item, i) => (
+                      <motion.li
+                        key={i}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.06 }}
+                      >
+                        <button
+                          onClick={() => handleSearchComplete(item.title)}
+                          className="text-left group w-full"
+                        >
+                          <p className="font-[Playfair_Display] text-black dark:text-white group-hover:underline" style={{ fontSize: '0.92rem' }}>
+                            {item.title}
+                          </p>
+                          <p className="font-[Inter] text-black/40 dark:text-white/40 mt-0.5" style={{ fontSize: '0.72rem', lineHeight: 1.5 }}>
+                            {item.reason}
+                          </p>
+                        </button>
+                      </motion.li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Emerging */}
+                <div>
+                  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-black/10 dark:border-white/10">
+                    <Rocket size={15} className="text-blue-600" />
+                    <span className="font-[Inter] text-black dark:text-white font-medium" style={{ fontSize: '0.82rem', letterSpacing: '0.05em' }}>
+                      EMERGING
+                    </span>
+                  </div>
+                  <ul className="space-y-3">
+                    {trending.emerging.map((item, i) => (
+                      <motion.li
+                        key={i}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.15 + i * 0.06 }}
+                      >
+                        <button
+                          onClick={() => handleSearchComplete(item.title)}
+                          className="text-left group w-full"
+                        >
+                          <p className="font-[Playfair_Display] text-black dark:text-white group-hover:underline" style={{ fontSize: '0.92rem' }}>
+                            {item.title}
+                          </p>
+                          <p className="font-[Inter] text-black/40 dark:text-white/40 mt-0.5" style={{ fontSize: '0.72rem', lineHeight: 1.5 }}>
+                            {item.reason}
+                          </p>
+                        </button>
+                      </motion.li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Declining */}
+                <div>
+                  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-orange-200 dark:border-orange-800/50">
+                    <TrendingDown size={15} className="text-orange-500" />
+                    <span className="font-[Inter] text-black dark:text-white font-medium" style={{ fontSize: '0.82rem', letterSpacing: '0.05em' }}>
+                      DECLINING
+                    </span>
+                  </div>
+                  <ul className="space-y-3">
+                    {trending.declining.map((item, i) => (
+                      <motion.li
+                        key={i}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 + i * 0.06 }}
+                      >
+                        <button
+                          onClick={() => handleSearchComplete(item.title)}
+                          className="text-left group w-full"
+                        >
+                          <p className="font-[Playfair_Display] text-black/60 dark:text-white/60 group-hover:underline" style={{ fontSize: '0.92rem' }}>
+                            {item.title}
+                          </p>
+                          <p className="font-[Inter] text-black/35 dark:text-white/35 mt-0.5" style={{ fontSize: '0.72rem', lineHeight: 1.5 }}>
+                            {item.reason}
+                          </p>
+                        </button>
+                      </motion.li>
+                    ))}
+                  </ul>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* "Explore a trending career" call to action */}
+          {trending && (
+            <motion.div
+              className="mt-8 pt-6 border-t border-black/8 dark:border-white/8 text-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+            >
+              <p className="font-[Inter] text-black/35 dark:text-white/35" style={{ fontSize: '0.78rem' }}>
+                Click any career to investigate its full dossier
+              </p>
+            </motion.div>
+          )}
         </div>
       </section>
 

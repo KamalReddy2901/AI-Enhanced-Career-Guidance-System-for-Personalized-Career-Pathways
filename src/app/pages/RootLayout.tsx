@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router';
 import { Toaster } from 'sonner';
 import { Navbar } from '../components/Navbar';
+import { OnboardingTour } from '../components/OnboardingTour';
 import { useAuth } from '../context/AuthContext';
 
 // Routes that are always public (no login required)
@@ -81,10 +82,21 @@ export function RootLayout() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [navigate, location.pathname]);
 
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [location.pathname]);
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Skip navigation link for keyboard/screen-reader users */}
+      <a href="#main-content" className="skip-nav">
+        Skip to main content
+      </a>
       <Navbar />
-      <Outlet />
+      <main id="main-content">
+        <Outlet />
+      </main>
       <Toaster
         position="bottom-right"
         toastOptions={{
@@ -97,6 +109,7 @@ export function RootLayout() {
           },
         }}
       />
+      <OnboardingTour />
     </div>
   );
 }

@@ -2,9 +2,9 @@
 
 :root {
   --font-size: 16px;
-  --background: #f5ede0;
+  --background: #f9f8f7;
   --foreground: oklch(0.145 0 0);
-  --card: #f5ede0;
+  --card: #f7f6f4;
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
@@ -42,25 +42,27 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: #161614;
+  --foreground: oklch(0.92 0.008 90);
+  --card: #1e1e1b;
+  --card-foreground: oklch(0.92 0.008 90);
+  --popover: #1e1e1b;
+  --popover-foreground: oklch(0.92 0.008 90);
+  --primary: oklch(0.93 0.008 90);
+  --primary-foreground: oklch(0.14 0 0);
+  --secondary: oklch(0.25 0.005 90);
+  --secondary-foreground: oklch(0.93 0.008 90);
+  --muted: oklch(0.25 0.005 90);
+  --muted-foreground: oklch(0.65 0.008 90);
+  --accent: oklch(0.25 0.005 90);
+  --accent-foreground: oklch(0.93 0.008 90);
   --destructive: oklch(0.396 0.141 25.723);
   --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
+  --border: rgba(255, 255, 255, 0.1);
+  --input: oklch(0.25 0.005 90);
+  --input-background: oklch(0.22 0.005 90);
+  --switch-background: oklch(0.35 0.005 90);
+  --ring: oklch(0.55 0 0);
   --font-weight-medium: 500;
   --font-weight-normal: 400;
   --chart-1: oklch(0.488 0.243 264.376);
@@ -129,10 +131,28 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Subtle paper / newsprint grain */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='0.04'/%3E%3C/svg%3E");
-    background-repeat: repeat;
-    background-size: 200px 200px;
+    /* Multi-layer newsprint texture — fine grain + coarse variation + subtle vignette */
+    background-image:
+      /* Fine newsprint grain (high frequency noise) */
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)' opacity='0.055'/%3E%3C/svg%3E"),
+      /* Coarse paper fibres (low frequency variation) */
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.18' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='320' height='320' filter='url(%23c)' opacity='0.035'/%3E%3C/svg%3E"),
+      /* Subtle edge-darkening for crumpled feel */
+      radial-gradient(ellipse 130% 130% at 50% 50%, transparent 50%, rgba(0,0,0,0.04) 100%);
+    background-repeat: repeat, repeat, no-repeat;
+    background-size: 180px 180px, 320px 320px, cover;
+    background-attachment: fixed, fixed, fixed;
+  }
+
+  /* Dark mode body texture — lighter grain on dark paper */
+  .dark body {
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)' opacity='0.07'/%3E%3C/svg%3E"),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.18' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='320' height='320' filter='url(%23c)' opacity='0.05'/%3E%3C/svg%3E"),
+      radial-gradient(ellipse 130% 130% at 50% 50%, transparent 50%, rgba(0,0,0,0.15) 100%);
+    background-repeat: repeat, repeat, no-repeat;
+    background-size: 180px 180px, 320px 320px, cover;
+    background-attachment: fixed, fixed, fixed;
   }
 
   html {
@@ -185,5 +205,62 @@
     font-size: var(--text-base);
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
+  }
+}
+
+/* ─── Skip navigation link (accessibility) ─────────────────────────── */
+.skip-nav {
+  position: absolute;
+  top: -100%;
+  left: 1rem;
+  z-index: 9999;
+  padding: 0.5rem 1rem;
+  background: #000;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: top 0.2s;
+}
+.skip-nav:focus {
+  top: 1rem;
+}
+
+/* ─── Focus rings (keyboard nav) ───────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid rgba(0, 0, 0, 0.65);
+  outline-offset: 2px;
+}
+.dark :focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.65);
+  outline-offset: 2px;
+}
+
+/* ─── Minimum 44×44 px touch targets ───────────────────────────────── */
+button, a, [role="button"], [role="link"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+nav a, nav button {
+  /* Nav items can be smaller — override for tight UI */
+  min-height: unset;
+  min-width: unset;
+}
+
+/* ─── Reduced motion ────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── Newspaper-style print overrides ──────────────────────────────── */
+@media print {
+  body {
+    background-image: none !important;
+    background-color: #fff !important;
   }
 }

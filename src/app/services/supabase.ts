@@ -59,3 +59,50 @@ export async function clearRemoteHistory(userId: string): Promise<void> {
   if (!supabase) return;
   await supabase.from('career_history').delete().eq('user_id', userId);
 }
+
+// ── Favorites helpers ───────────────────────────────────────────────────────
+
+export interface DbFavorite {
+  id: string;
+  user_id: string;
+  job_title: string;
+  job_data: unknown;
+  saved_at: number;
+}
+
+export async function fetchRemoteFavorites(userId: string): Promise<DbFavorite[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('career_favorites')
+    .select('*')
+    .eq('user_id', userId)
+    .order('saved_at', { ascending: false });
+  if (error) { console.error('fetchRemoteFavorites:', error); return []; }
+  return data ?? [];
+}
+
+export async function saveFavorite(
+  userId: string,
+  jobTitle: string,
+  jobData: unknown,
+  savedAt: number,
+): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.from('career_favorites').upsert(
+    { user_id: userId, job_title: jobTitle, job_data: jobData, saved_at: savedAt },
+    { onConflict: 'user_id,job_title' },
+  );
+  if (error) console.error('saveFavorite:', error);
+}
+
+export async function deleteRemoteFavorite(userId: string, jobTitle: string): Promise<void> {
+  if (!supabase) return;
+  await supabase.from('career_favorites').delete()
+    .eq('user_id', userId)
+    .eq('job_title', jobTitle);
+}
+
+export async function clearRemoteFavorites(userId: string): Promise<void> {
+  if (!supabase) return;
+  await supabase.from('career_favorites').delete().eq('user_id', userId);
+}
