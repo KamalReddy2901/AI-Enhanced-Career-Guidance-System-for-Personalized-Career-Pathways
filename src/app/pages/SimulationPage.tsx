@@ -425,9 +425,9 @@ export function SimulationPage() {
                         !isRevealed
                           ? 'border-black/12 hover:border-black/30 hover:bg-black/2'
                           : isCorrect
-                            ? 'border-black bg-black/5'
+                            ? 'border-green-500 bg-green-50'
                             : isSelected
-                              ? 'border-black/20 bg-red-50/50'
+                              ? 'border-red-300 bg-red-50'
                               : 'border-black/8 opacity-40'
                       }`}
                       style={{ fontSize: '0.9rem' }}
@@ -437,14 +437,18 @@ export function SimulationPage() {
                       whileHover={!isRevealed ? { scale: 1.005 } : {}}
                     >
                       <div className="flex items-start gap-3">
-                        <span className="shrink-0 w-7 h-7 flex items-center justify-center border border-black/20 text-black/40 font-[JetBrains_Mono]" style={{ fontSize: '0.75rem' }}>
+                        <span className={`shrink-0 w-7 h-7 flex items-center justify-center border font-[JetBrains_Mono] ${
+                          isRevealed && isCorrect ? 'border-green-400' : isRevealed && isSelected && !isCorrect ? 'border-red-300' : 'border-black/20'
+                        }`} style={{ fontSize: '0.75rem' }}>
                           {isRevealed ? (
-                            isCorrect ? <CheckCircle2 size={16} className="text-black" /> : isSelected ? <XCircle size={16} className="text-black/40" /> : String.fromCharCode(65 + i)
+                            isCorrect ? <CheckCircle2 size={16} className="text-green-600" /> : isSelected ? <XCircle size={16} className="text-red-400" /> : String.fromCharCode(65 + i)
                           ) : (
                             String.fromCharCode(65 + i)
                           )}
                         </span>
-                        <span className={`flex-1 ${isRevealed && isCorrect ? 'text-black' : 'text-black/65'}`}>
+                        <span className={`flex-1 ${
+                          isRevealed && isCorrect ? 'text-green-800' : isRevealed && isSelected && !isCorrect ? 'text-red-700' : 'text-black/65'
+                        }`}>
                           {choice.text}
                         </span>
                       </div>
@@ -461,7 +465,11 @@ export function SimulationPage() {
                     exit={{ opacity: 0, y: 20, height: 0 }}
                     transition={{ duration: 0.4 }}
                   >
-                    <div className="border-2 border-black/15 p-6 mb-8">
+                    <div className={`border-2 p-6 mb-8 ${
+                      selectedChoice === currentScenario.correctChoiceIndex
+                        ? 'border-green-300 bg-green-50/40'
+                        : 'border-amber-300 bg-amber-50/40'
+                    }`}>
                       <div className="flex items-start gap-4">
                         <StickFigure pose="presenting" size={56} />
                         <div className="flex-1">
@@ -521,12 +529,18 @@ export function SimulationPage() {
                 </div>
                 <div className="w-px bg-black/10" />
                 <div className="text-center">
-                  <div className="font-[Playfair_Display] text-black" style={{ fontSize: '2rem' }}>{correctCount}</div>
+                  <div className="font-[Playfair_Display] text-green-600" style={{ fontSize: '2rem' }}>{correctCount}</div>
                   <div className="font-[Inter] text-black/40" style={{ fontSize: '0.75rem' }}>Professional Choices</div>
                 </div>
                 <div className="w-px bg-black/10" />
                 <div className="text-center">
-                  <div className="font-[Playfair_Display] text-black" style={{ fontSize: '2rem' }}>
+                  <div className={`font-[Playfair_Display] ${
+                    scenarios.length > 0 && (correctCount / scenarios.length) >= 0.7
+                      ? 'text-green-600'
+                      : scenarios.length > 0 && (correctCount / scenarios.length) >= 0.4
+                        ? 'text-amber-600'
+                        : 'text-black'
+                  }`} style={{ fontSize: '2rem' }}>
                     {scenarios.length > 0 ? Math.round((correctCount / scenarios.length) * 100) : 0}%
                   </div>
                   <div className="font-[Inter] text-black/40" style={{ fontSize: '0.75rem' }}>Alignment</div>

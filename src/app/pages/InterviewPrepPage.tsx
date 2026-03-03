@@ -204,11 +204,19 @@ export function InterviewPrepPage() {
                 {questions.map((q, i) => {
                   const isOpen = selectedQuestion === i;
                   const isPrepared = preparedQuestions.has(i);
+                  const catLow = (q.category || '').toLowerCase();
+                  const catBorderColor = catLow.includes('technical') || catLow.includes('tech')
+                    ? 'border-l-blue-400'
+                    : catLow.includes('behavioral') || catLow.includes('behaviour') || catLow.includes('behavior')
+                      ? 'border-l-purple-400'
+                      : catLow.includes('situation')
+                        ? 'border-l-amber-400'
+                        : 'border-l-black/20';
 
                   return (
                     <motion.div
                       key={i}
-                      className="border-2 border-black/10"
+                      className={`border-2 border-black/10 border-l-4 ${catBorderColor}`}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.05 }}
@@ -226,7 +234,7 @@ export function InterviewPrepPage() {
                             className="shrink-0 mt-0.5"
                           >
                             {isPrepared ? (
-                              <CheckCircle size={20} className="text-black" />
+                              <CheckCircle size={20} className="text-green-500" />
                             ) : (
                               <Circle size={20} className="text-black/20" />
                             )}
