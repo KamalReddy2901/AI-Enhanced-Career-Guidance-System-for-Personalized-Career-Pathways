@@ -10,15 +10,30 @@ const BUILT_IN_KEYS: string[] = (import.meta.env.VITE_GROQ_API_KEYS as string ||
   .filter(k => k.startsWith('gsk_'));
 
 let currentKeyIndex = Math.floor(Math.random() * BUILT_IN_KEYS.length); // start random to distribute load
-const exhaustedKeys = new Set<string>(); // keys that returned 429 today
+// Map of key → timestamp when it was 429'd. Keys recover after 65 seconds (Groq RPM window).
+const exhaustedKeys = new Map<string, number>();
 let allKeysExhausted = false;
 
+const KEY_COOLDOWN_MS = 65_000; // 65s — slightly over Groq's 1-minute rate limit window
+
+function isKeyExhausted(key: string): boolean {
+  const exhaustedAt = exhaustedKeys.get(key);
+  if (!exhaustedAt) return false;
+  if (Date.now() - exhaustedAt > KEY_COOLDOWN_MS) {
+    exhaustedKeys.delete(key);
+    return false;
+  }
+  return true;
+}
+
 function getActiveKey(): string {
-  if (allKeysExhausted || BUILT_IN_KEYS.length === 0) return '';
+  if (BUILT_IN_KEYS.length === 0) return '';
+  // Always reset allKeysExhausted flag — some keys may have recovered by now
+  allKeysExhausted = false;
   // Find the next non-exhausted key starting from current index
   for (let i = 0; i < BUILT_IN_KEYS.length; i++) {
     const idx = (currentKeyIndex + i) % BUILT_IN_KEYS.length;
-    if (!exhaustedKeys.has(BUILT_IN_KEYS[idx])) {
+    if (!isKeyExhausted(BUILT_IN_KEYS[idx])) {
       currentKeyIndex = idx;
       return BUILT_IN_KEYS[idx];
     }
@@ -29,11 +44,11 @@ function getActiveKey(): string {
 
 function rotateToNextKey(): boolean {
   const currentKey = BUILT_IN_KEYS[currentKeyIndex];
-  if (currentKey) exhaustedKeys.add(currentKey);
-  // Try to find another key
+  if (currentKey) exhaustedKeys.set(currentKey, Date.now());
+  // Try to find another non-exhausted key
   for (let i = 1; i < BUILT_IN_KEYS.length; i++) {
     const idx = (currentKeyIndex + i) % BUILT_IN_KEYS.length;
-    if (!exhaustedKeys.has(BUILT_IN_KEYS[idx])) {
+    if (!isKeyExhausted(BUILT_IN_KEYS[idx])) {
       currentKeyIndex = idx;
       return true;
     }
@@ -42,17 +57,7 @@ function rotateToNextKey(): boolean {
   return false;
 }
 
-// Reset exhausted keys daily (Groq quotas reset daily)
-const EXHAUSTED_RESET_KEY = 'careersim_keys_reset_date';
-(function resetExhaustedIfNewDay() {
-  const today = new Date().toDateString();
-  const lastReset = localStorage.getItem(EXHAUSTED_RESET_KEY);
-  if (lastReset !== today) {
-    localStorage.setItem(EXHAUSTED_RESET_KEY, today);
-    exhaustedKeys.clear();
-    allKeysExhausted = false;
-  }
-})();
+// No persistent reset needed — exhaustedKeys auto-expire after KEY_COOLDOWN_MS
 
 export function getApiKey(): string {
   return getActiveKey();
@@ -63,11 +68,14 @@ export function setApiKey(key: string) {
 }
 
 export function hasApiKey(): boolean {
-  return BUILT_IN_KEYS.length > 0 && !allKeysExhausted;
+  if (BUILT_IN_KEYS.length === 0) return false;
+  // Re-check live — some keys may have recovered from their 65s cooldown
+  return BUILT_IN_KEYS.some(k => !isKeyExhausted(k));
 }
 
 export function isAllKeysExhausted(): boolean {
-  return allKeysExhausted;
+  // Re-check live — some keys may have recovered
+  return BUILT_IN_KEYS.length === 0 || !BUILT_IN_KEYS.some(k => !isKeyExhausted(k));
 }
 
 // ─── Cache Layer ───────────────────────────────────────────────
@@ -154,7 +162,7 @@ async function callGroq(
 
   const activeKey = getActiveKey();
   if (!activeKey) {
-    throw new Error('Servers are busy now. Please come back tomorrow.');
+    throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
   }
 
   // Deduplication: if same request is already in-flight, return that promise
@@ -166,7 +174,7 @@ async function callGroq(
     // Try with current key, rotate on 429
     for (let attempt = 0; attempt < BUILT_IN_KEYS.length; attempt++) {
       const key = getActiveKey();
-      if (!key) throw new Error('Servers are busy now. Please come back tomorrow.');
+      if (!key) throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
 
       const response = await fetch(GROQ_API_URL, {
         method: 'POST',
@@ -190,7 +198,7 @@ async function callGroq(
       if (response.status === 429) {
         // Rate limited — rotate to next key
         const hasMore = rotateToNextKey();
-        if (!hasMore) throw new Error('Servers are busy now. Please come back tomorrow.');
+        if (!hasMore) throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
         continue;
       }
 
@@ -203,7 +211,7 @@ async function callGroq(
       const data = await response.json();
       return data.choices[0]?.message?.content || '';
     }
-    throw new Error('Servers are busy now. Please come back tomorrow.');
+    throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
   })();
 
   pendingRequests.set(dedupKey, request);
@@ -226,7 +234,7 @@ export async function callGroqStreaming(
   // Try with key rotation on 429
   for (let attempt = 0; attempt < BUILT_IN_KEYS.length; attempt++) {
     const key = getActiveKey();
-    if (!key) throw new Error('Servers are busy now. Please come back tomorrow.');
+    if (!key) throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
 
     const response = await fetch(GROQ_API_URL, {
       method: 'POST',
@@ -250,7 +258,7 @@ export async function callGroqStreaming(
 
     if (response.status === 429) {
       const hasMore = rotateToNextKey();
-      if (!hasMore) throw new Error('Servers are busy now. Please come back tomorrow.');
+      if (!hasMore) throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
       continue;
     }
 
@@ -290,7 +298,7 @@ export async function callGroqStreaming(
 
     return accumulated;
   }
-  throw new Error('Servers are busy now. Please come back tomorrow.');
+  throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
 }
 
 // ─── Stream Chat ───────────────────────────────────────────────
@@ -301,7 +309,7 @@ export async function* streamChat(
   messages: { role: 'user' | 'assistant'; text: string }[]
 ): AsyncGenerator<string> {
   const key = getActiveKey();
-  if (!key) throw new Error('Servers are busy now. Please come back tomorrow.');
+  if (!key) throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
 
   const systemPrompt = `You are a sharp, knowledgeable career advisor embedded in a career exploration app. The user is exploring the profession of "${jobTitle}".
 
@@ -510,7 +518,7 @@ Return this exact JSON structure:
 
     const raw = await callGroq(systemPrompt, userPrompt, {
       temperature: 0.65,
-      maxTokens: 3500,
+      maxTokens: 5000,
       jsonMode: true,
     });
 
