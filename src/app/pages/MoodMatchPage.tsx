@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, Sparkles, Loader2, ArrowRight, RotateCcw } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
-import { hasApiKey, getApiKey } from '../services/ai';
+import { getApiKey } from '../services/ai';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
 
@@ -15,8 +15,6 @@ interface MoodMatch {
 }
 
 async function getMoodMatches(mood: string): Promise<MoodMatch[]> {
-  if (!hasApiKey()) throw new Error('No API key');
-
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -53,7 +51,7 @@ Return JSON: { "matches": [ { "title": string, "reason": string, "vibe": string 
 
 export function MoodMatchPage() {
   const navigate = useNavigate();
-  const { searchJobAI, searchJob, setCurrentJob, addToHistory, setRefinementCount, isAIEnabled } = useApp();
+  const { searchJobAI, setCurrentJob, addToHistory, setRefinementCount } = useApp();
 
   const [mood, setMood] = useState('');
   const [matches, setMatches] = useState<MoodMatch[]>([]);
@@ -63,10 +61,6 @@ export function MoodMatchPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mood.trim()) return;
-    if (!hasApiKey()) {
-      toast.error('Add your Groq API key in Settings to use Mood Match');
-      return;
-    }
     setLoading(true);
     setMatches([]);
     sounds.search();
@@ -84,7 +78,7 @@ export function MoodMatchPage() {
   const handleExplore = async (title: string) => {
     setExploringTitle(title);
     try {
-      const jobData = isAIEnabled ? await searchJobAI(title) : searchJob(title);
+      const jobData = await searchJobAI(title);
       setCurrentJob(jobData);
       addToHistory(jobData);
       setRefinementCount(0);

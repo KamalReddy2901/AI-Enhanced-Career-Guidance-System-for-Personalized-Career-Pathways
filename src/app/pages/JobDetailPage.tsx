@@ -14,10 +14,11 @@ import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import { useFavorites } from '../hooks/useFavorites';
 import {
-  streamChat, hasApiKey, getRelatedCareers, getLearnMoreResources, getWorkLifeBalance,
-  type RelatedCareer, type LearnMoreResources, type WorkLifeBalance
+  streamChat, getRelatedCareers, getLearnMoreResources, getWorkLifeBalance, getGoodBadUgly,
+  type RelatedCareer, type LearnMoreResources, type WorkLifeBalance, type GoodBadUgly
 } from '../services/ai';
 import { toast } from 'sonner';
+import { renderMarkdown } from '../utils/markdown';
 import { downloadDossierPDF } from '../utils/pdfExport';
 import { generateShareUrl, decodeDossier } from '../utils/share';
 import { sounds } from '../utils/sounds';
@@ -74,7 +75,7 @@ function parseTimelineEntry(para: string): { label: string; content: string } | 
 export function JobDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentJob, setCurrentJob, searchJobAI, searchJob, addToHistory, setRefinementCount, isAIEnabled, setComparisonJob } = useApp();
+  const { currentJob, setCurrentJob, searchJobAI, addToHistory, setRefinementCount, setComparisonJob } = useApp();
   const { addFavorite, removeFavorite, isFavorite } = useFavorites();
   const { preferences } = usePreferences();
   const [activeTimeline, setActiveTimeline] = useState<'week' | 'quarter' | 'year'>(preferences.defaultView);
@@ -90,6 +91,8 @@ export function JobDetailPage() {
   const [learnMoreLoading, setLearnMoreLoading] = useState(false);
   const [wlbData, setWlbData] = useState<WorkLifeBalance | null>(null);
   const [wlbLoading, setWlbLoading] = useState(false);
+  const [gbuData, setGbuData] = useState<GoodBadUgly | null>(null);
+  const [gbuLoading, setGbuLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const simulateBtnRef = useRef<HTMLButtonElement>(null);
   const [showJumpBtn, setShowJumpBtn] = useState(false);
@@ -106,6 +109,7 @@ export function JobDetailPage() {
 
   const DOSSIER_SECTIONS = [
     { id: 'about', label: 'About' },
+    { id: 'good-bad-ugly', label: 'Good/Bad/Ugly' },
     { id: 'skills', label: 'Skills' },
     { id: 'education', label: 'Education' },
     { id: 'environment', label: 'Environment' },
@@ -174,7 +178,7 @@ export function JobDetailPage() {
 
   // Load related careers
   useEffect(() => {
-    if (currentJob && hasApiKey()) {
+    if (currentJob) {
       setLoadingRelated(true);
       getRelatedCareers(currentJob.title)
         .then(setRelatedCareers)
@@ -185,7 +189,7 @@ export function JobDetailPage() {
 
   // Load Learn More & Work-Life Balance lazily
   useEffect(() => {
-    if (!currentJob || !hasApiKey()) return;
+    if (!currentJob) return;
     setLearnMoreLoading(true);
     getLearnMoreResources(currentJob.title)
       .then(setLearnMore)
@@ -196,6 +200,11 @@ export function JobDetailPage() {
       .then(setWlbData)
       .catch(() => {})
       .finally(() => setWlbLoading(false));
+    setGbuLoading(true);
+    getGoodBadUgly(currentJob.title)
+      .then(setGbuData)
+      .catch(() => {})
+      .finally(() => setGbuLoading(false));
   }, [currentJob?.title]);
 
   if (!currentJob) {
@@ -216,7 +225,6 @@ export function JobDetailPage() {
   };
 
   const handleRegenerate = async () => {
-    if (!hasApiKey()) return;
     setIsRegenerating(true);
     toast.info('Regenerating dossier with fresh AI data...');
     try {
@@ -267,7 +275,7 @@ export function JobDetailPage() {
   const handleExploreRelated = async (title: string) => {
     setExploringRelated(title);
     try {
-      const jobData = isAIEnabled ? await searchJobAI(title) : searchJob(title);
+      const jobData = await searchJobAI(title);
       setCurrentJob(jobData);
       addToHistory(jobData);
       setRefinementCount(0);
@@ -295,42 +303,35 @@ export function JobDetailPage() {
     const updatedMessages = [...chatMessages, { role: 'user' as const, text: userMsg }];
     setChatMessages(updatedMessages);
 
-    if (hasApiKey()) {
-      setIsStreaming(true);
-      setChatMessages(prev => [...prev, { role: 'assistant', text: '' }]);
+    setIsStreaming(true);
+    setChatMessages(prev => [...prev, { role: 'assistant', text: '' }]);
 
-      try {
-        const jobContext = `${currentJob.shortDescription}\n\nCategory: ${currentJob.category}\nSalary: ${currentJob.avgSalary}\nSkills: ${currentJob.skills.join(', ')}\nWork Environment: ${currentJob.workEnvironment}`;
+    try {
+      const jobContext = `${currentJob.shortDescription}\n\nCategory: ${currentJob.category}\nSalary: ${currentJob.avgSalary}\nSkills: ${currentJob.skills.join(', ')}\nWork Environment: ${currentJob.workEnvironment}`;
 
-        const stream = streamChat(currentJob.title, jobContext, updatedMessages);
-        let fullResponse = '';
+      const stream = streamChat(currentJob.title, jobContext, updatedMessages);
+      let fullResponse = '';
 
-        for await (const chunk of stream) {
-          fullResponse += chunk;
-          setChatMessages(prev => {
-            const msgs = [...prev];
-            msgs[msgs.length - 1] = { role: 'assistant', text: fullResponse };
-            return msgs;
-          });
-        }
-      } catch (error) {
-        toast.error('Chat error');
+      for await (const chunk of stream) {
+        fullResponse += chunk;
         setChatMessages(prev => {
           const msgs = [...prev];
-          msgs[msgs.length - 1] = {
-            role: 'assistant',
-            text: `Sorry, I encountered an error. ${error instanceof Error ? error.message : 'Please try again.'}`
-          };
+          msgs[msgs.length - 1] = { role: 'assistant', text: fullResponse };
           return msgs;
         });
-      } finally {
-        setIsStreaming(false);
       }
-    } else {
-      setTimeout(() => {
-        const response = generateChatResponseFallback(currentJob.title, userMsg);
-        setChatMessages(prev => [...prev, { role: 'assistant', text: response }]);
-      }, 800 + Math.random() * 700);
+    } catch (error) {
+      toast.error('Chat error');
+      setChatMessages(prev => {
+        const msgs = [...prev];
+        msgs[msgs.length - 1] = {
+          role: 'assistant',
+          text: `Sorry, I encountered an error. ${error instanceof Error ? error.message : 'Please try again.'}`
+        };
+        return msgs;
+      });
+    } finally {
+      setIsStreaming(false);
     }
   };
 
@@ -424,7 +425,7 @@ export function JobDetailPage() {
             <div className="h-px flex-1 bg-black/10" />
             <span className="font-[Inter] text-black/30 uppercase tracking-[0.2em] flex items-center gap-1.5" style={{ fontSize: '0.6rem' }}>
               Full Dossier
-              {isAIEnabled && <Sparkles size={10} className="text-black/25" />}
+              <Sparkles size={10} className="text-black/25" />
             </span>
             <div className="h-px flex-1 bg-black/10" />
           </div>
@@ -482,8 +483,7 @@ export function JobDetailPage() {
 
               {/* Action bar */}
               <div className="flex flex-wrap gap-2 mt-4 print:hidden">
-                {isAIEnabled && (
-                  <motion.button
+                <motion.button
                     onClick={handleRegenerate}
                     disabled={isRegenerating}
                     className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all disabled:opacity-40 font-[Inter]"
@@ -493,7 +493,6 @@ export function JobDetailPage() {
                     {isRegenerating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
                     {isRegenerating ? 'Regenerating...' : 'Regenerate'}
                   </motion.button>
-                )}
                 <motion.button
                   onClick={handlePrint}
                   className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all font-[Inter]"
@@ -541,6 +540,78 @@ export function JobDetailPage() {
           <p className="font-[Inter] text-black/65 leading-relaxed whitespace-pre-line" style={{ fontSize: '0.92rem' }}>
             {currentJob.fullDescription}
           </p>
+        </Section>
+
+        {/* The Good, The Bad & The Ugly */}
+        <Section title="The Good, The Bad & The Ugly" icon={<Activity size={16} />} delay={0.12} sectionRef={registerSection('good-bad-ugly')}>
+          {gbuLoading ? (
+            <div className="flex items-center gap-2 text-black/30">
+              <Loader2 size={14} className="animate-spin" />
+              <span className="font-[Inter]" style={{ fontSize: '0.82rem' }}>Loading honest assessment…</span>
+            </div>
+          ) : gbuData ? (
+            <div className="space-y-6">
+              {/* The Good */}
+              <div>
+                <h4 className="font-[Inter] font-semibold text-emerald-700 uppercase tracking-[0.12em] mb-3" style={{ fontSize: '0.7rem' }}>
+                  ✦ The Good
+                </h4>
+                <div className="space-y-2">
+                  {gbuData.good.map((item, i) => (
+                    <div key={i} className="flex items-start gap-2.5 border-l-2 border-emerald-300 pl-3 py-1">
+                      <div>
+                        <span className="font-[Inter] font-medium text-black/75" style={{ fontSize: '0.85rem' }}>{item.title}</span>
+                        <p className="font-[Inter] text-black/50" style={{ fontSize: '0.8rem' }}>{item.detail}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* The Bad */}
+              <div>
+                <h4 className="font-[Inter] font-semibold text-amber-700 uppercase tracking-[0.12em] mb-3" style={{ fontSize: '0.7rem' }}>
+                  ✦ The Bad
+                </h4>
+                <div className="space-y-2">
+                  {gbuData.bad.map((item, i) => (
+                    <div key={i} className="flex items-start gap-2.5 border-l-2 border-amber-300 pl-3 py-1">
+                      <div>
+                        <span className="font-[Inter] font-medium text-black/75" style={{ fontSize: '0.85rem' }}>{item.title}</span>
+                        <p className="font-[Inter] text-black/50" style={{ fontSize: '0.8rem' }}>{item.detail}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* The Ugly */}
+              <div>
+                <h4 className="font-[Inter] font-semibold text-red-700 uppercase tracking-[0.12em] mb-3" style={{ fontSize: '0.7rem' }}>
+                  ✦ The Ugly
+                </h4>
+                <div className="space-y-2">
+                  {gbuData.ugly.map((item, i) => (
+                    <div key={i} className="flex items-start gap-2.5 border-l-2 border-red-300 pl-3 py-1">
+                      <div>
+                        <span className="font-[Inter] font-medium text-black/75" style={{ fontSize: '0.85rem' }}>{item.title}</span>
+                        <p className="font-[Inter] text-black/50" style={{ fontSize: '0.8rem' }}>{item.detail}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Verdict */}
+              <div className="border-t border-black/8 pt-4">
+                <p className="font-[Inter] text-black/60 italic leading-relaxed" style={{ fontSize: '0.85rem' }}>
+                  {gbuData.verdict}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="font-[Inter] text-black/30" style={{ fontSize: '0.82rem' }}>Could not load assessment.</p>
+          )}
         </Section>
 
         {/* Skills */}
@@ -683,21 +754,21 @@ export function JobDetailPage() {
             transition={{ delay: 0.45 }}
           >
             <div className="flex items-center gap-3 mb-6">
-              <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
-              <span className="font-[Playfair_Display] text-black dark:text-white flex items-center gap-2" style={{ fontSize: '1.15rem' }}>
+              <div className="h-px flex-1 bg-black/10" />
+              <span className="font-[Playfair_Display] text-black flex items-center gap-2" style={{ fontSize: '1.15rem' }}>
                 Work-Life Balance
-                <Activity size={14} className="text-black/25 dark:text-white/25" />
+                <Activity size={14} className="text-black/25" />
               </span>
-              <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
+              <div className="h-px flex-1 bg-black/10" />
             </div>
 
             {wlbLoading ? (
-              <div className="flex items-center justify-center gap-2 py-6 text-black/30 dark:text-white/30">
+              <div className="flex items-center justify-center gap-2 py-6 text-black/30">
                 <Loader2 size={16} className="animate-spin" />
                 <span className="font-[Inter]" style={{ fontSize: '0.82rem' }}>Analysing work-life balance…</span>
               </div>
             ) : wlbData ? (
-              <div className="border border-black/10 dark:border-white/10 p-6">
+              <div className="border border-black/10 p-6">
                 <div className="flex flex-col md:flex-row gap-8 items-start">
                   {/* Radar chart */}
                   <div className="w-full md:w-72 shrink-0">
@@ -725,17 +796,17 @@ export function JobDetailPage() {
                   {/* Summary */}
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="text-3xl font-[Playfair_Display] text-black dark:text-white">
+                      <div className="text-3xl font-[Playfair_Display] text-black">
                         {wlbData.overallScore}
                       </div>
                       <div>
-                        <p className="font-[Inter] text-black/35 dark:text-white/35" style={{ fontSize: '0.65rem', letterSpacing: '0.1em' }}>OVERALL SCORE /100</p>
-                        <div className="w-32 h-1.5 bg-black/10 dark:bg-white/10 mt-1">
-                          <div className="h-full bg-black dark:bg-white" style={{ width: `${wlbData.overallScore}%` }} />
+                        <p className="font-[Inter] text-black/35" style={{ fontSize: '0.65rem', letterSpacing: '0.1em' }}>OVERALL SCORE /100</p>
+                        <div className="w-32 h-1.5 bg-black/10 mt-1">
+                          <div className="h-full bg-black" style={{ width: `${wlbData.overallScore}%` }} />
                         </div>
                       </div>
                     </div>
-                    <p className="font-[Inter] text-black/60 dark:text-white/60 mb-4 leading-relaxed" style={{ fontSize: '0.88rem' }}>
+                    <p className="font-[Inter] text-black/60 mb-4 leading-relaxed" style={{ fontSize: '0.88rem' }}>
                       {wlbData.summary}
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -765,16 +836,16 @@ export function JobDetailPage() {
             transition={{ delay: 0.5 }}
           >
             <div className="flex items-center gap-3 mb-6">
-              <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
-              <span className="font-[Playfair_Display] text-black dark:text-white flex items-center gap-2" style={{ fontSize: '1.15rem' }}>
+              <div className="h-px flex-1 bg-black/10" />
+              <span className="font-[Playfair_Display] text-black flex items-center gap-2" style={{ fontSize: '1.15rem' }}>
                 Learn More
-                <BookOpen size={14} className="text-black/25 dark:text-white/25" />
+                <BookOpen size={14} className="text-black/25" />
               </span>
-              <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
+              <div className="h-px flex-1 bg-black/10" />
             </div>
 
             {learnMoreLoading ? (
-              <div className="flex items-center justify-center gap-2 py-6 text-black/30 dark:text-white/30">
+              <div className="flex items-center justify-center gap-2 py-6 text-black/30">
                 <Loader2 size={16} className="animate-spin" />
                 <span className="font-[Inter]" style={{ fontSize: '0.82rem' }}>Finding resources…</span>
               </div>
@@ -782,8 +853,8 @@ export function JobDetailPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Subreddits */}
                 {learnMore.subreddits.length > 0 && (
-                  <div className="border border-black/10 dark:border-white/10 p-5">
-                    <h4 className="font-[Inter] text-black/35 dark:text-white/35 uppercase tracking-[0.1em] mb-3 flex items-center gap-1.5" style={{ fontSize: '0.62rem' }}>
+                  <div className="border border-black/10 p-5">
+                    <h4 className="font-[Inter] text-black/35 uppercase tracking-[0.1em] mb-3 flex items-center gap-1.5" style={{ fontSize: '0.62rem' }}>
                       <Hash size={11} /> Subreddits
                     </h4>
                     <ul className="space-y-2.5">
@@ -795,10 +866,10 @@ export function JobDetailPage() {
                             rel="noopener noreferrer"
                             className="flex items-start gap-2 group"
                           >
-                            <ExternalLink size={12} className="text-black/25 dark:text-white/25 mt-1 shrink-0 group-hover:text-black dark:group-hover:text-white transition-colors" />
+                            <ExternalLink size={12} className="text-black/25 mt-1 shrink-0 group-hover:text-black transition-colors" />
                             <div>
-                              <p className="font-[Inter] text-black dark:text-white group-hover:underline" style={{ fontSize: '0.82rem' }}>{sr.name}</p>
-                              <p className="font-[Inter] text-black/40 dark:text-white/40" style={{ fontSize: '0.72rem' }}>{sr.description}</p>
+                              <p className="font-[Inter] text-black group-hover:underline" style={{ fontSize: '0.82rem' }}>{sr.name}</p>
+                              <p className="font-[Inter] text-black/40" style={{ fontSize: '0.72rem' }}>{sr.description}</p>
                             </div>
                           </a>
                         </li>
@@ -809,8 +880,8 @@ export function JobDetailPage() {
 
                 {/* Certifications */}
                 {learnMore.certifications.length > 0 && (
-                  <div className="border border-black/10 dark:border-white/10 p-5">
-                    <h4 className="font-[Inter] text-black/35 dark:text-white/35 uppercase tracking-[0.1em] mb-3 flex items-center gap-1.5" style={{ fontSize: '0.62rem' }}>
+                  <div className="border border-black/10 p-5">
+                    <h4 className="font-[Inter] text-black/35 uppercase tracking-[0.1em] mb-3 flex items-center gap-1.5" style={{ fontSize: '0.62rem' }}>
                       <Award size={11} /> Certifications
                     </h4>
                     <ul className="space-y-2.5">
@@ -822,10 +893,10 @@ export function JobDetailPage() {
                             rel="noopener noreferrer"
                             className="group flex items-start gap-1.5"
                           >
-                            <ExternalLink size={11} className="text-black/20 dark:text-white/20 mt-1 shrink-0 group-hover:text-black dark:group-hover:text-white transition-colors" />
+                            <ExternalLink size={11} className="text-black/20 mt-1 shrink-0 group-hover:text-black transition-colors" />
                             <div>
-                              <p className="font-[Inter] text-black dark:text-white group-hover:underline" style={{ fontSize: '0.82rem' }}>{cert.name}</p>
-                              <p className="font-[Inter] text-black/40 dark:text-white/40" style={{ fontSize: '0.72rem' }}>{cert.provider}</p>
+                              <p className="font-[Inter] text-black group-hover:underline" style={{ fontSize: '0.82rem' }}>{cert.name}</p>
+                              <p className="font-[Inter] text-black/40" style={{ fontSize: '0.72rem' }}>{cert.provider}</p>
                             </div>
                           </a>
                         </li>
@@ -836,8 +907,8 @@ export function JobDetailPage() {
 
                 {/* Search terms */}
                 {learnMore.searchTerms.length > 0 && (
-                  <div className="border border-black/10 dark:border-white/10 p-5">
-                    <h4 className="font-[Inter] text-black/35 dark:text-white/35 uppercase tracking-[0.1em] mb-3 flex items-center gap-1.5" style={{ fontSize: '0.62rem' }}>
+                  <div className="border border-black/10 p-5">
+                    <h4 className="font-[Inter] text-black/35 uppercase tracking-[0.1em] mb-3 flex items-center gap-1.5" style={{ fontSize: '0.62rem' }}>
                       <ArrowRight size={11} /> Search Terms
                     </h4>
                     <ul className="space-y-2.5">
@@ -849,8 +920,8 @@ export function JobDetailPage() {
                             rel="noopener noreferrer"
                             className="group"
                           >
-                            <p className="font-[Inter] text-black dark:text-white group-hover:underline" style={{ fontSize: '0.82rem' }}>"{st.term}"</p>
-                            <p className="font-[Inter] text-black/40 dark:text-white/40" style={{ fontSize: '0.72rem' }}>{st.context}</p>
+                            <p className="font-[Inter] text-black group-hover:underline" style={{ fontSize: '0.82rem' }}>"{st.term}"</p>
+                            <p className="font-[Inter] text-black/40" style={{ fontSize: '0.72rem' }}>{st.context}</p>
                           </a>
                         </li>
                       ))}
@@ -860,8 +931,8 @@ export function JobDetailPage() {
 
                 {/* Books */}
                 {learnMore.books.length > 0 && (
-                  <div className="border border-black/10 dark:border-white/10 p-5">
-                    <h4 className="font-[Inter] text-black/35 dark:text-white/35 uppercase tracking-[0.1em] mb-3 flex items-center gap-1.5" style={{ fontSize: '0.62rem' }}>
+                  <div className="border border-black/10 p-5">
+                    <h4 className="font-[Inter] text-black/35 uppercase tracking-[0.1em] mb-3 flex items-center gap-1.5" style={{ fontSize: '0.62rem' }}>
                       <BookOpen size={11} /> Recommended Books
                     </h4>
                     <ul className="space-y-2.5">
@@ -873,11 +944,11 @@ export function JobDetailPage() {
                             rel="noopener noreferrer"
                             className="group flex items-start gap-1.5"
                           >
-                            <ExternalLink size={11} className="text-black/20 dark:text-white/20 mt-1 shrink-0 group-hover:text-black dark:group-hover:text-white transition-colors" />
+                            <ExternalLink size={11} className="text-black/20 mt-1 shrink-0 group-hover:text-black transition-colors" />
                             <div>
-                              <p className="font-[Inter] text-black dark:text-white font-medium group-hover:underline" style={{ fontSize: '0.82rem' }}>{book.title}</p>
-                              <p className="font-[Inter] text-black/40 dark:text-white/40" style={{ fontSize: '0.72rem' }}>by {book.author}</p>
-                              <p className="font-[Inter] text-black/50 dark:text-white/50" style={{ fontSize: '0.72rem' }}>{book.why}</p>
+                              <p className="font-[Inter] text-black font-medium group-hover:underline" style={{ fontSize: '0.82rem' }}>{book.title}</p>
+                              <p className="font-[Inter] text-black/40" style={{ fontSize: '0.72rem' }}>by {book.author}</p>
+                              <p className="font-[Inter] text-black/50" style={{ fontSize: '0.72rem' }}>{book.why}</p>
                             </div>
                           </a>
                         </li>
@@ -968,8 +1039,7 @@ export function JobDetailPage() {
             Start Day-in-the-Life Simulation
           </motion.button>
 
-          {isAIEnabled && (
-            <motion.button
+          <motion.button
               onClick={() => navigate('/interview-prep')}
               className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-4 px-6 hover:border-black/40 hover:text-black transition-all font-[Inter]"
               style={{ fontSize: '0.88rem' }}
@@ -980,7 +1050,6 @@ export function JobDetailPage() {
               Interview Prep
               <Sparkles size={12} className="text-black/30" />
             </motion.button>
-          )}
 
           <motion.button
             onClick={() => { setShowChat(true); sounds.slide(); }}
@@ -991,7 +1060,7 @@ export function JobDetailPage() {
           >
             <MessageCircle size={18} />
             Ask Questions
-            {isAIEnabled && <Sparkles size={12} className="text-black/30" />}
+            <Sparkles size={12} className="text-black/30" />
           </motion.button>
         </motion.div>
 
@@ -999,7 +1068,7 @@ export function JobDetailPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-20 sm:mb-10 print:hidden">
           <motion.button
             onClick={() => navigate(`/roadmap?job=${encodeURIComponent(currentJob.title)}`)}
-            className="flex items-center justify-center gap-2 border border-black/15 dark:border-white/15 text-black/55 dark:text-white/55 py-3 px-4 hover:border-black/35 dark:hover:border-white/35 hover:text-black dark:hover:text-white transition-all font-[Inter]"
+            className="flex items-center justify-center gap-2 border border-black/15 text-black/55 py-3 px-4 hover:border-black/35 hover:text-black transition-all font-[Inter]"
             style={{ fontSize: '0.85rem' }}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
@@ -1009,7 +1078,7 @@ export function JobDetailPage() {
           </motion.button>
           <motion.button
             onClick={() => navigate(`/career-transition?to=${encodeURIComponent(currentJob.title)}`)}
-            className="flex items-center justify-center gap-2 border border-black/15 dark:border-white/15 text-black/55 dark:text-white/55 py-3 px-4 hover:border-black/35 dark:hover:border-white/35 hover:text-black dark:hover:text-white transition-all font-[Inter]"
+            className="flex items-center justify-center gap-2 border border-black/15 text-black/55 py-3 px-4 hover:border-black/35 hover:text-black transition-all font-[Inter]"
             style={{ fontSize: '0.85rem' }}
             aria-label="Plan a career transition into this role"
             whileHover={{ scale: 1.01 }}
@@ -1026,7 +1095,7 @@ export function JobDetailPage() {
         {showJumpBtn && (
           <motion.button
             onClick={() => simulateBtnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-            className="fixed bottom-20 sm:bottom-6 right-4 z-30 flex items-center gap-2 bg-black dark:bg-white text-white dark:text-black px-4 py-2.5 shadow-lg font-[Inter] print:hidden"
+            className="fixed bottom-20 sm:bottom-6 right-4 z-30 flex items-center gap-2 bg-black text-white px-4 py-2.5 shadow-lg font-[Inter] print:hidden"
             style={{ fontSize: '0.82rem' }}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1080,10 +1149,10 @@ export function JobDetailPage() {
                   <div>
                     <h3 className="font-[Playfair_Display] text-black flex items-center gap-2" style={{ fontSize: '1.05rem' }}>
                       Ask about {currentJob.title}
-                      {isAIEnabled && <Sparkles size={12} className="text-black/25" />}
+                      <Sparkles size={12} className="text-black/25" />
                     </h3>
                     <p className="font-[Inter] text-black/40" style={{ fontSize: '0.7rem' }}>
-                      {isAIEnabled ? 'AI-powered career assistant' : 'Career investigation assistant'}
+                      AI-powered career assistant
                     </p>
                   </div>
                 </div>
@@ -1132,9 +1201,11 @@ export function JobDetailPage() {
                           ? 'bg-black text-white'
                           : 'bg-black/5 text-black/70 border border-black/10'
                       }`}
-                      style={{ fontSize: '0.88rem' }}
+                      style={{ fontSize: '0.88rem', lineHeight: 1.6 }}
                     >
-                      {msg.text || (
+                      {msg.text ? (
+                        msg.role === 'assistant' ? renderMarkdown(msg.text) : msg.text
+                      ) : (
                         <span className="flex items-center gap-2 text-black/40">
                           <Loader2 size={14} className="animate-spin" />
                           Thinking...
@@ -1174,39 +1245,35 @@ export function JobDetailPage() {
       </AnimatePresence>
 
       {/* Mobile floating action bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 sm:hidden bg-[#f9f8f7]/95 dark:bg-[#161614]/95 backdrop-blur-md border-t border-black/10 dark:border-white/10 flex print:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-30 sm:hidden bg-[#f9f8f7]/95 backdrop-blur-md border-t border-black/10 flex print:hidden">
         <button
           onClick={() => { sounds.click(); navigate(`/simulation?job=${encodeURIComponent(currentJob?.title ?? '')}`); }}
           aria-label="Start day-in-the-life simulation"
-          className="flex-1 flex flex-col items-center gap-1 py-3 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
+          className="flex-1 flex flex-col items-center gap-1 py-3 text-black/60 hover:text-black transition-colors"
         >
           <Play size={17} />
           <span style={{ fontSize: '0.58rem', letterSpacing: '0.05em' }} className="font-[Inter] uppercase">Simulate</span>
         </button>
-        {isAIEnabled && (
-          <button
+        <button
             onClick={() => { sounds.click(); navigate(`/interview-prep?job=${encodeURIComponent(currentJob?.title ?? '')}`); }}
             aria-label="Go to interview prep"
-            className="flex-1 flex flex-col items-center gap-1 py-3 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
+            className="flex-1 flex flex-col items-center gap-1 py-3 text-black/60 hover:text-black transition-colors"
           >
             <UserCheck size={17} />
             <span style={{ fontSize: '0.58rem', letterSpacing: '0.05em' }} className="font-[Inter] uppercase">Interview</span>
           </button>
-        )}
-        {isAIEnabled && (
-          <button
+        <button
             onClick={() => { setShowChat(true); sounds.slide(); }}
             aria-label="Ask AI about this career"
-            className="flex-1 flex flex-col items-center gap-1 py-3 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
+            className="flex-1 flex flex-col items-center gap-1 py-3 text-black/60 hover:text-black transition-colors"
           >
             <MessageCircle size={17} />
             <span style={{ fontSize: '0.58rem', letterSpacing: '0.05em' }} className="font-[Inter] uppercase">Ask AI</span>
           </button>
-        )}
         <button
           onClick={handleShare}
           aria-label="Copy share link for this dossier"
-          className="flex-1 flex flex-col items-center gap-1 py-3 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
+          className="flex-1 flex flex-col items-center gap-1 py-3 text-black/60 hover:text-black transition-colors"
         >
           <Share2 size={17} />
           <span style={{ fontSize: '0.58rem', letterSpacing: '0.05em' }} className="font-[Inter] uppercase">Share</span>
@@ -1235,19 +1302,3 @@ function Section({ title, icon, children, delay = 0, sectionRef }: { title: stri
   );
 }
 
-function generateChatResponseFallback(jobTitle: string, question: string): string {
-  const q = question.toLowerCase();
-  if (q.includes('work-life') || q.includes('balance') || q.includes('hours')) {
-    return `Work-life balance as a ${jobTitle} varies depending on employer, level, and specialization. Entry-level positions often have more structured hours. Many professionals find that setting clear boundaries early is essential for long-term sustainability.`;
-  }
-  if (q.includes('hardest') || q.includes('difficult') || q.includes('challenge')) {
-    return `The most challenging aspect of being a ${jobTitle} is the constant need to adapt and grow. The field evolves rapidly, and staying current requires continuous learning. Managing stakeholder expectations while maintaining quality can be demanding.`;
-  }
-  if (q.includes('started') || q.includes('begin') || q.includes('entry')) {
-    return `Getting started as a ${jobTitle} typically involves building foundational knowledge, gaining practical experience through internships, building a network, and developing a portfolio. Finding a mentor is also highly recommended.`;
-  }
-  if (q.includes('salary') || q.includes('pay') || q.includes('earn')) {
-    return `Compensation as a ${jobTitle} depends on experience, location, and specialization. Beyond base salary, many positions offer benefits including health insurance, retirement plans, and sometimes equity or bonuses.`;
-  }
-  return `That's a great question about being a ${jobTitle}. This role is multifaceted, and the answer depends on your specific context. Connect a free Groq API key for AI-powered, detailed answers!`;
-}

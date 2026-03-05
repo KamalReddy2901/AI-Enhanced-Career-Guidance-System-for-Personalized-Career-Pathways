@@ -1,23 +1,23 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Key, Sparkles, FlaskConical, Scale, ChevronDown, FileText, Brain, Swords, Zap, BarChart2, MessageSquare, ArrowRight, ExternalLink, TrendingUp, TrendingDown, Rocket, Loader2, Map, ArrowLeftRight } from 'lucide-react';
+import { Sparkles, FlaskConical, Scale, ChevronDown, FileText, Brain, Swords, Zap, BarChart2, MessageSquare, ArrowRight, ExternalLink, TrendingUp, TrendingDown, Rocket, Loader2, Map, ArrowLeftRight } from 'lucide-react';
 import { ScrollingTitles } from '../components/ScrollingTitles';
 import { MagnifierSearch } from '../components/MagnifierSearch';
 import { StickFigure } from '../components/StickFigure';
-import { ApiKeyModal } from '../components/ApiKeyModal';
+
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { usePreferences } from '../hooks/usePreferences';
-import { getTrendingCareers, type TrendingCareers, hasApiKey } from '../services/ai';
+import { getTrendingCareers, type TrendingCareers } from '../services/ai';
 import { toast } from 'sonner';
 
 export function HomePage() {
   const navigate = useNavigate();
-  const { searchJob, searchJobAI, searchJobPreliminary, setCurrentJob, addToHistory, isSearchAnimating, setIsSearchAnimating, setRefinementCount, isAIEnabled, refreshAIStatus, setComparisonJob } = useApp();
+  const { searchJob, searchJobAI, searchJobPreliminary, setCurrentJob, addToHistory, isSearchAnimating, setIsSearchAnimating, setRefinementCount, setComparisonJob } = useApp();
   const { user, isSupabaseConfigured } = useAuth();
   const { preferences } = usePreferences();
-  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+
   const [trending, setTrending] = useState<TrendingCareers | null>(null);
   const [trendingLoading, setTrendingLoading] = useState(false);
   const [searchingCareer, setSearchingCareer] = useState<string | null>(null);
@@ -39,8 +39,8 @@ export function HomePage() {
     setComparingTitles(true);
     try {
       const [jA, jB] = await Promise.all([
-        isAIEnabled ? searchJobAI(compareQueue[0]) : searchJob(compareQueue[0]),
-        isAIEnabled ? searchJobAI(compareQueue[1]) : searchJob(compareQueue[1]),
+        searchJobAI(compareQueue[0]),
+        searchJobAI(compareQueue[1]),
       ]);
       setComparisonJob(0, jA);
       setComparisonJob(1, jB);
@@ -59,7 +59,7 @@ export function HomePage() {
 
   // Auto-load trending when the section scrolls into view (AI only)
   useEffect(() => {
-    if (!hasApiKey() || trendingFetched.current || !preferences.autoLoadTrending) return;
+    if (trendingFetched.current || !preferences.autoLoadTrending) return;
     const el = trendingRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(entries => {
@@ -75,10 +75,10 @@ export function HomePage() {
     obs.observe(el);
     return () => obs.disconnect();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAIEnabled]);
+  }, []);
 
   const handleLoadTrending = () => {
-    if (!hasApiKey()) { setShowApiKeyModal(true); return; }
+
     if (trendingFetched.current) return;
     trendingFetched.current = true;
     setTrendingLoading(true);
@@ -97,31 +97,23 @@ export function HomePage() {
       return;
     }
     setSearchingCareer(jobTitle);
-    if (isAIEnabled) {
-      toast.loading(`Previewing "${jobTitle}"…`, { id: 'dossier-load' });
-      try {
-        const jobData = await searchJobPreliminary(jobTitle);
-        setCurrentJob(jobData);
-        setRefinementCount(0);
-        toast.dismiss('dossier-load');
-        navigate('/job');
-      } catch {
-        const jobData = searchJob(jobTitle);
-        setCurrentJob(jobData);
-        setRefinementCount(0);
-        toast.dismiss('dossier-load');
-        navigate('/job');
-      } finally {
-        setSearchingCareer(null);
-      }
-    } else {
+    toast.loading(`Previewing "${jobTitle}"…`, { id: 'dossier-load' });
+    try {
+      const jobData = await searchJobPreliminary(jobTitle);
+      setCurrentJob(jobData);
+      setRefinementCount(0);
+      toast.dismiss('dossier-load');
+      navigate('/job');
+    } catch {
       const jobData = searchJob(jobTitle);
       setCurrentJob(jobData);
       setRefinementCount(0);
+      toast.dismiss('dossier-load');
+      navigate('/job');
+    } finally {
       setSearchingCareer(null);
-      setTimeout(() => navigate('/job'), 200);
     }
-  }, [searchingCareer, searchJob, searchJobAI, setCurrentJob, addToHistory, navigate, setRefinementCount, isAIEnabled, isSupabaseConfigured, user]);
+  }, [searchingCareer, searchJob, searchJobAI, setCurrentJob, addToHistory, navigate, setRefinementCount, isSupabaseConfigured, user]);
 
   return (
     <div className="relative bg-background">
@@ -216,8 +208,6 @@ export function HomePage() {
           >
             {/* Quick action buttons */}
             <div className="flex flex-wrap justify-center gap-2">
-              {isAIEnabled && (
-                <>
                   <motion.button
                     onClick={() => navigate('/quiz')}
                     className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
@@ -254,8 +244,6 @@ export function HomePage() {
                     <Map size={12} />
                     Roadmap
                   </motion.button>
-                </>
-              )}
               <motion.button
                 onClick={() => navigate('/compare')}
                 className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
@@ -265,17 +253,7 @@ export function HomePage() {
                 <Scale size={12} />
                 Compare Careers
               </motion.button>
-              {!isAIEnabled && (
-                <motion.button
-                  onClick={() => setShowApiKeyModal(true)}
-                  className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
-                  style={{ fontSize: '0.72rem' }}
-                  whileHover={{ y: -1 }}
-                >
-                  <Key size={12} />
-                  Enable AI
-                </motion.button>
-              )}
+
             </div>
           </motion.div>
         )}
@@ -319,22 +297,40 @@ export function HomePage() {
             <h2 className="font-[Playfair_Display] text-black" style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)' }}>
               What's Trending in Careers
             </h2>
+
+            {/* Always-visible feature buttons */}
+            <div className="flex flex-wrap gap-3 mt-5">
+              <motion.button
+                onClick={() => navigate('/career-transition')}
+                className="flex items-center gap-2 font-[Inter] text-black/50 border border-black/12 px-4 py-2.5 hover:border-black/30 hover:text-black/80 transition-all"
+                style={{ fontSize: '0.82rem' }}
+                whileHover={{ y: -1 }}
+              >
+                <ArrowLeftRight size={14} />
+                Career Transition Planner
+              </motion.button>
+              <motion.button
+                onClick={() => navigate('/roadmap')}
+                className="flex items-center gap-2 font-[Inter] text-black/50 border border-black/12 px-4 py-2.5 hover:border-black/30 hover:text-black/80 transition-all"
+                style={{ fontSize: '0.82rem' }}
+                whileHover={{ y: -1 }}
+              >
+                <Map size={14} />
+                Career Roadmap Builder
+              </motion.button>
+              <motion.button
+                onClick={() => navigate('/compare')}
+                className="flex items-center gap-2 font-[Inter] text-black/50 border border-black/12 px-4 py-2.5 hover:border-black/30 hover:text-black/80 transition-all"
+                style={{ fontSize: '0.82rem' }}
+                whileHover={{ y: -1 }}
+              >
+                <Scale size={14} />
+                Compare Careers
+              </motion.button>
+            </div>
           </motion.div>
 
-          {!hasApiKey() && !trending && (
-            <div className="text-center py-8">
-              <p className="font-[Inter] text-black/35 mb-4" style={{ fontSize: '0.85rem' }}>
-                Enable AI to see live career trend data
-              </p>
-              <button
-                onClick={() => setShowApiKeyModal(true)}
-                className="font-[Inter] text-black/50 border border-black/20 px-5 py-2.5 hover:bg-black/5 transition-colors"
-                style={{ fontSize: '0.82rem' }}
-              >
-                Add API Key
-              </button>
-            </div>
-          )}
+
 
           {trendingLoading && (
             <div className="flex items-center justify-center gap-3 py-12">
@@ -725,6 +721,35 @@ export function HomePage() {
         </div>
       </section>
 
+      {/* ── FEEDBACK ─────────────────────────────────────── */}
+      <section className="py-16 px-6 border-t border-black/6">
+        <div className="max-w-2xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <MessageSquare size={28} className="mx-auto text-black/20 mb-4" />
+            <h2 className="font-[Playfair_Display] text-black mb-2" style={{ fontSize: '1.4rem' }}>
+              We'd love your feedback
+            </h2>
+            <p className="font-[Inter] text-black/45 leading-relaxed mb-6" style={{ fontSize: '0.85rem' }}>
+              Found a bug? Have a feature idea? Just want to say hi? Drop me a line.
+            </p>
+            <motion.a
+              href="mailto:kamalcrreddy@gmail.com?subject=Career%20Sim%20Feedback"
+              className="inline-flex items-center gap-2 border-2 border-black text-black py-2.5 px-6 font-[Inter] hover:bg-black hover:text-white transition-all"
+              style={{ fontSize: '0.85rem' }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Send Feedback
+              <ArrowRight size={14} />
+            </motion.a>
+          </motion.div>
+        </div>
+      </section>
+
       {/* ── FOOTER ─────────────────────────────────────────── */}
       <footer className="border-t border-black/8 py-8 px-6">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -742,11 +767,7 @@ export function HomePage() {
         </div>
       </footer>
 
-      <ApiKeyModal
-        isOpen={showApiKeyModal}
-        onClose={() => setShowApiKeyModal(false)}
-        onKeySet={refreshAIStatus}
-      />
+
 
       {/* Floating Quick-Compare Bar */}
       <AnimatePresence>

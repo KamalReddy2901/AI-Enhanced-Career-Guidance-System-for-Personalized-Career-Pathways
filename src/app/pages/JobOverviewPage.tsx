@@ -4,12 +4,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Check, RefreshCw, ArrowRight, ChevronLeft, Sparkles, Loader2 } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
-import { refineJobDescription, hasApiKey } from '../services/ai';
+import { refineJobDescription } from '../services/ai';
 import { toast } from 'sonner';
 
 export function JobOverviewPage() {
   const navigate = useNavigate();
-  const { currentJob, setCurrentJob, refinementCount, setRefinementCount, isAIEnabled, searchJobAI, searchJob, addToHistory } = useApp();
+  const { currentJob, setCurrentJob, refinementCount, setRefinementCount, searchJobAI, addToHistory } = useApp();
   const [showRefinement, setShowRefinement] = useState(false);
   const [refinementText, setRefinementText] = useState('');
   const [isRefining, setIsRefining] = useState(false);
@@ -43,18 +43,13 @@ export function JobOverviewPage() {
     setIsLoadingFull(true);
     const tid = toast.loading(`Building full dossier for “${currentJob.title}”…`);
     try {
-      const fullJob = isAIEnabled ? await searchJobAI(currentJob.title) : searchJob(currentJob.title);
+      const fullJob = await searchJobAI(currentJob.title, false, description);
       setCurrentJob(fullJob);
       addToHistory(fullJob);
       toast.success('Dossier ready!', { id: tid });
       navigate('/job/detail');
     } catch {
-      toast.error('Failed to load full dossier — using template', { id: tid });
-      const fallback = searchJob(currentJob.title);
-      setCurrentJob(fallback);
-      addToHistory(fallback);
-      navigate('/job/detail');
-    } finally {
+      toast.error('Failed to generate dossier — please try again', { id: tid });
       setIsLoadingFull(false);
     }
   };
@@ -66,21 +61,13 @@ export function JobOverviewPage() {
     setRefinementHistory(prev => [...prev, refinementText]);
 
     try {
-      let refined: string;
-
-      if (hasApiKey()) {
-        // AI-powered refinement
-        refined = await refineJobDescription(
-          currentJob.title,
-          description,
-          refinementText,
-          refinementHistory
-        );
-        toast.success('Description refined by AI');
-      } else {
-        // Fallback template refinement
-        refined = applyRefinementFallback(currentJob.title, description, refinementText);
-      }
+      const refined = await refineJobDescription(
+        currentJob.title,
+        description,
+        refinementText,
+        refinementHistory
+      );
+      toast.success('Description refined by AI');
 
       setDescription(refined);
       const updatedJob = { ...currentJob, shortDescription: refined };
@@ -90,15 +77,7 @@ export function JobOverviewPage() {
       setShowRefinement(false);
     } catch (error) {
       console.error('Refinement failed:', error);
-      toast.error('AI refinement failed - using fallback');
-      // Fallback
-      const refined = applyRefinementFallback(currentJob.title, description, refinementText);
-      setDescription(refined);
-      const updatedJob = { ...currentJob, shortDescription: refined };
-      setCurrentJob(updatedJob);
-      setRefinementCount(refinementCount + 1);
-      setRefinementText('');
-      setShowRefinement(false);
+      toast.error('AI refinement failed — please try again');
     } finally {
       setIsRefining(false);
     }
@@ -165,6 +144,12 @@ export function JobOverviewPage() {
           <p className="font-[Inter] text-black/70 leading-relaxed" style={{ fontSize: '0.95rem' }}>
             {description}
           </p>
+
+          <div className="mt-5 pt-4 border-t border-black/8">
+            <p className="font-[Inter] text-black/40 leading-relaxed" style={{ fontSize: '0.8rem' }}>
+              <strong className="text-black/50">Important:</strong> This is a preliminary AI assessment. If this description doesn't quite match the specific role you have in mind — perhaps it's a different specialization, industry, or work setting — use the <em>"Not quite right"</em> button below to refine it before generating your full dossier. The more accurately this description reflects your intended role, the better your dossier will be.
+            </p>
+          </div>
 
           {refinementHistory.length > 0 && (
             <div className="mt-6 pt-4 border-t border-black/10">
@@ -239,10 +224,7 @@ export function JobOverviewPage() {
                     Tell us what's different
                   </h3>
                   <p className="font-[Inter] text-black/40 mb-4" style={{ fontSize: '0.8rem' }}>
-                    {isAIEnabled
-                      ? "Describe your specific situation - location, work style, specialization, industry, company size - and AI will rewrite the description to match."
-                      : "Is it a different location, work style, specialization, or industry focus? Help us narrow it down."
-                    }
+                    Describe your specific situation - location, work style, specialization, industry, company size - and AI will rewrite the description to match.
                   </p>
 
                   <textarea
@@ -275,11 +257,11 @@ export function JobOverviewPage() {
                           >
                             <RefreshCw size={14} />
                           </motion.div>
-                          {isAIEnabled ? 'AI Refining...' : 'Refining...'}
+                          AI Refining...
                         </>
                       ) : (
                         <>
-                          {isAIEnabled && <Sparkles size={12} />}
+                          <Sparkles size={12} />
                           <ArrowRight size={14} />
                           Refine Description
                         </>
@@ -294,32 +276,4 @@ export function JobOverviewPage() {
       </div>
     </div>
   );
-}
-
-// Fallback refinement when no API key
-function applyRefinementFallback(title: string, currentDesc: string, refinement: string): string {
-  const r = refinement.toLowerCase();
-  let additions = '';
-
-  if (r.includes('remote') || r.includes('home')) {
-    additions += ` This particular variant of the role emphasizes remote work, with professionals operating from home offices and leveraging digital collaboration tools.`;
-  }
-  if (r.includes('rural') || r.includes('small town')) {
-    additions += ` In this context, the role is situated in a rural or small-town setting, where the professional often serves as a generalist.`;
-  }
-  if (r.includes('startup') || r.includes('small company')) {
-    additions += ` Within a startup environment, this role takes on a broader scope - wearing multiple hats and directly influencing the company's direction.`;
-  }
-  if (r.includes('corporate') || r.includes('large company')) {
-    additions += ` In a corporate setting, this role is more specialized with clearly defined responsibilities and structured advancement.`;
-  }
-  if (r.includes('freelance') || r.includes('independent')) {
-    additions += ` As an independent practitioner, this role involves managing your own client relationships and balancing multiple projects.`;
-  }
-
-  if (!additions) {
-    additions = ` Based on the context - "${refinement}" - this role takes on a more specialized character tailored to these requirements.`;
-  }
-
-  return currentDesc + additions;
 }

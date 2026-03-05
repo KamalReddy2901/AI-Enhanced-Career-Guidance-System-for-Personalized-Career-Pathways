@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, Sparkles, Loader2, RefreshCw, CheckCircle, Circle, Download } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
-import { hasApiKey } from '../services/ai';
 import { generateInterviewQuestions, type InterviewQuestion } from '../services/interview';
 import { downloadInterviewPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
@@ -12,7 +11,7 @@ import { sounds } from '../utils/sounds';
 
 export function InterviewPrepPage() {
   const navigate = useNavigate();
-  const { currentJob, isAIEnabled } = useApp();
+  const { currentJob } = useApp();
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<number | null>(null);
@@ -23,9 +22,7 @@ export function InterviewPrepPage() {
       navigate('/');
       return;
     }
-    if (hasApiKey()) {
-      loadQuestions();
-    }
+    loadQuestions();
   }, [currentJob]);
 
   const loadQuestions = async () => {
@@ -70,29 +67,7 @@ export function InterviewPrepPage() {
 
   if (!currentJob) return null;
 
-  if (!isAIEnabled) {
-    return (
-      <div className="min-h-screen bg-background pt-20 pb-16">
-        <div className="max-w-3xl mx-auto px-6 text-center py-20">
-          <StickFigure pose="reading" size={80} className="mx-auto mb-6" />
-          <h2 className="font-[Playfair_Display] text-black mb-3" style={{ fontSize: '1.6rem' }}>
-            Interview Prep Requires AI
-          </h2>
-          <p className="font-[Inter] text-black/50" style={{ fontSize: '0.9rem' }}>
-            Add your free Groq API key to unlock AI-powered interview preparation
-          </p>
-          <motion.button
-            onClick={() => navigate('/')}
-            className="mt-6 bg-black text-white px-6 py-3 font-[Inter]"
-            style={{ fontSize: '0.85rem' }}
-            whileHover={{ scale: 1.02 }}
-          >
-            Go to Homepage
-          </motion.button>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="min-h-screen bg-background pt-20 pb-16">

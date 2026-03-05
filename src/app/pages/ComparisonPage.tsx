@@ -3,14 +3,14 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ArrowRight, X, Scale, Loader2, Download, Share2, Search, Sparkles } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
+import { AskAIPanel } from '../components/AskAIPanel';
 import { useApp } from '../context/AppContext';
 import type { JobData } from '../data/jobs';
 import {
-  getWorkLifeBalance, getLearnMoreResources, getInterviewDifficulty, getGrowthOutlook, hasApiKey,
+  getWorkLifeBalance, getLearnMoreResources, getInterviewDifficulty, getGrowthOutlook,
   getJobSuggestions,
   type WorkLifeBalance, type LearnMoreResources, type InterviewDifficulty,
 } from '../services/ai';
-import { JOB_TITLES } from '../data/jobs';
 import { downloadComparisonPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
@@ -69,7 +69,7 @@ function CareerSlot({
 export function ComparisonPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { history, comparisonJobs, setComparisonJob, searchJobAI, searchJob, isAIEnabled, addToHistory } = useApp();
+  const { history, comparisonJobs, setComparisonJob, searchJobAI, addToHistory } = useApp();
   const [showPicker, setShowPicker] = useState<0 | 1 | null>(null);
   const [customTitle, setCustomTitle] = useState('');
   const [loadingSlot, setLoadingSlot] = useState<0 | 1 | null>(null);
@@ -102,14 +102,14 @@ export function ComparisonPage() {
     const paramB = searchParams.get('b');
     if (paramA && !comparisonJobs[0]) {
       setLoadingSlot(0);
-      (isAIEnabled ? searchJobAI(paramA) : Promise.resolve(searchJob(paramA)))
+      searchJobAI(paramA)
         .then(job => { setComparisonJob(0, job); addToHistory(job); })
         .catch(() => toast.error(`Failed to load "${paramA}"`))
         .finally(() => setLoadingSlot(prev => prev === 0 ? null : prev));
     }
     if (paramB && !comparisonJobs[1]) {
       setLoadingSlot(prev => prev === null ? 1 : prev);
-      (isAIEnabled ? searchJobAI(paramB) : Promise.resolve(searchJob(paramB)))
+      searchJobAI(paramB)
         .then(job => { setComparisonJob(1, job); addToHistory(job); })
         .catch(() => toast.error(`Failed to load "${paramB}"`))
         .finally(() => setLoadingSlot(prev => prev === 1 ? null : prev));
@@ -135,25 +135,20 @@ export function ComparisonPage() {
       setSuggestions([]);
       return;
     }
-    if (hasApiKey()) {
-      const timeout = setTimeout(async () => {
-        setFetchingSuggestions(true);
-        try {
-          const results = await getJobSuggestions(customTitle.trim());
-          setSuggestions(results);
-        } catch { setSuggestions([]); }
-        finally { setFetchingSuggestions(false); }
-      }, 350);
-      return () => { clearTimeout(timeout); setFetchingSuggestions(false); };
-    } else {
-      const q = customTitle.toLowerCase();
-      setSuggestions(JOB_TITLES.filter(t => t.toLowerCase().includes(q)).slice(0, 5));
-    }
+    const timeout = setTimeout(async () => {
+      setFetchingSuggestions(true);
+      try {
+        const results = await getJobSuggestions(customTitle.trim());
+        setSuggestions(results);
+      } catch { setSuggestions([]); }
+      finally { setFetchingSuggestions(false); }
+    }, 350);
+    return () => { clearTimeout(timeout); setFetchingSuggestions(false); };
   }, [customTitle]);
 
   // Lazy-load WLB and certifications when both jobs are set
   useEffect(() => {
-    if (!jobA || !jobB || !hasApiKey()) return;
+    if (!jobA || !jobB) return;
     setWlbLoading(true);
     Promise.all([getWorkLifeBalance(jobA.title), getWorkLifeBalance(jobB.title)])
       .then(([a, b]) => { setWlbA(a); setWlbB(b); })
@@ -203,7 +198,7 @@ export function ComparisonPage() {
     setLoadingSlot(slot);
     setShowPicker(null);
     try {
-      const jobData = isAIEnabled ? await searchJobAI(customTitle.trim()) : searchJob(customTitle.trim());
+      const jobData = await searchJobAI(customTitle.trim());
       setComparisonJob(slot, jobData);
       addToHistory(jobData);
       sounds.addCompare();
@@ -630,7 +625,7 @@ export function ComparisonPage() {
                             const slot = showPicker;
                             setLoadingSlot(slot);
                             setShowPicker(null);
-                            (isAIEnabled ? searchJobAI(s) : Promise.resolve(searchJob(s)))
+                            searchJobAI(s)
                               .then(jobData => { setComparisonJob(slot, jobData); addToHistory(jobData); setCustomTitle(''); })
                               .catch(() => toast.error('Failed to load career'))
                               .finally(() => setLoadingSlot(null));
@@ -639,7 +634,7 @@ export function ComparisonPage() {
                           style={{ fontSize: '0.85rem' }}
                         >
                           {s}
-                          {hasApiKey() && <Sparkles size={9} className="text-black/20 ml-1.5 inline" />}
+                          <Sparkles size={9} className="text-black/20 ml-1.5 inline" />
                         </button>
                       ))}
                     </div>
@@ -717,8 +712,8 @@ export function ComparisonPage() {
                           setLoadingSlot(0);
                           try {
                             const [jA, jB] = await Promise.all([
-                              isAIEnabled ? searchJobAI(item.a) : Promise.resolve(searchJob(item.a)),
-                              isAIEnabled ? searchJobAI(item.b) : Promise.resolve(searchJob(item.b)),
+                              searchJobAI(item.a),
+                              searchJobAI(item.b),
                             ]);
                             setComparisonJob(0, jA);
                             setComparisonJob(1, jB);
@@ -741,6 +736,13 @@ export function ComparisonPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {comparisonJobs[0] && comparisonJobs[1] && (
+        <AskAIPanel
+          contextTitle={`${comparisonJobs[0].title} vs ${comparisonJobs[1].title}`}
+          contextBody={`Comparing ${comparisonJobs[0].title} (${comparisonJobs[0].category}, ${comparisonJobs[0].avgSalary}) vs ${comparisonJobs[1].title} (${comparisonJobs[1].category}, ${comparisonJobs[1].avgSalary}).`}
+        />
+      )}
     </div>
   );
 }

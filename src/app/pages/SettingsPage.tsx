@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { useTheme } from 'next-themes';
-import { ChevronLeft, Volume2, VolumeX, Trash2, Key, Check, LogOut, User, LogIn, Sun, Moon, Monitor } from 'lucide-react';
+import { ChevronLeft, Volume2, VolumeX, Trash2, Check, LogOut, User, LogIn, Download, Smartphone } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { usePreferences } from '../hooks/usePreferences';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
-import { clearAllCache, getApiKey, setApiKey, validateApiKey } from '../services/ai';
+import { clearAllCache } from '../services/ai';
 import { toast } from 'sonner';
 import { sounds, enableSound, isSoundOn } from '../utils/sounds';
 import {
@@ -18,12 +17,9 @@ import {
 
 export function SettingsPage() {
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
   const { preferences, setPreferences, resetPreferences } = usePreferences();
-  const { clearHistory, clearAICache, refreshAIStatus } = useApp();
+  const { clearHistory, clearAICache } = useApp();
   const { user, signOut, isSupabaseConfigured } = useAuth();
-  const [apiKeyInput, setApiKeyInput] = useState('');
-  const [isValidating, setIsValidating] = useState(false);
 
   const handleSoundToggle = () => {
     const newValue = !preferences.soundEffects;
@@ -52,37 +48,10 @@ export function SettingsPage() {
     toast.success('All data cleared — reload to start fresh');
   };
 
-  const handleUpdateApiKey = async () => {
-    if (!apiKeyInput.trim()) {
-      toast.error('Please enter an API key');
-      return;
-    }
-
-    setIsValidating(true);
-    try {
-      const isValid = await validateApiKey(apiKeyInput.trim());
-      if (isValid) {
-        setApiKey(apiKeyInput.trim());
-        refreshAIStatus();
-        setApiKeyInput('');
-        toast.success('API key updated successfully!');
-      } else {
-        toast.error('Invalid API key - please check and try again');
-      }
-    } catch {
-      toast.error('Failed to validate API key');
-    } finally {
-      setIsValidating(false);
-    }
-  };
-
-  const handleRemoveApiKey = () => {
-    setApiKey('');
-    refreshAIStatus();
-    toast.success('API key removed');
-  };
-
-  const currentKey = getApiKey();
+  // Detect if already installed as PWA
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || (window.navigator as any).standalone === true;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
   return (
     <div className="min-h-screen bg-background pt-20 pb-16">
@@ -117,107 +86,6 @@ export function SettingsPage() {
             </div>
           </div>
         </motion.div>
-
-        {/* Appearance Section */}
-        <Section title="Appearance">
-          <div className="space-y-3">
-            <p className="font-[Inter] text-black/40 dark:text-white/40 mb-4" style={{ fontSize: '0.82rem' }}>
-              Choose how Career Simulation looks to you.
-            </p>
-            <div className="grid grid-cols-3 gap-3">
-              {([{ value: 'light', label: 'Light', icon: <Sun size={18} /> }, { value: 'dark', label: 'Dark', icon: <Moon size={18} /> }, { value: 'system', label: 'System', icon: <Monitor size={18} /> }] as const).map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => setTheme(opt.value)}
-                  className={`flex flex-col items-center gap-2.5 py-5 border transition-all font-[Inter] ${
-                    theme === opt.value
-                      ? 'border-black dark:border-white bg-black/5 dark:bg-white/5 text-black dark:text-white'
-                      : 'border-black/10 dark:border-white/10 text-black/40 dark:text-white/40 hover:border-black/30 dark:hover:border-white/30'
-                  }`}
-                  style={{ fontSize: '0.78rem' }}
-                >
-                  {opt.icon}
-                  {opt.label}
-                  {theme === opt.value && <Check size={12} />}
-                </button>
-              ))}
-            </div>
-          </div>
-        </Section>
-
-        {/* API Key Section */}
-        <Section title="AI Configuration">
-          <div className="space-y-4">
-            {currentKey ? (
-              <div className="border border-black/10 p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="font-[Inter] text-black/60 mb-1" style={{ fontSize: '0.82rem' }}>
-                      API Key Configured
-                    </p>
-                    <p className="font-[JetBrains_Mono] text-black/30" style={{ fontSize: '0.7rem' }}>
-                      {currentKey.substring(0, 8)}{'*'.repeat(32)}
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleRemoveApiKey}
-                    className="flex items-center gap-1.5 text-black/30 hover:text-red-500 transition-colors font-[Inter]"
-                    style={{ fontSize: '0.72rem' }}
-                  >
-                    <Trash2 size={12} />
-                    Remove
-                  </button>
-                </div>
-                <p className="font-[Inter] text-black/40" style={{ fontSize: '0.75rem' }}>
-                  AI features are enabled. Update below to change your key.
-                </p>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-black/10 p-6 text-center">
-                <Key size={32} className="text-black/20 mx-auto mb-3" />
-                <p className="font-[Inter] text-black/40 mb-2" style={{ fontSize: '0.85rem' }}>
-                  No API key configured
-                </p>
-                <p className="font-[Inter] text-black/30" style={{ fontSize: '0.75rem' }}>
-                  Add your free Groq API key below to unlock AI features
-                </p>
-              </div>
-            )}
-
-            <div className="flex gap-2">
-              <input
-                type="password"
-                value={apiKeyInput}
-                onChange={(e) => setApiKeyInput(e.target.value)}
-                placeholder="Enter Groq API key..."
-                className="flex-1 border border-black/15 px-4 py-2.5 font-[Inter] text-black/70 placeholder:text-black/25 outline-none focus:border-black/40"
-                style={{ fontSize: '0.85rem' }}
-              />
-              <motion.button
-                onClick={handleUpdateApiKey}
-                disabled={isValidating || !apiKeyInput.trim()}
-                className="bg-black text-white px-5 py-2.5 disabled:bg-black/30 font-[Inter]"
-                style={{ fontSize: '0.82rem' }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                {isValidating ? 'Validating...' : currentKey ? 'Update' : 'Set Key'}
-              </motion.button>
-            </div>
-
-            <p className="font-[Inter] text-black/30" style={{ fontSize: '0.72rem' }}>
-              Get your free API key at{' '}
-              <a
-                href="https://console.groq.com/keys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-black/50"
-              >
-                console.groq.com/keys
-              </a>
-            </p>
-          </div>
-        </Section>
 
         {/* Preferences Section */}
         <Section title="Preferences">
@@ -377,6 +245,49 @@ export function SettingsPage() {
             </AlertDialog>
           </div>
         </Section>
+
+        {/* Install App */}
+        {!isStandalone && (
+          <Section title="Install App">
+            <div className="border border-black/10 p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-black/5 border border-black/10 flex items-center justify-center shrink-0">
+                  <Smartphone size={18} className="text-black/50" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-[Inter] font-medium text-black/70 mb-1" style={{ fontSize: '0.88rem' }}>
+                    Install Career Sim
+                  </h4>
+                  <p className="font-[Inter] text-black/40 mb-4" style={{ fontSize: '0.78rem' }}>
+                    Add to your home screen for a native app experience — works offline too.
+                  </p>
+                  {isIOS ? (
+                    <div className="space-y-2 font-[Inter] text-black/55" style={{ fontSize: '0.8rem' }}>
+                      <p className="font-medium text-black/60">On Safari:</p>
+                      <ol className="list-decimal list-inside space-y-1 text-black/45" style={{ fontSize: '0.78rem' }}>
+                        <li>Tap the <strong>Share</strong> button (square with arrow)</li>
+                        <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
+                        <li>Tap <strong>"Add"</strong> in the top right</li>
+                      </ol>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 font-[Inter] text-black/55" style={{ fontSize: '0.8rem' }}>
+                      <p className="font-medium text-black/60">On Chrome / Edge:</p>
+                      <ol className="list-decimal list-inside space-y-1 text-black/45" style={{ fontSize: '0.78rem' }}>
+                        <li>Tap the <strong>three-dot menu</strong> (⋮) in the top right</li>
+                        <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home Screen"</strong></li>
+                        <li>Follow the prompt to install</li>
+                      </ol>
+                      <p className="text-black/30 mt-2" style={{ fontSize: '0.72rem' }}>
+                        If you see a browser install banner, you can use that too.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Section>
+        )}
 
         {/* Account - only shown when Supabase is configured */}
         {isSupabaseConfigured && (

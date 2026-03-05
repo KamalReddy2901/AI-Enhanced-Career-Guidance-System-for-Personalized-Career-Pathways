@@ -2,10 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, Loader2, ChevronDown, ChevronUp, CheckCircle, XCircle, AlertTriangle, ArrowLeftRight, ExternalLink, Download, Share2, Clock, X } from 'lucide-react';
-import { getCareerTransition, getJobSuggestions, type CareerTransitionPlan, hasApiKey } from '../services/ai';
+import { getCareerTransition, getJobSuggestions, type CareerTransitionPlan } from '../services/ai';
 import { JOB_TITLES } from '../data/jobs';
 import { StickFigure } from '../components/StickFigure';
-import { ApiKeyModal } from '../components/ApiKeyModal';
+import { AskAIPanel } from '../components/AskAIPanel';
 import { downloadTransitionPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
@@ -25,7 +25,7 @@ export function CareerTransitionPage() {
   const [plan, setPlan] = useState<CareerTransitionPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showApiModal, setShowApiModal] = useState(false);
+
   const [expandedPhase, setExpandedPhase] = useState<number | null>(0);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -49,17 +49,12 @@ export function CareerTransitionPage() {
   useEffect(() => {
     if (!fromFocused || fromCareer.length < 2) { setFromSuggestions([]); return; }
     if (fromDebounce.current) clearTimeout(fromDebounce.current);
-    if (hasApiKey()) {
-      fromDebounce.current = setTimeout(async () => {
-        setFetchingFrom(true);
-        try { const r = await getJobSuggestions(fromCareer.trim()); setFromSuggestions(r); }
-        catch { setFromSuggestions([]); }
-        finally { setFetchingFrom(false); }
-      }, 350);
-    } else {
-      const q = fromCareer.toLowerCase();
-      setFromSuggestions(JOB_TITLES.filter(t => t.toLowerCase().includes(q)).slice(0, 5));
-    }
+    fromDebounce.current = setTimeout(async () => {
+      setFetchingFrom(true);
+      try { const r = await getJobSuggestions(fromCareer.trim()); setFromSuggestions(r); }
+      catch { setFromSuggestions([]); }
+      finally { setFetchingFrom(false); }
+    }, 350);
     return () => { if (fromDebounce.current) clearTimeout(fromDebounce.current); setFetchingFrom(false); };
   }, [fromCareer, fromFocused]);
 
@@ -67,17 +62,12 @@ export function CareerTransitionPage() {
   useEffect(() => {
     if (!toFocused || toCareer.length < 2) { setToSuggestions([]); return; }
     if (toDebounce.current) clearTimeout(toDebounce.current);
-    if (hasApiKey()) {
-      toDebounce.current = setTimeout(async () => {
-        setFetchingTo(true);
-        try { const r = await getJobSuggestions(toCareer.trim()); setToSuggestions(r); }
-        catch { setToSuggestions([]); }
-        finally { setFetchingTo(false); }
-      }, 350);
-    } else {
-      const q = toCareer.toLowerCase();
-      setToSuggestions(JOB_TITLES.filter(t => t.toLowerCase().includes(q)).slice(0, 5));
-    }
+    toDebounce.current = setTimeout(async () => {
+      setFetchingTo(true);
+      try { const r = await getJobSuggestions(toCareer.trim()); setToSuggestions(r); }
+      catch { setToSuggestions([]); }
+      finally { setFetchingTo(false); }
+    }, 350);
     return () => { if (toDebounce.current) clearTimeout(toDebounce.current); setFetchingTo(false); };
   }, [toCareer, toFocused]);
 
@@ -94,11 +84,6 @@ export function CareerTransitionPage() {
 
   const handleGenerate = async () => {
     if (!fromCareer.trim() || !toCareer.trim()) return;
-    if (!hasApiKey()) {
-      setShowApiModal(true);
-      return;
-    }
-
     // Cancel any existing request
     abortRef.current?.abort();
     abortRef.current = new AbortController();
@@ -137,23 +122,23 @@ export function CareerTransitionPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="flex items-center gap-3 mb-4">
-            <ArrowLeftRight size={22} className="text-black/40 dark:text-white/40" />
-            <p className="font-[Inter] text-black/35 dark:text-white/35 uppercase tracking-[0.15em]" style={{ fontSize: '0.65rem' }}>
+            <ArrowLeftRight size={22} className="text-black/40" />
+            <p className="font-[Inter] text-black/35 uppercase tracking-[0.15em]" style={{ fontSize: '0.65rem' }}>
               Feature
             </p>
           </div>
-          <h1 className="font-[Playfair_Display] text-black dark:text-white leading-tight mb-3" style={{ fontSize: '2.4rem' }}>
+          <h1 className="font-[Playfair_Display] text-black leading-tight mb-3" style={{ fontSize: '2.4rem' }}>
             Career Transition
             <br />
-            <span className="text-black/35 dark:text-white/35">Pathfinder</span>
+            <span className="text-black/35">Pathfinder</span>
           </h1>
-          <p className="font-[Inter] text-black/50 dark:text-white/50" style={{ fontSize: '0.9rem' }}>
+          <p className="font-[Inter] text-black/50" style={{ fontSize: '0.9rem' }}>
             Enter your current role and your target role to receive a detailed, personalised transition roadmap.
           </p>
           {transitionHistory.length > 0 && (
             <button
               onClick={() => setShowTransitionHistory(true)}
-              className="mt-3 inline-flex items-center gap-1.5 font-[Inter] text-black/35 dark:text-white/35 hover:text-black/60 dark:hover:text-white/60 border border-black/10 dark:border-white/10 px-3 py-1.5 hover:border-black/25 transition-all"
+              className="mt-3 inline-flex items-center gap-1.5 font-[Inter] text-black/35 hover:text-black/60 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
               style={{ fontSize: '0.72rem' }}
             >
               <Clock size={11} />
@@ -164,14 +149,14 @@ export function CareerTransitionPage() {
 
         {/* Input Form */}
         <motion.div
-          className="border-2 border-black/10 dark:border-white/10 p-6 mb-8 bg-card"
+          className="border-2 border-black/10 p-6 mb-8 bg-card"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
           <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-4 items-center">
             <div className="relative">
-              <label className="block font-[Inter] text-black/40 dark:text-white/40 mb-2 uppercase tracking-[0.1em]" style={{ fontSize: '0.62rem' }}>
+              <label className="block font-[Inter] text-black/40 mb-2 uppercase tracking-[0.1em]" style={{ fontSize: '0.62rem' }}>
                 Current Career
               </label>
               <input
@@ -184,11 +169,11 @@ export function CareerTransitionPage() {
                 onFocus={() => setFromFocused(true)}
                 onBlur={() => setTimeout(() => setFromFocused(false), 150)}
                 placeholder="e.g. Software Engineer"
-                className="w-full border border-black/15 dark:border-white/15 bg-transparent px-4 py-3 font-[Inter] text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 outline-none focus:border-black/40 dark:focus:border-white/40 transition-colors"
+                className="w-full border border-black/15 bg-transparent px-4 py-3 font-[Inter] text-black placeholder:text-black/25 outline-none focus:border-black/40 transition-colors"
                 style={{ fontSize: '0.92rem' }}
               />
               {(fromSuggestions.length > 0 || fetchingFrom) && fromFocused && (
-                <div className="absolute top-full left-0 right-0 z-20 border border-black/15 dark:border-white/15 bg-card shadow-md max-h-48 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 z-20 border border-black/15 bg-card shadow-md max-h-48 overflow-y-auto">
                   {fetchingFrom && fromSuggestions.length === 0 && (
                     <div className="px-4 py-2.5 flex items-center gap-2 text-black/35 font-[Inter]" style={{ fontSize: '0.8rem' }}>
                       <Loader2 size={12} className="animate-spin" /> Finding careers...
@@ -198,7 +183,7 @@ export function CareerTransitionPage() {
                     <button
                       key={s}
                       onMouseDown={() => { setFromCareer(s); setFromFocused(false); }}
-                      className="w-full text-left px-4 py-2.5 font-[Inter] text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-b border-black/5 dark:border-white/5 last:border-0"
+                      className="w-full text-left px-4 py-2.5 font-[Inter] text-black/70 hover:bg-black/5 transition-colors border-b border-black/5 last:border-0"
                       style={{ fontSize: '0.85rem' }}
                     >
                       {s}
@@ -209,11 +194,23 @@ export function CareerTransitionPage() {
             </div>
 
             <div className="flex justify-center">
-              <ArrowRight size={20} className="text-black/20 dark:text-white/20" />
+              <button
+                onClick={() => {
+                  const temp = fromCareer;
+                  setFromCareer(toCareer);
+                  setToCareer(temp);
+                  sounds.click();
+                }}
+                className="p-2 text-black/20 hover:text-black/50 hover:bg-black/5 transition-all rounded-full"
+                title="Swap careers"
+                aria-label="Swap from and to careers"
+              >
+                <ArrowLeftRight size={20} />
+              </button>
             </div>
 
             <div className="relative">
-              <label className="block font-[Inter] text-black/40 dark:text-white/40 mb-2 uppercase tracking-[0.1em]" style={{ fontSize: '0.62rem' }}>
+              <label className="block font-[Inter] text-black/40 mb-2 uppercase tracking-[0.1em]" style={{ fontSize: '0.62rem' }}>
                 Target Career
               </label>
               <input
@@ -226,11 +223,11 @@ export function CareerTransitionPage() {
                 onFocus={() => setToFocused(true)}
                 onBlur={() => setTimeout(() => setToFocused(false), 150)}
                 placeholder="e.g. Product Manager"
-                className="w-full border border-black/15 dark:border-white/15 bg-transparent px-4 py-3 font-[Inter] text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 outline-none focus:border-black/40 dark:focus:border-white/40 transition-colors"
+                className="w-full border border-black/15 bg-transparent px-4 py-3 font-[Inter] text-black placeholder:text-black/25 outline-none focus:border-black/40 transition-colors"
                 style={{ fontSize: '0.92rem' }}
               />
               {(toSuggestions.length > 0 || fetchingTo) && toFocused && (
-                <div className="absolute top-full left-0 right-0 z-20 border border-black/15 dark:border-white/15 bg-card shadow-md max-h-48 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 z-20 border border-black/15 bg-card shadow-md max-h-48 overflow-y-auto">
                   {fetchingTo && toSuggestions.length === 0 && (
                     <div className="px-4 py-2.5 flex items-center gap-2 text-black/35 font-[Inter]" style={{ fontSize: '0.8rem' }}>
                       <Loader2 size={12} className="animate-spin" /> Finding careers...
@@ -240,7 +237,7 @@ export function CareerTransitionPage() {
                     <button
                       key={s}
                       onMouseDown={() => { setToCareer(s); setToFocused(false); }}
-                      className="w-full text-left px-4 py-2.5 font-[Inter] text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-b border-black/5 dark:border-white/5 last:border-0"
+                      className="w-full text-left px-4 py-2.5 font-[Inter] text-black/70 hover:bg-black/5 transition-colors border-b border-black/5 last:border-0"
                       style={{ fontSize: '0.85rem' }}
                     >
                       {s}
@@ -255,7 +252,7 @@ export function CareerTransitionPage() {
             <motion.button
               onClick={handleGenerate}
               disabled={!fromCareer.trim() || !toCareer.trim() || loading}
-              className="flex items-center gap-2 bg-black dark:bg-white text-white dark:text-black px-6 py-3 font-[Inter] hover:bg-black/80 dark:hover:bg-white/80 disabled:opacity-40 transition-colors"
+              className="flex items-center gap-2 bg-black text-white px-6 py-3 font-[Inter] hover:bg-black/80 disabled:opacity-40 transition-colors"
               style={{ fontSize: '0.88rem' }}
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
@@ -276,7 +273,7 @@ export function CareerTransitionPage() {
             {loading && (
               <button
                 onClick={() => { abortRef.current?.abort(); setLoading(false); }}
-                className="font-[Inter] text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white transition-colors"
+                className="font-[Inter] text-black/35 hover:text-black transition-colors"
                 style={{ fontSize: '0.8rem' }}
               >
                 Cancel
@@ -284,14 +281,7 @@ export function CareerTransitionPage() {
             )}
           </div>
 
-          {!hasApiKey() && (
-            <p className="mt-3 font-[Inter] text-black/35 dark:text-white/35" style={{ fontSize: '0.75rem' }}>
-              ✦ Requires a free{' '}
-              <button onClick={() => setShowApiModal(true)} className="underline hover:text-black dark:hover:text-white transition-colors">
-                Groq API key
-              </button>
-            </p>
-          )}
+
         </motion.div>
 
         {/* Error */}
@@ -310,10 +300,10 @@ export function CareerTransitionPage() {
         {loading && !plan && (
           <div className="space-y-4">
             {[1, 2, 3].map(i => (
-              <div key={i} className="border border-black/8 dark:border-white/8 p-5 animate-pulse">
-                <div className="h-4 bg-black/8 dark:bg-white/8 rounded w-1/4 mb-3" />
-                <div className="h-3 bg-black/5 dark:bg-white/5 rounded w-3/4 mb-2" />
-                <div className="h-3 bg-black/5 dark:bg-white/5 rounded w-1/2" />
+              <div key={i} className="border border-black/8 p-5 animate-pulse">
+                <div className="h-4 bg-black/8 rounded w-1/4 mb-3" />
+                <div className="h-3 bg-black/5 rounded w-3/4 mb-2" />
+                <div className="h-3 bg-black/5 rounded w-1/2" />
               </div>
             ))}
           </div>
@@ -328,13 +318,13 @@ export function CareerTransitionPage() {
               transition={{ duration: 0.3 }}
             >
               {/* Summary header */}
-              <div className="border-2 border-black/15 dark:border-white/15 p-6 mb-6 bg-card">
+              <div className="border-2 border-black/15 p-6 mb-6 bg-card">
                 <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
                   <div>
-                    <p className="font-[Inter] text-black/35 dark:text-white/35 mb-1" style={{ fontSize: '0.68rem', letterSpacing: '0.1em' }}>
+                    <p className="font-[Inter] text-black/35 mb-1" style={{ fontSize: '0.68rem', letterSpacing: '0.1em' }}>
                       TRANSITION PLAN
                     </p>
-                    <h2 className="font-[Playfair_Display] text-black dark:text-white" style={{ fontSize: '1.5rem' }}>
+                    <h2 className="font-[Playfair_Display] text-black" style={{ fontSize: '1.5rem' }}>
                       {plan.fromTitle} → {plan.toTitle}
                     </h2>
                   </div>
@@ -344,32 +334,32 @@ export function CareerTransitionPage() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
-                  <div className="p-3 bg-black/3 dark:bg-white/3">
-                    <p className="font-[Inter] text-black/35 dark:text-white/35 mb-1" style={{ fontSize: '0.62rem', letterSpacing: '0.1em' }}>
+                  <div className="p-3 bg-black/3">
+                    <p className="font-[Inter] text-black/35 mb-1" style={{ fontSize: '0.62rem', letterSpacing: '0.1em' }}>
                       ESTIMATED TIMEFRAME
                     </p>
-                    <p className="font-[Inter] text-black dark:text-white font-medium" style={{ fontSize: '0.9rem' }}>
+                    <p className="font-[Inter] text-black font-medium" style={{ fontSize: '0.9rem' }}>
                       {plan.timeframe}
                     </p>
                   </div>
-                  <div className="p-3 bg-black/3 dark:bg-white/3">
-                    <p className="font-[Inter] text-black/35 dark:text-white/35 mb-1" style={{ fontSize: '0.62rem', letterSpacing: '0.1em' }}>
+                  <div className="p-3 bg-black/3">
+                    <p className="font-[Inter] text-black/35 mb-1" style={{ fontSize: '0.62rem', letterSpacing: '0.1em' }}>
                       SALARY IMPACT
                     </p>
-                    <p className="font-[Inter] text-black dark:text-white font-medium" style={{ fontSize: '0.9rem' }}>
+                    <p className="font-[Inter] text-black font-medium" style={{ fontSize: '0.9rem' }}>
                       {plan.salaryImpact}
                     </p>
                   </div>
                 </div>
 
-                <p className="font-[Inter] text-black/60 dark:text-white/60" style={{ fontSize: '0.9rem', lineHeight: 1.7 }}>
+                <p className="font-[Inter] text-black/60" style={{ fontSize: '0.9rem', lineHeight: 1.7 }}>
                   {plan.overview}
                 </p>
               </div>
 
               {/* Skills analysis */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                <div className="border border-black/10 dark:border-white/10 p-5">
+                <div className="border border-black/10 p-5">
                   <h3 className="font-[Playfair_Display] text-black mb-3 flex items-center gap-2" style={{ fontSize: '1rem' }}>
                     <CheckCircle size={16} className="text-emerald-600" />
                     Transferable Skills
@@ -378,13 +368,13 @@ export function CareerTransitionPage() {
                     {plan.transferableSkills.map((skill, i) => (
                       <li key={i} className="flex items-start gap-2">
                         <span className="text-emerald-500 mt-1">•</span>
-                        <span className="font-[Inter] text-black/65 dark:text-white/65" style={{ fontSize: '0.85rem' }}>{skill}</span>
+                        <span className="font-[Inter] text-black/65" style={{ fontSize: '0.85rem' }}>{skill}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                <div className="border border-black/10 dark:border-white/10 p-5">
+                <div className="border border-black/10 p-5">
                   <h3 className="font-[Playfair_Display] text-black mb-3 flex items-center gap-2" style={{ fontSize: '1rem' }}>
                     <XCircle size={16} className="text-rose-500" />
                     Skill Gaps to Bridge
@@ -393,7 +383,7 @@ export function CareerTransitionPage() {
                     {plan.skillGaps.map((gap, i) => (
                       <li key={i} className="flex items-start gap-2">
                         <span className="text-rose-400 mt-1">•</span>
-                        <span className="font-[Inter] text-black/65 dark:text-white/65" style={{ fontSize: '0.85rem' }}>{gap}</span>
+                        <span className="font-[Inter] text-black/65" style={{ fontSize: '0.85rem' }}>{gap}</span>
                       </li>
                     ))}
                   </ul>
@@ -402,30 +392,30 @@ export function CareerTransitionPage() {
 
               {/* Step-by-step phases */}
               <div className="mb-6">
-                <h3 className="font-[Playfair_Display] text-black dark:text-white mb-4" style={{ fontSize: '1.2rem' }}>
+                <h3 className="font-[Playfair_Display] text-black mb-4" style={{ fontSize: '1.2rem' }}>
                   Your Transition Roadmap
                 </h3>
                 <div className="space-y-3">
                   {plan.steps.map((step, i) => (
-                    <div key={i} className="border border-black/10 dark:border-white/10">
+                    <div key={i} className="border border-black/10">
                       <button
                         onClick={() => { setExpandedPhase(expandedPhase === i ? null : i); expandedPhase === i ? sounds.collapse() : sounds.expand(); }}
-                        className="w-full flex items-center justify-between p-5 text-left hover:bg-black/2 dark:hover:bg-white/2 transition-colors"
+                        className="w-full flex items-center justify-between p-5 text-left hover:bg-black/2 transition-colors"
                         aria-expanded={expandedPhase === i}
                       >
                         <div className="flex items-center gap-4">
-                          <div className="w-7 h-7 bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-[Inter] font-medium shrink-0" style={{ fontSize: '0.75rem' }}>
+                          <div className="w-7 h-7 bg-black text-white flex items-center justify-center font-[Inter] font-medium shrink-0" style={{ fontSize: '0.75rem' }}>
                             {i + 1}
                           </div>
                           <div>
-                            <p className="font-[Playfair_Display] text-black dark:text-white" style={{ fontSize: '1rem' }}>{step.phase}</p>
-                            <p className="font-[Inter] text-black/35 dark:text-white/35" style={{ fontSize: '0.72rem' }}>{step.duration}</p>
+                            <p className="font-[Playfair_Display] text-black" style={{ fontSize: '1rem' }}>{step.phase}</p>
+                            <p className="font-[Inter] text-black/35" style={{ fontSize: '0.72rem' }}>{step.duration}</p>
                           </div>
                         </div>
                         {expandedPhase === i ? (
-                          <ChevronUp size={16} className="text-black/30 dark:text-white/30 shrink-0" />
+                          <ChevronUp size={16} className="text-black/30 shrink-0" />
                         ) : (
-                          <ChevronDown size={16} className="text-black/30 dark:text-white/30 shrink-0" />
+                          <ChevronDown size={16} className="text-black/30 shrink-0" />
                         )}
                       </button>
                       <AnimatePresence>
@@ -437,12 +427,12 @@ export function CareerTransitionPage() {
                             transition={{ duration: 0.2 }}
                             className="overflow-hidden"
                           >
-                            <div className="px-5 pb-5 border-t border-black/8 dark:border-white/8 pt-4">
+                            <div className="px-5 pb-5 border-t border-black/8 pt-4">
                               <ul className="space-y-2">
                                 {step.actions.map((action, j) => (
                                   <li key={j} className="flex items-start gap-2">
-                                    <ArrowRight size={13} className="text-black/25 dark:text-white/25 mt-1 shrink-0" />
-                                    <span className="font-[Inter] text-black/65 dark:text-white/65" style={{ fontSize: '0.85rem' }}>{action}</span>
+                                    <ArrowRight size={13} className="text-black/25 mt-1 shrink-0" />
+                                    <span className="font-[Inter] text-black/65" style={{ fontSize: '0.85rem' }}>{action}</span>
                                   </li>
                                 ))}
                               </ul>
@@ -619,7 +609,7 @@ export function CareerTransitionPage() {
               <div className="flex items-center justify-center gap-3 pb-4">
                 <motion.button
                   onClick={() => { downloadTransitionPDF(plan); sounds.download(); toast.success('Downloading transition PDF…'); }}
-                  className="flex items-center gap-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white border border-black/10 dark:border-white/10 px-3 py-1.5 hover:border-black/25 dark:hover:border-white/25 transition-all font-[Inter]"
+                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all font-[Inter]"
                   style={{ fontSize: '0.72rem' }}
                   whileHover={{ y: -1 }}
                 >
@@ -631,7 +621,7 @@ export function CareerTransitionPage() {
                     const url = `${window.location.origin}/career-transition?from=${encodeURIComponent(plan.fromTitle)}&to=${encodeURIComponent(plan.toTitle)}`;
                     navigator.clipboard.writeText(url).then(() => toast.success('Transition link copied!')).catch(() => toast.error('Could not copy link'));
                   }}
-                  className="flex items-center gap-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white border border-black/10 dark:border-white/10 px-3 py-1.5 hover:border-black/25 dark:hover:border-white/25 transition-all font-[Inter]"
+                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all font-[Inter]"
                   style={{ fontSize: '0.72rem' }}
                   whileHover={{ y: -1 }}
                 >
@@ -651,8 +641,8 @@ export function CareerTransitionPage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <StickFigure pose="thinking" size={72} className="mx-auto mb-5 text-black/20 dark:text-white/20" />
-            <p className="font-[Inter] text-black/30 dark:text-white/30" style={{ fontSize: '0.88rem' }}>
+            <StickFigure pose="thinking" size={72} className="mx-auto mb-5 text-black/20" />
+            <p className="font-[Inter] text-black/30" style={{ fontSize: '0.88rem' }}>
               Enter your current and target career above to get started.
             </p>
           </motion.div>
@@ -670,14 +660,14 @@ export function CareerTransitionPage() {
           >
             <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowTransitionHistory(false)} />
             <motion.div
-              className="relative bg-white dark:bg-[#1a1a18] border-2 border-black/20 dark:border-white/20 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] w-full max-w-sm mx-4 max-h-[60vh] flex flex-col"
+              className="relative bg-white border-2 border-black/20 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] w-full max-w-sm mx-4 max-h-[60vh] flex flex-col"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
             >
-              <div className="p-5 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
-                <h3 className="font-[Playfair_Display] text-black dark:text-white" style={{ fontSize: '1.05rem' }}>Recent Transitions</h3>
-                <button onClick={() => setShowTransitionHistory(false)} className="text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white transition-colors">
+              <div className="p-5 border-b border-black/10 flex items-center justify-between">
+                <h3 className="font-[Playfair_Display] text-black" style={{ fontSize: '1.05rem' }}>Recent Transitions</h3>
+                <button onClick={() => setShowTransitionHistory(false)} className="text-black/30 hover:text-black transition-colors">
                   <X size={18} />
                 </button>
               </div>
@@ -690,12 +680,12 @@ export function CareerTransitionPage() {
                       setToCareer(item.to);
                       setShowTransitionHistory(false);
                     }}
-                    className="w-full text-left p-3 border border-black/8 dark:border-white/8 hover:border-black/20 dark:hover:border-white/20 transition-colors"
+                    className="w-full text-left p-3 border border-black/8 hover:border-black/20 transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="font-[Inter] text-black/70 dark:text-white/70" style={{ fontSize: '0.85rem' }}>{item.from}</span>
-                      <ArrowRight size={12} className="text-black/25 dark:text-white/25 shrink-0" />
-                      <span className="font-[Inter] text-black/70 dark:text-white/70" style={{ fontSize: '0.85rem' }}>{item.to}</span>
+                      <span className="font-[Inter] text-black/70" style={{ fontSize: '0.85rem' }}>{item.from}</span>
+                      <ArrowRight size={12} className="text-black/25 shrink-0" />
+                      <span className="font-[Inter] text-black/70" style={{ fontSize: '0.85rem' }}>{item.to}</span>
                     </div>
                   </button>
                 ))}
@@ -705,7 +695,13 @@ export function CareerTransitionPage() {
         )}
       </AnimatePresence>
 
-      {showApiModal && <ApiKeyModal isOpen={showApiModal} onClose={() => setShowApiModal(false)} onKeySet={() => setShowApiModal(false)} />}
+      {plan && (
+        <AskAIPanel
+          contextTitle={`${plan.from} → ${plan.to} Transition`}
+          contextBody={`Career transition from ${plan.from} to ${plan.to}.\n\nFeasibility: ${plan.feasibility}\nTimeline: ${plan.estimatedTimeline}\nSummary: ${plan.summary}\nTransferable skills: ${plan.transferableSkills?.join(', ')}\nSkill gaps: ${plan.skillGaps?.join(', ')}`}
+        />
+      )}
+
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
-import { generateJobData, type JobData } from '../data/jobs';
-import { generateJobDataAI, generatePreliminaryAssessmentAI, hasApiKey, clearAllCache } from '../services/ai';
+import { type JobData } from '../data/jobs';
+import { generateJobDataAI, generatePreliminaryAssessmentAI, clearAllCache } from '../services/ai';
 import { fetchRemoteHistory, saveHistoryEntry, clearRemoteHistory } from '../services/supabase';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
@@ -16,7 +16,7 @@ interface AppContextType {
   currentJob: JobData | null;
   setCurrentJob: (job: JobData | null) => void;
   searchJob: (title: string) => JobData;
-  searchJobAI: (title: string, skipCache?: boolean) => Promise<JobData>;
+  searchJobAI: (title: string, skipCache?: boolean, contextDescription?: string) => Promise<JobData>;
   searchJobPreliminary: (title: string) => Promise<JobData>;
   history: HistoryEntry[];
   addToHistory: (jobData: JobData) => void;
@@ -42,7 +42,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [refinementCount, setRefinementCount] = useState(0);
   const [isSearchAnimating, setIsSearchAnimating] = useState(false);
-  const [isAIEnabled, setIsAIEnabled] = useState(hasApiKey());
+  const [isAIEnabled, setIsAIEnabled] = useState(true);
   const [comparisonJobs, setComparisonJobs] = useState<[JobData | null, JobData | null]>([null, null]);
 
   // Sync history from Supabase when user logs in
@@ -73,48 +73,53 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [user?.id]);
 
   const refreshAIStatus = useCallback(() => {
-    setIsAIEnabled(hasApiKey());
+    setIsAIEnabled(true);
   }, []);
 
   const searchJobPreliminary = useCallback(async (title: string): Promise<JobData> => {
-    if (!hasApiKey()) {
-      return generateJobData(title);
-    }
-    try {
-      const prelim = await generatePreliminaryAssessmentAI(title);
-      const id = title.toLowerCase().replace(/\s+/g, '-');
-      return {
-        id, title,
-        category: prelim.category || 'Professional Services',
-        shortDescription: prelim.shortDescription,
-        fullDescription: '',
-        avgSalary: prelim.avgSalary,
-        education: [],
-        skills: [],
-        dailyRoutine: '',
-        workEnvironment: '',
-        careerPath: '',
-        weekOverview: '',
-        quarterOverview: '',
-        yearOverview: '',
-        funFact: '',
-      };
-    } catch {
-      return generateJobData(title);
-    }
+    const prelim = await generatePreliminaryAssessmentAI(title);
+    const id = title.toLowerCase().replace(/\s+/g, '-');
+    return {
+      id, title,
+      category: prelim.category || 'Professional Services',
+      shortDescription: prelim.shortDescription,
+      fullDescription: '',
+      avgSalary: prelim.avgSalary,
+      education: [],
+      skills: [],
+      dailyRoutine: '',
+      workEnvironment: '',
+      careerPath: '',
+      weekOverview: '',
+      quarterOverview: '',
+      yearOverview: '',
+      funFact: '',
+    };
   }, []);
 
   const searchJob = useCallback((title: string): JobData => {
-    return generateJobData(title);
+    const id = title.toLowerCase().replace(/\s+/g, '-');
+    return {
+      id, title,
+      category: 'Professional Services',
+      shortDescription: '',
+      fullDescription: '',
+      avgSalary: 'Loading...',
+      education: [],
+      skills: [],
+      dailyRoutine: '',
+      workEnvironment: '',
+      careerPath: '',
+      weekOverview: '',
+      quarterOverview: '',
+      yearOverview: '',
+      funFact: '',
+    };
   }, []);
 
-  const searchJobAI = useCallback(async (title: string, skipCache = false): Promise<JobData> => {
-    if (!hasApiKey()) {
-      return generateJobData(title);
-    }
-
+  const searchJobAI = useCallback(async (title: string, skipCache = false, contextDescription?: string): Promise<JobData> => {
     try {
-      const aiData = await generateJobDataAI(title, skipCache);
+      const aiData = await generateJobDataAI(title, skipCache, contextDescription);
       const id = title.toLowerCase().replace(/\s+/g, '-');
       return {
         id,
@@ -137,10 +142,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       };
     } catch (error) {
       console.error('AI generation failed:', error);
-      toast.error('AI generation failed - using template data', {
+      toast.error('AI generation failed — please try again', {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
-      return generateJobData(title);
+      throw error;
     }
   }, []);
 

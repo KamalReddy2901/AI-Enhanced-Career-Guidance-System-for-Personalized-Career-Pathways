@@ -3,19 +3,71 @@ import { toast } from 'sonner';
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const MODEL = 'llama-3.3-70b-versatile';
 
-let apiKey = localStorage.getItem('groq_api_key') || '';
+// ─── Built-in API Key Rotation ─────────────────────────────────
+const BUILT_IN_KEYS: string[] = (import.meta.env.VITE_GROQ_API_KEYS as string || '')
+  .split(',')
+  .map(k => k.trim())
+  .filter(k => k.startsWith('gsk_'));
+
+let currentKeyIndex = Math.floor(Math.random() * BUILT_IN_KEYS.length); // start random to distribute load
+const exhaustedKeys = new Set<string>(); // keys that returned 429 today
+let allKeysExhausted = false;
+
+function getActiveKey(): string {
+  if (allKeysExhausted || BUILT_IN_KEYS.length === 0) return '';
+  // Find the next non-exhausted key starting from current index
+  for (let i = 0; i < BUILT_IN_KEYS.length; i++) {
+    const idx = (currentKeyIndex + i) % BUILT_IN_KEYS.length;
+    if (!exhaustedKeys.has(BUILT_IN_KEYS[idx])) {
+      currentKeyIndex = idx;
+      return BUILT_IN_KEYS[idx];
+    }
+  }
+  allKeysExhausted = true;
+  return '';
+}
+
+function rotateToNextKey(): boolean {
+  const currentKey = BUILT_IN_KEYS[currentKeyIndex];
+  if (currentKey) exhaustedKeys.add(currentKey);
+  // Try to find another key
+  for (let i = 1; i < BUILT_IN_KEYS.length; i++) {
+    const idx = (currentKeyIndex + i) % BUILT_IN_KEYS.length;
+    if (!exhaustedKeys.has(BUILT_IN_KEYS[idx])) {
+      currentKeyIndex = idx;
+      return true;
+    }
+  }
+  allKeysExhausted = true;
+  return false;
+}
+
+// Reset exhausted keys daily (Groq quotas reset daily)
+const EXHAUSTED_RESET_KEY = 'careersim_keys_reset_date';
+(function resetExhaustedIfNewDay() {
+  const today = new Date().toDateString();
+  const lastReset = localStorage.getItem(EXHAUSTED_RESET_KEY);
+  if (lastReset !== today) {
+    localStorage.setItem(EXHAUSTED_RESET_KEY, today);
+    exhaustedKeys.clear();
+    allKeysExhausted = false;
+  }
+})();
 
 export function getApiKey(): string {
-  return apiKey;
+  return getActiveKey();
 }
 
 export function setApiKey(key: string) {
-  apiKey = key;
-  localStorage.setItem('groq_api_key', key);
+  // No-op: we use built-in keys only
 }
 
 export function hasApiKey(): boolean {
-  return apiKey.length > 0;
+  return BUILT_IN_KEYS.length > 0 && !allKeysExhausted;
+}
+
+export function isAllKeysExhausted(): boolean {
+  return allKeysExhausted;
 }
 
 // ─── Cache Layer ───────────────────────────────────────────────
@@ -100,8 +152,9 @@ async function callGroq(
 ): Promise<string> {
   const { temperature = 0.7, maxTokens = 2048, jsonMode = false, signal } = options;
 
-  if (!apiKey) {
-    throw new Error('API key not set. Please add your free Groq API key.');
+  const activeKey = getActiveKey();
+  if (!activeKey) {
+    throw new Error('Servers are busy now. Please come back tomorrow.');
   }
 
   // Deduplication: if same request is already in-flight, return that promise
@@ -109,34 +162,48 @@ async function callGroq(
   const existing = pendingRequests.get(dedupKey);
   if (existing) return existing;
 
-  const request = (async () => {
-    const response = await fetch(GROQ_API_URL, {
-      method: 'POST',
-      signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature,
-        max_tokens: maxTokens,
-        ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
-      }),
-    });
+  const request = (async (): Promise<string> => {
+    // Try with current key, rotate on 429
+    for (let attempt = 0; attempt < BUILT_IN_KEYS.length; attempt++) {
+      const key = getActiveKey();
+      if (!key) throw new Error('Servers are busy now. Please come back tomorrow.');
 
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      const message = err?.error?.message || `Groq API error: ${response.status}`;
-      throw new Error(message);
+      const response = await fetch(GROQ_API_URL, {
+        method: 'POST',
+        signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`,
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature,
+          max_tokens: maxTokens,
+          ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
+        }),
+      });
+
+      if (response.status === 429) {
+        // Rate limited — rotate to next key
+        const hasMore = rotateToNextKey();
+        if (!hasMore) throw new Error('Servers are busy now. Please come back tomorrow.');
+        continue;
+      }
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        const message = err?.error?.message || `Groq API error: ${response.status}`;
+        throw new Error(message);
+      }
+
+      const data = await response.json();
+      return data.choices[0]?.message?.content || '';
     }
-
-    const data = await response.json();
-    return data.choices[0]?.message?.content || '';
+    throw new Error('Servers are busy now. Please come back tomorrow.');
   })();
 
   pendingRequests.set(dedupKey, request);
@@ -156,65 +223,74 @@ export async function callGroqStreaming(
 ): Promise<string> {
   const { temperature = 0.7, maxTokens = 4096, signal, onProgress } = options;
 
-  if (!apiKey) {
-    throw new Error('API key not set. Please add your free Groq API key.');
-  }
+  // Try with key rotation on 429
+  for (let attempt = 0; attempt < BUILT_IN_KEYS.length; attempt++) {
+    const key = getActiveKey();
+    if (!key) throw new Error('Servers are busy now. Please come back tomorrow.');
 
-  const response = await fetch(GROQ_API_URL, {
-    method: 'POST',
-    signal,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature,
-      max_tokens: maxTokens,
-      stream: true,
-      response_format: { type: 'json_object' },
-    }),
-  });
+    const response = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature,
+        max_tokens: maxTokens,
+        stream: true,
+        response_format: { type: 'json_object' },
+      }),
+    });
 
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Groq API error: ${response.status}`);
-  }
+    if (response.status === 429) {
+      const hasMore = rotateToNextKey();
+      if (!hasMore) throw new Error('Servers are busy now. Please come back tomorrow.');
+      continue;
+    }
 
-  const reader = response.body?.getReader();
-  if (!reader) throw new Error('No response stream');
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `Groq API error: ${response.status}`);
+    }
 
-  const decoder = new TextDecoder();
-  let accumulated = '';
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error('No response stream');
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+    const decoder = new TextDecoder();
+    let accumulated = '';
 
-    const chunk = decoder.decode(value, { stream: true });
-    const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-    for (const line of lines) {
-      const json = line.slice(6).trim();
-      if (json === '[DONE]') continue;
-      try {
-        const parsed = JSON.parse(json);
-        const delta = parsed.choices?.[0]?.delta?.content;
-        if (delta) {
-          accumulated += delta;
-          onProgress?.(accumulated.length);
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
+
+      for (const line of lines) {
+        const json = line.slice(6).trim();
+        if (json === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(json);
+          const delta = parsed.choices?.[0]?.delta?.content;
+          if (delta) {
+            accumulated += delta;
+            onProgress?.(accumulated.length);
+          }
+        } catch {
+          // skip malformed chunks
         }
-      } catch {
-        // skip malformed chunks
       }
     }
-  }
 
-  return accumulated;
+    return accumulated;
+  }
+  throw new Error('Servers are busy now. Please come back tomorrow.');
 }
 
 // ─── Stream Chat ───────────────────────────────────────────────
@@ -224,20 +300,28 @@ export async function* streamChat(
   jobContext: string,
   messages: { role: 'user' | 'assistant'; text: string }[]
 ): AsyncGenerator<string> {
-  if (!apiKey) throw new Error('API key not set.');
+  const key = getActiveKey();
+  if (!key) throw new Error('Servers are busy now. Please come back tomorrow.');
 
-  const systemPrompt = `You are a career expert AI assistant for the "Career Simulation" app. You provide detailed, accurate, and insightful answers about the profession of "${jobTitle}".
+  const systemPrompt = `You are a sharp, knowledgeable career advisor embedded in a career exploration app. The user is exploring the profession of "${jobTitle}".
 
 Context about this specific role:
 ${jobContext}
 
-Guidelines:
-- Be specific and factual about this exact profession, not generic
-- Include real-world details, industry jargon, and insider knowledge
-- Be honest about both positives and negatives
-- Keep responses conversational but informative (2-4 paragraphs max)
-- If asked about salary, give real ranges with context
-- If asked about something you're unsure about, say so rather than making things up`;
+Your personality:
+- Direct and specific — never give vague, generic advice
+- Use real industry terminology, tool names, and insider knowledge
+- Honest about both pros and cons — don't sugarcoat
+- Cite concrete examples, numbers, and real-world scenarios when possible
+
+Formatting rules:
+- Use **bold** for key terms and emphasis
+- Use bullet points (- ) for lists
+- Use ### for section headings when the answer has multiple parts
+- Keep paragraphs short (2-3 sentences max)
+- Use line breaks between sections for readability
+- If giving steps, use numbered lists (1. 2. 3.)
+- Never use generic filler phrases like "great question" or "I'd be happy to help"`;
 
   const apiMessages = [
     { role: 'system', content: systemPrompt },
@@ -248,7 +332,7 @@ Guidelines:
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': `Bearer ${key}`,
     },
     body: JSON.stringify({
       model: MODEL,
@@ -316,19 +400,19 @@ export async function generatePreliminaryAssessmentAI(title: string): Promise<AI
 
   const result = await withRetry(async () => {
     const systemPrompt = isIndia
-      ? `You are a career expert specializing in India. Return ONLY valid JSON.`
-      : `You are a career expert. Return ONLY valid JSON.`;
+      ? `You are a career expert specializing in the Indian job market. Return ONLY valid JSON. Be vivid, specific, and avoid generic corporate language.`
+      : `You are a career expert. Return ONLY valid JSON. Be vivid, specific, and avoid generic corporate language.`;
 
     const salaryFmt = isIndia
-      ? `"avgSalary": "Realistic Indian salary range in LPA e.g. '₹5 LPA – ₹18 LPA'"`
-      : `"avgSalary": "Realistic US salary range e.g. '$55,000 – $120,000'"`;
+      ? `"avgSalary": "Realistic Indian salary range in LPA e.g. '₹5 LPA – ₹18 LPA'. Base on actual market data for this role."`
+      : `"avgSalary": "Realistic US salary range e.g. '$55,000 – $120,000'. Base on actual market data for this role."`;
 
     const raw = await callGroq(systemPrompt,
       `Give a brief snapshot for the career: "${title}".
 Return this JSON:
 {
   "category": "One of: Healthcare, Technology & Engineering, Law & Justice, Finance, Education, Creative Arts, Food & Hospitality, Aviation & Space, Nature & Environment, Leadership & Management, Skilled Trades, Social Services, Professional Services",
-  "shortDescription": "3-4 vivid sentences: what a ${title} actually does day-to-day.",
+  "shortDescription": "3-4 vivid, concrete sentences about what a ${title} ACTUALLY does day-to-day. Mention specific tools, environments, or situations. Avoid vague phrases like 'plays a crucial role' or 'is responsible for'. Paint a picture.",
   ${salaryFmt}
 }`,
       { temperature: 0.6, maxTokens: 400, jsonMode: true }
@@ -360,7 +444,7 @@ export interface AIJobData {
   relevantForCompanies?: boolean;
 }
 
-export async function generateJobDataAI(title: string, skipCache = false): Promise<AIJobData> {
+export async function generateJobDataAI(title: string, skipCache = false, contextDescription?: string): Promise<AIJobData> {
   const currency = (() => {
     try {
       return (JSON.parse(localStorage.getItem('careersim_preferences') || '{}').currency as 'INR' | 'USD') || 'INR';
@@ -397,30 +481,36 @@ export async function generateJobDataAI(title: string, skipCache = false): Promi
       ? `\n\nIMPORTANT: All content must reflect Indian realities - Indian companies, Indian career trajectories, Indian work culture (including WFH trends post-COVID, startup ecosystem, PSU vs private sector, etc.), and Indian education pathways.`
       : '';
 
-    const userPrompt = `Generate a detailed career dossier for: "${title}"${contextNote}
+    const descriptionHint = contextDescription
+      ? `\n\nThe user has confirmed/refined the following preliminary description for this role — use it as strong context to tailor the dossier accurately:\n"${contextDescription}"`
+      : '';
+
+    const userPrompt = `Generate a detailed career dossier for: "${title}"${contextNote}${descriptionHint}
+
+WRITING STYLE: Be concrete, vivid, and specific. Avoid filler phrases like "plays a crucial role", "dynamic field", "fast-paced environment", or "exciting opportunity". Instead, describe what a person actually DOES, SEES, and EXPERIENCES. Use specific tools, software, techniques, and real-world examples.
 
 Return this exact JSON structure:
 {
   "category": "One of: Healthcare, Technology & Engineering, Law & Justice, Finance, Education, Creative Arts, Food & Hospitality, Aviation & Space, Nature & Environment, Leadership & Management, Skilled Trades, Social Services, Professional Services",
-  "shortDescription": "A compelling 3-4 sentence overview of what a ${title} actually does day-to-day. Be specific and vivid.",
-  "fullDescription": "A detailed 4-paragraph description covering: what the role actually involves, day-to-day realities, impact and rewards, and how the profession has evolved. Use \\n\\n between paragraphs.",
+  "shortDescription": "A compelling 3-4 sentence overview of what a ${title} actually does day-to-day. Paint a picture — mention specific tools, environments, and tasks.",
+  "fullDescription": "A detailed 4-paragraph description covering: (1) what the role actually involves at its core, (2) the day-to-day realities and what makes it unique, (3) the impact and rewards — both tangible and intangible, and (4) how the profession has evolved and where it's heading. Use \\n\\n between paragraphs. Each paragraph should be 3-4 sentences.",
   ${salaryInstruction},
   ${educationInstruction},
-  "skills": ["Array of 8-12 specific skills needed - mix of technical and soft skills unique to this role"],
-  "dailyRoutine": "A vivid, specific description of a typical day for a ${title}. Include actual times, real tasks, and industry-specific details. 4-5 sentences.",
-  "workEnvironment": "Specific description of where and how a ${title} works - physical environment, team structure, pace, culture. 3-4 sentences.",
-  "careerPath": "Realistic career progression from entry-level to senior/expert for a ${title}. Include specific titles, year ranges, and transition points. 4-5 sentences.",
-  "weekOverview": "Detailed week breakdown with **Day:** formatting and \\n\\n between days. Specific to ${title}.",
-  "quarterOverview": "Three-month view with **Month X:** formatting and \\n\\n between months. Specific to ${title}.",
-  "yearOverview": "Annual view with **Q1-Q4:** formatting and \\n\\n between quarters. Specific to ${title}.",
-  "funFact": "One genuinely interesting, surprising, and TRUE fact about being a ${title}. Not generic.",
+  "skills": ["Array of 8-12 specific skills — mix of technical skills with real tool/framework names and soft skills unique to this role. No generic skills like 'communication' unless you explain the specific type (e.g. 'Client-facing presentation skills')"],
+  "dailyRoutine": "A vivid, minute-by-minute description of a typical day for a ${title}. Include actual times (e.g. '8:30 AM — arrive at...'), real tasks, specific tools used, and sensory details. 5-6 sentences minimum.",
+  "workEnvironment": "Specific description of where and how a ${title} works — physical space, equipment, team structure, noise level, dress code, pace. 3-4 sentences with concrete details.",
+  "careerPath": "Realistic career progression from entry-level to senior/expert for a ${title}. Include specific job titles at each stage, year ranges, salary progression hints, and key transition points. 5-6 sentences.",
+  "weekOverview": "Detailed week breakdown with **Monday:** through **Friday:** formatting and \\n\\n between days. Each day should describe specific tasks and meetings unique to ${title}. 2-3 sentences per day.",
+  "quarterOverview": "Three-month view with **Month 1:** through **Month 3:** formatting and \\n\\n between months. Describe projects, goals, and milestones. 2-3 sentences per month.",
+  "yearOverview": "Annual view with **Q1:** through **Q4:** formatting and \\n\\n between quarters. Describe seasonal patterns, reviews, and long-term projects. 2-3 sentences per quarter.",
+  "funFact": "One genuinely interesting, surprising, and TRUE fact about being a ${title}. Should make someone go 'I had no idea!' Not generic.",
   "relevantForCompanies": true or false (true for mainstream employed roles like Software Engineer, Doctor, Accountant; false for niche/freelance/unusual roles where company listings are irrelevant),
   "topCompanies": [if relevantForCompanies is true: 3-5 well-known companies${isIndia ? ' in India' : ''} that hire for this role. Each: {"name":"Company Name","domain":"company.com","description":"One sentence on why they are a great place for a ${title}","careerPageUrl":"https://careers.company.com"}. If relevantForCompanies is false, return []]
 }`;
 
     const raw = await callGroq(systemPrompt, userPrompt, {
-      temperature: 0.6,
-      maxTokens: 3000,
+      temperature: 0.65,
+      maxTokens: 3500,
       jsonMode: true,
     });
 
@@ -429,6 +519,54 @@ Return this exact JSON structure:
 
   setCache(cacheKey, result);
   return result;
+}
+
+// ─── The Good, The Bad & The Ugly ──────────────────────────────
+
+export interface GoodBadUgly {
+  good: Array<{ title: string; detail: string }>;
+  bad: Array<{ title: string; detail: string }>;
+  ugly: Array<{ title: string; detail: string }>;
+  verdict: string;
+}
+
+export async function getGoodBadUgly(jobTitle: string, signal?: AbortSignal): Promise<GoodBadUgly> {
+  const cacheKey = `gbu_${jobTitle.toLowerCase().replace(/\s+/g, '_')}`;
+  const cached = getCached<GoodBadUgly>(cacheKey);
+  if (cached) return cached;
+
+  return withRetry(async () => {
+    const raw = await callGroq(
+      'You are a brutally honest career advisor who tells it like it is. No sugarcoating, no corporate fluff. Return ONLY valid JSON.',
+      `Give an unfiltered "The Good, The Bad & The Ugly" assessment of being a "${jobTitle}".
+
+Return this exact JSON:
+{
+  "good": [
+    {"title": "Short punchy label (2-4 words)", "detail": "One honest, specific sentence about why this is genuinely great. Use concrete examples."},
+    {"title": "...", "detail": "..."},
+    {"title": "...", "detail": "..."}
+  ],
+  "bad": [
+    {"title": "Short punchy label", "detail": "One honest sentence about a real downside. No 'but on the bright side' hedging."},
+    {"title": "...", "detail": "..."},
+    {"title": "...", "detail": "..."}
+  ],
+  "ugly": [
+    {"title": "Short punchy label", "detail": "One sentence about the truly rough part that nobody talks about in career fairs."},
+    {"title": "...", "detail": "..."}
+  ],
+  "verdict": "A sharp 2-sentence final take — who thrives in this career, and who should run the other way."
+}
+
+Each array should have exactly 3 items for good, 3 for bad, and 2 for ugly. Be specific to ${jobTitle} — not generic career advice.`,
+      { temperature: 0.75, maxTokens: 800, jsonMode: true, signal }
+    );
+
+    const result = JSON.parse(raw) as GoodBadUgly;
+    setCache(cacheKey, result);
+    return result;
+  });
 }
 
 // ─── Refine Job Description ────────────────────────────────────
@@ -440,19 +578,19 @@ export async function refineJobDescription(
   previousRefinements: string[]
 ): Promise<string> {
   return withRetry(async () => {
-    const systemPrompt = `You are a career research expert helping someone understand a specific variant of a profession. Rewrite and improve the job description incorporating the user's specific context. Return ONLY the new description text - no JSON, no markdown, no quotes. The description should be 4-6 sentences, specific and vivid.`;
+    const systemPrompt = `You are a career research expert helping someone understand a SPECIFIC variant of a profession. Rewrite the job description to incorporate the user's particular context (e.g. industry, location, company size, specialization). Return ONLY the new description text — no JSON, no markdown, no quotes. The description should be 4-6 vivid, concrete sentences. Avoid generic phrases.`;
 
     const previousContext = previousRefinements.length > 0
-      ? `\nPrevious refinements: ${previousRefinements.join('; ')}`
+      ? `\nPrevious refinements already applied: ${previousRefinements.join('; ')}`
       : '';
 
     const userPrompt = `Job title: ${title}
 Current description: ${currentDescription}
 ${previousContext}
 
-The user wants to refine with: "${refinementContext}"
+The user wants to refine with this context: "${refinementContext}"
 
-Write a new description that incorporates this context. Tailored and specific.`;
+Rewrite the description to fully incorporate this context. Make it feel like it was written specifically for this variant of the role. Be concrete — mention specific tools, environments, or situations that match the refinement.`;
 
     return callGroq(systemPrompt, userPrompt, { temperature: 0.7, maxTokens: 500 });
   });
@@ -484,23 +622,24 @@ export async function generateSimulationAI(jobTitle: string, skipCache = false):
   const result = await withRetry(async () => {
     const poses = ['waking', 'walking', 'sitting', 'presenting', 'thinking', 'working', 'talking', 'eating', 'celebrating', 'tired', 'running', 'reading'];
 
-    const systemPrompt = `You are a career simulation designer. Create realistic "day in the life" scenarios. Return ONLY valid JSON, no markdown.`;
+    const systemPrompt = `You are a career simulation designer who creates immersive, realistic "day in the life" scenarios. Your scenarios should feel like you've actually worked in these jobs. Return ONLY valid JSON, no markdown.`;
 
     const userPrompt = `Create exactly 10 "day in the life" scenarios for a "${jobTitle}".
 
 Rules:
-- SPECIFIC to ${jobTitle} - real jargon, real tools, real situations
-- Chronological through a full day (morning to evening)
-- 3 choices each, only 1 correct (what a seasoned pro would do)
-- Explanations teach WHY, referencing real practices
-- Vary which index is correct (0, 1, or 2)
-- CRITICAL: The description must describe the SITUATION/CONTEXT only. Do NOT mention, hint at, or reveal which action is correct. The user must make a genuine decision. Never name the correct choice in the description.
-- Wrong choices must be plausible - things a beginner might actually do
+- SPECIFIC to ${jobTitle} — use real jargon, real tools, real software, real situations that only someone in this field would encounter
+- Chronological through a full working day (early morning to evening)
+- 3 choices each, only 1 correct (what an experienced professional would actually do)
+- Explanations should teach industry-specific knowledge — WHY is this the right approach?
+- Vary which index is correct (mix of 0, 1, and 2) — never make a pattern
+- CRITICAL: The description must paint the SITUATION/CONTEXT vividly (what you see, hear, what's happening). Do NOT mention, hint at, or reveal which action is correct. The user must make a genuine decision based on the scenario.
+- Wrong choices must be plausible — things a junior professional or someone from a different field might reasonably do
+- Include specific details: client/patient names (fictional), software tools, equipment names, technical measurements, company scenarios
 
 stickFigurePose options: ${poses.join(', ')}
 
 Return JSON object with "scenarios" key containing array of 10:
-{"scenarios": [{"time":"6:00 AM","title":"Title","description":"2-3 sentences.","stickFigurePose":"waking","choices":[{"text":"A","isCorrect":false},{"text":"B","isCorrect":true},{"text":"C","isCorrect":false}],"correctChoiceIndex":1,"explanation":"2-3 sentences."}]}`;
+{"scenarios": [{"time":"6:00 AM","title":"Short punchy title (3-5 words)","description":"2-3 vivid sentences painting the scene. What do you see? What's the urgency? What just happened?","stickFigurePose":"waking","choices":[{"text":"Specific action A","isCorrect":false},{"text":"Specific action B","isCorrect":true},{"text":"Specific action C","isCorrect":false}],"correctChoiceIndex":1,"explanation":"2-3 sentences explaining why this is the professional approach and what could go wrong with the other choices."}]}`;
 
     const raw = await callGroq(systemPrompt, userPrompt, {
       temperature: 0.7,
@@ -653,30 +792,15 @@ matchScore should be 60-98 (never 100). Be diverse in suggestions. At least one 
 
 // ─── Validate API Key ──────────────────────────────────────────
 
-export async function validateApiKey(key: string): Promise<boolean> {
-  try {
-    const response = await fetch(GROQ_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${key}`,
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [{ role: 'user', content: 'Say "ok"' }],
-        max_tokens: 5,
-      }),
-    });
-    return response.ok;
-  } catch {
-    return false;
-  }
+export async function validateApiKey(_key: string): Promise<boolean> {
+  // Built-in keys are used; no user key validation needed
+  return true;
 }
 
 // ─── AI Job Title Suggestions (Typeahead) ─────────────────────
 
 export async function getJobSuggestions(partial: string): Promise<string[]> {
-  if (!apiKey || partial.trim().length < 2) return [];
+  if (!hasApiKey() || partial.trim().length < 2) return [];
 
   const cacheKey = `suggest_${partial.trim().toLowerCase().replace(/\s+/g, '_')}`;
   const cached = getCached<string[]>(cacheKey);

@@ -5,7 +5,7 @@ import { ChevronLeft, Clock, ArrowRight, RotateCcw, CheckCircle2, XCircle, Spark
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import { generateSimulation, type SimulationScenario } from '../data/simulations';
-import { generateSimulationAI, generateSimulationSummary, hasApiKey } from '../services/ai';
+import { generateSimulationAI, generateSimulationSummary } from '../services/ai';
 import { downloadAssessmentPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
@@ -49,7 +49,7 @@ type StickFigurePose = 'waking' | 'walking' | 'sitting' | 'presenting' | 'thinki
 
 export function SimulationPage() {
   const navigate = useNavigate();
-  const { currentJob, isAIEnabled } = useApp();
+  const { currentJob } = useApp();
   const [scenarios, setScenarios] = useState<SimulationScenario[]>([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [selectedChoice, setSelectedChoice] = useState<number | null>(null);
@@ -89,46 +89,42 @@ export function SimulationPage() {
   const loadScenarios = async (skipCache: boolean) => {
     if (!currentJob) return;
 
-    if (hasApiKey()) {
-      setIsLoadingScenarios(true);
-      const messages = [
-        'Researching the daily life of a ' + currentJob.title + '...',
-        'Crafting realistic scenarios...',
-        'Building your choose-your-own-adventure...',
-        'Adding professional insights...',
-        'Almost ready...',
-      ];
-      let msgIndex = 0;
-      setLoadingMessage(messages[0]);
-      const interval = setInterval(() => {
-        msgIndex = (msgIndex + 1) % messages.length;
-        setLoadingMessage(messages[msgIndex]);
-      }, 2000);
+    setIsLoadingScenarios(true);
+    const messages = [
+      'Researching the daily life of a ' + currentJob.title + '...',
+      'Crafting realistic scenarios...',
+      'Building your choose-your-own-adventure...',
+      'Adding professional insights...',
+      'Almost ready...',
+    ];
+    let msgIndex = 0;
+    setLoadingMessage(messages[0]);
+    const interval = setInterval(() => {
+      msgIndex = (msgIndex + 1) % messages.length;
+      setLoadingMessage(messages[msgIndex]);
+    }, 2000);
 
-      try {
-        const aiScenarios = await generateSimulationAI(currentJob.title, skipCache);
-        const formatted: SimulationScenario[] = aiScenarios.map((s, i) => ({
-          id: `scenario-${i}`,
-          time: s.time,
-          title: s.title,
-          description: s.description,
-          stickFigurePose: s.stickFigurePose as StickFigurePose,
-          choices: s.choices,
-          correctChoiceIndex: s.correctChoiceIndex,
-          explanation: s.explanation,
-        }));
-        setScenarios(formatted);
-        if (!skipCache) toast.success('Simulation ready!');
-      } catch (error) {
-        console.error('AI simulation generation failed:', error);
-        toast.error('AI failed - using template scenarios');
-        setScenarios(generateSimulation(currentJob.title));
-      } finally {
-        clearInterval(interval);
-        setIsLoadingScenarios(false);
-      }
-    } else {
+    try {
+      const aiScenarios = await generateSimulationAI(currentJob.title, skipCache);
+      const formatted: SimulationScenario[] = aiScenarios.map((s, i) => ({
+        id: `scenario-${i}`,
+        time: s.time,
+        title: s.title,
+        description: s.description,
+        stickFigurePose: s.stickFigurePose as StickFigurePose,
+        choices: s.choices,
+        correctChoiceIndex: s.correctChoiceIndex,
+        explanation: s.explanation,
+      }));
+      setScenarios(formatted);
+      if (!skipCache) toast.success('Simulation ready!');
+    } catch (error) {
+      console.error('AI simulation generation failed:', error);
+      toast.error('AI failed - using template scenarios');
       setScenarios(generateSimulation(currentJob.title));
+    } finally {
+      clearInterval(interval);
+      setIsLoadingScenarios(false);
     }
   };
 
@@ -155,9 +151,7 @@ export function SimulationPage() {
       hapticSuccess();
       setIsComplete(true);
       // Generate AI summary
-      if (hasApiKey()) {
-        generateAISummary();
-      }
+      generateAISummary();
     } else {
       setCurrentIndex(prev => prev + 1);
       setSelectedChoice(null);
@@ -212,10 +206,8 @@ export function SimulationPage() {
     if (currentJob) {
       localStorage.removeItem(simResultKey(currentJob.title));
     }
-    if (hasApiKey()) {
-      await loadScenarios(true);
-      toast.success('Fresh simulation generated!');
-    }
+    await loadScenarios(true);
+    toast.success('Fresh simulation generated!');
   };
 
   const handleRedo = () => {
@@ -347,7 +339,7 @@ export function SimulationPage() {
                 <div className="h-px w-8 bg-black/20" />
                 <span className="font-[Inter] text-black/40 uppercase tracking-[0.15em] flex items-center gap-1.5" style={{ fontSize: '0.7rem' }}>
                   of a {currentJob.title}
-                  {isAIEnabled && <Sparkles size={10} className="text-black/25" />}
+                  <Sparkles size={10} className="text-black/25" />
                 </span>
                 <div className="h-px w-8 bg-black/20" />
               </div>
@@ -357,12 +349,10 @@ export function SimulationPage() {
                   You're about to experience a typical day as a {currentJob.title}.
                   {scenarios.length} scenarios from morning to night.
                 </p>
-                {isAIEnabled && (
-                  <p className="font-[Inter] text-black/30 mb-4 flex items-center justify-center gap-1.5" style={{ fontSize: '0.75rem' }}>
-                    <Sparkles size={10} />
-                    AI-generated scenarios unique to "{currentJob.title}"
-                  </p>
-                )}
+                <p className="font-[Inter] text-black/30 mb-4 flex items-center justify-center gap-1.5" style={{ fontSize: '0.75rem' }}>
+                  <Sparkles size={10} />
+                  AI-generated scenarios unique to "{currentJob.title}"
+                </p>
                 <div className="border border-black/10 p-4 text-left">
                   <p className="font-[Inter] text-black/40 mb-2" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                     How this works
@@ -694,7 +684,7 @@ export function SimulationPage() {
                   whileTap={{ scale: 0.98 }}
                 >
                   <RotateCcw size={16} className="shrink-0" />
-                  {isAIEnabled ? 'New Simulation' : 'Retry'}
+                  New Simulation
                 </motion.button>
                 {scenarios.length > 0 && (
                   <motion.button

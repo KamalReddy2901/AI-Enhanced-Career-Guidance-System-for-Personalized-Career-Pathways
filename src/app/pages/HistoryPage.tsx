@@ -325,40 +325,40 @@ export function HistoryPage() {
                           </div>
                         </div>
                       </button>
-                      {/* Quick-action buttons — always visible */}
-                      <div className="flex items-center gap-1 px-4 pb-3 pt-1 flex-wrap">
+                      {/* Quick-action icon buttons — right side */}
+                      <div className="flex items-center gap-1 px-4 pb-3 pt-1 justify-end">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleAddToCompare(entry.jobData, entry.jobTitle);
                           }}
-                          className="flex items-center gap-1 text-black/35 hover:text-black/70 transition-colors font-[Inter] border border-black/8 px-2 py-1 hover:border-black/25"
-                          style={{ fontSize: '0.63rem' }}
+                          className="text-black/25 hover:text-black/70 transition-colors p-1.5 hover:bg-black/5"
+                          title="Compare"
+                          aria-label={`Compare ${entry.jobTitle}`}
                         >
-                          <Scale size={9} />
-                          Compare
+                          <Scale size={13} />
                         </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             navigate(`/career-transition?to=${encodeURIComponent(entry.jobTitle)}`);
                           }}
-                          className="flex items-center gap-1 text-black/35 hover:text-black/70 transition-colors font-[Inter] border border-black/8 px-2 py-1 hover:border-black/25"
-                          style={{ fontSize: '0.63rem' }}
+                          className="text-black/25 hover:text-black/70 transition-colors p-1.5 hover:bg-black/5"
+                          title="Transition"
+                          aria-label={`Transition to ${entry.jobTitle}`}
                         >
-                          <ArrowLeftRight size={9} />
-                          Transition
+                          <ArrowLeftRight size={13} />
                         </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             navigate(`/roadmap?job=${encodeURIComponent(entry.jobTitle)}`);
                           }}
-                          className="flex items-center gap-1 text-black/35 hover:text-black/70 transition-colors font-[Inter] border border-black/8 px-2 py-1 hover:border-black/25"
-                          style={{ fontSize: '0.63rem' }}
+                          className="text-black/25 hover:text-black/70 transition-colors p-1.5 hover:bg-black/5"
+                          title="Roadmap"
+                          aria-label={`Roadmap for ${entry.jobTitle}`}
                         >
-                          <Map size={9} />
-                          Roadmap
+                          <Map size={13} />
                         </button>
                       </div>
                     </motion.div>

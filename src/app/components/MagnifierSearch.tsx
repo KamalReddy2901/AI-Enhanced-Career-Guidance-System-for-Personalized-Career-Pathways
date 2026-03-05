@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Sparkles, Loader2 } from 'lucide-react';
-import { JOB_TITLES, findClosestJob } from '../data/jobs';
-import { hasApiKey, getJobSuggestions } from '../services/ai';
+import { JOB_TITLES } from '../data/jobs';
+import { getJobSuggestions } from '../services/ai';
 import { sounds } from '../utils/sounds';
 
 interface MagnifierSearchProps {
@@ -33,16 +33,18 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
     return JOB_TITLES.filter(t => t.toLowerCase().includes(q)).slice(0, 7);
   }, [query]);
 
-  // Active suggestions: AI when key available, local otherwise
-  const suggestions = hasApiKey() ? aiSuggestions : localSuggestions;
+  // Active suggestions: AI-powered, with user's query as first option
+  const suggestions = (() => {
+    const q = query.trim();
+    if (!q || q.length < 2) return aiSuggestions.length > 0 ? aiSuggestions : localSuggestions;
+    const list = aiSuggestions.length > 0 ? aiSuggestions : localSuggestions;
+    // Always ensure user's exact text appears first
+    const filtered = list.filter(s => s.toLowerCase() !== q.toLowerCase());
+    return [q, ...filtered].slice(0, 8);
+  })();
 
   // AI-powered suggestions with debounce
   useEffect(() => {
-    if (!hasApiKey()) {
-      setAiSuggestions([]);
-      return;
-    }
-
     if (query.trim().length < 2) {
       setAiSuggestions([]);
       setIsFetchingSuggestions(false);
@@ -79,8 +81,7 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
     if (!searchTerm || isAnimating) return;
 
     setShowSuggestions(false);
-    const aiEnabled = hasApiKey();
-    const matched = aiEnabled ? searchTerm : findClosestJob(searchTerm);
+    const matched = searchTerm;
     setFoundJob(matched);
     setIsAnimating(true);
     setPhase('scanning');
@@ -100,19 +101,12 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
       sounds.stamp();
 
       setTimeout(async () => {
-        const aiEnabled = hasApiKey();
-        if (aiEnabled) {
-          setPhase('loading');
-          try {
-            await onSearchComplete(foundJob);
-          } finally {
-            setPhase('idle');
-            setIsAnimating(false);
-          }
-        } else {
+        setPhase('loading');
+        try {
+          await onSearchComplete(foundJob);
+        } finally {
           setPhase('idle');
           setIsAnimating(false);
-          onSearchComplete(foundJob);
         }
       }, 1200);
       return;
@@ -249,16 +243,10 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
 
             {/* Footer hint */}
             <div className="px-5 py-2 border-t border-black/8 flex items-center gap-1.5">
-              {hasApiKey() ? (
-                <p className="font-[Inter] text-black/25 flex items-center gap-1" style={{ fontSize: '0.67rem' }}>
-                  <Sparkles size={9} />
-                  AI-predicted suggestions  ·  Any job title works, even made-up ones
-                </p>
-              ) : (
-                <p className="font-[Inter] text-black/25" style={{ fontSize: '0.67rem' }}>
-                  Add a Groq API key for AI-powered suggestions
-                </p>
-              )}
+              <p className="font-[Inter] text-black/25 flex items-center gap-1" style={{ fontSize: '0.67rem' }}>
+                <Sparkles size={9} />
+                AI-predicted suggestions  ·  Any job title works, even made-up ones
+              </p>
             </div>
           </motion.div>
         )}
@@ -388,10 +376,7 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
         >
-          {hasApiKey()
-            ? 'Type any profession - even made-up ones. AI will research it for you.'
-            : 'Type any profession. We\'ll investigate it for you.'
-          }
+          Type any profession - even made-up ones. AI will research it for you.
         </motion.p>
       )}
     </div>

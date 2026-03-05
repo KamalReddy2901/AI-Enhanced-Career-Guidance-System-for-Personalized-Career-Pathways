@@ -2,9 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Map, Loader2, AlertTriangle, ChevronDown, ChevronUp, TrendingUp, Download, Share2, Clock, X } from 'lucide-react';
-import { getCareerRoadmap, type CareerRoadmap, hasApiKey, getJobSuggestions } from '../services/ai';
+import { getCareerRoadmap, type CareerRoadmap, getJobSuggestions } from '../services/ai';
 import { StickFigure } from '../components/StickFigure';
-import { ApiKeyModal } from '../components/ApiKeyModal';
+import { AskAIPanel } from '../components/AskAIPanel';
 import { downloadRoadmapPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
@@ -26,7 +26,7 @@ export function CareerRoadmapPage() {
   const [roadmap, setRoadmap] = useState<CareerRoadmap | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showApiModal, setShowApiModal] = useState(false);
+
   const [expandedStage, setExpandedStage] = useState<number | null>(0);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -50,7 +50,6 @@ export function CareerRoadmapPage() {
     setSuggestions(local);
     // Then AI suggestions
     suggestDebounce.current = setTimeout(async () => {
-      if (!hasApiKey()) return;
       setFetchingSuggestions(true);
       try {
         const ai = await getJobSuggestions(jobTitle.trim());
@@ -72,11 +71,6 @@ export function CareerRoadmapPage() {
 
   const handleGenerate = async () => {
     if (!jobTitle.trim()) return;
-    if (!hasApiKey()) {
-      setShowApiModal(true);
-      return;
-    }
-
     abortRef.current?.abort();
     abortRef.current = new AbortController();
 
@@ -114,23 +108,23 @@ export function CareerRoadmapPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="flex items-center gap-3 mb-4">
-            <Map size={22} className="text-black/40 dark:text-white/40" />
-            <p className="font-[Inter] text-black/35 dark:text-white/35 uppercase tracking-[0.15em]" style={{ fontSize: '0.65rem' }}>
+            <Map size={22} className="text-black/40" />
+            <p className="font-[Inter] text-black/35 uppercase tracking-[0.15em]" style={{ fontSize: '0.65rem' }}>
               Feature
             </p>
           </div>
-          <h1 className="font-[Playfair_Display] text-black dark:text-white leading-tight mb-3" style={{ fontSize: '2.4rem' }}>
+          <h1 className="font-[Playfair_Display] text-black leading-tight mb-3" style={{ fontSize: '2.4rem' }}>
             Career
             <br />
-            <span className="text-black/35 dark:text-white/35">Roadmap Builder</span>
+            <span className="text-black/35">Roadmap Builder</span>
           </h1>
-          <p className="font-[Inter] text-black/50 dark:text-white/50" style={{ fontSize: '0.9rem' }}>
+          <p className="font-[Inter] text-black/50" style={{ fontSize: '0.9rem' }}>
             Visualise your complete career journey from entry-level to expert — including milestones, salary progression, and key decision points.
           </p>
           {roadmapHistory.length > 0 && (
             <button
               onClick={() => setShowRoadmapHistory(true)}
-              className="mt-4 flex items-center gap-1.5 text-black/35 dark:text-white/35 hover:text-black dark:hover:text-white transition-colors font-[Inter]"
+              className="mt-4 flex items-center gap-1.5 text-black/35 hover:text-black transition-colors font-[Inter]"
               style={{ fontSize: '0.75rem' }}
             >
               <Clock size={12} />
@@ -141,12 +135,12 @@ export function CareerRoadmapPage() {
 
         {/* Input */}
         <motion.div
-          className="border-2 border-black/10 dark:border-white/10 p-6 mb-8 bg-card"
+          className="border-2 border-black/10 p-6 mb-8 bg-card"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <label className="block font-[Inter] text-black/40 dark:text-white/40 mb-2 uppercase tracking-[0.1em]" style={{ fontSize: '0.62rem' }}>
+          <label className="block font-[Inter] text-black/40 mb-2 uppercase tracking-[0.1em]" style={{ fontSize: '0.62rem' }}>
             Career / Job Title
           </label>
           <div className="flex gap-3 relative">
@@ -161,13 +155,13 @@ export function CareerRoadmapPage() {
                 onFocus={() => setInputFocused(true)}
                 onBlur={() => setTimeout(() => setInputFocused(false), 150)}
                 placeholder="e.g. Data Scientist"
-                className="w-full border border-black/15 dark:border-white/15 bg-transparent px-4 py-3 font-[Inter] text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 outline-none focus:border-black/40 dark:focus:border-white/40 transition-colors"
+                className="w-full border border-black/15 bg-transparent px-4 py-3 font-[Inter] text-black placeholder:text-black/25 outline-none focus:border-black/40 transition-colors"
                 style={{ fontSize: '0.92rem' }}
               />
               {inputFocused && (suggestions.length > 0 || (fetchingSuggestions && suggestions.length === 0)) && (
-                <div className="absolute top-full left-0 right-0 z-20 border border-black/15 dark:border-white/15 bg-card shadow-md max-h-48 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 z-20 border border-black/15 bg-card shadow-md max-h-48 overflow-y-auto">
                   {fetchingSuggestions && suggestions.length === 0 && (
-                    <div className="flex items-center gap-2 px-4 py-3 text-black/40 dark:text-white/40">
+                    <div className="flex items-center gap-2 px-4 py-3 text-black/40">
                       <Loader2 size={13} className="animate-spin" />
                       <span className="font-[Inter]" style={{ fontSize: '0.82rem' }}>Finding suggestions…</span>
                     </div>
@@ -176,7 +170,7 @@ export function CareerRoadmapPage() {
                     <button
                       key={s}
                       onMouseDown={() => { setJobTitle(s); setInputFocused(false); }}
-                      className="w-full text-left px-4 py-2.5 font-[Inter] text-black/70 dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-b border-black/5 dark:border-white/5 last:border-0"
+                      className="w-full text-left px-4 py-2.5 font-[Inter] text-black/70 hover:bg-black/5 transition-colors border-b border-black/5 last:border-0"
                       style={{ fontSize: '0.85rem' }}
                     >
                       {s}
@@ -188,7 +182,7 @@ export function CareerRoadmapPage() {
             <motion.button
               onClick={handleGenerate}
               disabled={!jobTitle.trim() || loading}
-              className="flex items-center gap-2 bg-black dark:bg-white text-white dark:text-black px-5 py-3 font-[Inter] hover:bg-black/80 dark:hover:bg-white/80 disabled:opacity-40 transition-colors shrink-0"
+              className="flex items-center gap-2 bg-black text-white px-5 py-3 font-[Inter] hover:bg-black/80 disabled:opacity-40 transition-colors shrink-0"
               style={{ fontSize: '0.85rem' }}
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
@@ -198,14 +192,7 @@ export function CareerRoadmapPage() {
             </motion.button>
           </div>
 
-          {!hasApiKey() && (
-            <p className="mt-3 font-[Inter] text-black/35 dark:text-white/35" style={{ fontSize: '0.75rem' }}>
-              ✦ Requires a free{' '}
-              <button onClick={() => setShowApiModal(true)} className="underline hover:text-black dark:hover:text-white transition-colors">
-                Groq API key
-              </button>
-            </p>
-          )}
+
         </motion.div>
 
         {/* Error */}
@@ -226,12 +213,12 @@ export function CareerRoadmapPage() {
             {[1, 2, 3, 4, 5].map((i, idx) => (
               <div key={i} className="flex gap-4">
                 <div className="flex flex-col items-center">
-                  <div className="w-4 h-4 rounded-full bg-black/10 dark:bg-white/10 animate-pulse mt-6" />
-                  {idx < 4 && <div className="w-0.5 h-16 bg-black/8 dark:bg-white/8" />}
+                  <div className="w-4 h-4 rounded-full bg-black/10 animate-pulse mt-6" />
+                  {idx < 4 && <div className="w-0.5 h-16 bg-black/8" />}
                 </div>
-                <div className="flex-1 border border-black/8 dark:border-white/8 p-4 mb-3 animate-pulse">
-                  <div className="h-4 bg-black/8 dark:bg-white/8 rounded w-1/3 mb-2" />
-                  <div className="h-3 bg-black/5 dark:bg-white/5 rounded w-2/3" />
+                <div className="flex-1 border border-black/8 p-4 mb-3 animate-pulse">
+                  <div className="h-4 bg-black/8 rounded w-1/3 mb-2" />
+                  <div className="h-3 bg-black/5 rounded w-2/3" />
                 </div>
               </div>
             ))}
@@ -247,11 +234,11 @@ export function CareerRoadmapPage() {
               transition={{ duration: 0.3 }}
             >
               {/* Title bar */}
-              <div className="border-b-2 border-black/15 dark:border-white/15 pb-4 mb-6">
-                <h2 className="font-[Playfair_Display] text-black dark:text-white" style={{ fontSize: '1.5rem' }}>
+              <div className="border-b-2 border-black/15 pb-4 mb-6">
+                <h2 className="font-[Playfair_Display] text-black" style={{ fontSize: '1.5rem' }}>
                   {roadmap.title} Roadmap
                 </h2>
-                <p className="font-[Inter] text-black/40 dark:text-white/40 mt-1" style={{ fontSize: '0.8rem' }}>
+                <p className="font-[Inter] text-black/40 mt-1" style={{ fontSize: '0.8rem' }}>
                   {roadmap.totalYears}
                 </p>
               </div>
@@ -259,7 +246,7 @@ export function CareerRoadmapPage() {
               {/* Vertical timeline */}
               <div className="relative">
                 {/* Timeline line */}
-                <div className="absolute left-[1.4rem] top-6 bottom-6 w-0.5 bg-black/8 dark:bg-white/8" />
+                <div className="absolute left-[1.4rem] top-6 bottom-6 w-0.5 bg-black/8" />
 
                 <div className="space-y-3">
                   {roadmap.stages.map((stage, i) => {
@@ -288,24 +275,24 @@ export function CareerRoadmapPage() {
                           >
                             <div>
                               <div className="flex items-center gap-3 flex-wrap">
-                                <p className="font-[Playfair_Display] text-black dark:text-white" style={{ fontSize: '1rem' }}>
+                                <p className="font-[Playfair_Display] text-black" style={{ fontSize: '1rem' }}>
                                   {stage.stage}
                                 </p>
-                                <span className="font-[Inter] text-black/35 dark:text-white/35" style={{ fontSize: '0.7rem' }}>
+                                <span className="font-[Inter] text-black/35" style={{ fontSize: '0.7rem' }}>
                                   {stage.yearsRange}
                                 </span>
                               </div>
-                              <p className="font-[Inter] text-black/55 dark:text-white/55 mt-0.5" style={{ fontSize: '0.82rem' }}>
+                              <p className="font-[Inter] text-black/55 mt-0.5" style={{ fontSize: '0.82rem' }}>
                                 {stage.role}
                               </p>
-                              <p className="font-[Inter] text-black/40 dark:text-white/40 mt-0.5" style={{ fontSize: '0.75rem' }}>
+                              <p className="font-[Inter] text-black/40 mt-0.5" style={{ fontSize: '0.75rem' }}>
                                 {stage.salary}
                               </p>
                             </div>
                             {isExpanded ? (
-                              <ChevronUp size={15} className="text-black/30 dark:text-white/30 shrink-0 ml-3" />
+                              <ChevronUp size={15} className="text-black/30 shrink-0 ml-3" />
                             ) : (
-                              <ChevronDown size={15} className="text-black/30 dark:text-white/30 shrink-0 ml-3" />
+                              <ChevronDown size={15} className="text-black/30 shrink-0 ml-3" />
                             )}
                           </button>
 
@@ -318,29 +305,29 @@ export function CareerRoadmapPage() {
                                 transition={{ duration: 0.2 }}
                                 className="overflow-hidden"
                               >
-                                <div className="px-4 pb-4 border-t border-black/8 dark:border-white/8 pt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="px-4 pb-4 border-t border-black/8 pt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                   <div>
-                                    <p className="font-[Inter] text-black/30 dark:text-white/30 mb-2 uppercase tracking-[0.08em]" style={{ fontSize: '0.6rem' }}>
+                                    <p className="font-[Inter] text-black/30 mb-2 uppercase tracking-[0.08em]" style={{ fontSize: '0.6rem' }}>
                                       Milestones
                                     </p>
                                     <ul className="space-y-1.5">
                                       {stage.milestones.map((m, j) => (
                                         <li key={j} className="flex items-start gap-2">
-                                          <TrendingUp size={11} className="text-black/25 dark:text-white/25 mt-1 shrink-0" />
-                                          <span className="font-[Inter] text-black/60 dark:text-white/60" style={{ fontSize: '0.8rem' }}>{m}</span>
+                                          <TrendingUp size={11} className="text-black/25 mt-1 shrink-0" />
+                                          <span className="font-[Inter] text-black/60" style={{ fontSize: '0.8rem' }}>{m}</span>
                                         </li>
                                       ))}
                                     </ul>
                                   </div>
                                   <div>
-                                    <p className="font-[Inter] text-black/30 dark:text-white/30 mb-2 uppercase tracking-[0.08em]" style={{ fontSize: '0.6rem' }}>
+                                    <p className="font-[Inter] text-black/30 mb-2 uppercase tracking-[0.08em]" style={{ fontSize: '0.6rem' }}>
                                       Skills to Acquire
                                     </p>
                                     <ul className="space-y-1.5">
                                       {stage.skills.map((s, j) => (
                                         <li key={j} className="flex items-start gap-2">
-                                          <span className="text-black/25 dark:text-white/25 mt-0.5">+</span>
-                                          <span className="font-[Inter] text-black/60 dark:text-white/60" style={{ fontSize: '0.8rem' }}>{s}</span>
+                                          <span className="text-black/25 mt-0.5">+</span>
+                                          <span className="font-[Inter] text-black/60" style={{ fontSize: '0.8rem' }}>{s}</span>
                                         </li>
                                       ))}
                                     </ul>
@@ -359,24 +346,24 @@ export function CareerRoadmapPage() {
               {/* Key decisions */}
               {roadmap.keyDecisions && roadmap.keyDecisions.length > 0 && (
                 <div className="mt-8">
-                  <h3 className="font-[Playfair_Display] text-black dark:text-white mb-4" style={{ fontSize: '1.1rem' }}>
+                  <h3 className="font-[Playfair_Display] text-black mb-4" style={{ fontSize: '1.1rem' }}>
                     Key Career Decisions
                   </h3>
                   <div className="space-y-3">
                     {roadmap.keyDecisions.map((kd, i) => (
-                      <div key={i} className="border border-black/10 dark:border-white/10 p-4">
+                      <div key={i} className="border border-black/10 p-4">
                         <div className="flex items-start gap-3">
-                          <div className="w-6 h-6 bg-black/8 dark:bg-white/8 flex items-center justify-center shrink-0 mt-0.5">
-                            <span className="font-[Inter] text-black/40 dark:text-white/40" style={{ fontSize: '0.65rem' }}>{i + 1}</span>
+                          <div className="w-6 h-6 bg-black/8 flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="font-[Inter] text-black/40" style={{ fontSize: '0.65rem' }}>{i + 1}</span>
                           </div>
                           <div>
-                            <p className="font-[Inter] text-black dark:text-white font-medium mb-1" style={{ fontSize: '0.88rem' }}>
+                            <p className="font-[Inter] text-black font-medium mb-1" style={{ fontSize: '0.88rem' }}>
                               {kd.decision}
                             </p>
-                            <p className="font-[Inter] text-black/40 dark:text-white/40 mb-1" style={{ fontSize: '0.75rem' }}>
+                            <p className="font-[Inter] text-black/40 mb-1" style={{ fontSize: '0.75rem' }}>
                               {kd.timing}
                             </p>
-                            <p className="font-[Inter] text-black/55 dark:text-white/55" style={{ fontSize: '0.82rem' }}>
+                            <p className="font-[Inter] text-black/55" style={{ fontSize: '0.82rem' }}>
                               {kd.impact}
                             </p>
                           </div>
@@ -389,11 +376,11 @@ export function CareerRoadmapPage() {
 
               {/* Industry outlook */}
               {roadmap.industryOutlook && (
-                <div className="mt-6 border-l-2 border-black/20 dark:border-white/20 pl-5 py-2">
-                  <p className="font-[Inter] text-black/35 dark:text-white/35 mb-1 uppercase tracking-[0.1em]" style={{ fontSize: '0.6rem' }}>
+                <div className="mt-6 border-l-2 border-black/20 pl-5 py-2">
+                  <p className="font-[Inter] text-black/35 mb-1 uppercase tracking-[0.1em]" style={{ fontSize: '0.6rem' }}>
                     Industry Outlook
                   </p>
-                  <p className="font-[Inter] text-black/60 dark:text-white/60" style={{ fontSize: '0.88rem', lineHeight: 1.7 }}>
+                  <p className="font-[Inter] text-black/60" style={{ fontSize: '0.88rem', lineHeight: 1.7 }}>
                     {roadmap.industryOutlook}
                   </p>
                 </div>
@@ -407,7 +394,7 @@ export function CareerRoadmapPage() {
               <div className="flex items-center justify-center gap-3 pb-4">
                 <motion.button
                   onClick={() => { downloadRoadmapPDF(roadmap); sounds.download(); toast.success('Downloading roadmap PDF…'); }}
-                  className="flex items-center gap-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white border border-black/10 dark:border-white/10 px-3 py-1.5 hover:border-black/25 dark:hover:border-white/25 transition-all font-[Inter]"
+                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all font-[Inter]"
                   style={{ fontSize: '0.72rem' }}
                   whileHover={{ y: -1 }}
                 >
@@ -419,7 +406,7 @@ export function CareerRoadmapPage() {
                     const url = `${window.location.origin}/roadmap?job=${encodeURIComponent(roadmap.title)}`;
                     navigator.clipboard.writeText(url).then(() => toast.success('Roadmap link copied!')).catch(() => toast.error('Could not copy link'));
                   }}
-                  className="flex items-center gap-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white border border-black/10 dark:border-white/10 px-3 py-1.5 hover:border-black/25 dark:hover:border-white/25 transition-all font-[Inter]"
+                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all font-[Inter]"
                   style={{ fontSize: '0.72rem' }}
                   whileHover={{ y: -1 }}
                 >
@@ -439,8 +426,8 @@ export function CareerRoadmapPage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <StickFigure pose="thinking" size={72} className="mx-auto mb-5 text-black/20 dark:text-white/20" />
-            <p className="font-[Inter] text-black/30 dark:text-white/30" style={{ fontSize: '0.88rem' }}>
+            <StickFigure pose="thinking" size={72} className="mx-auto mb-5 text-black/20" />
+            <p className="font-[Inter] text-black/30" style={{ fontSize: '0.88rem' }}>
               Enter a job title above to build your career roadmap.
             </p>
           </motion.div>
@@ -458,14 +445,14 @@ export function CareerRoadmapPage() {
           >
             <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowRoadmapHistory(false)} />
             <motion.div
-              className="relative bg-white dark:bg-[#1a1a18] border-2 border-black/20 dark:border-white/20 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] w-full max-w-sm mx-4 max-h-[60vh] flex flex-col"
+              className="relative bg-white border-2 border-black/20 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] w-full max-w-sm mx-4 max-h-[60vh] flex flex-col"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
             >
-              <div className="p-5 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
-                <h3 className="font-[Playfair_Display] text-black dark:text-white" style={{ fontSize: '1.05rem' }}>Recent Roadmaps</h3>
-                <button onClick={() => setShowRoadmapHistory(false)} className="text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white transition-colors">
+              <div className="p-5 border-b border-black/10 flex items-center justify-between">
+                <h3 className="font-[Playfair_Display] text-black" style={{ fontSize: '1.05rem' }}>Recent Roadmaps</h3>
+                <button onClick={() => setShowRoadmapHistory(false)} className="text-black/30 hover:text-black transition-colors">
                   <X size={18} />
                 </button>
               </div>
@@ -477,10 +464,10 @@ export function CareerRoadmapPage() {
                       setJobTitle(item.title);
                       setShowRoadmapHistory(false);
                     }}
-                    className="w-full text-left p-3 border border-black/8 dark:border-white/8 hover:border-black/20 dark:hover:border-white/20 transition-colors"
+                    className="w-full text-left p-3 border border-black/8 hover:border-black/20 transition-colors"
                   >
-                    <p className="font-[Inter] text-black/70 dark:text-white/70" style={{ fontSize: '0.85rem' }}>{item.title}</p>
-                    <p className="font-[Inter] text-black/30 dark:text-white/30 mt-0.5" style={{ fontSize: '0.7rem' }}>
+                    <p className="font-[Inter] text-black/70" style={{ fontSize: '0.85rem' }}>{item.title}</p>
+                    <p className="font-[Inter] text-black/30 mt-0.5" style={{ fontSize: '0.7rem' }}>
                       {new Date(item.date).toLocaleDateString()}
                     </p>
                   </button>
@@ -491,7 +478,13 @@ export function CareerRoadmapPage() {
         )}
       </AnimatePresence>
 
-      {showApiModal && <ApiKeyModal isOpen={showApiModal} onClose={() => setShowApiModal(false)} onKeySet={() => setShowApiModal(false)} />}
+      {roadmap && (
+        <AskAIPanel
+          contextTitle={`${roadmap.title} Roadmap`}
+          contextBody={`Career roadmap for ${roadmap.title}.\n\nSummary: ${roadmap.summary}\nStages: ${roadmap.stages?.map((s: any) => s.title).join(' → ')}`}
+        />
+      )}
+
     </div>
   );
 }

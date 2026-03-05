@@ -1,6 +1,5 @@
 import { Suspense } from 'react';
 import { RouterProvider } from 'react-router';
-import { ThemeProvider } from 'next-themes';
 import { router } from './routes';
 import { AppProvider } from './context/AppContext';
 import { AuthProvider } from './context/AuthContext';
@@ -24,16 +23,14 @@ function PageFallback() {
 
 export default function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange={false}>
-      <ErrorBoundary>
-        <AuthProvider>
-          <AppProvider>
-            <Suspense fallback={<PageFallback />}>
-              <RouterProvider router={router} />
-            </Suspense>
-          </AppProvider>
-        </AuthProvider>
-      </ErrorBoundary>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppProvider>
+          <Suspense fallback={<PageFallback />}>
+            <RouterProvider router={router} />
+          </Suspense>
+        </AppProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

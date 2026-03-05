@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Clock, Home, Sparkles, FlaskConical, Scale, Settings, Brain, Sun, Moon, Menu, X, Map, ArrowLeftRight } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import { Clock, Home, Sparkles, FlaskConical, Scale, Settings, Brain, Menu, X, Map, ArrowLeftRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { StickFigure } from './StickFigure';
@@ -10,35 +9,26 @@ import { sounds } from '../utils/sounds';
 
 export function Navbar() {
   const location = useLocation();
-  const { history, isAIEnabled } = useApp();
+  const { history } = useApp();
   const { favorites } = useFavorites();
-  const { theme, setTheme, resolvedTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const isHome = location.pathname === '/';
   const isAuthPage = location.pathname === '/auth';
 
   const historyCount = history.length + favorites.length;
 
-  // Avoid hydration mismatch for theme icon
-  useEffect(() => setMounted(true), []);
-
   // Close mobile menu on route change
   useEffect(() => setMenuOpen(false), [location.pathname]);
-
-  const isDark = resolvedTheme === 'dark';
 
   // Don't show nav items on auth page
   if (isAuthPage) return null;
 
   const navLinks = [
     { to: '/', icon: <Home size={14} />, label: 'Home', active: isHome },
-    ...(isAIEnabled ? [
-      { to: '/quiz', icon: <FlaskConical size={14} />, label: 'Quiz', active: location.pathname === '/quiz' },
-      { to: '/mood', icon: <Brain size={14} />, label: 'Mood', active: location.pathname === '/mood' },
-      { to: '/career-transition', icon: <ArrowLeftRight size={14} />, label: 'Transition', active: location.pathname === '/career-transition' },
-      { to: '/roadmap', icon: <Map size={14} />, label: 'Roadmap', active: location.pathname === '/roadmap' },
-    ] : []),
+    { to: '/quiz', icon: <FlaskConical size={14} />, label: 'Quiz', active: location.pathname === '/quiz' },
+    { to: '/mood', icon: <Brain size={14} />, label: 'Mood', active: location.pathname === '/mood' },
+    { to: '/career-transition', icon: <ArrowLeftRight size={14} />, label: 'Transition', active: location.pathname === '/career-transition' },
+    { to: '/roadmap', icon: <Map size={14} />, label: 'Roadmap', active: location.pathname === '/roadmap' },
     { to: '/compare', icon: <Scale size={14} />, label: 'Compare', active: location.pathname === '/compare' },
     {
       to: '/history',
@@ -88,40 +78,18 @@ export function Navbar() {
             ))}
 
             {/* AI badge */}
-            {isAIEnabled && (
-              <div
-                className="ml-1 flex items-center gap-1 px-2 py-1 bg-black/3 text-black/25"
-                style={{ fontSize: '0.6rem' }}
-              >
-                <Sparkles size={9} />
-                <span className="font-[Inter]">AI on</span>
-              </div>
-            )}
+            <div
+              className="ml-1 flex items-center gap-1 px-2 py-1 bg-black/3 text-black/25"
+              style={{ fontSize: '0.6rem' }}
+            >
+              <Sparkles size={9} />
+              <span className="font-[Inter]">AI on</span>
+            </div>
 
-            {/* Dark mode toggle */}
-            {mounted && (
-              <button
-                onClick={() => { sounds.toggle(); setTheme(isDark ? 'light' : 'dark'); }}
-                className="ml-1 p-2 text-black/40 hover:text-black transition-colors"
-                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                title={isDark ? 'Light mode' : 'Dark mode'}
-              >
-                {isDark ? <Sun size={15} /> : <Moon size={15} />}
-              </button>
-            )}
           </div>
 
-          {/* Mobile: dark toggle + hamburger */}
+          {/* Mobile hamburger */}
           <div className="flex md:hidden items-center gap-1">
-            {mounted && (
-              <button
-                onClick={() => setTheme(isDark ? 'light' : 'dark')}
-                className="p-2 text-black/40 hover:text-black transition-colors"
-                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {isDark ? <Sun size={16} /> : <Moon size={16} />}
-              </button>
-            )}
             <button
               onClick={() => { sounds.toggle(); setMenuOpen(prev => !prev); }}
               className="p-2 text-black/60 hover:text-black transition-colors"

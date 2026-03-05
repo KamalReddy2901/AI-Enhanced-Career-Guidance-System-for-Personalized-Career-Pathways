@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ArrowRight, Sparkles, Loader2, RotateCcw, MessageSquare, ListChecks } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
-import { getQuizResults, getQuizFromScratch, hasApiKey, type QuizResult } from '../services/ai';
+import { getQuizResults, getQuizFromScratch, type QuizResult } from '../services/ai';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
 
@@ -83,7 +83,7 @@ const QUESTIONS = [
 
 export function QuizPage() {
   const navigate = useNavigate();
-  const { searchJobAI, searchJob, searchJobPreliminary, setCurrentJob, addToHistory, setRefinementCount, isAIEnabled } = useApp();
+  const { searchJobPreliminary, setCurrentJob, setRefinementCount } = useApp();
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<QuizResult | null>(null);
@@ -109,11 +109,6 @@ export function QuizPage() {
   };
 
   const submitQuiz = async (finalAnswers: Record<string, string>) => {
-    if (!hasApiKey()) {
-      toast.error('API key required for the career quiz');
-      return;
-    }
-
     setIsLoading(true);
     try {
       const quizResult = await getQuizResults(finalAnswers);
@@ -131,7 +126,7 @@ export function QuizPage() {
   const handleExploreCareer = async (title: string) => {
     setIsExploring(title);
     try {
-      const jobData = isAIEnabled ? await searchJobPreliminary(title) : searchJob(title);
+      const jobData = await searchJobPreliminary(title);
       setCurrentJob(jobData);
       setRefinementCount(0);
       navigate('/job');
@@ -144,7 +139,6 @@ export function QuizPage() {
 
   const submitScratch = async () => {
     if (!scratchText.trim()) return;
-    if (!hasApiKey()) { toast.error('API key required — add your free Groq key in Settings'); return; }
     setIsLoading(true);
     try {
       const quizResult = await getQuizFromScratch(scratchText.trim());
