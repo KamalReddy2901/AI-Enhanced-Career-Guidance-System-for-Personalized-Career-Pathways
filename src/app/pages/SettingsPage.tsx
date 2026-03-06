@@ -162,13 +162,6 @@ export function SettingsPage() {
               onChange={(value) => setPreferences({ roadmapDetailLevel: value as 'essential' | 'detailed' | 'comprehensive' })}
             />
 
-            <ToggleSetting
-              label="Auto-load Trending Careers"
-              description="Automatically fetch trending careers when the homepage loads"
-              enabled={preferences.autoLoadTrending}
-              onToggle={() => setPreferences({ autoLoadTrending: !preferences.autoLoadTrending })}
-            />
-
             <ActionButton
               label="Reset Onboarding Tour"
               description="Show the welcome tour again on next page load"

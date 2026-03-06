@@ -1124,6 +1124,7 @@ export function JobDetailPage() {
           >
             <Play size={20} className="group-hover:translate-x-0.5 transition-transform" />
             Start Day-in-the-Life Simulation
+            <span className="inline-flex items-center gap-0.5 text-white/55 text-xs ml-1"><Zap size={11} className="fill-current" />5</span>
           </motion.button>
 
           <motion.button

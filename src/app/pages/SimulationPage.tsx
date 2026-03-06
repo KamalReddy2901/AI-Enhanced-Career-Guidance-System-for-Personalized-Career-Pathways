@@ -389,7 +389,6 @@ export function SimulationPage() {
                 whileTap={{ scale: 0.98 }}
               >
                 Begin Simulation
-                <span className="inline-flex items-center gap-0.5 text-white/60 text-xs"><Zap size={11} className="fill-current" />5</span>
                 <ArrowRight size={18} />
               </motion.button>
 

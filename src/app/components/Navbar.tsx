@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Clock, Home, Zap, FlaskConical, Scale, Settings, Brain, Menu, X, Map, ArrowLeftRight, Tag } from 'lucide-react';
+import { Clock, Home, Zap, FlaskConical, Scale, Settings, Brain, Menu, X, Map, ArrowLeftRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useUsage } from '../context/UsageContext';
@@ -34,7 +34,6 @@ export function Navbar() {
     { to: '/career-transition', icon: <ArrowLeftRight size={14} />, label: 'Transition', active: location.pathname === '/career-transition' },
     { to: '/roadmap', icon: <Map size={14} />, label: 'Roadmap', active: location.pathname === '/roadmap' },
     { to: '/compare', icon: <Scale size={14} />, label: 'Compare', active: location.pathname === '/compare' },
-    { to: '/pricing', icon: <Tag size={14} />, label: 'Pricing', active: location.pathname === '/pricing' },
     {
       to: '/history',
       icon: <Clock size={14} />,

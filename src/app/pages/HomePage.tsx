@@ -8,7 +8,6 @@ import { StickFigure } from '../components/StickFigure';
 
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
-import { usePreferences } from '../hooks/usePreferences';
 import { getTrendingCareers, type TrendingCareers, QuotaExceededError } from '../services/ai';
 import { usePaywallContext } from '../context/PaywallContext';
 import { toast } from 'sonner';
@@ -17,7 +16,6 @@ export function HomePage() {
   const navigate = useNavigate();
   const { searchJob, searchJobAI, searchJobPreliminary, setCurrentJob, addToHistory, isSearchAnimating, setIsSearchAnimating, setRefinementCount, setComparisonJob } = useApp();
   const { user, isSupabaseConfigured } = useAuth();
-  const { preferences } = usePreferences();
 
   const [trending, setTrending] = useState<TrendingCareers | null>(null);
   const [trendingLoading, setTrendingLoading] = useState(false);
@@ -64,25 +62,8 @@ export function HomePage() {
   // When Supabase is configured, show landing to logged-out users; otherwise show search
   const showLanding = isSupabaseConfigured && !user;
 
-  // Auto-load trending when the section scrolls into view (AI only)
-  useEffect(() => {
-    if (trendingFetched.current || !preferences.autoLoadTrending) return;
-    const el = trendingRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && !trendingFetched.current) {
-        trendingFetched.current = true;
-        setTrendingLoading(true);
-        getTrendingCareers()
-          .then(data => setTrending(data))
-          .catch(() => null)
-          .finally(() => setTrendingLoading(false));
-      }
-    }, { threshold: 0.2 });
-    obs.observe(el);
-    return () => obs.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Trending careers are only loaded when the user explicitly clicks "Load Trending"
+  // (auto-load is intentionally disabled)
 
   const handleLoadTrending = () => {
 

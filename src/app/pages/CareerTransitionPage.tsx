@@ -287,7 +287,7 @@ export function CareerTransitionPage() {
                         value={fromDesc}
                         onChange={e => setFromDesc(e.target.value)}
                         placeholder={fromDescLoading ? 'Auto-generating…' : 'Describe your current role…'}
-                        rows={2}
+                        rows={3}
                         disabled={fromDescLoading}
                         className="w-full border border-black/10 bg-transparent px-3 py-2 font-[Inter] text-black/70 placeholder:text-black/20 outline-none focus:border-black/30 transition-colors resize-none disabled:opacity-40 pr-6"
                         style={{ fontSize: '0.83rem' }}
@@ -304,7 +304,7 @@ export function CareerTransitionPage() {
                         value={toDesc}
                         onChange={e => setToDesc(e.target.value)}
                         placeholder={toDescLoading ? 'Auto-generating…' : 'Describe your target role…'}
-                        rows={2}
+                        rows={3}
                         disabled={toDescLoading}
                         className="w-full border border-black/10 bg-transparent px-3 py-2 font-[Inter] text-black/70 placeholder:text-black/20 outline-none focus:border-black/30 transition-colors resize-none disabled:opacity-40 pr-6"
                         style={{ fontSize: '0.83rem' }}

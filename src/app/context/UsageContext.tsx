@@ -132,7 +132,9 @@ export function UsageProvider({ children }: { children: ReactNode }) {
     const cost = CREDIT_COSTS[usageType] ?? 0;
     if (cost === 0) return;
     setCreditsRemaining(prev => Math.max(0, prev - cost));
-  }, []);
+    // Re-sync with actual Supabase value after the worker has finished writing
+    setTimeout(fetchCredits, 3000);
+  }, [fetchCredits]);
 
   const isProFeature = useCallback((feature: string): boolean => {
     return (PRO_ONLY_FEATURES as readonly string[]).includes(feature);

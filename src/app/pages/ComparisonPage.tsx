@@ -382,7 +382,7 @@ export function ComparisonPage() {
                       value={descA}
                       onChange={e => setDescA(e.target.value)}
                       placeholder={descALoading ? 'Auto-generating…' : jobA ? 'Describe your specific interpretation…' : 'Select Career A first'}
-                      rows={2}
+                      rows={3}
                       disabled={descALoading || !jobA}
                       className="w-full border border-black/10 bg-transparent px-3 py-2 font-[Inter] text-black/70 placeholder:text-black/20 outline-none focus:border-black/30 transition-colors resize-none disabled:opacity-40 pr-6"
                       style={{ fontSize: '0.83rem' }}
@@ -400,7 +400,7 @@ export function ComparisonPage() {
                       value={descB}
                       onChange={e => setDescB(e.target.value)}
                       placeholder={descBLoading ? 'Auto-generating…' : jobB ? 'Describe your specific interpretation…' : 'Select Career B first'}
-                      rows={2}
+                      rows={3}
                       disabled={descBLoading || !jobB}
                       className="w-full border border-black/10 bg-transparent px-3 py-2 font-[Inter] text-black/70 placeholder:text-black/20 outline-none focus:border-black/30 transition-colors resize-none disabled:opacity-40 pr-6"
                       style={{ fontSize: '0.83rem' }}
@@ -412,6 +412,7 @@ export function ComparisonPage() {
 
               {/* Compare button — charges ⚡2 */}
               {jobA && jobB && (
+                <div className="flex justify-center">
                 <motion.button
                   onClick={handleCompare}
                   disabled={compareLoading || descALoading || descBLoading}
@@ -428,6 +429,7 @@ export function ComparisonPage() {
                     </span>
                   )}
                 </motion.button>
+                </div>
               )}
             </motion.div>
           )}
