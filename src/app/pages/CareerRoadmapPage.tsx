@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Map, Loader2, AlertTriangle, ChevronDown, ChevronUp, TrendingUp, Download, Share2, Clock, X } from 'lucide-react';
-import { getCareerRoadmap, type CareerRoadmap, getJobSuggestions } from '../services/ai';
+import { getCareerRoadmap, type CareerRoadmap, getJobSuggestions, QuotaExceededError } from '../services/ai';
+import { usePaywallContext } from '../context/PaywallContext';
 import { StickFigure } from '../components/StickFigure';
 import { AskAIPanel } from '../components/AskAIPanel';
 import { downloadRoadmapPDF } from '../utils/pdfExport';
@@ -29,6 +30,8 @@ export function CareerRoadmapPage() {
 
   const [expandedStage, setExpandedStage] = useState<number | null>(0);
   const abortRef = useRef<AbortController | null>(null);
+
+  const { triggerPaywall } = usePaywallContext();
 
   const [inputFocused, setInputFocused] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -89,7 +92,10 @@ export function CareerRoadmapPage() {
         return updated;
       });
     } catch (err) {
-      if ((err as Error).name !== 'AbortError') {
+      if ((err as Error).name === 'AbortError') return;
+      if (err instanceof QuotaExceededError) {
+        triggerPaywall('Career Roadmap', { used: err.detail.used, limit: err.detail.limit, plan: err.detail.plan });
+      } else {
         setError((err as Error).message || 'Failed to generate roadmap.');
       }
     } finally {

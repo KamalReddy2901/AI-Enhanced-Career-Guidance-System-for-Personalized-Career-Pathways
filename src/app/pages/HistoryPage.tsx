@@ -98,12 +98,12 @@ export function HistoryPage() {
               <StickFigure pose="reading" size={60} />
               <div>
                 <h1 className="font-[Playfair_Display] text-black" style={{ fontSize: '2rem' }}>
-                  {activeTab === 'history' ? 'Investigation History' : 'Saved Careers'}
+                  {activeTab === 'history' ? 'Case Archive' : 'Pinned Cases'}
                 </h1>
                 <p className="font-[Inter] text-black/40" style={{ fontSize: '0.82rem' }}>
                   {activeTab === 'history'
-                    ? `${history.length} career${history.length !== 1 ? 's' : ''} investigated`
-                    : `${favorites.length} career${favorites.length !== 1 ? 's' : ''} bookmarked`}
+                    ? `${history.length} case${history.length !== 1 ? 's' : ''} in archive`
+                    : `${favorites.length} pinned case${favorites.length !== 1 ? 's' : ''}`}
                 </p>
               </div>
             </div>
@@ -178,7 +178,7 @@ export function HistoryPage() {
             style={{ fontSize: '0.82rem' }}
           >
             <Clock size={14} />
-            History
+            Case Archive
             {history.length > 0 && (
               <span
                 className={`px-1.5 py-0.5 font-[JetBrains_Mono] ${
@@ -200,7 +200,7 @@ export function HistoryPage() {
             style={{ fontSize: '0.82rem' }}
           >
             <Star size={14} />
-            Saved
+            Pinned Cases
             {favorites.length > 0 && (
               <span
                 className={`px-1.5 py-0.5 font-[JetBrains_Mono] ${

@@ -256,7 +256,7 @@ export function SettingsPage() {
                 </div>
                 <div className="flex-1">
                   <h4 className="font-[Inter] font-medium text-black/70 mb-1" style={{ fontSize: '0.88rem' }}>
-                    Install Career Sim
+                    Install CareerCase
                   </h4>
                   <p className="font-[Inter] text-black/40 mb-4" style={{ fontSize: '0.78rem' }}>
                     Add to your home screen for a native app experience — works offline too.
@@ -354,7 +354,7 @@ export function SettingsPage() {
                 <div className="flex flex-wrap gap-4 font-[Inter] text-black/40" style={{ fontSize: '0.72rem' }}>
                   <span>Version 1.0.0</span>
                   <span>&bull;</span>
-                  <span>Powered by Groq (Llama 3.3 70B)</span>
+                  <span>AI-powered career exploration</span>
                   <span>&bull;</span>
                   <a href="https://github.com/KamalReddy2901/career-sim" target="_blank" rel="noopener noreferrer" className="underline hover:text-black/60">GitHub</a>
                 </div>

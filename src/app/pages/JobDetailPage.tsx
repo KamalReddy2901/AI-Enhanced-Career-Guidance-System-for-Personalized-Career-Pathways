@@ -15,8 +15,10 @@ import { useApp } from '../context/AppContext';
 import { useFavorites } from '../hooks/useFavorites';
 import {
   streamChat, getRelatedCareers, getLearnMoreResources, getWorkLifeBalance, getGoodBadUgly,
+  QuotaExceededError,
   type RelatedCareer, type LearnMoreResources, type WorkLifeBalance, type GoodBadUgly
 } from '../services/ai';
+import { usePaywallContext } from '../context/PaywallContext';
 import { toast } from 'sonner';
 import { renderMarkdown } from '../utils/markdown';
 import { downloadDossierPDF } from '../utils/pdfExport';
@@ -76,6 +78,7 @@ export function JobDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentJob, setCurrentJob, searchJobAI, addToHistory, setRefinementCount, setComparisonJob } = useApp();
+  const { triggerPaywall } = usePaywallContext();
   const { addFavorite, removeFavorite, isFavorite } = useFavorites();
   const { preferences } = usePreferences();
   const [activeTimeline, setActiveTimeline] = useState<'week' | 'quarter' | 'year'>(preferences.defaultView);
@@ -233,9 +236,13 @@ export function JobDetailPage() {
       addToHistory(fresh);
       toast.success('Fresh dossier generated!');
     } catch (error) {
-      toast.error('Regeneration failed', {
-        description: error instanceof Error ? error.message : 'Please try again',
-      });
+      if (error instanceof QuotaExceededError) {
+        triggerPaywall('Career Dossier', { used: error.detail.used, limit: error.detail.limit, plan: error.detail.plan });
+      } else {
+        toast.error('Regeneration failed', {
+          description: error instanceof Error ? error.message : 'Please try again',
+        });
+      }
     } finally {
       setIsRegenerating(false);
     }
@@ -283,8 +290,12 @@ export function JobDetailPage() {
       setRelatedCareers([]);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       toast.success(`Now viewing: ${title}`);
-    } catch {
-      toast.error('Failed to load career');
+    } catch (err) {
+      if (err instanceof QuotaExceededError) {
+        triggerPaywall('Career Dossier', { used: err.detail.used, limit: err.detail.limit, plan: err.detail.plan });
+      } else {
+        toast.error('Failed to load career');
+      }
     } finally {
       setExploringRelated(null);
     }
@@ -321,15 +332,20 @@ export function JobDetailPage() {
         });
       }
     } catch (error) {
-      toast.error('Chat error');
-      setChatMessages(prev => {
-        const msgs = [...prev];
-        msgs[msgs.length - 1] = {
-          role: 'assistant',
-          text: `Sorry, I encountered an error. ${error instanceof Error ? error.message : 'Please try again.'}`
-        };
-        return msgs;
-      });
+      if (error instanceof QuotaExceededError) {
+        triggerPaywall('AI Chat', { used: error.detail.used, limit: error.detail.limit, plan: error.detail.plan });
+        setChatMessages(prev => prev.slice(0, -1)); // remove empty assistant message
+      } else {
+        toast.error('Chat error');
+        setChatMessages(prev => {
+          const msgs = [...prev];
+          msgs[msgs.length - 1] = {
+            role: 'assistant',
+            text: `Sorry, I encountered an error. ${error instanceof Error ? error.message : 'Please try again.'}`
+          };
+          return msgs;
+        });
+      }
     } finally {
       setIsStreaming(false);
     }
@@ -1019,6 +1035,70 @@ export function JobDetailPage() {
             )}
           </motion.div>
         )}
+
+        {/* ── Level Up — Affiliate Learning Links ─────────────── */}
+        {(() => {
+          const cat = currentJob.category || '';
+          type AffLink = { label: string; provider: string; url: string };
+          const links: AffLink[] = [];
+          if (cat.includes('Technology') || cat.includes('Engineering')) {
+            links.push(
+              { label: 'Top Tech Courses', provider: 'Scaler', url: 'https://www.scaler.com/courses/?utm_source=careercasehq' },
+              { label: 'Online Certifications', provider: 'Coursera', url: 'https://www.coursera.org/browse/computer-science?utm_source=careercasehq' },
+              { label: 'Project-based Learning', provider: 'Udemy', url: 'https://www.udemy.com/topic/software-development/?utm_source=careercasehq' },
+            );
+          } else if (cat.includes('Healthcare') || cat.includes('Social')) {
+            links.push(
+              { label: 'Healthcare Courses', provider: 'Coursera', url: 'https://www.coursera.org/browse/health?utm_source=careercasehq' },
+              { label: 'Clinical Skills', provider: 'Udemy', url: 'https://www.udemy.com/topic/medical/?utm_source=careercasehq' },
+            );
+          } else if (cat.includes('Finance') || cat.includes('Management')) {
+            links.push(
+              { label: 'Finance & MBA Prep', provider: 'Coursera', url: 'https://www.coursera.org/browse/business?utm_source=careercasehq' },
+              { label: 'Finance Courses', provider: 'Udemy', url: 'https://www.udemy.com/topic/finance/?utm_source=careercasehq' },
+            );
+          } else if (cat.includes('Creative') || cat.includes('Design')) {
+            links.push(
+              { label: 'Design & Creative', provider: 'Coursera', url: 'https://www.coursera.org/browse/arts-and-humanities?utm_source=careercasehq' },
+              { label: 'Creative Skills', provider: 'Udemy', url: 'https://www.udemy.com/topic/design/?utm_source=careercasehq' },
+            );
+          } else {
+            links.push(
+              { label: 'Professional Courses', provider: 'Coursera', url: 'https://www.coursera.org?utm_source=careercasehq' },
+              { label: 'Skill Building', provider: 'Udemy', url: 'https://www.udemy.com?utm_source=careercasehq' },
+            );
+          }
+          links.push({ label: 'Internships & Entry Jobs', provider: 'Internshala', url: 'https://internshala.com?utm_source=careercasehq' });
+          return (
+            <motion.div
+              className="mt-8 mb-6 print:hidden"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <div className="border border-black/8 rounded-lg p-5">
+                <p className="font-[Inter] text-black/30 uppercase tracking-[0.15em] mb-3" style={{ fontSize: '0.6rem' }}>Level Up</p>
+                <div className="flex flex-wrap gap-2">
+                  {links.map(link => (
+                    <a
+                      key={link.url}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer sponsored"
+                      className="flex items-center gap-1.5 px-3 py-1.5 border border-black/12 hover:border-black/30 hover:shadow-sm transition-all font-[Inter] text-black/60 hover:text-black"
+                      style={{ fontSize: '0.75rem' }}
+                    >
+                      <ExternalLink size={10} className="text-black/25" />
+                      <span>{link.label}</span>
+                      <span className="text-black/25">— {link.provider}</span>
+                    </a>
+                  ))}
+                </div>
+                <p className="font-[Inter] text-black/20 mt-2.5" style={{ fontSize: '0.6rem' }}>Affiliate links — we may earn a small commission at no extra cost to you</p>
+              </div>
+            </motion.div>
+          );
+        })()}
 
         <motion.div
           ref={registerSection('actions')}

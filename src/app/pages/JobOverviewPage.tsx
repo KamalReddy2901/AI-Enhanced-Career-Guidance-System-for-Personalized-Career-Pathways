@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Check, RefreshCw, ArrowRight, ChevronLeft, Sparkles, Loader2 } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
-import { refineJobDescription } from '../services/ai';
+import { refineJobDescription, QuotaExceededError } from '../services/ai';
+import { usePaywallContext } from '../context/PaywallContext';
 import { toast } from 'sonner';
 
 export function JobOverviewPage() {
@@ -31,6 +32,8 @@ export function JobOverviewPage() {
 
   if (!currentJob) return null;
 
+  const { triggerPaywall } = usePaywallContext();
+
   const handleConfirm = async () => {
     if (!currentJob) return;
     // If this is already a full dossier (has fullDescription), go straight to detail
@@ -48,8 +51,12 @@ export function JobOverviewPage() {
       addToHistory(fullJob);
       toast.success('Dossier ready!', { id: tid });
       navigate('/job/detail');
-    } catch {
-      toast.error('Failed to generate dossier — please try again', { id: tid });
+    } catch (error) {
+      if (error instanceof QuotaExceededError) {
+        triggerPaywall('Career Dossier', { used: error.detail.used, limit: error.detail.limit, plan: error.detail.plan });
+      } else {
+        toast.error('Failed to generate dossier — please try again', { id: tid });
+      }
       setIsLoadingFull(false);
     }
   };
@@ -76,8 +83,12 @@ export function JobOverviewPage() {
       setRefinementText('');
       setShowRefinement(false);
     } catch (error) {
-      console.error('Refinement failed:', error);
-      toast.error('AI refinement failed — please try again');
+      if (error instanceof QuotaExceededError) {
+        triggerPaywall('AI Refinement', { used: error.detail.used, limit: error.detail.limit, plan: error.detail.plan });
+      } else {
+        console.error('Refinement failed:', error);
+        toast.error('AI refinement failed — please try again');
+      }
     } finally {
       setIsRefining(false);
     }

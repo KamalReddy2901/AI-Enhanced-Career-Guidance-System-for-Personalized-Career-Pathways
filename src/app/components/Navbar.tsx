@@ -33,7 +33,7 @@ export function Navbar() {
     {
       to: '/history',
       icon: <Clock size={14} />,
-      label: historyCount > 0 ? `History (${historyCount})` : 'History',
+      label: historyCount > 0 ? `Case Archive (${historyCount})` : 'Case Archive',
       active: location.pathname === '/history' || location.pathname === '/favorites',
     },
     { to: '/settings', icon: <Settings size={14} />, label: 'Settings', active: location.pathname === '/settings' },
@@ -54,7 +54,7 @@ export function Navbar() {
           <Link
             to="/"
             className="flex items-center gap-2 group shrink-0"
-            aria-label="Career Simulation home"
+            aria-label="CareerCase home"
             onClick={(e) => {
               if (location.pathname === '/') {
                 e.preventDefault();
@@ -67,7 +67,7 @@ export function Navbar() {
               className="font-[Playfair_Display] tracking-tight text-black group-hover:opacity-70 transition-opacity"
               style={{ fontSize: '1.05rem' }}
             >
-              Career<span className="opacity-35">Sim</span>
+              Career<span className="opacity-35">Case</span>
             </span>
           </Link>
 

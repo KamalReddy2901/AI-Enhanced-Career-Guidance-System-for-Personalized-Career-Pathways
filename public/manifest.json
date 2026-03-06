@@ -1,7 +1,7 @@
 {
-  "name": "Career Simulation",
-  "short_name": "CareerSim",
-  "description": "Experience any career before you commit - AI-powered career exploration",
+  "name": "CareerCase",
+  "short_name": "CareerCase",
+  "description": "Experience any career before you commit — AI-powered career exploration",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

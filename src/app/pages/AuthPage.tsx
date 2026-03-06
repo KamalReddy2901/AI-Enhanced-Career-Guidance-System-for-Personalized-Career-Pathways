@@ -71,11 +71,11 @@ export function AuthPage() {
         >
           <StickFigure pose="standing" size={22} animate={false} />
           <span className="font-[Playfair_Display] text-black tracking-tight group-hover:opacity-70 transition-opacity" style={{ fontSize: '1rem' }}>
-            Career<span className="opacity-35">Sim</span>
+            Career<span className="opacity-35">Case</span>
           </span>
         </button>
         <span className="font-[JetBrains_Mono] text-black/20 hidden sm:block" style={{ fontSize: '0.6rem' }}>
-          Powered by Groq · Llama 3.3
+          AI career exploration
         </span>
       </div>
 

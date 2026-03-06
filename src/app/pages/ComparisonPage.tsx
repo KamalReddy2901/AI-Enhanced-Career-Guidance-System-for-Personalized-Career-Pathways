@@ -8,9 +8,10 @@ import { useApp } from '../context/AppContext';
 import type { JobData } from '../data/jobs';
 import {
   getWorkLifeBalance, getLearnMoreResources, getInterviewDifficulty, getGrowthOutlook,
-  getJobSuggestions,
+  getJobSuggestions, QuotaExceededError,
   type WorkLifeBalance, type LearnMoreResources, type InterviewDifficulty,
 } from '../services/ai';
+import { usePaywallContext } from '../context/PaywallContext';
 import { downloadComparisonPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
@@ -70,6 +71,7 @@ export function ComparisonPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { history, comparisonJobs, setComparisonJob, searchJobAI, addToHistory } = useApp();
+  const { triggerPaywall } = usePaywallContext();
   const [showPicker, setShowPicker] = useState<0 | 1 | null>(null);
   const [customTitle, setCustomTitle] = useState('');
   const [loadingSlot, setLoadingSlot] = useState<0 | 1 | null>(null);
@@ -203,8 +205,12 @@ export function ComparisonPage() {
       addToHistory(jobData);
       sounds.addCompare();
       setCustomTitle('');
-    } catch {
-      toast.error('Failed to load career');
+    } catch (err) {
+      if (err instanceof QuotaExceededError) {
+        triggerPaywall('Career Dossier', { used: err.detail.used, limit: err.detail.limit, plan: err.detail.plan });
+      } else {
+        toast.error('Failed to load career');
+      }
     } finally {
       setLoadingSlot(null);
     }

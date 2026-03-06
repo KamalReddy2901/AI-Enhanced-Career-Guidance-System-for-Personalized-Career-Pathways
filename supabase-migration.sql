@@ -54,3 +54,67 @@ create policy "Users can update own favorites"
 create policy "Users can delete own favorites"
   on public.career_favorites for delete
   using (auth.uid() = user_id);
+
+-- ─── User Profiles (plan / subscription status) ───────────────
+
+create table if not exists public.user_profiles (
+  id               uuid primary key default gen_random_uuid(),
+  user_id          uuid references auth.users(id) on delete cascade not null unique,
+  plan             text not null default 'free',          -- 'free' | 'pro'
+  plan_expires_at  timestamptz,                           -- null = no expiry (lifetime or ongoing)
+  pack_credits     jsonb not null default '{"dossiers":0,"simulations":0,"ai_chats":0,"pdfs":0}',
+  created_at       timestamptz default now()
+);
+
+alter table public.user_profiles enable row level security;
+
+create policy "Users can view own profile"
+  on public.user_profiles for select using (auth.uid() = user_id);
+create policy "Users can insert own profile"
+  on public.user_profiles for insert with check (auth.uid() = user_id);
+create policy "Users can update own profile"
+  on public.user_profiles for update using (auth.uid() = user_id);
+
+-- ─── Daily Usage Tracking ──────────────────────────────────────
+
+create table if not exists public.user_usage (
+  id                uuid primary key default gen_random_uuid(),
+  user_id           uuid references auth.users(id) on delete cascade not null,
+  date              date not null default current_date,
+  dossiers_used     int not null default 0,
+  simulations_used  int not null default 0,
+  ai_chats_used     int not null default 0,
+  compares_used     int not null default 0,
+  transitions_used  int not null default 0,
+  roadmaps_used     int not null default 0,
+  pdfs_used         int not null default 0,
+  created_at        timestamptz default now(),
+  unique(user_id, date)
+);
+
+alter table public.user_usage enable row level security;
+
+create policy "Users can view own usage"
+  on public.user_usage for select using (auth.uid() = user_id);
+-- Note: usage is incremented by the Cloudflare Worker using the service role key,
+-- so the user itself only needs SELECT here. INSERT/UPDATE are done via service key.
+
+-- ─── Payments ─────────────────────────────────────────────────
+
+create table if not exists public.payments (
+  id                    uuid primary key default gen_random_uuid(),
+  user_id               uuid references auth.users(id) on delete cascade not null,
+  razorpay_payment_id   text unique,
+  razorpay_order_id     text,
+  amount                int not null,  -- in paise (₹1 = 100 paise)
+  type                  text not null, -- 'subscription' | 'pack'
+  pack_type             text,          -- 'starter' | 'explorer' | 'allin' | null
+  plan_months           int default 1, -- how many months of Pro this grants
+  status                text not null default 'pending', -- 'pending' | 'success' | 'failed'
+  created_at            timestamptz default now()
+);
+
+alter table public.payments enable row level security;
+
+create policy "Users can view own payments"
+  on public.payments for select using (auth.uid() = user_id);

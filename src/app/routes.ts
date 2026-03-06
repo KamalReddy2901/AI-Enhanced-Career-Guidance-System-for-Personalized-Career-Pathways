@@ -17,6 +17,7 @@ const MoodMatchPage = lazy(() => import('./pages/MoodMatchPage').then(m => ({ de
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 const CareerTransitionPage = lazy(() => import('./pages/CareerTransitionPage').then(m => ({ default: m.CareerTransitionPage })));
 const CareerRoadmapPage = lazy(() => import('./pages/CareerRoadmapPage').then(m => ({ default: m.CareerRoadmapPage })));
+const PricingPage = lazy(() => import('./pages/PricingPage').then(m => ({ default: m.PricingPage })));
 
 export const router = createBrowserRouter([
   { path: '/', Component: RootLayout, children: [
@@ -34,6 +35,7 @@ export const router = createBrowserRouter([
     { path: 'mood', Component: MoodMatchPage },
     { path: 'career-transition', Component: CareerTransitionPage },
     { path: 'roadmap', Component: CareerRoadmapPage },
+    { path: 'pricing', Component: PricingPage },
     { path: '*', Component: NotFoundPage },
   ]},
 ]);

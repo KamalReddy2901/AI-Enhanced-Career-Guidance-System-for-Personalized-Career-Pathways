@@ -1,80 +1,73 @@
 import { toast } from 'sonner';
+import { supabase } from './supabase';
+
+// ─── Proxy / Direct config ─────────────────────────────────────
+// In production, set VITE_AI_PROXY_URL to the Cloudflare Worker URL.
+// The worker holds the Groq keys securely; the browser never sees them.
+// In development, leave VITE_AI_PROXY_URL empty to fall back to direct Groq.
+const AI_PROXY_URL = (import.meta.env.VITE_AI_PROXY_URL as string || '').trim().replace(/\/$/, '');
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'llama-3.3-70b-versatile';
+// Fallback model used only when AI_PROXY_URL is not set (dev mode).
+// In production the worker picks the model via worker/src/models.ts.
+const FALLBACK_MODEL = 'llama-3.3-70b-versatile';
 
-// ─── Built-in API Key Rotation ─────────────────────────────────
-const BUILT_IN_KEYS: string[] = (import.meta.env.VITE_GROQ_API_KEYS as string || '')
+// Direct keys — only loaded when no proxy is configured (dev fallback).
+// In production, VITE_GROQ_API_KEYS should be left unset so the bundle is clean.
+const BUILT_IN_KEYS: string[] = AI_PROXY_URL ? [] : (import.meta.env.VITE_GROQ_API_KEYS as string || '')
   .split(',')
   .map(k => k.trim())
   .filter(k => k.startsWith('gsk_'));
 
-let currentKeyIndex = Math.floor(Math.random() * BUILT_IN_KEYS.length); // start random to distribute load
-// Map of key → timestamp when it was 429'd. Keys recover after 65 seconds (Groq RPM window).
+let currentKeyIndex = Math.floor(Math.random() * Math.max(BUILT_IN_KEYS.length, 1));
 const exhaustedKeys = new Map<string, number>();
 let allKeysExhausted = false;
-
-const KEY_COOLDOWN_MS = 65_000; // 65s — slightly over Groq's 1-minute rate limit window
+const KEY_COOLDOWN_MS = 65_000;
 
 function isKeyExhausted(key: string): boolean {
   const exhaustedAt = exhaustedKeys.get(key);
   if (!exhaustedAt) return false;
-  if (Date.now() - exhaustedAt > KEY_COOLDOWN_MS) {
-    exhaustedKeys.delete(key);
-    return false;
-  }
+  if (Date.now() - exhaustedAt > KEY_COOLDOWN_MS) { exhaustedKeys.delete(key); return false; }
   return true;
 }
-
 function getActiveKey(): string {
   if (BUILT_IN_KEYS.length === 0) return '';
-  // Always reset allKeysExhausted flag — some keys may have recovered by now
   allKeysExhausted = false;
-  // Find the next non-exhausted key starting from current index
   for (let i = 0; i < BUILT_IN_KEYS.length; i++) {
     const idx = (currentKeyIndex + i) % BUILT_IN_KEYS.length;
-    if (!isKeyExhausted(BUILT_IN_KEYS[idx])) {
-      currentKeyIndex = idx;
-      return BUILT_IN_KEYS[idx];
-    }
+    if (!isKeyExhausted(BUILT_IN_KEYS[idx])) { currentKeyIndex = idx; return BUILT_IN_KEYS[idx]; }
   }
-  allKeysExhausted = true;
-  return '';
+  allKeysExhausted = true; return '';
 }
-
 function rotateToNextKey(): boolean {
-  const currentKey = BUILT_IN_KEYS[currentKeyIndex];
-  if (currentKey) exhaustedKeys.set(currentKey, Date.now());
-  // Try to find another non-exhausted key
+  const cur = BUILT_IN_KEYS[currentKeyIndex];
+  if (cur) exhaustedKeys.set(cur, Date.now());
   for (let i = 1; i < BUILT_IN_KEYS.length; i++) {
     const idx = (currentKeyIndex + i) % BUILT_IN_KEYS.length;
-    if (!isKeyExhausted(BUILT_IN_KEYS[idx])) {
-      currentKeyIndex = idx;
-      return true;
-    }
+    if (!isKeyExhausted(BUILT_IN_KEYS[idx])) { currentKeyIndex = idx; return true; }
   }
-  allKeysExhausted = true;
-  return false;
+  allKeysExhausted = true; return false;
 }
 
-// No persistent reset needed — exhaustedKeys auto-expire after KEY_COOLDOWN_MS
-
-export function getApiKey(): string {
-  return getActiveKey();
+// ─── Quota exceeded error (thrown when worker returns 402) ─────
+export class QuotaExceededError extends Error {
+  public detail: { used: number; limit: number; plan: string; quotaColumn: string };
+  constructor(detail: { used: number; limit: number; plan: string; quotaColumn: string }) {
+    super('Daily limit reached');
+    this.name = 'QuotaExceededError';
+    this.detail = detail;
+  }
 }
 
-export function setApiKey(key: string) {
-  // No-op: we use built-in keys only
-}
-
+export function getApiKey(): string { return getActiveKey(); }
+export function setApiKey(_key: string) { /* no-op: proxy handles keys */ }
 export function hasApiKey(): boolean {
+  if (AI_PROXY_URL) return true; // proxy is available
   if (BUILT_IN_KEYS.length === 0) return false;
-  // Re-check live — some keys may have recovered from their 65s cooldown
   return BUILT_IN_KEYS.some(k => !isKeyExhausted(k));
 }
-
 export function isAllKeysExhausted(): boolean {
-  // Re-check live — some keys may have recovered
+  if (AI_PROXY_URL) return false;
   return BUILT_IN_KEYS.length === 0 || !BUILT_IN_KEYS.some(k => !isKeyExhausted(k));
 }
 
@@ -148,7 +141,7 @@ async function withRetry<T>(
   throw new Error('Max retries reached');
 }
 
-// ─── Core API Call ─────────────────────────────────────────────
+// ─── Core API Call (proxy-aware) ──────────────────────────────
 
 // In-flight request deduplication map
 const pendingRequests = new Map<string, Promise<string>>();
@@ -156,147 +149,149 @@ const pendingRequests = new Map<string, Promise<string>>();
 async function callGroq(
   systemPrompt: string,
   userPrompt: string,
-  options: { temperature?: number; maxTokens?: number; jsonMode?: boolean; signal?: AbortSignal } = {}
+  options: {
+    temperature?: number;
+    maxTokens?: number;
+    jsonMode?: boolean;
+    signal?: AbortSignal;
+    usageType?: string;
+  } = {}
 ): Promise<string> {
-  const { temperature = 0.7, maxTokens = 2048, jsonMode = false, signal } = options;
+  const { temperature = 0.7, maxTokens = 2048, jsonMode = false, signal, usageType = 'unknown' } = options;
 
-  const activeKey = getActiveKey();
-  if (!activeKey) {
-    throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
+  // ── Proxy path ─────────────────────────────────────────────
+  if (AI_PROXY_URL) {
+    let jwt = '';
+    try {
+      if (supabase) {
+        const { data } = await supabase.auth.getSession();
+        jwt = data.session?.access_token ?? '';
+      }
+    } catch { /* ignore */ }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'X-Usage-Type': usageType,
+    };
+    if (jwt) headers['Authorization'] = `Bearer ${jwt}`;
+
+    const body = {
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature,
+      max_tokens: maxTokens,
+      ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
+    };
+
+    const response = await fetch(`${AI_PROXY_URL}/ai`, { method: 'POST', signal, headers, body: JSON.stringify(body) });
+
+    if (response.status === 402) {
+      const errData = await response.json().catch(() => ({})) as { detail?: { used: number; limit: number; plan: string; quotaColumn: string } };
+      throw new QuotaExceededError(errData.detail ?? { used: 0, limit: 0, plan: 'free', quotaColumn: '' });
+    }
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({})) as { error?: string };
+      throw new Error(err?.error ?? `AI service error: ${response.status}`);
+    }
+    const data = await response.json() as { choices: Array<{ message: { content: string } }> };
+    return data.choices[0]?.message?.content || '';
   }
 
-  // Deduplication: if same request is already in-flight, return that promise
+  // ── Direct Groq fallback (dev mode) ────────────────────────
+  const activeKey = getActiveKey();
+  if (!activeKey) throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
+
   const dedupKey = `${systemPrompt.slice(0, 80)}|${userPrompt.slice(0, 80)}|${temperature}|${maxTokens}`;
   const existing = pendingRequests.get(dedupKey);
   if (existing) return existing;
 
   const request = (async (): Promise<string> => {
-    // Try with current key, rotate on 429
     for (let attempt = 0; attempt < BUILT_IN_KEYS.length; attempt++) {
       const key = getActiveKey();
       if (!key) throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
-
       const response = await fetch(GROQ_API_URL, {
-        method: 'POST',
-        signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${key}`,
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-          temperature,
-          max_tokens: maxTokens,
-          ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
-        }),
+        method: 'POST', signal,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+        body: JSON.stringify({ model: FALLBACK_MODEL, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], temperature, max_tokens: maxTokens, ...(jsonMode ? { response_format: { type: 'json_object' } } : {}) }),
       });
-
-      if (response.status === 429) {
-        // Rate limited — rotate to next key
-        const hasMore = rotateToNextKey();
-        if (!hasMore) throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
-        continue;
-      }
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        const message = err?.error?.message || `Groq API error: ${response.status}`;
-        throw new Error(message);
-      }
-
-      const data = await response.json();
+      if (response.status === 429) { if (!rotateToNextKey()) throw new Error('All AI servers are busy right now. Please wait a moment and try again.'); continue; }
+      if (!response.ok) { const err = await response.json().catch(() => ({})) as { error?: { message?: string } }; throw new Error(err?.error?.message || `Groq API error: ${response.status}`); }
+      const data = await response.json() as { choices: Array<{ message: { content: string } }> };
       return data.choices[0]?.message?.content || '';
     }
     throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
   })();
 
   pendingRequests.set(dedupKey, request);
-  try {
-    return await request;
-  } finally {
-    pendingRequests.delete(dedupKey);
-  }
+  try { return await request; } finally { pendingRequests.delete(dedupKey); }
 }
 
-// ─── Streaming Groq for long-running JSON calls ────────────────
+// ─── Streaming Groq for long-running JSON calls (proxy-aware) ──
 
 export async function callGroqStreaming(
   systemPrompt: string,
   userPrompt: string,
-  options: { temperature?: number; maxTokens?: number; signal?: AbortSignal; onProgress?: (chars: number) => void } = {}
+  options: {
+    temperature?: number;
+    maxTokens?: number;
+    signal?: AbortSignal;
+    onProgress?: (chars: number) => void;
+    usageType?: string;
+  } = {}
 ): Promise<string> {
-  const { temperature = 0.7, maxTokens = 4096, signal, onProgress } = options;
+  const { temperature = 0.7, maxTokens = 4096, signal, onProgress, usageType = 'unknown' } = options;
 
-  // Try with key rotation on 429
-  for (let attempt = 0; attempt < BUILT_IN_KEYS.length; attempt++) {
-    const key = getActiveKey();
-    if (!key) throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
-
-    const response = await fetch(GROQ_API_URL, {
-      method: 'POST',
-      signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${key}`,
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature,
-        max_tokens: maxTokens,
-        stream: true,
-        response_format: { type: 'json_object' },
-      }),
-    });
-
-    if (response.status === 429) {
-      const hasMore = rotateToNextKey();
-      if (!hasMore) throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
-      continue;
-    }
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err?.error?.message || `Groq API error: ${response.status}`);
-    }
-
+  const readStream = async (response: Response): Promise<string> => {
     const reader = response.body?.getReader();
     if (!reader) throw new Error('No response stream');
-
     const decoder = new TextDecoder();
     let accumulated = '';
-
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-
       const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
-
-      for (const line of lines) {
+      for (const line of chunk.split('\n').filter(l => l.startsWith('data: '))) {
         const json = line.slice(6).trim();
         if (json === '[DONE]') continue;
         try {
-          const parsed = JSON.parse(json);
-          const delta = parsed.choices?.[0]?.delta?.content;
-          if (delta) {
-            accumulated += delta;
-            onProgress?.(accumulated.length);
-          }
-        } catch {
-          // skip malformed chunks
-        }
+          const delta = (JSON.parse(json) as { choices?: Array<{ delta?: { content?: string } }> }).choices?.[0]?.delta?.content;
+          if (delta) { accumulated += delta; onProgress?.(accumulated.length); }
+        } catch { /* skip */ }
       }
     }
-
     return accumulated;
+  };
+
+  // ── Proxy path ─────────────────────────────
+  if (AI_PROXY_URL) {
+    let jwt = '';
+    try { if (supabase) { const { data } = await supabase.auth.getSession(); jwt = data.session?.access_token ?? ''; } } catch { /* ignore */ }
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', 'X-Usage-Type': usageType, 'X-Stream': '1' };
+    if (jwt) headers['Authorization'] = `Bearer ${jwt}`;
+    const body = { messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], temperature, max_tokens: maxTokens, stream: true, response_format: { type: 'json_object' } };
+    const response = await fetch(`${AI_PROXY_URL}/ai`, { method: 'POST', signal, headers, body: JSON.stringify(body) });
+    if (response.status === 402) {
+      const errData = await response.json().catch(() => ({})) as { detail?: { used: number; limit: number; plan: string; quotaColumn: string } };
+      throw new QuotaExceededError(errData.detail ?? { used: 0, limit: 0, plan: 'free', quotaColumn: '' });
+    }
+    if (!response.ok) { const err = await response.json().catch(() => ({})) as { error?: string }; throw new Error(err?.error ?? `AI error: ${response.status}`); }
+    return readStream(response);
+  }
+
+  // ── Direct Groq fallback (dev) ──────────────
+  for (let attempt = 0; attempt < BUILT_IN_KEYS.length; attempt++) {
+    const key = getActiveKey();
+    if (!key) throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
+    const response = await fetch(GROQ_API_URL, {
+      method: 'POST', signal,
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ model: FALLBACK_MODEL, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], temperature, max_tokens: maxTokens, stream: true, response_format: { type: 'json_object' } }),
+    });
+    if (response.status === 429) { if (!rotateToNextKey()) throw new Error('All AI servers are busy right now. Please wait a moment and try again.'); continue; }
+    if (!response.ok) { const err = await response.json().catch(() => ({})) as { error?: { message?: string } }; throw new Error(err?.error?.message || `Groq error: ${response.status}`); }
+    return readStream(response);
   }
   throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
 }
@@ -308,9 +303,6 @@ export async function* streamChat(
   jobContext: string,
   messages: { role: 'user' | 'assistant'; text: string }[]
 ): AsyncGenerator<string> {
-  const key = getActiveKey();
-  if (!key) throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
-
   const systemPrompt = `You are a sharp, knowledgeable career advisor embedded in a career exploration app. The user is exploring the profession of "${jobTitle}".
 
 Context about this specific role:
@@ -336,54 +328,64 @@ Formatting rules:
     ...messages.map(m => ({ role: m.role, content: m.text })),
   ];
 
-  const response = await fetch(GROQ_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${key}`,
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: apiMessages,
-      temperature: 0.7,
-      max_tokens: 1024,
-      stream: true,
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Groq API error: ${response.status}`);
-  }
-
-  const reader = response.body?.getReader();
-  if (!reader) throw new Error('No response body');
-
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed === 'data: [DONE]') continue;
-      if (trimmed.startsWith('data: ')) {
-        try {
-          const json = JSON.parse(trimmed.slice(6));
-          const content = json.choices?.[0]?.delta?.content;
-          if (content) yield content;
-        } catch {
-          // skip malformed JSON
+  const readStream = async function* (response: Response): AsyncGenerator<string> {
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error('No response body');
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed === 'data: [DONE]') continue;
+        if (trimmed.startsWith('data: ')) {
+          try {
+            const json = JSON.parse(trimmed.slice(6)) as { choices?: Array<{ delta?: { content?: string } }> };
+            const content = json.choices?.[0]?.delta?.content;
+            if (content) yield content;
+          } catch { /* skip malformed JSON */ }
         }
       }
     }
+  };
+
+  // ── Proxy path ─────────────────────────────
+  if (AI_PROXY_URL) {
+    let jwt = '';
+    try { if (supabase) { const { data } = await supabase.auth.getSession(); jwt = data.session?.access_token ?? ''; } } catch { /* ignore */ }
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', 'X-Usage-Type': 'chat', 'X-Stream': '1' };
+    if (jwt) headers['Authorization'] = `Bearer ${jwt}`;
+    const response = await fetch(`${AI_PROXY_URL}/ai`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ messages: apiMessages, temperature: 0.7, max_tokens: 1024, stream: true }),
+    });
+    if (response.status === 402) {
+      const errData = await response.json().catch(() => ({})) as { detail?: { used: number; limit: number; plan: string; quotaColumn: string } };
+      throw new QuotaExceededError(errData.detail ?? { used: 0, limit: 0, plan: 'free', quotaColumn: '' });
+    }
+    if (!response.ok) { const err = await response.json().catch(() => ({})) as { error?: string }; throw new Error(err?.error ?? `AI error: ${response.status}`); }
+    yield* readStream(response);
+    return;
   }
+
+  // ── Direct Groq fallback (dev) ──────────────
+  const key = getActiveKey();
+  if (!key) throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
+  const response = await fetch(GROQ_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+    body: JSON.stringify({ model: FALLBACK_MODEL, messages: apiMessages, temperature: 0.7, max_tokens: 1024, stream: true }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({})) as { error?: { message?: string } };
+    throw new Error(err?.error?.message || `Groq API error: ${response.status}`);
+  }
+  yield* readStream(response);
 }
 
 // ─── Preliminary Assessment (fast, 2-field snapshot) ──────────
@@ -423,7 +425,7 @@ Return this JSON:
   "shortDescription": "3-4 vivid, concrete sentences about what a ${title} ACTUALLY does day-to-day. Mention specific tools, environments, or situations. Avoid vague phrases like 'plays a crucial role' or 'is responsible for'. Paint a picture.",
   ${salaryFmt}
 }`,
-      { temperature: 0.6, maxTokens: 400, jsonMode: true }
+      { temperature: 0.6, maxTokens: 400, jsonMode: true, usageType: 'preliminary' }
     );
     return JSON.parse(raw) as AIJobPreliminary;
   });
@@ -520,6 +522,7 @@ Return this exact JSON structure:
       temperature: 0.65,
       maxTokens: 5000,
       jsonMode: true,
+      usageType: 'dossier',
     });
 
     return JSON.parse(raw) as AIJobData;
@@ -568,7 +571,7 @@ Return this exact JSON:
 }
 
 Each array should have exactly 3 items for good, 3 for bad, and 2 for ugly. Be specific to ${jobTitle} — not generic career advice.`,
-      { temperature: 0.75, maxTokens: 800, jsonMode: true, signal }
+      { temperature: 0.75, maxTokens: 800, jsonMode: true, signal, usageType: 'gbu' }
     );
 
     const result = JSON.parse(raw) as GoodBadUgly;
@@ -600,7 +603,7 @@ The user wants to refine with this context: "${refinementContext}"
 
 Rewrite the description to fully incorporate this context. Make it feel like it was written specifically for this variant of the role. Be concrete — mention specific tools, environments, or situations that match the refinement.`;
 
-    return callGroq(systemPrompt, userPrompt, { temperature: 0.7, maxTokens: 500 });
+    return callGroq(systemPrompt, userPrompt, { temperature: 0.7, maxTokens: 500, usageType: 'refine' });
   });
 }
 
@@ -653,6 +656,7 @@ Return JSON object with "scenarios" key containing array of 10:
       temperature: 0.7,
       maxTokens: 4000,
       jsonMode: true,
+      usageType: 'simulation',
     });
 
     const parsed = JSON.parse(raw);
@@ -691,7 +695,7 @@ export async function getRelatedCareers(jobTitle: string): Promise<RelatedCareer
       `For the profession "${jobTitle}", suggest 5 related careers a person interested in this role might also want to explore.
 
 Return: {"careers":[{"title":"Career Name","similarity":"One phrase explaining the connection","description":"One sentence about why someone interested in ${jobTitle} would like this role."}]}`,
-      { temperature: 0.7, maxTokens: 600, jsonMode: true }
+      { temperature: 0.7, maxTokens: 600, jsonMode: true, usageType: 'related' }
     );
 
     const parsed = JSON.parse(raw);
@@ -738,7 +742,7 @@ Nailed: ${rightOnes.join(', ') || 'None'}
 Missed: ${wrongOnes.join(', ') || 'None'}
 
 Write the assessment exactly in the format described. Keep each bullet to one clear sentence.`,
-      { temperature: 0.7, maxTokens: 700 }
+      { temperature: 0.7, maxTokens: 700, usageType: 'simulation' }
     );
 
     return raw;
@@ -765,7 +769,7 @@ Return this exact JSON:
 }
 
 Match scores should be realistic (60–97). Order by match score descending.`,
-      { temperature: 0.75, maxTokens: 800, jsonMode: true }
+      { temperature: 0.75, maxTokens: 800, jsonMode: true, usageType: 'quiz' }
     );
     return JSON.parse(raw) as QuizResult;
   });
@@ -791,7 +795,7 @@ ${Object.entries(answers).map(([q, a]) => `Q: ${q}\nA: ${a}`).join('\n\n')}
 Return: {"careers":[{"title":"Career Name","matchScore":85,"reason":"One sentence why this matches."}],"personalityInsight":"2-3 sentence summary of their work personality based on answers."}
 
 matchScore should be 60-98 (never 100). Be diverse in suggestions. At least one unexpected career.`,
-      { temperature: 0.8, maxTokens: 800, jsonMode: true }
+      { temperature: 0.8, maxTokens: 800, jsonMode: true, usageType: 'quiz' }
     );
 
     return JSON.parse(raw) as QuizResult;
@@ -820,7 +824,7 @@ export async function getJobSuggestions(partial: string): Promise<string[]> {
       `Suggest exactly 7 real, specific job titles that match or relate to "${partial}". Include a mix of common and niche professions. Sort by relevance - most relevant first.
 
 Return: {"suggestions": ["Title 1", "Title 2", "Title 3", "Title 4", "Title 5", "Title 6", "Title 7"]}`,
-      { temperature: 0.4, maxTokens: 200, jsonMode: true }
+      { temperature: 0.4, maxTokens: 200, jsonMode: true, usageType: 'suggestion' }
     );
 
     const parsed = JSON.parse(raw);
@@ -863,7 +867,7 @@ export async function getTrendingCareers(signal?: AbortSignal): Promise<Trending
   "emerging": [{"title": "Job Title", "reason": "1 sentence describing this new role"}]
 }
 Each array should have exactly 5 items. Be specific and accurate.`,
-      { temperature: 0.5, maxTokens: 800, jsonMode: true, signal }
+      { temperature: 0.5, maxTokens: 800, jsonMode: true, signal, usageType: 'trending' }
     );
 
     const result = JSON.parse(raw) as TrendingCareers;
@@ -897,7 +901,7 @@ export async function getLearnMoreResources(jobTitle: string, signal?: AbortSign
   "books": [{"title": "Book Title", "author": "Author Name", "why": "One sentence on why it is relevant"}]
 }
 Each array should have 3-4 items. Only include real, verifiable resources.`,
-      { temperature: 0.4, maxTokens: 800, jsonMode: true, signal }
+      { temperature: 0.4, maxTokens: 800, jsonMode: true, signal, usageType: 'related' }
     );
 
     const result = JSON.parse(raw) as LearnMoreResources;
@@ -951,7 +955,7 @@ export async function getCareerTransition(
   "successStory": "A realistic example of someone who made this transition successfully (1-2 sentences)"
 }
 Include 3-4 phases. Be honest about difficulty and realistic about timeframes.`,
-      { temperature: 0.6, maxTokens: 1200, signal }
+      { temperature: 0.6, maxTokens: 1200, signal, usageType: 'transition' }
     );
 
     const result = JSON.parse(raw) as CareerTransitionPlan;
@@ -1017,7 +1021,7 @@ export async function getCareerRoadmap(jobTitle: string, signal?: AbortSignal): 
   "industryOutlook": "2-3 sentences on where this career is heading over the next decade"
 }
 Include 5 stages (Entry, Junior, Mid-level, Senior, Expert/Leadership). Use distinct colors for each stage.`,
-      { temperature: 0.6, maxTokens: 1400, signal }
+      { temperature: 0.6, maxTokens: 1400, signal, usageType: 'roadmap' }
     );
 
     const result = JSON.parse(raw) as CareerRoadmap;
@@ -1063,7 +1067,7 @@ export async function getInterviewDifficulty(jobTitle: string, signal?: AbortSig
   "notes": "One sentence on what makes interviews challenging or easy for this role."
 }
 Score: 1 = Very Easy, 2 = Easy, 3 = Moderate, 4 = Hard, 5 = Very Hard.`,
-      { temperature: 0.4, maxTokens: 200, jsonMode: true, signal }
+      { temperature: 0.4, maxTokens: 200, jsonMode: true, signal, usageType: 'interview' }
     );
 
     const result = JSON.parse(raw) as InterviewDifficulty;
@@ -1084,7 +1088,7 @@ export async function getGrowthOutlook(jobTitle: string, signal?: AbortSignal): 
       'You are a labour market analyst. Return ONLY valid JSON.',
       `Provide a one-sentence growth outlook for the "${jobTitle}" career over the next decade. Return this exact JSON:
 {"outlook": "One sentence describing whether the role is growing, stable, or declining and why."}`,
-      { temperature: 0.5, maxTokens: 150, jsonMode: true, signal }
+      { temperature: 0.5, maxTokens: 150, jsonMode: true, signal, usageType: 'related' }
     );
 
     const parsed = JSON.parse(raw) as { outlook: string };
@@ -1132,7 +1136,7 @@ Return this JSON structure with REAL scores for "${jobTitle}":
   "bestFor": "Describe the type of person whose lifestyle suits this career",
   "worstFor": "Describe the type of person who would find this career's lifestyle difficult"
 }`,
-      { temperature: 0.7, maxTokens: 900, jsonMode: true, signal }
+      { temperature: 0.7, maxTokens: 900, jsonMode: true, signal, usageType: 'wlb' }
     );
 
     const result = JSON.parse(raw) as WorkLifeBalance;

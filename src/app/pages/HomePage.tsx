@@ -9,7 +9,8 @@ import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { usePreferences } from '../hooks/usePreferences';
-import { getTrendingCareers, type TrendingCareers } from '../services/ai';
+import { getTrendingCareers, type TrendingCareers, QuotaExceededError } from '../services/ai';
+import { usePaywallContext } from '../context/PaywallContext';
 import { toast } from 'sonner';
 
 export function HomePage() {
@@ -88,6 +89,8 @@ export function HomePage() {
       .finally(() => setTrendingLoading(false));
   };
 
+  const { triggerPaywall } = usePaywallContext();
+
   const handleSearchComplete = useCallback(async (jobTitle: string) => {
     // Guard: prevent concurrent searches
     if (searchingCareer) return;
@@ -104,12 +107,16 @@ export function HomePage() {
       setRefinementCount(0);
       toast.dismiss('dossier-load');
       navigate('/job');
-    } catch {
-      const jobData = searchJob(jobTitle);
-      setCurrentJob(jobData);
-      setRefinementCount(0);
-      toast.dismiss('dossier-load');
-      navigate('/job');
+    } catch (err) {
+      if (err instanceof QuotaExceededError) {
+        triggerPaywall('Career Dossier', { used: err.detail.used, limit: err.detail.limit, plan: err.detail.plan });
+      } else {
+        const jobData = searchJob(jobTitle);
+        setCurrentJob(jobData);
+        setRefinementCount(0);
+        toast.dismiss('dossier-load');
+        navigate('/job');
+      }
     } finally {
       setSearchingCareer(null);
     }
@@ -487,7 +494,7 @@ export function HomePage() {
               The Process
             </p>
             <h2 className="font-[Playfair_Display] text-black" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)' }}>
-              How Career Sim Works
+              How CareerCase Works
             </h2>
           </motion.div>
 
@@ -497,7 +504,7 @@ export function HomePage() {
                 step: '01',
                 pose: 'searching' as const,
                 title: 'Search Any Career',
-                body: 'Type any job title - from Software Engineer to Forensic Pathologist. Career Sim knows 250+ professions in depth.',
+                body: 'Type any job title - from Software Engineer to Forensic Pathologist. CareerCase knows 250+ professions in depth.',
               },
               {
                 step: '02',
@@ -670,7 +677,7 @@ export function HomePage() {
                   There's no good answer to that question online. Job descriptions are sanitized. Salary sites are noisy. Reddit threads are biased. I wanted something that just let you <em>feel it</em> - even for five minutes.
                 </p>
                 <p>
-                  So I built Career Sim. It's the tool I wish existed when I was figuring things out. Pick a career, read the dossier, live a day, answer an interview question. Then do it again for a completely different career. Compare them. Decide.
+                  So I built CareerCase. It\'s the tool I wish existed when I was figuring things out. Pick a career, read the dossier, live a day, answer an interview question. Then do it again for a completely different career. Compare them. Decide.
                 </p>
               </div>
               <div className="mt-8 flex items-center gap-4">
@@ -755,7 +762,7 @@ export function HomePage() {
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <StickFigure pose="standing" size={28} animate={false} />
-            <span className="font-[Playfair_Display] text-black/60" style={{ fontSize: '0.92rem' }}>Career Sim</span>
+            <span className="font-[Playfair_Display] text-black/60" style={{ fontSize: '0.92rem' }}>CareerCase</span>
           </div>
           <p className="font-[Inter] text-black/30" style={{ fontSize: '0.72rem' }}>
             Built by Kamal Reddy &middot; v1.0.0
