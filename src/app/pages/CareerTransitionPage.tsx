@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, Loader2, ChevronDown, ChevronUp, CheckCircle, XCircle, AlertTriangle, ArrowLeftRight, ExternalLink, Download, Share2, Clock, X, Zap } from 'lucide-react';
-import { getCareerTransition, getJobSuggestions, type CareerTransitionPlan, QuotaExceededError } from '../services/ai';
+import { ArrowRight, Loader2, ChevronDown, ChevronUp, CheckCircle, XCircle, AlertTriangle, ArrowLeftRight, ExternalLink, Download, Share2, Clock, X, Zap, Pencil } from 'lucide-react';
+import { getCareerTransition, getQuickDescription, getJobSuggestions, type CareerTransitionPlan, QuotaExceededError } from '../services/ai';
 import { usePaywallContext } from '../context/PaywallContext';
 import { JOB_TITLES } from '../data/jobs';
 import { StickFigure } from '../components/StickFigure';
@@ -23,9 +23,27 @@ export function CareerTransitionPage() {
 
   const [fromCareer, setFromCareer] = useState(() => searchParams.get('from') || '');
   const [toCareer, setToCareer] = useState(() => searchParams.get('to') || '');
+  const [fromDesc, setFromDesc] = useState('');
+  const [toDesc, setToDesc] = useState('');
+  const [fromDescLoading, setFromDescLoading] = useState(false);
+  const [toDescLoading, setToDescLoading] = useState(false);
   const [plan, setPlan] = useState<CareerTransitionPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const fetchFromDesc = useCallback(async (title: string) => {
+    if (!title.trim()) return;
+    setFromDescLoading(true); setFromDesc('');
+    try { setFromDesc(await getQuickDescription(title.trim())); } catch { /* silent */ }
+    finally { setFromDescLoading(false); }
+  }, []);
+
+  const fetchToDesc = useCallback(async (title: string) => {
+    if (!title.trim()) return;
+    setToDescLoading(true); setToDesc('');
+    try { setToDesc(await getQuickDescription(title.trim())); } catch { /* silent */ }
+    finally { setToDescLoading(false); }
+  }, []);
 
   const [expandedPhase, setExpandedPhase] = useState<number | null>(0);
   const abortRef = useRef<AbortController | null>(null);
@@ -96,7 +114,7 @@ export function CareerTransitionPage() {
     setPlan(null);
 
     try {
-      const result = await getCareerTransition(fromCareer.trim(), toCareer.trim(), abortRef.current.signal);
+      const result = await getCareerTransition(fromCareer.trim(), toCareer.trim(), abortRef.current.signal, fromDesc.trim() || undefined, toDesc.trim() || undefined);
       setPlan(result);
       // Save to transition history
       setTransitionHistory(prev => {
@@ -167,13 +185,13 @@ export function CareerTransitionPage() {
               </label>
               <input
                 value={fromCareer}
-                onChange={e => setFromCareer(e.target.value)}
+                onChange={e => { setFromCareer(e.target.value); setFromDesc(''); }}
                 onKeyDown={e => {
-                  if (e.key === 'Enter') { setFromFocused(false); handleGenerate(); }
+                  if (e.key === 'Enter') { setFromFocused(false); fetchFromDesc(fromCareer.trim()); }
                   if (e.key === 'Escape') setFromFocused(false);
                 }}
                 onFocus={() => setFromFocused(true)}
-                onBlur={() => setTimeout(() => setFromFocused(false), 150)}
+                onBlur={() => { setTimeout(() => setFromFocused(false), 150); if (fromCareer.trim()) fetchFromDesc(fromCareer.trim()); }}
                 placeholder="e.g. Software Engineer"
                 className="w-full border border-black/15 bg-transparent px-4 py-3 font-[Inter] text-black placeholder:text-black/25 outline-none focus:border-black/40 transition-colors"
                 style={{ fontSize: '0.92rem' }}
@@ -188,7 +206,7 @@ export function CareerTransitionPage() {
                   {fromSuggestions.map(s => (
                     <button
                       key={s}
-                      onMouseDown={() => { setFromCareer(s); setFromFocused(false); }}
+                      onMouseDown={() => { setFromCareer(s); setFromFocused(false); fetchFromDesc(s); }}
                       className="w-full text-left px-4 py-2.5 font-[Inter] text-black/70 hover:bg-black/5 transition-colors border-b border-black/5 last:border-0"
                       style={{ fontSize: '0.85rem' }}
                     >
@@ -202,9 +220,8 @@ export function CareerTransitionPage() {
             <div className="flex justify-center">
               <button
                 onClick={() => {
-                  const temp = fromCareer;
-                  setFromCareer(toCareer);
-                  setToCareer(temp);
+                  const temp = fromCareer; setFromCareer(toCareer); setToCareer(temp);
+                  const tempD = fromDesc; setFromDesc(toDesc); setToDesc(tempD);
                   sounds.click();
                 }}
                 className="p-2 text-black/20 hover:text-black/50 hover:bg-black/5 transition-all rounded-full"
@@ -221,13 +238,13 @@ export function CareerTransitionPage() {
               </label>
               <input
                 value={toCareer}
-                onChange={e => setToCareer(e.target.value)}
+                onChange={e => { setToCareer(e.target.value); setToDesc(''); }}
                 onKeyDown={e => {
-                  if (e.key === 'Enter') { setToFocused(false); handleGenerate(); }
+                  if (e.key === 'Enter') { setToFocused(false); fetchToDesc(toCareer.trim()); }
                   if (e.key === 'Escape') setToFocused(false);
                 }}
                 onFocus={() => setToFocused(true)}
-                onBlur={() => setTimeout(() => setToFocused(false), 150)}
+                onBlur={() => { setTimeout(() => setToFocused(false), 150); if (toCareer.trim()) fetchToDesc(toCareer.trim()); }}
                 placeholder="e.g. Product Manager"
                 className="w-full border border-black/15 bg-transparent px-4 py-3 font-[Inter] text-black placeholder:text-black/25 outline-none focus:border-black/40 transition-colors"
                 style={{ fontSize: '0.92rem' }}
@@ -242,7 +259,7 @@ export function CareerTransitionPage() {
                   {toSuggestions.map(s => (
                     <button
                       key={s}
-                      onMouseDown={() => { setToCareer(s); setToFocused(false); }}
+                      onMouseDown={() => { setToCareer(s); setToFocused(false); fetchToDesc(s); }}
                       className="w-full text-left px-4 py-2.5 font-[Inter] text-black/70 hover:bg-black/5 transition-colors border-b border-black/5 last:border-0"
                       style={{ fontSize: '0.85rem' }}
                     >
@@ -253,6 +270,52 @@ export function CareerTransitionPage() {
               )}
             </div>
           </div>
+
+          {/* Description step — auto-generated, editable */}
+          {(fromCareer.trim() || toCareer.trim()) && (fromDescLoading || fromDesc || toDescLoading || toDesc) && (
+            <div className="mt-5 pt-4 border-t border-black/8">
+              <p className="font-[Inter] text-black/35 uppercase tracking-[0.1em] mb-3 flex items-center gap-1.5" style={{ fontSize: '0.6rem' }}>
+                <Pencil size={9} className="opacity-60" />
+                Your context <span className="normal-case tracking-normal text-black/25">(edit to tailor results)</span>
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {fromCareer.trim() && (
+                  <div>
+                    <label className="block font-[Inter] text-black/30 mb-1" style={{ fontSize: '0.68rem' }}>{fromCareer}</label>
+                    <div className="relative">
+                      <textarea
+                        value={fromDesc}
+                        onChange={e => setFromDesc(e.target.value)}
+                        placeholder={fromDescLoading ? 'Auto-generating…' : 'Describe your current role…'}
+                        rows={2}
+                        disabled={fromDescLoading}
+                        className="w-full border border-black/10 bg-transparent px-3 py-2 font-[Inter] text-black/70 placeholder:text-black/20 outline-none focus:border-black/30 transition-colors resize-none disabled:opacity-40 pr-6"
+                        style={{ fontSize: '0.83rem' }}
+                      />
+                      {fromDescLoading && <Loader2 size={11} className="animate-spin text-black/25 absolute top-2.5 right-2" />}
+                    </div>
+                  </div>
+                )}
+                {toCareer.trim() && (
+                  <div>
+                    <label className="block font-[Inter] text-black/30 mb-1" style={{ fontSize: '0.68rem' }}>{toCareer}</label>
+                    <div className="relative">
+                      <textarea
+                        value={toDesc}
+                        onChange={e => setToDesc(e.target.value)}
+                        placeholder={toDescLoading ? 'Auto-generating…' : 'Describe your target role…'}
+                        rows={2}
+                        disabled={toDescLoading}
+                        className="w-full border border-black/10 bg-transparent px-3 py-2 font-[Inter] text-black/70 placeholder:text-black/20 outline-none focus:border-black/30 transition-colors resize-none disabled:opacity-40 pr-6"
+                        style={{ fontSize: '0.83rem' }}
+                      />
+                      {toDescLoading && <Loader2 size={11} className="animate-spin text-black/25 absolute top-2.5 right-2" />}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="mt-5 flex items-center gap-4">
             <motion.button

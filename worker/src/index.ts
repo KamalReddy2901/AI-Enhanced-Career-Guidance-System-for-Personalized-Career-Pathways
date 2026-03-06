@@ -23,7 +23,7 @@ function cors(origin: string | null) {
   return {
     'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Usage-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Usage-Type, X-Stream',
     'Access-Control-Max-Age': '86400',
   };
 }
@@ -106,19 +106,28 @@ async function getUserProfile(env: Env, userId: string): Promise<UserProfile> {
     `/user_profiles?user_id=eq.${userId}&select=plan,plan_expires_at,credits_remaining,pro_daily_used,pro_daily_reset`,
     'GET',
   );
-  const defaultProfile: UserProfile = { plan: 'free', credits_remaining: FREE_STARTING_CREDITS, pro_daily_used: 0, pro_daily_reset: null };
+
+  // If Supabase is unreachable or returns an error, surface it — do NOT fall back
+  // to a fake default profile (that would silently allow unlimited free usage).
   if (!resp.ok) {
-    await supabaseRequest(env, '/user_profiles', 'POST', {
+    const errBody = await resp.text().catch(() => '');
+    throw new Error(`Supabase GET user_profiles failed (${resp.status}): ${errBody}`);
+  }
+
+  const rows = await resp.json() as Array<{ plan: string; plan_expires_at: string | null; credits_remaining: number | null; pro_daily_used: number | null; pro_daily_reset: string | null }>;
+
+  if (!rows.length) {
+    // New user — create their profile, then return the default.
+    const createResp = await supabaseRequest(env, '/user_profiles', 'POST', {
       user_id: userId, plan: 'free', credits_remaining: FREE_STARTING_CREDITS, pro_daily_used: 0,
     });
-    return defaultProfile;
+    if (!createResp.ok) {
+      const errBody = await createResp.text().catch(() => '');
+      throw new Error(`Supabase POST user_profiles failed (${createResp.status}): ${errBody}`);
+    }
+    return { plan: 'free', credits_remaining: FREE_STARTING_CREDITS, pro_daily_used: 0, pro_daily_reset: null };
   }
-  const rows = await resp.json() as Array<{ plan: string; plan_expires_at: string | null; credits_remaining: number | null; pro_daily_used: number | null; pro_daily_reset: string | null }>;  if (!rows.length) {
-    await supabaseRequest(env, '/user_profiles', 'POST', {
-      user_id: userId, plan: 'free', credits_remaining: FREE_STARTING_CREDITS, pro_daily_used: 0,
-    });
-    return defaultProfile;
-  }
+
   const { plan, plan_expires_at, credits_remaining, pro_daily_used, pro_daily_reset } = rows[0];
   const activePlan = (plan === 'pro' && plan_expires_at && new Date(plan_expires_at) < new Date()) ? 'free' : plan;
   return {
@@ -275,20 +284,30 @@ export default {
         return jsonResponse({ error: 'Authentication required', code: 'UNAUTHENTICATED' }, 401, origin);
       }
 
-      const { allowed, creditsRemaining, creditCost: cost, plan, dailyLimitHit } = await checkAndDeductCredits(
-        env,
-        jwtPayload.sub,
-        usageType,
-      );
+      try {
+        const { allowed, creditsRemaining, creditCost: cost, plan, dailyLimitHit } = await checkAndDeductCredits(
+          env,
+          jwtPayload.sub,
+          usageType,
+        );
 
-      if (!allowed) {
+        if (!allowed) {
+          return jsonResponse(
+            {
+              error: dailyLimitHit ? 'Daily Pro credit limit reached' : 'Insufficient credits',
+              code: 'INSUFFICIENT_CREDITS',
+              detail: { creditsRemaining, creditCost: cost, plan, dailyLimitHit: dailyLimitHit ?? false },
+            },
+            402,
+            origin,
+          );
+        }
+      } catch (err) {
+        // Supabase is unreachable or misconfigured — block the request, don't allow free usage
+        const message = err instanceof Error ? err.message : 'Unknown error';
         return jsonResponse(
-          {
-            error: dailyLimitHit ? 'Daily Pro credit limit reached' : 'Insufficient credits',
-            code: 'INSUFFICIENT_CREDITS',
-            detail: { creditsRemaining, creditCost: cost, plan, dailyLimitHit: dailyLimitHit ?? false },
-          },
-          402,
+          { error: `Credit check failed: ${message}`, code: 'CREDIT_CHECK_ERROR' },
+          503,
           origin,
         );
       }

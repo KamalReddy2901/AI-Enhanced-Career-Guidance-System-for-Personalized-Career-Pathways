@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Map, Loader2, AlertTriangle, ChevronDown, ChevronUp, TrendingUp, Download, Share2, Clock, X, Zap } from 'lucide-react';
-import { getCareerRoadmap, type CareerRoadmap, getJobSuggestions, QuotaExceededError } from '../services/ai';
+import { Map, Loader2, AlertTriangle, ChevronDown, ChevronUp, TrendingUp, Download, Share2, Clock, X, Zap, Pencil } from 'lucide-react';
+import { getCareerRoadmap, getQuickDescription, type CareerRoadmap, getJobSuggestions, QuotaExceededError } from '../services/ai';
 import { usePaywallContext } from '../context/PaywallContext';
 import { StickFigure } from '../components/StickFigure';
 import { AskAIPanel } from '../components/AskAIPanel';
@@ -24,9 +24,22 @@ export function CareerRoadmapPage() {
   const [searchParams] = useSearchParams();
 
   const [jobTitle, setJobTitle] = useState(() => searchParams.get('job') || '');
+  const [description, setDescription] = useState('');
+  const [descLoading, setDescLoading] = useState(false);
   const [roadmap, setRoadmap] = useState<CareerRoadmap | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const fetchDescription = useCallback(async (title: string) => {
+    if (!title.trim()) return;
+    setDescLoading(true);
+    setDescription('');
+    try {
+      const desc = await getQuickDescription(title.trim());
+      setDescription(desc);
+    } catch { /* silent — user can type manually */ }
+    finally { setDescLoading(false); }
+  }, []);
 
   const [expandedStage, setExpandedStage] = useState<number | null>(0);
   const abortRef = useRef<AbortController | null>(null);
@@ -82,7 +95,7 @@ export function CareerRoadmapPage() {
     setRoadmap(null);
 
     try {
-      const result = await getCareerRoadmap(jobTitle.trim(), abortRef.current.signal);
+      const result = await getCareerRoadmap(jobTitle.trim(), abortRef.current.signal, description.trim() || undefined);
       setRoadmap(result);
       // Save to roadmap history
       const entry = { title: jobTitle.trim(), date: new Date().toISOString() };
@@ -149,57 +162,82 @@ export function CareerRoadmapPage() {
           <label className="block font-[Inter] text-black/40 mb-2 uppercase tracking-[0.1em]" style={{ fontSize: '0.62rem' }}>
             Career / Job Title
           </label>
-          <div className="flex gap-3 relative">
-            <div className="flex-1 relative">
-              <input
-                value={jobTitle}
-                onChange={e => setJobTitle(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') { setInputFocused(false); handleGenerate(); }
-                  if (e.key === 'Escape') setInputFocused(false);
-                }}
-                onFocus={() => setInputFocused(true)}
-                onBlur={() => setTimeout(() => setInputFocused(false), 150)}
-                placeholder="e.g. Data Scientist"
-                className="w-full border border-black/15 bg-transparent px-4 py-3 font-[Inter] text-black placeholder:text-black/25 outline-none focus:border-black/40 transition-colors"
-                style={{ fontSize: '0.92rem' }}
+          <div className="relative">
+            <input
+              value={jobTitle}
+              onChange={e => { setJobTitle(e.target.value); setDescription(''); }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') { setInputFocused(false); fetchDescription(jobTitle); }
+                if (e.key === 'Escape') setInputFocused(false);
+              }}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => { setTimeout(() => setInputFocused(false), 150); if (jobTitle.trim()) fetchDescription(jobTitle.trim()); }}
+              placeholder="e.g. Data Scientist"
+              className="w-full border border-black/15 bg-transparent px-4 py-3 font-[Inter] text-black placeholder:text-black/25 outline-none focus:border-black/40 transition-colors"
+              style={{ fontSize: '0.92rem' }}
+            />
+            {inputFocused && (suggestions.length > 0 || (fetchingSuggestions && suggestions.length === 0)) && (
+              <div className="absolute top-full left-0 right-0 z-20 border border-black/15 bg-card shadow-md max-h-48 overflow-y-auto">
+                {fetchingSuggestions && suggestions.length === 0 && (
+                  <div className="flex items-center gap-2 px-4 py-3 text-black/40">
+                    <Loader2 size={13} className="animate-spin" />
+                    <span className="font-[Inter]" style={{ fontSize: '0.82rem' }}>Finding suggestions…</span>
+                  </div>
+                )}
+                {suggestions.map(s => (
+                  <button
+                    key={s}
+                    onMouseDown={() => { setJobTitle(s); setInputFocused(false); fetchDescription(s); }}
+                    className="w-full text-left px-4 py-2.5 font-[Inter] text-black/70 hover:bg-black/5 transition-colors border-b border-black/5 last:border-0"
+                    style={{ fontSize: '0.85rem' }}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Description step — auto-generated, editable */}
+          {jobTitle.trim() && (descLoading || description) && (
+            <div className="mt-5 pt-4 border-t border-black/8">
+              <div className="flex items-center justify-between mb-2">
+                <label className="font-[Inter] text-black/35 uppercase tracking-[0.1em]" style={{ fontSize: '0.6rem' }}>
+                  <Pencil size={9} className="inline mr-1 opacity-60" />
+                  Your context <span className="normal-case tracking-normal text-black/25">(edit to tailor results to your situation)</span>
+                </label>
+                {descLoading && <Loader2 size={11} className="animate-spin text-black/25 shrink-0" />}
+              </div>
+              <textarea
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                placeholder={descLoading ? 'Auto-generating…' : 'Describe your specific version of this role…'}
+                rows={2}
+                disabled={descLoading}
+                className="w-full border border-black/10 bg-transparent px-3 py-2.5 font-[Inter] text-black/70 placeholder:text-black/20 outline-none focus:border-black/30 transition-colors resize-none disabled:opacity-40"
+                style={{ fontSize: '0.85rem' }}
               />
-              {inputFocused && (suggestions.length > 0 || (fetchingSuggestions && suggestions.length === 0)) && (
-                <div className="absolute top-full left-0 right-0 z-20 border border-black/15 bg-card shadow-md max-h-48 overflow-y-auto">
-                  {fetchingSuggestions && suggestions.length === 0 && (
-                    <div className="flex items-center gap-2 px-4 py-3 text-black/40">
-                      <Loader2 size={13} className="animate-spin" />
-                      <span className="font-[Inter]" style={{ fontSize: '0.82rem' }}>Finding suggestions…</span>
-                    </div>
-                  )}
-                  {suggestions.map(s => (
-                    <button
-                      key={s}
-                      onMouseDown={() => { setJobTitle(s); setInputFocused(false); }}
-                      className="w-full text-left px-4 py-2.5 font-[Inter] text-black/70 hover:bg-black/5 transition-colors border-b border-black/5 last:border-0"
-                      style={{ fontSize: '0.85rem' }}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
+          )}
+
+          {/* Generate button */}
+          <div className="mt-4 flex items-center gap-4">
             <motion.button
               onClick={handleGenerate}
               disabled={!jobTitle.trim() || loading}
-              className="flex items-center gap-2 bg-black text-white px-5 py-3 font-[Inter] hover:bg-black/80 disabled:opacity-40 transition-colors shrink-0"
+              className="flex items-center gap-2 bg-black text-white px-5 py-3 font-[Inter] hover:bg-black/80 disabled:opacity-40 transition-colors"
               style={{ fontSize: '0.85rem' }}
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
             >
               {loading ? <Loader2 size={15} className="animate-spin" /> : <Map size={15} />}
               {loading ? 'Building…' : 'Build Roadmap'}
-              {!loading && <span className="inline-flex items-center gap-0.5 text-white/60 text-xs"><Zap size={10} className="fill-current" />2</span>}
+              {!loading && <span className="inline-flex items-center gap-0.5 text-white/60 text-xs ml-0.5"><Zap size={10} className="fill-current" />2</span>}
             </motion.button>
+            {descLoading && !loading && (
+              <span className="font-[Inter] text-black/30 text-xs">Generating context…</span>
+            )}
           </div>
-
-
         </motion.div>
 
         {/* Error */}

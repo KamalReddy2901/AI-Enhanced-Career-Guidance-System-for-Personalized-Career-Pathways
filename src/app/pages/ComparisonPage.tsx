@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, ArrowRight, X, Scale, Loader2, Download, Share2, Search, Sparkles } from 'lucide-react';
+import { ChevronLeft, ArrowRight, X, Scale, Loader2, Download, Share2, Search, Sparkles, Pencil, Zap } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { AskAIPanel } from '../components/AskAIPanel';
 import { useApp } from '../context/AppContext';
 import type { JobData } from '../data/jobs';
 import {
   getWorkLifeBalance, getLearnMoreResources, getInterviewDifficulty, getGrowthOutlook,
-  getJobSuggestions, QuotaExceededError,
+  getJobSuggestions, getQuickDescription, getComparisonInsight, QuotaExceededError,
   type WorkLifeBalance, type LearnMoreResources, type InterviewDifficulty,
 } from '../services/ai';
 import { usePaywallContext } from '../context/PaywallContext';
@@ -87,6 +87,15 @@ export function ComparisonPage() {
   const [growthA, setGrowthA] = useState<string | null>(null);
   const [growthB, setGrowthB] = useState<string | null>(null);
   const [growthLoading, setGrowthLoading] = useState(false);
+  // Preliminary descriptions
+  const [descA, setDescA] = useState('');
+  const [descB, setDescB] = useState('');
+  const [descALoading, setDescALoading] = useState(false);
+  const [descBLoading, setDescBLoading] = useState(false);
+  // Gated detailed comparison
+  const [compareTriggered, setCompareTriggered] = useState(false);
+  const [insight, setInsight] = useState('');
+  const [compareLoading, setCompareLoading] = useState(false);
   // AI suggestions for compare search
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [fetchingSuggestions, setFetchingSuggestions] = useState(false);
@@ -160,30 +169,72 @@ export function ComparisonPage() {
     return () => { clearTimeout(timeout); setFetchingSuggestions(false); };
   }, [customTitle]);
 
-  // Lazy-load WLB and certifications when both jobs are set
+  // Auto-fetch description for Career A when jobA changes
   useEffect(() => {
+    if (!jobA) { setDescA(''); return; }
+    setCompareTriggered(false); setInsight('');
+    setWlbA(null); setWlbB(null); setLearnMoreA(null); setLearnMoreB(null);
+    setDiffA(null); setDiffB(null); setGrowthA(null); setGrowthB(null);
+    setDescALoading(true); setDescA('');
+    getQuickDescription(jobA.title)
+      .then(d => setDescA(d))
+      .catch(() => {})
+      .finally(() => setDescALoading(false));
+  }, [jobA?.title]);
+
+  // Auto-fetch description for Career B when jobB changes
+  useEffect(() => {
+    if (!jobB) { setDescB(''); return; }
+    setCompareTriggered(false); setInsight('');
+    setWlbA(null); setWlbB(null); setLearnMoreA(null); setLearnMoreB(null);
+    setDiffA(null); setDiffB(null); setGrowthA(null); setGrowthB(null);
+    setDescBLoading(true); setDescB('');
+    getQuickDescription(jobB.title)
+      .then(d => setDescB(d))
+      .catch(() => {})
+      .finally(() => setDescBLoading(false));
+  }, [jobB?.title]);
+
+  // handleCompare — explicitly triggered by button, charges 'compare' credits
+  const handleCompare = useCallback(async () => {
     if (!jobA || !jobB) return;
-    setWlbLoading(true);
-    Promise.all([getWorkLifeBalance(jobA.title), getWorkLifeBalance(jobB.title)])
-      .then(([a, b]) => { setWlbA(a); setWlbB(b); })
-      .catch(() => {})
-      .finally(() => setWlbLoading(false));
-    setLearnLoading(true);
-    Promise.all([getLearnMoreResources(jobA.title), getLearnMoreResources(jobB.title)])
-      .then(([a, b]) => { setLearnMoreA(a); setLearnMoreB(b); })
-      .catch(() => {})
-      .finally(() => setLearnLoading(false));
-    setDiffLoading(true);
-    Promise.all([getInterviewDifficulty(jobA.title), getInterviewDifficulty(jobB.title)])
-      .then(([a, b]) => { setDiffA(a); setDiffB(b); })
-      .catch(() => {})
-      .finally(() => setDiffLoading(false));
-    setGrowthLoading(true);
-    Promise.all([getGrowthOutlook(jobA.title), getGrowthOutlook(jobB.title)])
-      .then(([a, b]) => { setGrowthA(a); setGrowthB(b); })
-      .catch(() => {})
-      .finally(() => setGrowthLoading(false));
-  }, [jobA?.title, jobB?.title]);
+    setCompareLoading(true);
+    try {
+      // getComparisonInsight charges 'compare' (2 credits)
+      const ins = await getComparisonInsight(jobA.title, descA, jobB.title, descB);
+      setInsight(ins);
+      setCompareTriggered(true);
+      // Now load all free enrichments in parallel
+      setWlbLoading(true);
+      Promise.all([getWorkLifeBalance(jobA.title), getWorkLifeBalance(jobB.title)])
+        .then(([a, b]) => { setWlbA(a); setWlbB(b); })
+        .catch(() => {})
+        .finally(() => setWlbLoading(false));
+      setLearnLoading(true);
+      Promise.all([getLearnMoreResources(jobA.title), getLearnMoreResources(jobB.title)])
+        .then(([a, b]) => { setLearnMoreA(a); setLearnMoreB(b); })
+        .catch(() => {})
+        .finally(() => setLearnLoading(false));
+      setDiffLoading(true);
+      Promise.all([getInterviewDifficulty(jobA.title), getInterviewDifficulty(jobB.title)])
+        .then(([a, b]) => { setDiffA(a); setDiffB(b); })
+        .catch(() => {})
+        .finally(() => setDiffLoading(false));
+      setGrowthLoading(true);
+      Promise.all([getGrowthOutlook(jobA.title), getGrowthOutlook(jobB.title)])
+        .then(([a, b]) => { setGrowthA(a); setGrowthB(b); })
+        .catch(() => {})
+        .finally(() => setGrowthLoading(false));
+    } catch (err) {
+      if (err instanceof QuotaExceededError) {
+        triggerPaywall('Career Comparison', err.detail);
+      } else {
+        toast.error('Failed to run comparison — please try again.');
+      }
+    } finally {
+      setCompareLoading(false);
+    }
+  }, [jobA, jobB, descA, descB, triggerPaywall]);
 
   const handleShare = () => {
     const params = new URLSearchParams();
@@ -308,14 +359,94 @@ export function ComparisonPage() {
           />
         </div>
 
-        {/* Comparison Table */}
+        {/* Preliminary Descriptions + Compare CTA */}
         <AnimatePresence>
-          {jobA && jobB && (
+          {(jobA || jobB) && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="border-2 border-black/10 p-5 mb-6 bg-card"
+            >
+              <p className="font-[Inter] text-black/35 uppercase tracking-[0.1em] mb-4 flex items-center gap-1.5" style={{ fontSize: '0.6rem' }}>
+                <Pencil size={9} className="opacity-60" />
+                Your context <span className="normal-case tracking-normal text-black/25">(edit to tailor the comparison to your exact idea of each role)</span>
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                {/* Description A */}
+                <div>
+                  <label className="block font-[Inter] text-black/30 mb-1.5" style={{ fontSize: '0.68rem' }}>
+                    {jobA?.title || 'Career A'}
+                  </label>
+                  <div className="relative">
+                    <textarea
+                      value={descA}
+                      onChange={e => setDescA(e.target.value)}
+                      placeholder={descALoading ? 'Auto-generating…' : jobA ? 'Describe your specific interpretation…' : 'Select Career A first'}
+                      rows={2}
+                      disabled={descALoading || !jobA}
+                      className="w-full border border-black/10 bg-transparent px-3 py-2 font-[Inter] text-black/70 placeholder:text-black/20 outline-none focus:border-black/30 transition-colors resize-none disabled:opacity-40 pr-6"
+                      style={{ fontSize: '0.83rem' }}
+                    />
+                    {descALoading && <Loader2 size={11} className="animate-spin text-black/25 absolute top-2.5 right-2" />}
+                  </div>
+                </div>
+                {/* Description B */}
+                <div>
+                  <label className="block font-[Inter] text-black/30 mb-1.5" style={{ fontSize: '0.68rem' }}>
+                    {jobB?.title || 'Career B'}
+                  </label>
+                  <div className="relative">
+                    <textarea
+                      value={descB}
+                      onChange={e => setDescB(e.target.value)}
+                      placeholder={descBLoading ? 'Auto-generating…' : jobB ? 'Describe your specific interpretation…' : 'Select Career B first'}
+                      rows={2}
+                      disabled={descBLoading || !jobB}
+                      className="w-full border border-black/10 bg-transparent px-3 py-2 font-[Inter] text-black/70 placeholder:text-black/20 outline-none focus:border-black/30 transition-colors resize-none disabled:opacity-40 pr-6"
+                      style={{ fontSize: '0.83rem' }}
+                    />
+                    {descBLoading && <Loader2 size={11} className="animate-spin text-black/25 absolute top-2.5 right-2" />}
+                  </div>
+                </div>
+              </div>
+
+              {/* Compare button — charges ⚡2 */}
+              {jobA && jobB && (
+                <motion.button
+                  onClick={handleCompare}
+                  disabled={compareLoading || descALoading || descBLoading}
+                  className="flex items-center gap-2 bg-black text-white px-5 py-2.5 font-[Inter] hover:bg-black/80 disabled:opacity-40 transition-colors"
+                  style={{ fontSize: '0.85rem' }}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                >
+                  {compareLoading ? <Loader2 size={14} className="animate-spin" /> : <Scale size={14} />}
+                  {compareLoading ? 'Comparing…' : 'Compare Careers'}
+                  {!compareLoading && (
+                    <span className="inline-flex items-center gap-0.5 text-white/55 text-xs ml-0.5">
+                      <Zap size={10} className="fill-current" />2
+                    </span>
+                  )}
+                </motion.button>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Comparison Table — shown after Compare is clicked */}
+        <AnimatePresence>
+          {compareTriggered && jobA && jobB && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="border-2 border-black/15"
             >
+              {/* AI Insight */}
+              {insight && (
+                <div className="p-5 border-b border-black/8 bg-black/2">
+                  <p className="font-[Inter] text-black/60 italic" style={{ fontSize: '0.85rem' }}>{insight}</p>
+                </div>
+              )}
               {/* Header Row */}
               <div className="grid grid-cols-[1fr_120px_1fr] gap-0 border-b-2 border-black/15 bg-black/3">
                 <div className="p-4 text-center">

@@ -962,7 +962,9 @@ export interface CareerTransitionPlan {
 export async function getCareerTransition(
   fromTitle: string,
   toTitle: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  fromDesc?: string,
+  toDesc?: string,
 ): Promise<CareerTransitionPlan> {
   const currency = (() => { try { return (JSON.parse(localStorage.getItem('careersim_preferences') || '{}').currency as 'INR' | 'USD') || 'INR'; } catch { return 'INR' as const; } })();
   const isIndia = currency === 'INR';
@@ -973,7 +975,7 @@ export async function getCareerTransition(
   return withRetry(async () => {
     const raw = await callGroqStreaming(
       'You are a career transition coach. Return ONLY valid JSON. Be specific and practical.',
-      `Create a detailed career transition plan from "${fromTitle}" to "${toTitle}"${isIndia ? ' in the Indian job market context. Use INR (LPA format) for salary figures, reference Indian certifications, companies and platforms where relevant.' : ''}. Return this exact JSON:
+      `Create a detailed career transition plan from "${fromTitle}" to "${toTitle}"${isIndia ? ' in the Indian job market context. Use INR (LPA format) for salary figures, reference Indian certifications, companies and platforms where relevant.' : ''}.${fromDesc || toDesc ? ` User's specific context: ${fromDesc ? `"${fromTitle}" = "${fromDesc}".` : ''}${toDesc ? ` "${toTitle}" = "${toDesc}".` : ''} Factor this in for a tailored plan.` : ''} Return this exact JSON:
 {
   "fromTitle": "${fromTitle}",
   "toTitle": "${toTitle}",
@@ -998,6 +1000,21 @@ Include 3-4 phases. Be honest about difficulty and realistic about timeframes.`,
   });
 }
 
+// ─── Quick one-line description (free, standard model) ──────────
+
+export async function getQuickDescription(jobTitle: string, signal?: AbortSignal): Promise<string> {
+  const prefs = (() => { try { return JSON.parse(localStorage.getItem('careersim_preferences') || '{}') as Record<string, string>; } catch { return {} as Record<string, string>; } })();
+  const isIndia = ((prefs.currency as string) || 'INR') === 'INR';
+  return withRetry(async () => {
+    const raw = await callGroq(
+      'You are a career expert. Write exactly one clear sentence (max 25 words) describing a specific, concrete interpretation of this job title. Mention specialisation, sector, and work setting. Return ONLY the sentence — no quotes, no extra text.',
+      `Job title: "${jobTitle}"${isIndia ? ' in the Indian job market.' : '.'}`,
+      { temperature: 0.4, maxTokens: 80, signal, usageType: 'preliminary' }
+    );
+    return raw.trim().replace(/^["']|["']$/g, '');
+  });
+}
+
 // ─── Career Roadmap ────────────────────────────────────────────
 
 export interface CareerRoadmap {
@@ -1016,12 +1033,13 @@ export interface CareerRoadmap {
   industryOutlook: string;
 }
 
-export async function getCareerRoadmap(jobTitle: string, signal?: AbortSignal): Promise<CareerRoadmap> {
+export async function getCareerRoadmap(jobTitle: string, signal?: AbortSignal, description?: string): Promise<CareerRoadmap> {
   const prefs = (() => { try { return JSON.parse(localStorage.getItem('careersim_preferences') || '{}') as Record<string, string>; } catch { return {} as Record<string, string>; } })();
   const currency = (prefs.currency as 'INR' | 'USD') || 'INR';
   const detailLevel = (prefs.roadmapDetailLevel as 'essential' | 'detailed' | 'comprehensive') || 'detailed';
   const isIndia = currency === 'INR';
-  const cacheKey = `roadmap_${jobTitle.toLowerCase().replace(/\s+/g, '_')}_${currency.toLowerCase()}_${detailLevel}`;
+  const descKey = description ? `_${description.slice(0, 40).replace(/\s+/g, '_')}` : '';
+  const cacheKey = `roadmap_${jobTitle.toLowerCase().replace(/\s+/g, '_')}_${currency.toLowerCase()}_${detailLevel}${descKey}`;
   const cached = getCached<CareerRoadmap>(cacheKey);
   if (cached) return cached;
 
@@ -1034,7 +1052,7 @@ export async function getCareerRoadmap(jobTitle: string, signal?: AbortSignal): 
   return withRetry(async () => {
     const raw = await callGroqStreaming(
       'You are a career development strategist. Return ONLY valid JSON. Be specific to this profession.',
-      `Create a comprehensive career roadmap for "${jobTitle}"${isIndia ? ' in the Indian job market. Use INR (LPA format) for salaries, reference relevant Indian companies, certifications (e.g. GATE, CA, UPSC where relevant), and realistic Indian career progression timelines.' : ''}. ${detailInstruction} Return this exact JSON:
+      `Create a comprehensive career roadmap for "${jobTitle}"${isIndia ? ' in the Indian job market. Use INR (LPA format) for salaries, reference relevant Indian companies, certifications (e.g. GATE, CA, UPSC where relevant), and realistic Indian career progression timelines.' : ''}.${description ? ` The user's specific context for this role: "${description}" — tailor the roadmap to this specialisation and setting.` : ''} ${detailInstruction} Return this exact JSON:
 {
   "title": "${jobTitle}",
   "totalYears": "e.g. 20+ years to reach peak",
@@ -1129,6 +1147,29 @@ export async function getGrowthOutlook(jobTitle: string, signal?: AbortSignal): 
     const result = parsed.outlook || '';
     setCache(cacheKey, result);
     return result;
+  });
+}
+
+// ─── Comparison insight — charges 'compare' credits ─────────────
+
+export async function getComparisonInsight(
+  titleA: string, descA: string,
+  titleB: string, descB: string,
+  signal?: AbortSignal,
+): Promise<string> {
+  const prefs = (() => { try { return JSON.parse(localStorage.getItem('careersim_preferences') || '{}') as Record<string, string>; } catch { return {} as Record<string, string>; } })();
+  const isIndia = ((prefs.currency as string) || 'INR') === 'INR';
+  return withRetry(async () => {
+    const raw = await callGroq(
+      'You are a career counsellor. Return ONLY valid JSON.',
+      `Compare these two careers and give a sharp 2-3 sentence verdict covering: which suits which type of person, the key tradeoff, and which has better long-term prospects${isIndia ? ' in India' : ''}.
+Career A: "${titleA}"${descA ? ` — ${descA}` : ''}
+Career B: "${titleB}"${descB ? ` — ${descB}` : ''}
+Return JSON: {"insight": "2-3 sentence comparison and verdict"}`,
+      { temperature: 0.6, maxTokens: 220, jsonMode: true, signal, usageType: 'compare' }
+    );
+    const parsed = JSON.parse(raw) as { insight: string };
+    return parsed.insight || '';
   });
 }
 
