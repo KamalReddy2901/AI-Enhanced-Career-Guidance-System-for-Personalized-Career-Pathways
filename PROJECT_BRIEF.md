@@ -12,7 +12,8 @@ CareerCase is a **mobile-first PWA (Progressive Web App)** that lets users explo
 depth using AI — simulations, day-in-the-life breakdowns, roadmaps, interview prep, comparisons —
 before committing to that path. Think of it as "test driving" a career.
 
-- **Live URL:** `https://careercasehq.pages.dev` (Cloudflare Pages)
+- **Live URL (old):** `https://career-sim.pages.dev` → renaming to `https://careercasehq.pages.dev`
+- **Worker URL:** `https://careercaseai.kamalreddi2901.workers.dev`
 - **Audience:** Indian students and early-career professionals (18–28)
 - **Pricing:** INR (₹). Designed to be affordable for Indian market.
 - **Language:** English
@@ -424,7 +425,7 @@ When Razorpay account is approved:
 |---|---|---|
 | `VITE_SUPABASE_URL` | `https://mmwgnsggnllwgshipnwh.supabase.co` | same |
 | `VITE_SUPABASE_ANON_KEY` | `eyJ...` (in `.env.local`) | same |
-| `VITE_AI_PROXY_URL` | _(empty — uses direct Groq)_ | `https://careercaseai.<sub>.workers.dev` |
+| `VITE_AI_PROXY_URL` | _(empty — uses direct Groq)_ | `https://careercaseai.kamalreddi2901.workers.dev` |
 | `VITE_GROQ_API_KEYS` | 10 comma-separated keys | _(must be empty/unset in production)_ |
 | `VITE_POSTHOG_KEY` | _(empty — analytics off)_ | `phc_xxxxx` |
 
