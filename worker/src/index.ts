@@ -18,7 +18,7 @@ export interface Env {
 // ─── Helpers ───────────────────────────────────────────────────
 
 function cors(origin: string | null) {
-  const allowed = ['https://career-sim.pages.dev', 'https://careercasehq.pages.dev', 'https://careercase.pages.dev', 'http://localhost:5173', 'http://localhost:5174'];
+  const allowed = ['https://career-sim.pages.dev', 'https://careercasehq.pages.dev', 'https://careercase.pages.dev', 'https://careercase.kamrede.page', 'http://localhost:5173', 'http://localhost:5174'];
   const allowOrigin = (origin && allowed.includes(origin)) ? origin : allowed[0];
   return {
     'Access-Control-Allow-Origin': allowOrigin,
