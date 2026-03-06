@@ -164,3 +164,25 @@ DO $$ BEGIN
     ALTER TABLE public.user_profiles DROP COLUMN pack_credits;
   END IF;
 END $$;
+-- ─── Shared Trending Cache ─────────────────────────────────────
+-- Stores one AI-generated trending-careers result per day.
+-- The first visitor of each day triggers the AI call; all subsequent
+-- visitors read from this table (no additional AI calls needed).
+
+CREATE TABLE IF NOT EXISTS public.trending_cache (
+  id         bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  cache_date date NOT NULL UNIQUE,
+  data       jsonb NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE public.trending_cache ENABLE ROW LEVEL SECURITY;
+
+-- Anyone can read (public data — no PII)
+CREATE POLICY "Public read trending cache"
+  ON public.trending_cache FOR SELECT USING (true);
+
+-- Anyone (including unauthenticated) can insert — the AI call is free (0 credits,
+-- usageType 'trending') and the UNIQUE constraint on cache_date prevents duplicates.
+CREATE POLICY "Public insert trending cache"
+  ON public.trending_cache FOR INSERT WITH CHECK (true);

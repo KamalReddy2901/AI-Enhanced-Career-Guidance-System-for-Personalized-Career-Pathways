@@ -62,19 +62,27 @@ export function HomePage() {
   // When Supabase is configured, show landing to logged-out users; otherwise show search
   const showLanding = isSupabaseConfigured && !user;
 
-  // Trending careers are only loaded when the user explicitly clicks "Load Trending"
-  // (auto-load is intentionally disabled)
-
-  const handleLoadTrending = () => {
-
-    if (trendingFetched.current) return;
-    trendingFetched.current = true;
-    setTrendingLoading(true);
-    getTrendingCareers()
-      .then(data => setTrending(data))
-      .catch(() => null)
-      .finally(() => setTrendingLoading(false));
-  };
+  // Auto-load shared trending list when the section scrolls into view.
+  // getTrendingCareers() reads from Supabase daily cache first — the AI is only called
+  // once per day (by whichever visitor first scrolls here), then everyone else gets the
+  // cached result instantly. Users cannot manually refresh the list.
+  useEffect(() => {
+    const el = trendingRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && !trendingFetched.current) {
+        trendingFetched.current = true;
+        setTrendingLoading(true);
+        getTrendingCareers()
+          .then(data => setTrending(data))
+          .catch(() => null)
+          .finally(() => setTrendingLoading(false));
+      }
+    }, { threshold: 0.2 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSearchComplete = useCallback(async (jobTitle: string) => {
     // Guard: prevent concurrent searches

@@ -887,10 +887,31 @@ export interface TrendingCareers {
 }
 
 export async function getTrendingCareers(signal?: AbortSignal): Promise<TrendingCareers> {
-  const cacheKey = 'trending_careers_v1';
-  const cached = getCached<TrendingCareers>(cacheKey);
-  if (cached) return cached;
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const localCacheKey = `trending_careers_${today}`;
 
+  // 1. Check localStorage (fast path — avoids Supabase round-trip on same-session revisit)
+  const localCached = getCached<TrendingCareers>(localCacheKey);
+  if (localCached) return localCached;
+
+  // 2. Check Supabase shared daily cache — no AI call needed if populated by any earlier visitor
+  if (supabase) {
+    try {
+      const { data } = await supabase
+        .from('trending_cache')
+        .select('data')
+        .eq('cache_date', today)
+        .single();
+      if (data?.data) {
+        setCache(localCacheKey, data.data as TrendingCareers);
+        return data.data as TrendingCareers;
+      }
+    } catch {
+      // Supabase unavailable — fall through to AI call
+    }
+  }
+
+  // 3. No cache found — first visitor of the day: generate with AI and save for everyone
   return withRetry(async () => {
     const raw = await callGroq(
       'You are a career trends analyst. Return ONLY valid JSON. Base trends on current job market data (AI adoption, automation, demographic shifts, green economy, remote work).',
@@ -905,7 +926,17 @@ Each array should have exactly 5 items. Be specific and accurate.`,
     );
 
     const result = JSON.parse(raw) as TrendingCareers;
-    setCache(cacheKey, result);
+    setCache(localCacheKey, result);
+
+    // Persist to Supabase — upsert so concurrent first-visitors don't cause duplicate errors
+    if (supabase) {
+      supabase
+        .from('trending_cache')
+        .upsert({ cache_date: today, data: result }, { onConflict: 'cache_date' })
+        .then(() => null)
+        .catch(() => null); // fire-and-forget; not critical
+    }
+
     return result;
   });
 }
