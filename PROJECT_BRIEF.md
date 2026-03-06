@@ -12,7 +12,7 @@ CareerCase is a **mobile-first PWA (Progressive Web App)** that lets users explo
 depth using AI — simulations, day-in-the-life breakdowns, roadmaps, interview prep, comparisons —
 before committing to that path. Think of it as "test driving" a career.
 
-- **Live URL:** `https://careercase.kamrede.page` (custom domain → Cloudflare Pages `careercase.pages.dev`)
+- **Live URL:** `https://careercase.pages.dev` (Cloudflare Pages; `careercase.kamrede.page` also points here as a custom domain)
 - **Worker URL:** `https://careercaseai.kamalreddi2901.workers.dev`
 - **Audience:** Indian students and early-career professionals (18–28)
 - **Pricing:** INR (₹). Designed to be affordable for Indian market.
