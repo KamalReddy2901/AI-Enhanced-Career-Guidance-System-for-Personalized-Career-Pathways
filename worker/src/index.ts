@@ -1,9 +1,9 @@
 import {
   MODELS,
   USAGE_MODEL_TIER,
-  QUOTA_COLUMN,
-  FREE_DAILY_LIMITS,
-  PRO_DAILY_LIMITS,
+  CREDIT_COSTS,
+  FREE_STARTING_CREDITS,
+  PRO_DAILY_CREDITS,
 } from './models';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
@@ -91,66 +91,85 @@ function rotateKey(keys: string[], usedKey: string): void {
   exhaustedKeys.set(usedKey, Date.now());
 }
 
-// ─── Usage check + increment ───────────────────────────────────
+// ─── Credit check + deduction ──────────────────────────────────
 
-async function getUserPlan(env: Env, userId: string): Promise<string> {
-  const resp = await supabaseRequest(
-    env,
-    `/user_profiles?user_id=eq.${userId}&select=plan,plan_expires_at`,
-    'GET',
-  );
-  if (!resp.ok) return 'free';
-  const rows = await resp.json() as Array<{ plan: string; plan_expires_at: string | null }>;
-  if (!rows.length) return 'free';
-  const { plan, plan_expires_at } = rows[0];
-  if (plan === 'pro' && plan_expires_at && new Date(plan_expires_at) < new Date()) return 'free';
-  return plan;
+interface UserProfile {
+  plan: string;
+  credits_remaining: number;
+  pro_daily_used: number;
+  pro_daily_reset: string | null; // YYYY-MM-DD
 }
 
-async function checkAndIncrementUsage(
-  env: Env,
-  userId: string,
-  quotaColumn: string,
-): Promise<{ allowed: boolean; used: number; limit: number; plan: string }> {
-  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-
-  const plan = await getUserPlan(env, userId);
-  const limits = plan === 'pro' ? PRO_DAILY_LIMITS : FREE_DAILY_LIMITS;
-  const limit = limits[quotaColumn] ?? 999;
-
-  // Upsert today's usage row (insert if not exists, ignore conflict)
-  await supabaseRequest(env, '/user_usage?on_conflict=user_id,date', 'POST', {
-    user_id: userId,
-    date: today,
-    [quotaColumn]: 0,
-  });
-
-  // Fetch current usage
-  const fetchResp = await supabaseRequest(
+async function getUserProfile(env: Env, userId: string): Promise<UserProfile> {
+  const resp = await supabaseRequest(
     env,
-    `/user_usage?user_id=eq.${userId}&date=eq.${today}&select=${quotaColumn}`,
+    `/user_profiles?user_id=eq.${userId}&select=plan,plan_expires_at,credits_remaining,pro_daily_used,pro_daily_reset`,
     'GET',
   );
+  const defaultProfile: UserProfile = { plan: 'free', credits_remaining: FREE_STARTING_CREDITS, pro_daily_used: 0, pro_daily_reset: null };
+  if (!resp.ok) {
+    await supabaseRequest(env, '/user_profiles', 'POST', {
+      user_id: userId, plan: 'free', credits_remaining: FREE_STARTING_CREDITS, pro_daily_used: 0,
+    });
+    return defaultProfile;
+  }
+  const rows = await resp.json() as Array<{ plan: string; plan_expires_at: string | null; credits_remaining: number | null; pro_daily_used: number | null; pro_daily_reset: string | null }>;  if (!rows.length) {
+    await supabaseRequest(env, '/user_profiles', 'POST', {
+      user_id: userId, plan: 'free', credits_remaining: FREE_STARTING_CREDITS, pro_daily_used: 0,
+    });
+    return defaultProfile;
+  }
+  const { plan, plan_expires_at, credits_remaining, pro_daily_used, pro_daily_reset } = rows[0];
+  const activePlan = (plan === 'pro' && plan_expires_at && new Date(plan_expires_at) < new Date()) ? 'free' : plan;
+  return {
+    plan: activePlan,
+    credits_remaining: credits_remaining ?? 0,
+    pro_daily_used: pro_daily_used ?? 0,
+    pro_daily_reset: pro_daily_reset ?? null,
+  };
+}
 
-  let used = 0;
-  if (fetchResp.ok) {
-    const rows = await fetchResp.json() as Array<Record<string, number>>;
-    if (rows.length) used = rows[0][quotaColumn] ?? 0;
+async function checkAndDeductCredits(
+  env: Env,
+  userId: string,
+  usageType: string,
+): Promise<{ allowed: boolean; creditsRemaining: number; creditCost: number; plan: string; dailyLimitHit?: boolean }> {
+  const creditCost = CREDIT_COSTS[usageType] ?? 0;
+
+  // Free usage types — always allow, no deduction
+  if (creditCost === 0) {
+    return { allowed: true, creditsRemaining: 0, creditCost: 0, plan: 'free' };
   }
 
-  if (used >= limit) {
-    return { allowed: false, used, limit, plan };
+  const profile = await getUserProfile(env, userId);
+
+  // Pro users: daily allowance (resets at midnight UTC)
+  if (profile.plan === 'pro') {
+    const today = new Date().toISOString().split('T')[0];
+    let dailyUsed = profile.pro_daily_used;
+    if (profile.pro_daily_reset !== today) {
+      dailyUsed = 0;
+      await supabaseRequest(env, `/user_profiles?user_id=eq.${userId}`, 'PATCH',
+        { pro_daily_used: 0, pro_daily_reset: today });
+    }
+    if (dailyUsed + creditCost > PRO_DAILY_CREDITS) {
+      return { allowed: false, creditsRemaining: PRO_DAILY_CREDITS - dailyUsed, creditCost, plan: 'pro', dailyLimitHit: true };
+    }
+    await supabaseRequest(env, `/user_profiles?user_id=eq.${userId}`, 'PATCH',
+      { pro_daily_used: dailyUsed + creditCost });
+    return { allowed: true, creditsRemaining: PRO_DAILY_CREDITS - dailyUsed - creditCost, creditCost, plan: 'pro' };
   }
 
-  // Increment
-  await supabaseRequest(
-    env,
-    `/user_usage?user_id=eq.${userId}&date=eq.${today}`,
-    'PATCH',
-    { [quotaColumn]: used + 1 },
-  );
+  // Free users: check credit balance
+  if (profile.credits_remaining < creditCost) {
+    return { allowed: false, creditsRemaining: profile.credits_remaining, creditCost, plan: profile.plan };
+  }
 
-  return { allowed: true, used: used + 1, limit, plan };
+  const newBalance = profile.credits_remaining - creditCost;
+  await supabaseRequest(env, `/user_profiles?user_id=eq.${userId}`, 'PATCH',
+    { credits_remaining: newBalance });
+
+  return { allowed: true, creditsRemaining: newBalance, creditCost, plan: profile.plan };
 }
 
 // ─── Groq proxy ────────────────────────────────────────────────
@@ -240,7 +259,7 @@ export default {
     const jwtPayload = jwt ? parseSupabaseJwt(jwt) : null;
 
     const usageType = request.headers.get('X-Usage-Type') ?? 'unknown';
-    const quotaColumn = QUOTA_COLUMN[usageType] ?? null;
+    const creditCost = CREDIT_COSTS[usageType] ?? 0;
     const isStream = request.headers.get('X-Stream') === '1';
 
     let body: unknown;
@@ -250,24 +269,24 @@ export default {
       return jsonResponse({ error: 'Invalid JSON body' }, 400, origin);
     }
 
-    // If this type is metered, we require auth and check quota
-    if (quotaColumn) {
+    // If this type costs credits, we require auth and check balance
+    if (creditCost > 0) {
       if (!jwtPayload) {
         return jsonResponse({ error: 'Authentication required', code: 'UNAUTHENTICATED' }, 401, origin);
       }
 
-      const { allowed, used, limit, plan } = await checkAndIncrementUsage(
+      const { allowed, creditsRemaining, creditCost: cost, plan, dailyLimitHit } = await checkAndDeductCredits(
         env,
         jwtPayload.sub,
-        quotaColumn,
+        usageType,
       );
 
       if (!allowed) {
         return jsonResponse(
           {
-            error: 'Daily limit reached',
-            code: 'QUOTA_EXCEEDED',
-            detail: { used, limit, plan, quotaColumn },
+            error: dailyLimitHit ? 'Daily Pro credit limit reached' : 'Insufficient credits',
+            code: 'INSUFFICIENT_CREDITS',
+            detail: { creditsRemaining, creditCost: cost, plan, dailyLimitHit: dailyLimitHit ?? false },
           },
           402,
           origin,

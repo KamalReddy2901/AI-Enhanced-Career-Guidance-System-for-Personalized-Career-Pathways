@@ -3,7 +3,7 @@ import { PaywallModal } from '../components/PaywallModal';
 import { QuotaExceededError } from '../services/ai';
 
 interface PaywallContextType {
-  triggerPaywall: (featureName?: string, detail?: { used: number; limit: number; plan: string }) => void;
+  triggerPaywall: (featureName?: string, detail?: { creditsRemaining: number; creditCost: number; plan: string }) => void;
   /**
    * Wraps an async call. On QuotaExceededError, opens the paywall modal and
    * returns undefined. All other errors are re-thrown.
@@ -17,14 +17,14 @@ export function PaywallProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<{
     open: boolean;
     featureName?: string;
-    usageDetail?: { used: number; limit: number; plan: string };
+    creditDetail?: { creditsRemaining: number; creditCost: number; plan: string; dailyLimitHit?: boolean };
   }>({ open: false });
 
   const triggerPaywall = useCallback((
     featureName?: string,
-    detail?: { used: number; limit: number; plan: string }
+    detail?: { creditsRemaining: number; creditCost: number; plan: string }
   ) => {
-    setState({ open: true, featureName, usageDetail: detail });
+    setState({ open: true, featureName, creditDetail: detail });
   }, []);
 
   const withPaywall = useCallback(async <T,>(
@@ -38,11 +38,7 @@ export function PaywallProvider({ children }: { children: ReactNode }) {
         setState({
           open: true,
           featureName,
-          usageDetail: {
-            used: err.detail.used,
-            limit: err.detail.limit,
-            plan: err.detail.plan,
-          },
+          creditDetail: err.detail,
         });
         return undefined;
       }
@@ -57,7 +53,7 @@ export function PaywallProvider({ children }: { children: ReactNode }) {
         open={state.open}
         onClose={() => setState({ open: false })}
         featureName={state.featureName}
-        usageDetail={state.usageDetail}
+        creditDetail={state.creditDetail}
       />
     </PaywallContext.Provider>
   );

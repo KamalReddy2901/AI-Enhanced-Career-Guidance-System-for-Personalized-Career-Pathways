@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Map, Loader2, AlertTriangle, ChevronDown, ChevronUp, TrendingUp, Download, Share2, Clock, X } from 'lucide-react';
+import { Map, Loader2, AlertTriangle, ChevronDown, ChevronUp, TrendingUp, Download, Share2, Clock, X, Zap } from 'lucide-react';
 import { getCareerRoadmap, type CareerRoadmap, getJobSuggestions, QuotaExceededError } from '../services/ai';
 import { usePaywallContext } from '../context/PaywallContext';
 import { StickFigure } from '../components/StickFigure';
@@ -94,7 +94,7 @@ export function CareerRoadmapPage() {
     } catch (err) {
       if ((err as Error).name === 'AbortError') return;
       if (err instanceof QuotaExceededError) {
-        triggerPaywall('Career Roadmap', { used: err.detail.used, limit: err.detail.limit, plan: err.detail.plan });
+        triggerPaywall('Career Roadmap', err.detail);
       } else {
         setError((err as Error).message || 'Failed to generate roadmap.');
       }
@@ -195,6 +195,7 @@ export function CareerRoadmapPage() {
             >
               {loading ? <Loader2 size={15} className="animate-spin" /> : <Map size={15} />}
               {loading ? 'Building…' : 'Build Roadmap'}
+              {!loading && <span className="inline-flex items-center gap-0.5 text-white/60 text-xs"><Zap size={10} className="fill-current" />2</span>}
             </motion.button>
           </div>
 

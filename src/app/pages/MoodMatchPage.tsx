@@ -4,54 +4,15 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, Sparkles, Loader2, ArrowRight, RotateCcw } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
-import { getApiKey } from '../services/ai';
+import { getMoodMatches, QuotaExceededError, type MoodMatch } from '../services/ai';
+import { usePaywallContext } from '../context/PaywallContext';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
-
-interface MoodMatch {
-  title: string;
-  reason: string;
-  vibe: string;
-}
-
-async function getMoodMatches(mood: string): Promise<MoodMatch[]> {
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${getApiKey()}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: `You are a career counsellor who matches careers to moods and emotional states.
-Given a user's mood or feeling, suggest 3 careers that would resonate with or suit that emotional state.
-Be creative, insightful, and specific. Think about careers that attract or suit people feeling this way.
-Return JSON: { "matches": [ { "title": string, "reason": string, "vibe": string } ] }
-"reason" is 1-2 sentences on why this career matches the mood.
-"vibe" is a 3-5 word poetic description of the career's daily energy.`,
-        },
-        {
-          role: 'user',
-          content: `My mood/feeling right now: "${mood}". Suggest 3 careers that match this energy.`,
-        },
-      ],
-      max_tokens: 600,
-    }),
-  });
-
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
-  const data = await res.json();
-  const parsed = JSON.parse(data.choices[0]?.message?.content ?? '{}');
-  return parsed.matches ?? [];
-}
 
 export function MoodMatchPage() {
   const navigate = useNavigate();
   const { searchJobAI, setCurrentJob, addToHistory, setRefinementCount } = useApp();
+  const { triggerPaywall } = usePaywallContext();
 
   const [mood, setMood] = useState('');
   const [matches, setMatches] = useState<MoodMatch[]>([]);
@@ -83,8 +44,12 @@ export function MoodMatchPage() {
       addToHistory(jobData);
       setRefinementCount(0);
       navigate('/job');
-    } catch {
-      toast.error('Could not load career');
+    } catch (err) {
+      if (err instanceof QuotaExceededError) {
+        triggerPaywall('Mood Match', err.detail);
+      } else {
+        toast.error('Could not load career');
+      }
     } finally {
       setExploringTitle(null);
     }

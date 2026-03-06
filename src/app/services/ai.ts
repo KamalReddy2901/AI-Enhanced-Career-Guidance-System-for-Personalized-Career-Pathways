@@ -50,10 +50,12 @@ function rotateToNextKey(): boolean {
 }
 
 // ─── Quota exceeded error (thrown when worker returns 402) ─────
+export type CreditErrorDetail = { creditsRemaining: number; creditCost: number; plan: string; dailyLimitHit?: boolean };
+
 export class QuotaExceededError extends Error {
-  public detail: { used: number; limit: number; plan: string; quotaColumn: string };
-  constructor(detail: { used: number; limit: number; plan: string; quotaColumn: string }) {
-    super('Daily limit reached');
+  public detail: CreditErrorDetail;
+  constructor(detail: CreditErrorDetail) {
+    super('Insufficient credits');
     this.name = 'QuotaExceededError';
     this.detail = detail;
   }
@@ -146,7 +148,7 @@ async function withRetry<T>(
 // In-flight request deduplication map
 const pendingRequests = new Map<string, Promise<string>>();
 
-async function callGroq(
+export async function callGroq(
   systemPrompt: string,
   userPrompt: string,
   options: {
@@ -188,8 +190,8 @@ async function callGroq(
     const response = await fetch(`${AI_PROXY_URL}/ai`, { method: 'POST', signal, headers, body: JSON.stringify(body) });
 
     if (response.status === 402) {
-      const errData = await response.json().catch(() => ({})) as { detail?: { used: number; limit: number; plan: string; quotaColumn: string } };
-      throw new QuotaExceededError(errData.detail ?? { used: 0, limit: 0, plan: 'free', quotaColumn: '' });
+      const errData = await response.json().catch(() => ({})) as { detail?: CreditErrorDetail };
+      throw new QuotaExceededError(errData.detail ?? { creditsRemaining: 0, creditCost: 0, plan: 'free' });
     }
     if (!response.ok) {
       const err = await response.json().catch(() => ({})) as { error?: string };
@@ -273,8 +275,8 @@ export async function callGroqStreaming(
     const body = { messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], temperature, max_tokens: maxTokens, stream: true, response_format: { type: 'json_object' } };
     const response = await fetch(`${AI_PROXY_URL}/ai`, { method: 'POST', signal, headers, body: JSON.stringify(body) });
     if (response.status === 402) {
-      const errData = await response.json().catch(() => ({})) as { detail?: { used: number; limit: number; plan: string; quotaColumn: string } };
-      throw new QuotaExceededError(errData.detail ?? { used: 0, limit: 0, plan: 'free', quotaColumn: '' });
+      const errData = await response.json().catch(() => ({})) as { detail?: CreditErrorDetail };
+      throw new QuotaExceededError(errData.detail ?? { creditsRemaining: 0, creditCost: 0, plan: 'free' });
     }
     if (!response.ok) { const err = await response.json().catch(() => ({})) as { error?: string }; throw new Error(err?.error ?? `AI error: ${response.status}`); }
     return readStream(response);
@@ -365,8 +367,8 @@ Formatting rules:
       body: JSON.stringify({ messages: apiMessages, temperature: 0.7, max_tokens: 1024, stream: true }),
     });
     if (response.status === 402) {
-      const errData = await response.json().catch(() => ({})) as { detail?: { used: number; limit: number; plan: string; quotaColumn: string } };
-      throw new QuotaExceededError(errData.detail ?? { used: 0, limit: 0, plan: 'free', quotaColumn: '' });
+      const errData = await response.json().catch(() => ({})) as { detail?: CreditErrorDetail };
+      throw new QuotaExceededError(errData.detail ?? { creditsRemaining: 0, creditCost: 0, plan: 'free' });
     }
     if (!response.ok) { const err = await response.json().catch(() => ({})) as { error?: string }; throw new Error(err?.error ?? `AI error: ${response.status}`); }
     yield* readStream(response);
@@ -742,10 +744,42 @@ Nailed: ${rightOnes.join(', ') || 'None'}
 Missed: ${wrongOnes.join(', ') || 'None'}
 
 Write the assessment exactly in the format described. Keep each bullet to one clear sentence.`,
-      { temperature: 0.7, maxTokens: 700, usageType: 'simulation' }
+      { temperature: 0.7, maxTokens: 700, usageType: 'refine' }
     );
 
     return raw;
+  });
+}
+
+// ─── Mood Match ────────────────────────────────────────────────
+
+export interface MoodMatch {
+  title: string;
+  reason: string;
+  vibe: string;
+}
+
+export async function getMoodMatches(mood: string): Promise<MoodMatch[]> {
+  const cacheKey = `mood_${mood.toLowerCase().replace(/\s+/g, '_')}`;
+  const cached = getCached<MoodMatch[]>(cacheKey);
+  if (cached) return cached;
+
+  return withRetry(async () => {
+    const raw = await callGroq(
+      `You are a career counsellor who matches careers to moods and emotional states.
+Given a user's mood or feeling, suggest 3 careers that would resonate with or suit that emotional state.
+Be creative, insightful, and specific. Think about careers that attract or suit people feeling this way.
+Return JSON: { "matches": [ { "title": string, "reason": string, "vibe": string } ] }
+"reason" is 1-2 sentences on why this career matches the mood.
+"vibe" is a 3-5 word poetic description of the career's daily energy.`,
+      `My mood/feeling right now: "${mood}". Suggest 3 careers that match this energy.`,
+      { temperature: 0.7, maxTokens: 600, jsonMode: true, usageType: 'mood' }
+    );
+
+    const parsed = JSON.parse(raw);
+    const result = (parsed.matches ?? []) as MoodMatch[];
+    setCache(cacheKey, result);
+    return result;
   });
 }
 

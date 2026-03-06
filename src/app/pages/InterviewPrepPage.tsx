@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, Sparkles, Loader2, RefreshCw, CheckCircle, Circle, Download } from 'lucide-react';
+import { ChevronLeft, Sparkles, Loader2, RefreshCw, CheckCircle, Circle, Download, Zap } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import { generateInterviewQuestions, type InterviewQuestion } from '../services/interview';
@@ -131,6 +131,7 @@ export function InterviewPrepPage() {
                 >
                   <RefreshCw size={12} />
                   Regenerate All
+                  <span className="inline-flex items-center gap-0.5 ml-0.5 opacity-50"><Zap size={9} className="fill-current" />1</span>
                 </motion.button>
               </div>
             )}

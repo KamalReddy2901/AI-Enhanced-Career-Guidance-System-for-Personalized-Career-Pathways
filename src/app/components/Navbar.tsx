@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Clock, Home, Sparkles, FlaskConical, Scale, Settings, Brain, Menu, X, Map, ArrowLeftRight } from 'lucide-react';
+import { Clock, Home, Zap, FlaskConical, Scale, Settings, Brain, Menu, X, Map, ArrowLeftRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { useUsage } from '../context/UsageContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { StickFigure } from './StickFigure';
 import { sounds } from '../utils/sounds';
@@ -10,6 +12,8 @@ import { sounds } from '../utils/sounds';
 export function Navbar() {
   const location = useLocation();
   const { history } = useApp();
+  const { user } = useAuth();
+  const { creditsRemaining, plan } = useUsage();
   const { favorites } = useFavorites();
   const [menuOpen, setMenuOpen] = useState(false);
   const isHome = location.pathname === '/';
@@ -77,14 +81,30 @@ export function Navbar() {
               <NavLink key={link.to} {...link} />
             ))}
 
-            {/* AI badge */}
-            <div
-              className="ml-1 flex items-center gap-1 px-2 py-1 bg-black/3 text-black/25"
-              style={{ fontSize: '0.6rem' }}
-            >
-              <Sparkles size={9} />
-              <span className="font-[Inter]">AI on</span>
-            </div>
+            {/* Credits badge */}
+            {user && (
+              <Link
+                to="/pricing"
+                className="ml-1.5 flex items-center gap-1 px-2.5 py-1 bg-black/5 hover:bg-black/8 text-black/80 transition-all rounded-full"
+                style={{ fontSize: '0.72rem' }}
+                title={plan === 'pro' ? `Pro — ${creditsRemaining} credits today` : `${creditsRemaining} credits remaining`}
+              >
+                <Zap size={11} className="text-black fill-black" />
+                <span className="font-[JetBrains_Mono] font-semibold">
+                  {plan === 'pro' ? creditsRemaining : creditsRemaining}
+                </span>
+              </Link>
+            )}
+
+            {!user && (
+              <div
+                className="ml-1 flex items-center gap-1 px-2 py-1 bg-black/3 text-black/25"
+                style={{ fontSize: '0.6rem' }}
+              >
+                <Zap size={9} className="fill-current" />
+                <span className="font-[Inter]">AI on</span>
+              </div>
+            )}
 
           </div>
 

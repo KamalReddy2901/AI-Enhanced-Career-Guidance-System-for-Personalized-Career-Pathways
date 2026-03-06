@@ -119,7 +119,7 @@ export function QuizPage() {
       sounds.reveal();
     } catch (error) {
       if (error instanceof QuotaExceededError) {
-        triggerPaywall('Career Quiz', { used: error.detail.used, limit: error.detail.limit, plan: error.detail.plan });
+        triggerPaywall('Career Quiz', error.detail);
       } else {
         toast.error('Failed to analyze quiz results', {
           description: error instanceof Error ? error.message : 'Please try again',
@@ -153,7 +153,7 @@ export function QuizPage() {
       sounds.reveal();
     } catch (error) {
       if (error instanceof QuotaExceededError) {
-        triggerPaywall('Career Quiz', { used: error.detail.used, limit: error.detail.limit, plan: error.detail.plan });
+        triggerPaywall('Career Quiz', error.detail);
       } else {
         toast.error('Failed to analyze your description', { description: error instanceof Error ? error.message : 'Please try again' });
       }

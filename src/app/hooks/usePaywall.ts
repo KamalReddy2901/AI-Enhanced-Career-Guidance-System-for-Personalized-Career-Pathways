@@ -4,7 +4,7 @@ import { QuotaExceededError } from '../services/ai';
 export interface PaywallState {
   open: boolean;
   featureName?: string;
-  usageDetail?: { used: number; limit: number; plan: string };
+  creditDetail?: { creditsRemaining: number; creditCost: number; plan: string };
 }
 
 /**
@@ -13,7 +13,7 @@ export interface PaywallState {
  * Usage:
  *   const { paywallState, closePaywall, withPaywall } = usePaywall();
  *
- *   // Wrap any async call that might hit a quota limit:
+ *   // Wrap any async call that might hit a credit limit:
  *   await withPaywall(() => generateJobDataAI(title), 'Dossier');
  */
 export function usePaywall() {
@@ -40,11 +40,7 @@ export function usePaywall() {
         setPaywallState({
           open: true,
           featureName,
-          usageDetail: {
-            used: err.detail.used,
-            limit: err.detail.limit,
-            plan: err.detail.plan,
-          },
+          creditDetail: err.detail,
         });
         return undefined;
       }

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  ChevronLeft, Play, MessageCircle, X, Send, Sparkles, Loader2, RefreshCw, Download,
+  ChevronLeft, Play, MessageCircle, X, Send, Sparkles, Loader2, RefreshCw, Download, Zap, Lock,
   Briefcase, GraduationCap, Wrench, MapPin, TrendingUp, Lightbulb, ArrowRight,
   Calendar, CalendarDays, CalendarRange, Scale, Star, UserCheck, Share2,
   BookOpen, Hash, Award, ExternalLink, Activity, Building2
@@ -19,6 +19,7 @@ import {
   type RelatedCareer, type LearnMoreResources, type WorkLifeBalance, type GoodBadUgly
 } from '../services/ai';
 import { usePaywallContext } from '../context/PaywallContext';
+import { useUsage } from '../context/UsageContext';
 import { toast } from 'sonner';
 import { renderMarkdown } from '../utils/markdown';
 import { downloadDossierPDF } from '../utils/pdfExport';
@@ -79,6 +80,8 @@ export function JobDetailPage() {
   const location = useLocation();
   const { currentJob, setCurrentJob, searchJobAI, addToHistory, setRefinementCount, setComparisonJob } = useApp();
   const { triggerPaywall } = usePaywallContext();
+  const { plan } = useUsage();
+  const isPro = plan === 'pro';
   const { addFavorite, removeFavorite, isFavorite } = useFavorites();
   const { preferences } = usePreferences();
   const [activeTimeline, setActiveTimeline] = useState<'week' | 'quarter' | 'year'>(preferences.defaultView);
@@ -237,7 +240,7 @@ export function JobDetailPage() {
       toast.success('Fresh dossier generated!');
     } catch (error) {
       if (error instanceof QuotaExceededError) {
-        triggerPaywall('Career Dossier', { used: error.detail.used, limit: error.detail.limit, plan: error.detail.plan });
+        triggerPaywall('Career Dossier', error.detail);
       } else {
         toast.error('Regeneration failed', {
           description: error instanceof Error ? error.message : 'Please try again',
@@ -261,6 +264,7 @@ export function JobDetailPage() {
 
   const handlePrint = () => {
     if (!currentJob) return;
+    if (!isPro) { triggerPaywall('PDF Export'); return; }
     downloadDossierPDF({
       title: currentJob.title,
       category: currentJob.category,
@@ -292,7 +296,7 @@ export function JobDetailPage() {
       toast.success(`Now viewing: ${title}`);
     } catch (err) {
       if (err instanceof QuotaExceededError) {
-        triggerPaywall('Career Dossier', { used: err.detail.used, limit: err.detail.limit, plan: err.detail.plan });
+        triggerPaywall('Career Dossier', err.detail);
       } else {
         toast.error('Failed to load career');
       }
@@ -308,6 +312,7 @@ export function JobDetailPage() {
   };
 
   const handleAskQuestion = async () => {
+    if (!isPro) { triggerPaywall('Ask AI'); return; }
     if (!chatInput.trim() || isStreaming) return;
     const userMsg = chatInput.trim();
     setChatInput('');
@@ -333,7 +338,7 @@ export function JobDetailPage() {
       }
     } catch (error) {
       if (error instanceof QuotaExceededError) {
-        triggerPaywall('AI Chat', { used: error.detail.used, limit: error.detail.limit, plan: error.detail.plan });
+        triggerPaywall('AI Chat', error.detail);
         setChatMessages(prev => prev.slice(0, -1)); // remove empty assistant message
       } else {
         toast.error('Chat error');
@@ -508,6 +513,7 @@ export function JobDetailPage() {
                   >
                     {isRegenerating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
                     {isRegenerating ? 'Regenerating...' : 'Regenerate'}
+                    {!isRegenerating && <span className="inline-flex items-center gap-0.5 ml-1 opacity-50"><Zap size={9} className="fill-current" />3</span>}
                   </motion.button>
                 <motion.button
                   onClick={handlePrint}
@@ -517,6 +523,7 @@ export function JobDetailPage() {
                 >
                   <Download size={12} />
                   Download PDF
+                  {!isPro && <Lock size={10} className="opacity-40" />}
                 </motion.button>
                 <motion.button
                   onClick={handleCompare}
@@ -1132,7 +1139,7 @@ export function JobDetailPage() {
             </motion.button>
 
           <motion.button
-            onClick={() => { setShowChat(true); sounds.slide(); }}
+            onClick={() => { if (!isPro) { triggerPaywall('Ask AI'); return; } setShowChat(true); sounds.slide(); }}
             className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-4 px-6 hover:border-black/40 hover:text-black transition-all font-[Inter]"
             style={{ fontSize: '0.88rem' }}
             whileHover={{ scale: 1.01 }}
@@ -1140,7 +1147,7 @@ export function JobDetailPage() {
           >
             <MessageCircle size={18} />
             Ask Questions
-            <Sparkles size={12} className="text-black/30" />
+            {isPro ? <Sparkles size={12} className="text-black/30" /> : <Lock size={12} className="text-black/30" />}
           </motion.button>
         </motion.div>
 
@@ -1343,12 +1350,12 @@ export function JobDetailPage() {
             <span style={{ fontSize: '0.58rem', letterSpacing: '0.05em' }} className="font-[Inter] uppercase">Interview</span>
           </button>
         <button
-            onClick={() => { setShowChat(true); sounds.slide(); }}
+            onClick={() => { if (!isPro) { triggerPaywall('Ask AI'); return; } setShowChat(true); sounds.slide(); }}
             aria-label="Ask AI about this career"
             className="flex-1 flex flex-col items-center gap-1 py-3 text-black/60 hover:text-black transition-colors"
           >
-            <MessageCircle size={17} />
-            <span style={{ fontSize: '0.58rem', letterSpacing: '0.05em' }} className="font-[Inter] uppercase">Ask AI</span>
+            {isPro ? <MessageCircle size={17} /> : <Lock size={17} className="opacity-40" />}
+            <span style={{ fontSize: '0.58rem', letterSpacing: '0.05em' }} className="font-[Inter] uppercase">{isPro ? 'Ask AI' : 'Pro'}</span>
           </button>
         <button
           onClick={handleShare}

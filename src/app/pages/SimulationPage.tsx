@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, Clock, ArrowRight, RotateCcw, CheckCircle2, XCircle, Sparkles, Loader2, Download, TrendingUp } from 'lucide-react';
+import { ChevronLeft, Clock, ArrowRight, RotateCcw, CheckCircle2, XCircle, Sparkles, Loader2, Download, TrendingUp, Zap } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import { generateSimulation, type SimulationScenario } from '../data/simulations';
@@ -123,7 +123,7 @@ export function SimulationPage() {
       if (!skipCache) toast.success('Simulation ready!');
     } catch (error) {
       if (error instanceof QuotaExceededError) {
-        triggerPaywall('Simulation', { used: error.detail.used, limit: error.detail.limit, plan: error.detail.plan });
+        triggerPaywall('Simulation', error.detail);
       } else {
         console.error('AI simulation generation failed:', error);
         toast.error('AI failed - using template scenarios');
@@ -389,6 +389,7 @@ export function SimulationPage() {
                 whileTap={{ scale: 0.98 }}
               >
                 Begin Simulation
+                <span className="inline-flex items-center gap-0.5 text-white/60 text-xs"><Zap size={11} className="fill-current" />5</span>
                 <ArrowRight size={18} />
               </motion.button>
 

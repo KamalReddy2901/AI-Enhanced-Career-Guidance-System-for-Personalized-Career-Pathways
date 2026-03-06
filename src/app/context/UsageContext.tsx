@@ -9,127 +9,97 @@ import {
 import { supabase, isSupabaseConfigured } from '../services/supabase';
 import { useAuth } from './AuthContext';
 
-// ─── Limits (mirrors worker/src/models.ts) ────────────────────
-// Keep these in sync if you change limits!
-export const FREE_LIMITS = {
-  dossiers_used: 3,
-  simulations_used: 1,
-  ai_chats_used: 5,
-  compares_used: 1,
-  transitions_used: 1,
-  roadmaps_used: 1,
-} as const;
-
-export const PRO_LIMITS = {
-  dossiers_used: 15,
-  simulations_used: 5,
-  ai_chats_used: 50,
-  compares_used: 5,
-  transitions_used: 5,
-  roadmaps_used: 5,
-} as const;
-
-// Maps feature type → DB column
-export const FEATURE_COLUMN: Record<string, keyof typeof FREE_LIMITS | null> = {
-  dossier: 'dossiers_used',
-  simulation: 'simulations_used',
-  chat: 'ai_chats_used',
-  compare: 'compares_used',
-  transition: 'transitions_used',
-  roadmap: 'roadmaps_used',
-  // Unmetered (free)
-  suggestion: null,
-  trending: null,
-  preliminary: null,
-  related: null,
-  wlb: null,
-  quiz: null,
-  mood: null,
-  refine: null,
-  interview: null,
-  gbu: null,
+// ─── Credit Costs (mirrors worker/src/models.ts) ──────────────
+// Keep these in sync with CREDIT_COSTS in worker/src/models.ts!
+export const CREDIT_COSTS: Record<string, number> = {
+  dossier: 3,
+  simulation: 5,
+  compare: 2,
+  transition: 2,
+  roadmap: 2,
+  chat: 1,
+  interview: 1,
+  gbu: 0,
+  // Free (0 credits)
+  suggestion: 0,
+  trending: 0,
+  preliminary: 0,
+  related: 0,
+  wlb: 0,
+  quiz: 0,
+  mood: 0,
+  refine: 0,
 };
 
-export type QuotaKey = keyof typeof FREE_LIMITS;
+export const FREE_STARTING_CREDITS = 20;
+export const PRO_DAILY_CREDITS = 100;
 
-export interface UsageRow {
-  dossiers_used: number;
-  simulations_used: number;
-  ai_chats_used: number;
-  compares_used: number;
-  transitions_used: number;
-  roadmaps_used: number;
-}
+// Features that require a Pro subscription (not just credits)
+export const PRO_ONLY_FEATURES = ['pdf', 'chat'] as const;
 
-export interface QuotaStatus {
-  used: number;
-  limit: number;
+export interface CreditStatus {
+  cost: number;
   remaining: number;
   allowed: boolean;
 }
 
 interface UsageContextType {
   plan: 'free' | 'pro';
-  usage: UsageRow;
+  creditsRemaining: number;
   isLoading: boolean;
-  /** Check if a feature type is within quota. Returns live status. */
-  checkQuota: (featureType: string) => QuotaStatus;
-  /** Optimistically increment local usage counter (true usage is tracked server-side) */
-  optimisticIncrement: (featureType: string) => void;
-  /** Refresh usage from Supabase */
-  refreshUsage: () => void;
-  /** Show paywall for a given feature. Returns true if allowed. */
-  isProFeature: (featureType: string) => boolean;
+  /** Check if a usage type can proceed (has enough credits). Returns cost + status. */
+  checkCredits: (usageType: string) => CreditStatus;
+  /** Optimistically deduct credits locally after a successful call */
+  optimisticDeduct: (usageType: string) => void;
+  /** Refresh credits from Supabase */
+  refreshCredits: () => void;
+  /** Check if a feature is Pro-only (locked behind subscription, not credits) */
+  isProFeature: (feature: string) => boolean;
 }
-
-const defaults: UsageRow = {
-  dossiers_used: 0,
-  simulations_used: 0,
-  ai_chats_used: 0,
-  compares_used: 0,
-  transitions_used: 0,
-  roadmaps_used: 0,
-};
 
 const UsageContext = createContext<UsageContextType | undefined>(undefined);
 
 export function UsageProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [plan, setPlan] = useState<'free' | 'pro'>('free');
-  const [usage, setUsage] = useState<UsageRow>(defaults);
+  const [creditsRemaining, setCreditsRemaining] = useState<number>(
+    isSupabaseConfigured ? 0 : 9999 // Dev mode: unlimited credits
+  );
   const [isLoading, setIsLoading] = useState(false);
 
-  const fetchUsage = useCallback(async () => {
+  const fetchCredits = useCallback(async () => {
     if (!user || !supabase || !isSupabaseConfigured) return;
     setIsLoading(true);
     try {
-      const today = new Date().toISOString().slice(0, 10);
-
-      // Fetch plan
+      // Fetch plan + credits
       const { data: profileData } = await supabase
         .from('user_profiles')
-        .select('plan, plan_expires_at')
+        .select('plan, plan_expires_at, credits_remaining, pro_daily_used, pro_daily_reset')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      let activePlan: 'free' | 'pro' = 'free';
-      if (profileData?.plan === 'pro') {
-        const expiry = profileData.plan_expires_at;
-        if (!expiry || new Date(expiry) > new Date()) {
-          activePlan = 'pro';
+      if (profileData) {
+        let activePlan: 'free' | 'pro' = 'free';
+        if (profileData.plan === 'pro') {
+          const expiry = profileData.plan_expires_at;
+          if (!expiry || new Date(expiry) > new Date()) {
+            activePlan = 'pro';
+          }
         }
+        setPlan(activePlan);
+        if (activePlan === 'pro') {
+          // Show daily remaining credits for Pro users
+          const today = new Date().toISOString().split('T')[0];
+          const dailyUsed = (profileData.pro_daily_reset === today ? (profileData.pro_daily_used ?? 0) : 0);
+          setCreditsRemaining(PRO_DAILY_CREDITS - dailyUsed);
+        } else {
+          setCreditsRemaining(profileData.credits_remaining ?? 0);
+        }
+      } else {
+        // No profile yet — will be created by worker on first AI call
+        setPlan('free');
+        setCreditsRemaining(FREE_STARTING_CREDITS);
       }
-      setPlan(activePlan);
-
-      // Fetch today's usage
-      const { data: usageData } = await supabase
-        .from('user_usage')
-        .select('dossiers_used, simulations_used, ai_chats_used, compares_used, transitions_used, roadmaps_used')
-        .eq('user_id', user.id)
-        .eq('date', today)
-        .maybeSingle();
-
-      setUsage(usageData ?? defaults);
     } catch {
       // Non-fatal
     } finally {
@@ -138,42 +108,44 @@ export function UsageProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   useEffect(() => {
-    fetchUsage();
-  }, [fetchUsage]);
+    fetchCredits();
+  }, [fetchCredits]);
 
-  const checkQuota = useCallback((featureType: string): QuotaStatus => {
-    const col = FEATURE_COLUMN[featureType];
-    if (!col) {
-      // Unmetered
-      return { used: 0, limit: 999, remaining: 999, allowed: true };
+  const checkCredits = useCallback((usageType: string): CreditStatus => {
+    const cost = CREDIT_COSTS[usageType] ?? 0;
+    if (cost === 0) {
+      // Free usage type — always allowed
+      return { cost: 0, remaining: creditsRemaining, allowed: true };
     }
-    const limits = plan === 'pro' ? PRO_LIMITS : FREE_LIMITS;
-    const limit = limits[col];
-    const used = usage[col] ?? 0;
-    const remaining = Math.max(0, limit - used);
-    return { used, limit, remaining, allowed: remaining > 0 };
-  }, [plan, usage]);
+    if (plan === 'pro') {
+      // Pro users: optimistic (backend enforces daily limit)
+      return { cost, remaining: creditsRemaining, allowed: true };
+    }
+    return {
+      cost,
+      remaining: creditsRemaining,
+      allowed: creditsRemaining >= cost,
+    };
+  }, [plan, creditsRemaining]);
 
-  const optimisticIncrement = useCallback((featureType: string) => {
-    const col = FEATURE_COLUMN[featureType] as keyof UsageRow | null;
-    if (!col) return;
-    setUsage(prev => ({ ...prev, [col]: (prev[col] ?? 0) + 1 }));
+  const optimisticDeduct = useCallback((usageType: string) => {
+    const cost = CREDIT_COSTS[usageType] ?? 0;
+    if (cost === 0) return;
+    setCreditsRemaining(prev => Math.max(0, prev - cost));
   }, []);
 
-  const isProFeature = useCallback((featureType: string): boolean => {
-    // Features locked entirely behind Pro (no free uses)
-    const proOnly = ['pdf'];
-    return proOnly.includes(featureType);
+  const isProFeature = useCallback((feature: string): boolean => {
+    return (PRO_ONLY_FEATURES as readonly string[]).includes(feature);
   }, []);
 
   return (
     <UsageContext.Provider value={{
       plan,
-      usage,
+      creditsRemaining,
       isLoading,
-      checkQuota,
-      optimisticIncrement,
-      refreshUsage: fetchUsage,
+      checkCredits,
+      optimisticDeduct,
+      refreshCredits: fetchCredits,
       isProFeature,
     }}>
       {children}

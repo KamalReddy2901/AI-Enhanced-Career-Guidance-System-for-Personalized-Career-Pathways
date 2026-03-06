@@ -27,6 +27,8 @@ export function HomePage() {
   const trendingRef = useRef<HTMLElement | null>(null);
   const trendingFetched = useRef(false);
 
+  const { triggerPaywall } = usePaywallContext();
+
   const handleQuickCompare = (title: string) => {
     setCompareQueue(prev => {
       if (prev.includes(title)) return prev.filter(t => t !== title);
@@ -46,8 +48,12 @@ export function HomePage() {
       setComparisonJob(0, jA);
       setComparisonJob(1, jB);
       navigate('/compare');
-    } catch {
-      toast.error('Failed to load careers for comparison');
+    } catch (err) {
+      if (err instanceof QuotaExceededError) {
+        triggerPaywall('Career Comparison', err.detail);
+      } else {
+        toast.error('Failed to load careers for comparison');
+      }
     } finally {
       setComparingTitles(false);
       setCompareQueue([]);
@@ -89,8 +95,6 @@ export function HomePage() {
       .finally(() => setTrendingLoading(false));
   };
 
-  const { triggerPaywall } = usePaywallContext();
-
   const handleSearchComplete = useCallback(async (jobTitle: string) => {
     // Guard: prevent concurrent searches
     if (searchingCareer) return;
@@ -109,7 +113,7 @@ export function HomePage() {
       navigate('/job');
     } catch (err) {
       if (err instanceof QuotaExceededError) {
-        triggerPaywall('Career Dossier', { used: err.detail.used, limit: err.detail.limit, plan: err.detail.plan });
+        triggerPaywall('Career Dossier', err.detail);
       } else {
         const jobData = searchJob(jobTitle);
         setCurrentJob(jobData);

@@ -62,7 +62,9 @@ create table if not exists public.user_profiles (
   user_id          uuid references auth.users(id) on delete cascade not null unique,
   plan             text not null default 'free',          -- 'free' | 'pro'
   plan_expires_at  timestamptz,                           -- null = no expiry (lifetime or ongoing)
-  pack_credits     jsonb not null default '{"dossiers":0,"simulations":0,"ai_chats":0,"pdfs":0}',
+  credits_remaining int not null default 20,              -- unified credit balance (20 = free welcome credits)
+  pro_daily_used    int not null default 0,               -- credits used today (Pro plan daily allowance)
+  pro_daily_reset   date,                                  -- date of last daily reset for Pro plan
   created_at       timestamptz default now()
 );
 
@@ -118,3 +120,47 @@ alter table public.payments enable row level security;
 
 create policy "Users can view own payments"
   on public.payments for select using (auth.uid() = user_id);
+
+-- ─── Migration: Switch to unified credits system ──────────────
+-- Run this if your DB already has the old schema (pack_credits jsonb column).
+-- Safe to run multiple times.
+
+-- Add credits_remaining column if it doesn't exist
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'user_profiles' AND column_name = 'credits_remaining'
+  ) THEN
+    ALTER TABLE public.user_profiles ADD COLUMN credits_remaining int NOT NULL DEFAULT 20;
+  END IF;
+END $$;
+
+-- Add pro_daily_used column if it doesn't exist
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'user_profiles' AND column_name = 'pro_daily_used'
+  ) THEN
+    ALTER TABLE public.user_profiles ADD COLUMN pro_daily_used int NOT NULL DEFAULT 0;
+  END IF;
+END $$;
+
+-- Add pro_daily_reset column if it doesn't exist
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'user_profiles' AND column_name = 'pro_daily_reset'
+  ) THEN
+    ALTER TABLE public.user_profiles ADD COLUMN pro_daily_reset date;
+  END IF;
+END $$;
+
+-- Drop old pack_credits column if it exists
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'user_profiles' AND column_name = 'pack_credits'
+  ) THEN
+    ALTER TABLE public.user_profiles DROP COLUMN pack_credits;
+  END IF;
+END $$;

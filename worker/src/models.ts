@@ -31,42 +31,43 @@ export const USAGE_MODEL_TIER: Record<string, ModelTier> = {
   refine: 'standard',
 };
 
-// Daily usage limits (per user per day)
-export const FREE_DAILY_LIMITS: Record<string, number> = {
-  dossiers_used: 3,
-  simulations_used: 1,
-  ai_chats_used: 5,
-  compares_used: 1,
-  transitions_used: 1,
-  roadmaps_used: 1,
+// ─── Credit Costs per usage type ───────────────────────────────
+// Keep in sync with CREDIT_COSTS in src/app/context/UsageContext.tsx
+//
+// | Feature              | Credits | Reasoning                                     |
+// |----------------------|---------|-----------------------------------------------|
+// | Career Dossier       | 3       | Highest token usage (70B ~4k output), max val |
+// | Simulation (session)| 5       | Full session: 10 scenarios + final assessment |
+// | Career Comparison    | 2       | Two-career analysis, premium model             |
+// | Career Transition    | 2       | Detailed multi-phase plan, premium model       |
+// | Career Roadmap       | 2       | Structured multi-month plan, premium model     |
+// | AI Chat (per msg)    | 1       | Pro-only feature, credit as safety net         |
+// | Interview Prep       | 1       | Q&A generation, premium model                  |
+// | GBU Analysis         | 0       | Included in dossier cost — not charged twice   |
+// | All others           | 0       | Standard model, free forever                   |
+
+export const CREDIT_COSTS: Record<string, number> = {
+  dossier: 3,
+  simulation: 5,
+  compare: 2,
+  transition: 2,
+  roadmap: 2,
+  chat: 1,
+  interview: 1,
+  gbu: 0,
+  // Free (0 credits) — standard model, unmetered
+  suggestion: 0,
+  trending: 0,
+  preliminary: 0,
+  related: 0,
+  wlb: 0,
+  quiz: 0,
+  mood: 0,
+  refine: 0,
 };
 
-export const PRO_DAILY_LIMITS: Record<string, number> = {
-  dossiers_used: 15,
-  simulations_used: 5,
-  ai_chats_used: 50,
-  compares_used: 5,
-  transitions_used: 5,
-  roadmaps_used: 5,
-};
+// Credits given to new users on first signup (one-time, no daily reset)
+export const FREE_STARTING_CREDITS = 20;
 
-// Maps usage type → DB column (null = not metered / always free)
-export const QUOTA_COLUMN: Record<string, string | null> = {
-  dossier: 'dossiers_used',
-  simulation: 'simulations_used',
-  chat: 'ai_chats_used',
-  compare: 'compares_used',
-  transition: 'transitions_used',
-  roadmap: 'roadmaps_used',
-  // Free types — still routed through proxy but not counted against quota
-  suggestion: null,
-  trending: null,
-  preliminary: null,
-  related: null,
-  wlb: null,
-  quiz: null,
-  mood: null,
-  refine: null,
-  interview: null,
-  gbu: null,
-};
+// Pro plan: credits allowed per UTC day (resets at midnight UTC)
+export const PRO_DAILY_CREDITS = 100;

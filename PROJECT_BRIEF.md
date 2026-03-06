@@ -55,7 +55,7 @@ before committing to that path. Think of it as "test driving" a career.
 │   └── manifest.json                 # PWA manifest: name = "CareerCase"
 ├── worker/                           # Cloudflare Worker (AI proxy — deployed separately)
 │   ├── src/index.ts                  # Main worker handler
-│   ├── src/models.ts                 # Model config + quota limits
+│   ├── src/models.ts                 # Model config + credit costs
 │   ├── wrangler.toml                 # Worker name: "careercaseai"
 │   └── package.json
 ├── src/
@@ -66,13 +66,13 @@ before committing to that path. Think of it as "test driving" a career.
 │       ├── components/
 │       │   ├── Navbar.tsx            # Top nav; logo = "CareerCase"; History = "Case Archive"
 │       │   ├── BottomNav.tsx         # Mobile bottom nav
-│       │   ├── PaywallModal.tsx      # Quota hit modal (Pro plan + One-time Packs)
+│       │   ├── PaywallModal.tsx      # Credits exhausted modal (Pro plan + Credit Packs)
 │       │   └── ui/                   # shadcn/ui components (don't edit these)
 │       ├── context/
 │       │   ├── AppContext.tsx        # Global job/dossier state; re-throws QuotaExceededError
 │       │   ├── AuthContext.tsx       # Supabase auth state
-│       │   ├── UsageContext.tsx      # Per-user quota tracking (mirrors worker limits)
-│       │   └── PaywallContext.tsx    # Global paywall trigger: triggerPaywall(), withPaywall()
+│       │   ├── UsageContext.tsx      # Credits balance, plan (free/pro), CREDIT_COSTS
+│       │   └── PaywallContext.tsx    # Global paywall trigger: triggerPaywall()
 │       ├── hooks/
 │       │   ├── useFavorites.ts
 │       │   ├── usePaywall.ts         # Per-component paywall hook (alternative to context)
@@ -148,17 +148,18 @@ before committing to that path. Think of it as "test driving" a career.
 **AI Chat** (`/job/detail` — chat panel)
 - Contextual Q&A chat within a dossier. User can ask follow-ups.
 - Uses `streamChat()` with streaming SSE responses.
+- **Pro-only** — locked for free users; must upgrade to Pro to use.
 
 **Interview Prep** (`/interview-prep`)
 - Role-specific interview questions + model answers.
 
 **Career Quiz** (`/quiz`)
 - Personality/interest quiz → AI career recommendations.
-- **Not metered** (free for all users, no daily limit).
+- **Free** (costs 0 credits).
 
 **Mood Match** (`/mood`)
 - Match a career vibe to current mood/energy state.
-- **Not metered**.
+- **Free** (costs 0 credits).
 
 **Case Archive** (`/history`)
 - Supabase-persisted history of all dossiers/simulations the user has generated.
@@ -172,7 +173,7 @@ before committing to that path. Think of it as "test driving" a career.
 - **PWA**: installable, offline-capable (service worker via vite-plugin-pwa)
 - **Onboarding tour**: first-time user walkthrough (`OnboardingTour.tsx`)
 - **Keyboard shortcuts**: `/` to focus search, etc. (`useKeyboardShortcuts.ts`)
-- **PDF export**: full dossier → PDF via jsPDF
+- **PDF export**: full dossier → PDF via jsPDF (**Pro-only**)
 - **Share**: encode dossier state in URL for sharing
 - **Streak tracking**: daily usage streak (`useStreak.ts`)
 - **Theme**: light/dark/system via CSS variables
@@ -186,7 +187,7 @@ before committing to that path. Think of it as "test driving" a career.
 <ErrorBoundary>
   <AuthProvider>           // Supabase session, user object
     <AppProvider>          // Job search state, dossier data, global toasts
-      <UsageProvider>      // Daily quota counters, plan (free/pro)
+      <UsageProvider>      // Credits balance, plan (free/pro)
         <PaywallProvider>  // Global paywall modal; triggerPaywall(), withPaywall()
           <RouterProvider> // React Router
 ```
@@ -227,38 +228,38 @@ VITE_AI_PROXY_URL is empty (dev)       →  direct Groq API using VITE_GROQ_API_
 
 ### 7.3 `usageType` Values and What They Mean
 
-Every AI call passes a `usageType` header to the Worker, which decides model tier and quota column.
+Every AI call passes a `usageType` header to the Worker, which decides model tier and credit cost.
 
-| usageType | Model tier | Quota column | Notes |
+| usageType | Model tier | Credit cost | Notes |
 |---|---|---|---|
-| `dossier` | premium (70B) | `dossiers_used` | Main dossier generation |
-| `simulation` | premium (70B) | `simulations_used` | Day-in-life simulation |
-| `chat` | premium (70B) | `ai_chats_used` | In-dossier chat |
-| `compare` | premium (70B) | `compares_used` | Career comparison |
-| `transition` | premium (70B) | `transitions_used` | Career transition plan |
-| `roadmap` | premium (70B) | `roadmaps_used` | Career roadmap |
-| `interview` | premium (70B) | none (unmetered) | Interview prep |
-| `gbu` | premium (70B) | none (unmetered) | Good/Bad/Ugly |
-| `suggestion` | standard (8B) | none (unmetered) | Autocomplete suggestions |
-| `trending` | standard (8B) | none (unmetered) | Trending jobs |
-| `preliminary` | standard (8B) | none (unmetered) | Job overview preview |
-| `related` | standard (8B) | none (unmetered) | Related careers list |
-| `wlb` | standard (8B) | none (unmetered) | Work-life balance |
-| `quiz` | standard (8B) | none (unmetered) | Quiz results |
-| `mood` | standard (8B) | none (unmetered) | Mood match |
-| `refine` | standard (8B) | none (unmetered) | Content refinement |
+| `dossier` | premium (70B) | 3 | Main dossier generation |
+| `simulation` | premium (70B) | 5 | Full session: 10 scenarios + final assessment |
+| `chat` | premium (70B) | 1 | In-dossier chat (Pro-only on frontend) |
+| `compare` | premium (70B) | 2 | Career comparison |
+| `transition` | premium (70B) | 2 | Career transition plan |
+| `roadmap` | premium (70B) | 2 | Career roadmap |
+| `interview` | premium (70B) | 1 | Interview prep |
+| `gbu` | premium (70B) | 0 | Included in dossier — not charged separately |
+| `suggestion` | standard (8B) | 0 | Autocomplete suggestions |
+| `trending` | standard (8B) | 0 | Trending jobs |
+| `preliminary` | standard (8B) | 0 | Job overview preview |
+| `related` | standard (8B) | 0 | Related careers list |
+| `wlb` | standard (8B) | 0 | Work-life balance |
+| `quiz` | standard (8B) | 0 | Quiz results |
+| `mood` | standard (8B) | 0 | Mood match |
+| `refine` | standard (8B) | 0 | Content refinement |
 
 ### 7.4 QuotaExceededError
 
-When the Worker returns HTTP 402, `ai.ts` throws `QuotaExceededError`:
+When the Worker returns HTTP 402 (insufficient credits), `ai.ts` throws `QuotaExceededError`:
 
 ```ts
 export class QuotaExceededError extends Error {
-  detail: { used: number; limit: number; plan: string; quotaColumn: string }
+  detail: { creditsRemaining: number; creditCost: number; plan: string }
 }
 ```
 
-Every page that calls a metered AI function wraps it in try/catch and calls:
+Every page that calls a credit-costing AI function wraps it in try/catch and calls:
 ```ts
 if (err instanceof QuotaExceededError) {
   triggerPaywall('featureName', err.detail);
@@ -275,13 +276,14 @@ Deployed at: `https://careercaseai.<subdomain>.workers.dev`
 ### What It Does (in order per request)
 1. Handles CORS preflight
 2. Parses the `Authorization: Bearer <supabase_jwt>` header — decodes JWT to get `user_id`
-3. Looks up the user's plan (`user_profiles` table) — defaults to `'free'`
-4. Checks today's usage against the limit (`user_usage` table)
-5. If over limit → returns `HTTP 402` with JSON: `{ error, code: 'QUOTA_EXCEEDED', detail }`
-6. If within limit → increments the usage counter (upsert with `on_conflict`)
-7. Picks a Groq model based on `X-Usage-Type` header (using `USAGE_MODEL_TIER` map)
-8. Rotates through `GROQ_API_KEYS` (comma-separated secret), skipping rate-limited keys
-9. Proxies request to Groq, streams SSE back to browser
+3. Looks up the user's profile (`user_profiles` table) — creates with 30 free credits if missing
+4. Determines credit cost for the `X-Usage-Type` (from `CREDIT_COSTS` map)
+5. Pro users skip credit checks; free users must have enough `credits_remaining`
+6. If insufficient credits → returns `HTTP 402` with JSON: `{ error, code: 'QUOTA_EXCEEDED', detail: { creditsRemaining, creditCost, plan } }`
+7. If enough credits → deducts from `credits_remaining` (atomic decrement)
+8. Picks a Groq model based on `X-Usage-Type` header (using `USAGE_MODEL_TIER` map)
+9. Rotates through `GROQ_API_KEYS` (comma-separated secret), skipping rate-limited keys
+10. Proxies request to Groq, streams SSE back to browser
 
 ### Worker Secrets (set via `npx wrangler secret put`)
 | Secret | Value |
@@ -323,17 +325,18 @@ Full definitions in `supabase-migration.sql`.
 id, user_id, job_title, content (jsonb), type, is_pinned, created_at
 ```
 
-**`user_profiles`** — Subscription plan per user
+**`user_profiles`** — Subscription plan + credits balance per user
 ```
-user_id (FK → auth.users), plan ('free'|'pro'), plan_expires_at, credits_remaining, created_at
+user_id (FK → auth.users), plan ('free'|'pro'), plan_expires_at,
+credits_remaining (int, default 20), pro_daily_used (int, default 0),
+pro_daily_reset (date, nullable), created_at
 ```
 
-**`user_usage`** — Daily usage counters (resets each UTC day)
+**`user_usage`** — (Legacy table, no longer used for quota enforcement. Kept for analytics.)
 ```
 user_id, date (YYYY-MM-DD), dossiers_used, simulations_used, ai_chats_used,
 compares_used, transitions_used, roadmaps_used
 ```
-Primary key: `(user_id, date)` — upserted on each AI call.
 
 **`payments`** — Razorpay transaction log
 ```
@@ -345,67 +348,86 @@ pack_id, status, created_at
 
 ## 10. Monetization Model
 
-### 10.1 Plans
+### 10.1 Credits System
+
+All AI features use a **unified credits balance** (`credits_remaining` in `user_profiles`).
+No daily limits. No per-feature counters. One number.
+
+| Feature | Credit Cost |
+|---|---|
+| Career Dossier | 3 |
+| Career Comparison | 2 |
+| Career Transition | 2 |
+| Career Roadmap | 2 |
+| Day-in-Life Simulation (full session) | 5 |
+| Interview Prep | 1 |
+| AI Chat message | 1 |
+| GBU Analysis | 0 (included in dossier) |
+| Career Quiz | 0 (free) |
+| Mood Match | 0 (free) |
+| All standard-model features (suggestions, trending, related, WLB, refine, preliminary) | 0 |
+
+### 10.2 Plans
 
 **Free Tier** (permanent — no trial expiry, no credit card required)
-| Feature | Daily Limit |
-|---|---|
-| Career Dossiers | 3/day |
-| Simulations | 1/day |
-| AI Chat messages | 5/day |
-| Career Comparisons | 1/day |
-| Career Transitions | 1/day |
-| Career Roadmaps | 1/day |
-| Quiz, Mood Match, Interview Prep | Unlimited |
+- 20 credits on signup (one-time, never reset)
+- All features accessible while credits last
+- Quiz & Mood Match always free
+- Can buy credit packs anytime
 
-**Pro Plan** — ₹59/month (early bird; original ₹149/month)
-| Feature | Daily Limit |
-|---|---|
-| Career Dossiers | 15/day |
-| Simulations | 5/day |
-| AI Chat messages | 50/day |
-| Career Comparisons | 5/day |
-| Career Transitions | 5/day |
-| Career Roadmaps | 5/day |
-| PDF Export | ✓ |
-| Priority support | ✓ |
+**Pro Plan** — ₹249/month (early bird; original ₹499/month)
+- 100 credits/day (resets at midnight UTC, tracked in `pro_daily_used`)
+- Ask AI chat (Pro exclusive)
+- PDF Export (Pro exclusive)
+- Priority support
+- All free features
 
 **One-Time Credit Packs** (credits never expire)
 | Pack | Price | Original Price | Tag |
 |---|---|---|---|
-| 5 Credits | ₹29 | ₹49 | Starter |
-| 20 Credits | ₹99 | ₹199 | Most Popular |
-| 50 Credits | ₹199 | ₹499 | Best Value |
+| 30 Credits | ₹59 | ₹99 | Try it out |
+| 75 Credits | ₹129 | ₹249 | Most Popular |
+| 150 Credits | ₹199 | ₹399 | Best Value |
 
-1 credit = 1 premium AI call (dossier, simulation, transition, etc.)
-Chat: 1 credit = 5 messages.
+### 10.3 Pro-Only Features
 
-### 10.2 Quota Enforcement Flow
+Two features are **completely locked** for free users (frontend lock, not credit-based):
+- **Ask AI** (inline chat on dossier/comparison/transition/roadmap pages)
+- **PDF Export** (download dossier as PDF)
+
+Free users see a Lock icon and clicking triggers the paywall modal.
+
+### 10.4 Credit Enforcement Flow
 
 ```
 User clicks feature → ai.ts sends request to Worker with JWT + X-Usage-Type header
-→ Worker checks user_usage table
-  → Over limit: HTTP 402 → QuotaExceededError thrown in ai.ts
-    → Page catches it → calls triggerPaywall('featureName', { used, limit, plan })
-    → PaywallModal opens (Pro tab or Pack tab)
-  → Under limit: Worker increments counter → proceeds with Groq call
+→ Worker looks up user_profiles
+  → Pro user: check pro_daily_used vs 100 credits/day limit, reset if date changed
+    → Limit hit: HTTP 402 with dailyLimitHit: true → PaywallModal shows "Resets at midnight UTC"
+    → Under limit: deduct from pro_daily_used and proceed
+  → Free user with insufficient credits: HTTP 402 → QuotaExceededError thrown in ai.ts
+    → Page catches it → calls triggerPaywall('featureName', err.detail)
+    → PaywallModal opens (defaults to Pack tab)
+  → Free user with enough credits: Worker atomically decrements credits_remaining → proceeds with Groq call
 ```
 
-Quotas reset daily at midnight UTC (based on `YYYY-MM-DD` date key in `user_usage`).
+Credits never reset. They are only added via pack purchase or Pro upgrade.
 
-### 10.3 Paywall UI
+### 10.5 Paywall UI
+
+**Navbar** — Shows `⚡{credits}` for free users (clickable → /pricing), `⚡∞` for Pro users
 
 **`PaywallModal`** (`src/app/components/PaywallModal.tsx`)
 - Triggers automatically on any QuotaExceededError via `PaywallContext`
-- Two tabs: **Pro Plan** and **One-time Packs**
-- Shows `featureName` + `used / limit` context
-- "Why paid?" expandable section
+- Also triggers on Pro-locked feature click (Ask AI, PDF Export)
+- Two tabs: **Pro Plan** and **Credit Packs**
+- Shows "Out of Credits" / "Not enough credits for {feature}" messaging
 - `handleRazorpay()` is a placeholder `alert()` — **Razorpay integration pending**
-- `PLANS.pro.razorpayPlanId` = empty string — fill in after Razorpay setup
 
 **`PricingPage`** (`/pricing`)
 - Standalone pricing page accessible from Navbar/BottomNav
-- Same Free vs Pro grid + all 3 pack cards + FAQ accordion
+- Free vs Pro grid + credit cost breakdown table + 3 pack cards + FAQ accordion
+- Credit costs per feature clearly listed
 - `handleRazorpay()` is also a placeholder here
 
 ### 10.4 Razorpay Integration (TODO)
@@ -699,11 +721,12 @@ Add `utm_source=careercase` to any affiliate URL for tracking.
    // in catch block:
    if (err instanceof QuotaExceededError) { triggerPaywall('featureName', err.detail); return; }
    ```
+   For Pro-only features (Ask AI, PDF Export), check `plan !== 'pro'` and call `triggerPaywall('Feature Name')` before making the AI call.
 
 4. **Do not modify files in `src/app/components/ui/`** — those are shadcn/ui primitives.
    Create new components in `src/app/components/` instead.
 
-5. **FREE_LIMITS in `UsageContext.tsx` must always mirror `FREE_DAILY_LIMITS` in `worker/src/models.ts`** — they are separate copies for frontend vs backend use. Change both together.
+5. **CREDIT_COSTS in `UsageContext.tsx` must always mirror `CREDIT_COSTS` in `worker/src/models.ts`** — they are separate copies for frontend vs backend use. Change both together.
 
 6. **TypeScript generic arrow functions in `.tsx` files** — use trailing comma to avoid JSX parse errors:
    ```ts

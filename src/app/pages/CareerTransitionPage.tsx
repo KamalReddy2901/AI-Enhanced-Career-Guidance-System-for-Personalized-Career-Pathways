@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, Loader2, ChevronDown, ChevronUp, CheckCircle, XCircle, AlertTriangle, ArrowLeftRight, ExternalLink, Download, Share2, Clock, X } from 'lucide-react';
+import { ArrowRight, Loader2, ChevronDown, ChevronUp, CheckCircle, XCircle, AlertTriangle, ArrowLeftRight, ExternalLink, Download, Share2, Clock, X, Zap } from 'lucide-react';
 import { getCareerTransition, getJobSuggestions, type CareerTransitionPlan, QuotaExceededError } from '../services/ai';
 import { usePaywallContext } from '../context/PaywallContext';
 import { JOB_TITLES } from '../data/jobs';
@@ -108,7 +108,7 @@ export function CareerTransitionPage() {
     } catch (err) {
       if ((err as Error).name === 'AbortError') return;
       if (err instanceof QuotaExceededError) {
-        triggerPaywall('Career Transition', { used: err.detail.used, limit: err.detail.limit, plan: err.detail.plan });
+        triggerPaywall('Career Transition', err.detail);
       } else {
         setError((err as Error).message || 'Failed to generate transition plan.');
       }
@@ -272,6 +272,7 @@ export function CareerTransitionPage() {
                 <>
                   <ArrowRight size={16} />
                   Map My Transition
+                  <span className="inline-flex items-center gap-0.5 text-white/60 text-xs"><Zap size={10} className="fill-current" />2</span>
                 </>
               )}
             </motion.button>

@@ -1,9 +1,5 @@
 import { toast } from 'sonner';
-
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'llama-3.3-70b-versatile';
-
-let apiKey = localStorage.getItem('groq_api_key') || '';
+import { callGroq } from './ai';
 
 const CACHE_PREFIX = 'careersim_interview_';
 const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -29,40 +25,6 @@ function setCache<T>(key: string, data: T) {
   } catch {
     // localStorage full
   }
-}
-
-async function callGroq(systemPrompt: string, userPrompt: string): Promise<string> {
-  apiKey = localStorage.getItem('groq_api_key') || '';
-  
-  if (!apiKey) {
-    throw new Error('API key not set');
-  }
-
-  const response = await fetch(GROQ_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: 0.7,
-      max_tokens: 2500,
-      response_format: { type: 'json_object' },
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Groq API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.choices[0]?.message?.content || '';
 }
 
 export interface InterviewQuestion {
@@ -111,7 +73,12 @@ Return this exact JSON structure:
 Make questions SPECIFIC to ${jobTitle} - not generic. Include industry jargon, real tools, real scenarios.`;
 
   try {
-    const raw = await callGroq(systemPrompt, userPrompt);
+    const raw = await callGroq(systemPrompt, userPrompt, {
+      temperature: 0.7,
+      maxTokens: 2500,
+      jsonMode: true,
+      usageType: 'interview',
+    });
     const parsed = JSON.parse(raw);
     const questions = parsed.questions || parsed.data || Object.values(parsed)[0];
     

@@ -106,14 +106,26 @@ export function ComparisonPage() {
       setLoadingSlot(0);
       searchJobAI(paramA)
         .then(job => { setComparisonJob(0, job); addToHistory(job); })
-        .catch(() => toast.error(`Failed to load "${paramA}"`))
+        .catch((err) => {
+          if (err instanceof QuotaExceededError) {
+            triggerPaywall('Career Comparison', err.detail);
+          } else {
+            toast.error(`Failed to load "${paramA}"`);
+          }
+        })
         .finally(() => setLoadingSlot(prev => prev === 0 ? null : prev));
     }
     if (paramB && !comparisonJobs[1]) {
       setLoadingSlot(prev => prev === null ? 1 : prev);
       searchJobAI(paramB)
         .then(job => { setComparisonJob(1, job); addToHistory(job); })
-        .catch(() => toast.error(`Failed to load "${paramB}"`))
+        .catch((err) => {
+          if (err instanceof QuotaExceededError) {
+            triggerPaywall('Career Comparison', err.detail);
+          } else {
+            toast.error(`Failed to load "${paramB}"`);
+          }
+        })
         .finally(() => setLoadingSlot(prev => prev === 1 ? null : prev));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -207,7 +219,7 @@ export function ComparisonPage() {
       setCustomTitle('');
     } catch (err) {
       if (err instanceof QuotaExceededError) {
-        triggerPaywall('Career Dossier', { used: err.detail.used, limit: err.detail.limit, plan: err.detail.plan });
+        triggerPaywall('Career Comparison', err.detail);
       } else {
         toast.error('Failed to load career');
       }

@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
-import { streamChat } from '../services/ai';
+import { MessageCircle, X, Send, Loader2, Lock, Zap } from 'lucide-react';
+import { streamChat, QuotaExceededError } from '../services/ai';
+import { usePaywallContext } from '../context/PaywallContext';
+import { useUsage } from '../context/UsageContext';
 import { renderMarkdown } from '../utils/markdown';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
@@ -26,12 +29,19 @@ export function AskAIPanel({ contextTitle, contextBody }: AskAIPanelProps) {
   const [chatInput, setChatInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const { triggerPaywall } = usePaywallContext();
+  const { plan } = useUsage();
+  const isLocked = plan !== 'pro';
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
   const handleAsk = async () => {
+    if (isLocked) {
+      triggerPaywall('Ask AI');
+      return;
+    }
     if (!chatInput.trim() || isStreaming) return;
     const userMsg = chatInput.trim();
     setChatInput('');
@@ -54,15 +64,20 @@ export function AskAIPanel({ contextTitle, contextBody }: AskAIPanelProps) {
         });
       }
     } catch (error) {
-      toast.error('Chat error');
-      setChatMessages(prev => {
-        const msgs = [...prev];
-        msgs[msgs.length - 1] = {
-          role: 'assistant',
-          text: `Sorry, I encountered an error. ${error instanceof Error ? error.message : 'Please try again.'}`
-        };
-        return msgs;
-      });
+      if (error instanceof QuotaExceededError) {
+        triggerPaywall('AI Chat', error.detail);
+        setChatMessages(prev => prev.slice(0, -1));
+      } else {
+        toast.error('Chat error');
+        setChatMessages(prev => {
+          const msgs = [...prev];
+          msgs[msgs.length - 1] = {
+            role: 'assistant',
+            text: `Sorry, I encountered an error. ${error instanceof Error ? error.message : 'Please try again.'}`
+          };
+          return msgs;
+        });
+      }
     } finally {
       setIsStreaming(false);
     }
@@ -72,7 +87,14 @@ export function AskAIPanel({ contextTitle, contextBody }: AskAIPanelProps) {
     <>
       {/* Floating Ask AI button */}
       <motion.button
-        onClick={() => { setIsOpen(true); sounds.slide(); }}
+        onClick={() => {
+          if (isLocked) {
+            triggerPaywall('Ask AI');
+          } else {
+            setIsOpen(true);
+            sounds.slide();
+          }
+        }}
         className="fixed bottom-20 right-5 z-40 flex items-center gap-2 bg-black text-white px-4 py-3 shadow-lg hover:bg-black/85 transition-colors font-[Inter] print:hidden sm:bottom-6"
         style={{ fontSize: '0.82rem' }}
         whileHover={{ scale: 1.03 }}
@@ -81,6 +103,8 @@ export function AskAIPanel({ contextTitle, contextBody }: AskAIPanelProps) {
       >
         <MessageCircle size={16} />
         Ask AI
+        {isLocked && <Lock size={12} className="text-white/50" />}
+        {!isLocked && <span className="text-white/50 text-xs">Pro</span>}
       </motion.button>
 
       {/* Chat overlay */}

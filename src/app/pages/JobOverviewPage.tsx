@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Check, RefreshCw, ArrowRight, ChevronLeft, Sparkles, Loader2 } from 'lucide-react';
+import { Check, RefreshCw, ArrowRight, ChevronLeft, Sparkles, Loader2, Zap } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import { refineJobDescription, QuotaExceededError } from '../services/ai';
@@ -53,7 +53,7 @@ export function JobOverviewPage() {
       navigate('/job/detail');
     } catch (error) {
       if (error instanceof QuotaExceededError) {
-        triggerPaywall('Career Dossier', { used: error.detail.used, limit: error.detail.limit, plan: error.detail.plan });
+        triggerPaywall('Career Dossier', error.detail);
       } else {
         toast.error('Failed to generate dossier — please try again', { id: tid });
       }
@@ -84,7 +84,7 @@ export function JobOverviewPage() {
       setShowRefinement(false);
     } catch (error) {
       if (error instanceof QuotaExceededError) {
-        triggerPaywall('AI Refinement', { used: error.detail.used, limit: error.detail.limit, plan: error.detail.plan });
+        triggerPaywall('AI Refinement', error.detail);
       } else {
         console.error('Refinement failed:', error);
         toast.error('AI refinement failed — please try again');
@@ -199,8 +199,7 @@ export function JobOverviewPage() {
             ) : (
               <>
                 <Check size={18} />
-                Yes, this is the role I’m looking for
-              </>
+                Yes, this is the role I’m looking for                <span className="inline-flex items-center gap-0.5 text-white/60 text-xs ml-1"><Zap size={10} className="fill-current" />3</span>              </>
             )}
           </motion.button>
 
