@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, Sparkles, Loader2, ArrowRight, RotateCcw } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import { getMoodMatches, QuotaExceededError, type MoodMatch } from '../services/ai';
 import { usePaywallContext } from '../context/PaywallContext';
+import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
 
 export function MoodMatchPage() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { searchJobAI, setCurrentJob, addToHistory, setRefinementCount } = useApp();
   const { triggerPaywall } = usePaywallContext();
@@ -63,6 +65,33 @@ export function MoodMatchPage() {
     'creative and need to express myself',
     'analytical and love solving puzzles',
   ];
+
+  if (!user) return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-6">
+      <div className="max-w-md w-full text-center">
+        <StickFigure pose="thinking" size={80} className="mx-auto mb-6" />
+        <p className="font-[Inter] uppercase tracking-[0.2em] text-black/25 mb-3" style={{ fontSize: '0.63rem' }}>Sign in to unlock</p>
+        <h1 className="font-[Playfair_Display] text-black mb-4" style={{ fontSize: 'clamp(1.6rem, 4vw, 2.2rem)' }}>
+          Career Mood Match
+        </h1>
+        <p className="font-[Inter] text-black/50 leading-relaxed mb-8" style={{ fontSize: '0.9rem' }}>
+          Describe how you're feeling right now. We'll match you to careers that vibe with your current energy.
+        </p>
+        <Link
+          to="/auth?mode=signup"
+          className="inline-flex items-center gap-2 bg-black text-white px-7 py-3 font-[Inter] hover:bg-black/80 transition-colors mb-4"
+          style={{ fontSize: '0.88rem' }}
+        >
+          Get Started — It's Free
+          <ArrowRight size={15} />
+        </Link>
+        <p className="font-[Inter] text-black/35" style={{ fontSize: '0.78rem' }}>
+          Already have an account?{' '}
+          <Link to="/auth?mode=signin" className="underline hover:text-black/60 transition-colors">Sign in</Link>
+        </p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-background pt-20 pb-16">

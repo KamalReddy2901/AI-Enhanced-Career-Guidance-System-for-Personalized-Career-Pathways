@@ -5,6 +5,19 @@ import { JOB_TITLES } from '../data/jobs';
 import { getJobSuggestions } from '../services/ai';
 import { sounds } from '../utils/sounds';
 
+const PLACEHOLDER_SUGGESTIONS = [
+  'UX Designer',
+  'Data Scientist',
+  'Investment Banker',
+  'Product Manager',
+  'Forensic Psychologist',
+  'Marine Biologist',
+  'Urban Planner',
+  'Neurosurgeon',
+  'AI Engineer',
+  'Clinical Psychologist',
+];
+
 interface MagnifierSearchProps {
   onSearchComplete: (jobTitle: string) => void | Promise<void>;
   isAnimating: boolean;
@@ -25,6 +38,47 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<boolean>(false);
+
+  // Typewriter placeholder animation
+  const [animatedPlaceholder, setAnimatedPlaceholder] = useState('');
+  const [inputFocused, setInputFocused] = useState(false);
+  const placeholderAnimRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const placeholderSuggestionIdx = useRef(0);
+  const placeholderCharIdx = useRef(0);
+  const placeholderDeleting = useRef(false);
+
+  useEffect(() => {
+    if (isAnimating || query || inputFocused) {
+      setAnimatedPlaceholder('');
+      if (placeholderAnimRef.current) clearTimeout(placeholderAnimRef.current);
+      return;
+    }
+    const tick = () => {
+      const word = PLACEHOLDER_SUGGESTIONS[placeholderSuggestionIdx.current];
+      if (!placeholderDeleting.current) {
+        placeholderCharIdx.current++;
+        setAnimatedPlaceholder(word.slice(0, placeholderCharIdx.current));
+        if (placeholderCharIdx.current === word.length) {
+          placeholderDeleting.current = true;
+          placeholderAnimRef.current = setTimeout(tick, 1800);
+        } else {
+          placeholderAnimRef.current = setTimeout(tick, 72);
+        }
+      } else {
+        placeholderCharIdx.current--;
+        setAnimatedPlaceholder(word.slice(0, placeholderCharIdx.current));
+        if (placeholderCharIdx.current === 0) {
+          placeholderDeleting.current = false;
+          placeholderSuggestionIdx.current = (placeholderSuggestionIdx.current + 1) % PLACEHOLDER_SUGGESTIONS.length;
+          placeholderAnimRef.current = setTimeout(tick, 320);
+        } else {
+          placeholderAnimRef.current = setTimeout(tick, 42);
+        }
+      }
+    };
+    placeholderAnimRef.current = setTimeout(tick, 800);
+    return () => { if (placeholderAnimRef.current) clearTimeout(placeholderAnimRef.current); };
+  }, [isAnimating, query, inputFocused]);
 
   // Local fallback suggestions (when no API key)
   const localSuggestions = useMemo(() => {
@@ -171,9 +225,13 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
               setShowSuggestions(true);
               setSelectedSuggestion(-1);
             }}
-            onFocus={() => query.length >= 2 && setShowSuggestions(true)}
+            onFocus={() => {
+              setInputFocused(true);
+              query.length >= 2 && setShowSuggestions(true);
+            }}
+            onBlur={() => setInputFocused(false)}
             onKeyDown={handleKeyDown}
-            placeholder="Enter any job title..."
+            placeholder={inputFocused || query ? 'Enter any job title...' : (animatedPlaceholder ? `Try "${animatedPlaceholder}"` : 'Enter any job title...')}
             disabled={isAnimating}
             className="w-full px-5 py-4 bg-transparent text-black placeholder:text-black/30 font-[Playfair_Display] outline-none disabled:opacity-50"
             style={{ fontSize: '1.1rem', caretColor: 'rgba(0,0,0,0.5)' }}

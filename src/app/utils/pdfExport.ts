@@ -169,7 +169,7 @@ function skillBadges(
   return y + badgeH + 5;
 }
 
-function addFooters(doc: jsPDF, pageWidth: number, pageHeight: number, margin: number, title = 'Career Simulation') {
+function addFooters(doc: jsPDF, pageWidth: number, pageHeight: number, margin: number, title = 'CareerCase') {
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
@@ -179,7 +179,7 @@ function addFooters(doc: jsPDF, pageWidth: number, pageHeight: number, margin: n
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(...T.lightGray);
-    doc.text('careersim.app', margin, pageHeight - 9);
+    doc.text('careercase.pages.dev', margin, pageHeight - 9);
     doc.text(title, pageWidth / 2, pageHeight - 9, { align: 'center' });
     doc.text(`${i} / ${pageCount}`, pageWidth - margin, pageHeight - 9, { align: 'right' });
   }
@@ -212,7 +212,7 @@ export function downloadDossierPDF(job: {
     if (y + needed > pageHeight - margin - 18) { doc.addPage(); y = margin; }
   };
 
-  y = masthead(doc, 'CAREER SIMULATION  ·  FULL DOSSIER', margin, pageWidth, y);
+  y = masthead(doc, 'CAREERCASE  ·  FULL DOSSIER', margin, pageWidth, y);
 
   doc.setFont('times', 'bold');
   doc.setFontSize(36);
@@ -309,7 +309,7 @@ export function downloadAssessmentPDF(params: {
     if (y + needed > pageHeight - margin - 18) { doc.addPage(); y = margin; }
   };
 
-  y = masthead(doc, 'CAREER SIMULATION  ·  ASSESSMENT REPORT', margin, pageWidth, y);
+  y = masthead(doc, 'CAREERCASE  ·  ASSESSMENT REPORT', margin, pageWidth, y);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
@@ -428,7 +428,7 @@ export function downloadInterviewPDF(params: {
     if (y + needed > pageHeight - margin - 18) { doc.addPage(); y = margin; }
   };
 
-  y = masthead(doc, 'CAREER SIMULATION  ·  INTERVIEW PREP', margin, pageWidth, y);
+  y = masthead(doc, 'CAREERCASE  ·  INTERVIEW PREP', margin, pageWidth, y);
 
   doc.setFont('times', 'bold');
   doc.setFontSize(30);
@@ -526,7 +526,7 @@ export function downloadComparisonPDF(
     if (y + needed > pageHeight - margin - 18) { doc.addPage(); y = margin; }
   };
 
-  y = masthead(doc, 'CAREER SIMULATION  ·  CAREER COMPARISON', margin, pageWidth, y);
+  y = masthead(doc, 'CAREERCASE  ·  CAREER COMPARISON', margin, pageWidth, y);
 
   doc.setFont('times', 'bold');
   doc.setFontSize(22);
@@ -640,7 +640,7 @@ export function downloadRoadmapPDF(roadmap: {
     if (y + needed > pageHeight - margin - 18) { doc.addPage(); y = margin; }
   };
 
-  y = masthead(doc, 'CAREER SIMULATION  ·  CAREER ROADMAP', margin, pageWidth, y);
+  y = masthead(doc, 'CAREERCASE  ·  CAREER ROADMAP', margin, pageWidth, y);
 
   doc.setFont('times', 'bold');
   doc.setFontSize(30);
@@ -769,7 +769,7 @@ export function downloadTransitionPDF(plan: {
     if (y + needed > pageHeight - margin - 18) { doc.addPage(); y = margin; }
   };
 
-  y = masthead(doc, 'CAREER SIMULATION  ·  TRANSITION PLAN', margin, pageWidth, y);
+  y = masthead(doc, 'CAREERCASE  ·  TRANSITION PLAN', margin, pageWidth, y);
 
   doc.setFont('times', 'bold');
   doc.setFontSize(26);
@@ -913,7 +913,7 @@ export async function generateShareCard(job: {
 
   ctx.font = '10px Inter, Helvetica, sans-serif';
   ctx.fillStyle = '#aaa';
-  ctx.fillText('CAREER SIMULATION  ·  CAREER DOSSIER', 24, 46);
+  ctx.fillText('CAREERCASE  ·  CAREER DOSSIER', 24, 46);
 
   ctx.font = 'bold 34px Georgia, serif';
   ctx.fillStyle = '#111';
@@ -944,7 +944,7 @@ export async function generateShareCard(job: {
   ctx.fillRect(0, H - 44, W, 44);
   ctx.font = '11px Inter, Helvetica, sans-serif';
   ctx.fillStyle = '#fff';
-  ctx.fillText('careersim.app', 24, H - 17);
+  ctx.fillText('careercase.pages.dev', 24, H - 17);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(blob => {

@@ -57,7 +57,7 @@ export function InstallPrompt() {
               Add to Home Screen
             </p>
             <p className="font-[Inter] text-white/60" style={{ fontSize: '0.72rem' }}>
-              Install CareerSim for a native app experience
+              Install CareerCase for a native app experience
             </p>
           </div>
           <button

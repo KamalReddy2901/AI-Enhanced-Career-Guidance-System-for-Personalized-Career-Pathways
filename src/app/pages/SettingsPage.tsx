@@ -39,7 +39,8 @@ export function SettingsPage() {
     clearHistory();
     clearAllCache();
     resetPreferences();
-    localStorage.removeItem('careersim_onboarded_v1');
+    localStorage.removeItem('careersim_onboarded_v2');
+    window.dispatchEvent(new StorageEvent('storage', { key: 'careersim_onboarded_v2', newValue: null }));
     // Clear simulation cached results
     Object.keys(localStorage)
       .filter(k => k.startsWith('sim_result_'))
@@ -167,9 +168,10 @@ export function SettingsPage() {
               description="Show the welcome tour again on next page load"
               icon={<Check size={16} />}
               onClick={() => {
-                localStorage.removeItem('careersim_onboarded_v1');
+                localStorage.removeItem('careersim_onboarded_v2');
+                window.dispatchEvent(new StorageEvent('storage', { key: 'careersim_onboarded_v2', newValue: null }));
                 setPreferences({ showOnboarding: true });
-                toast.success('Onboarding tour will show on next page load');
+                toast.success('Onboarding tour reset — it will show when you return home');
               }}
             />
           </div>

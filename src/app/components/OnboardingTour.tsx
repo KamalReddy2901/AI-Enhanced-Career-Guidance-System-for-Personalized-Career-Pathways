@@ -4,6 +4,7 @@ import {
   X, ArrowRight, ArrowLeft, Sparkles, Search, BookOpen, Play,
   Star, Scale, FlaskConical, MessageSquare, ArrowLeftRight, Map,
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const TOUR_KEY = 'careersim_onboarded_v2';
 
@@ -168,12 +169,12 @@ const STEPS: TourStep[] = [
     tag: 'WELCOME',
     icon: <Sparkles size={22} />,
     headline: 'Your career compass, powered by AI.',
-    body: "Career Sim lets you explore 250+ professions in depth — before you commit to a single one. Here's a quick tour of everything you can do.",
+    body: "CareerCase lets you explore 250+ professions in depth — before you commit to a single one. Here's a quick tour of everything you can do.",
     preview: (
       <div className="flex items-center justify-center w-full py-2">
         <div className="text-center">
           <Sparkles size={28} className="text-black/15 mx-auto mb-2" />
-          <p className="font-[Playfair_Display] text-black/30" style={{ fontSize: '0.9rem' }}>Career Sim</p>
+          <p className="font-[Playfair_Display] text-black/30" style={{ fontSize: '0.9rem' }}>CareerCase</p>
           <p className="font-[Inter] text-black/20 mt-1" style={{ fontSize: '0.6rem' }}>9 tools · 250+ careers · AI-powered</p>
         </div>
       </div>
@@ -265,10 +266,12 @@ const STEPS: TourStep[] = [
 /* ─────────────────────────── component ─────────────────────────────────── */
 
 export function OnboardingTour() {
+  const { user } = useAuth();
   const [visible, setVisible] = useState(false);
   const [step, setStep] = useState(0);
 
   useEffect(() => {
+    if (!user) return; // Only show tour to logged-in users
     const done = localStorage.getItem(TOUR_KEY);
     if (!done) {
       const t = setTimeout(() => setVisible(true), 900);
@@ -283,7 +286,7 @@ export function OnboardingTour() {
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
-  }, []);
+  }, [user]);
 
   const dismiss = () => {
     localStorage.setItem(TOUR_KEY, '1');

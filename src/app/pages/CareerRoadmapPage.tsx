@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router';
+import { useSearchParams, Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Map, Loader2, AlertTriangle, ChevronDown, ChevronUp, TrendingUp, Download, Share2, Clock, X, Zap, Pencil } from 'lucide-react';
+import { Map, Loader2, AlertTriangle, ChevronDown, ChevronUp, TrendingUp, Download, Share2, Clock, X, Zap, Pencil, ArrowRight } from 'lucide-react';
 import { getCareerRoadmap, getQuickDescription, type CareerRoadmap, getJobSuggestions, QuotaExceededError } from '../services/ai';
 import { usePaywallContext } from '../context/PaywallContext';
+import { useAuth } from '../context/AuthContext';
 import { StickFigure } from '../components/StickFigure';
 import { AskAIPanel } from '../components/AskAIPanel';
 import { downloadRoadmapPDF } from '../utils/pdfExport';
@@ -21,6 +22,7 @@ const STAGE_COLORS: Record<string, { dot: string; bg: string; border: string }> 
 };
 
 export function CareerRoadmapPage() {
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
 
   const [jobTitle, setJobTitle] = useState(() => searchParams.get('job') || '');
@@ -116,10 +118,36 @@ export function CareerRoadmapPage() {
     }
   };
 
+  if (!user) return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-6">
+      <div className="max-w-md w-full text-center">
+        <StickFigure pose="presenting" size={80} className="mx-auto mb-6" />
+        <p className="font-[Inter] uppercase tracking-[0.2em] text-black/25 mb-3" style={{ fontSize: '0.63rem' }}>Sign in to unlock</p>
+        <h1 className="font-[Playfair_Display] text-black mb-4" style={{ fontSize: 'clamp(1.6rem, 4vw, 2.2rem)' }}>
+          Career Roadmap Builder
+        </h1>
+        <p className="font-[Inter] text-black/50 leading-relaxed mb-8" style={{ fontSize: '0.9rem' }}>
+          Get a personalised step-by-step roadmap from where you are today to your target role — skills, timelines, and milestones included.
+        </p>
+        <Link
+          to="/auth?mode=signup"
+          className="inline-flex items-center gap-2 bg-black text-white px-7 py-3 font-[Inter] hover:bg-black/80 transition-colors mb-4"
+          style={{ fontSize: '0.88rem' }}
+        >
+          Get Started — It's Free
+          <ArrowRight size={15} />
+        </Link>
+        <p className="font-[Inter] text-black/35" style={{ fontSize: '0.78rem' }}>
+          Already have an account?{' '}
+          <Link to="/auth?mode=signin" className="underline hover:text-black/60 transition-colors">Sign in</Link>
+        </p>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background pt-20 pb-16">
       <div className="max-w-2xl mx-auto px-4 sm:px-6">
-
         {/* Header */}
         <motion.div
           className="mb-10"

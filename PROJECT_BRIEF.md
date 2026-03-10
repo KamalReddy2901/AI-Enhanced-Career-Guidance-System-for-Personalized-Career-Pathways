@@ -37,7 +37,7 @@ before committing to that path. Think of it as "test driving" a career.
 | AI proxy | Cloudflare Worker (`worker/`) |
 | Hosting | Cloudflare Pages (frontend) + Cloudflare Workers (AI proxy) |
 | Analytics | PostHog (injected via snippet, no npm package) |
-| Payments | Razorpay (placeholder — integration pending) |
+| Payments | Razorpay (live — credit pack purchases) |
 | Notifications | Sonner (toast library) |
 | Icons | Lucide React |
 | Charts | Recharts |
@@ -66,12 +66,12 @@ before committing to that path. Think of it as "test driving" a career.
 │       ├── components/
 │       │   ├── Navbar.tsx            # Top nav; logo = "CareerCase"; History = "Case Archive"
 │       │   ├── BottomNav.tsx         # Mobile bottom nav
-│       │   ├── PaywallModal.tsx      # Credits exhausted modal (Pro plan + Credit Packs)
+│       │   ├── PaywallModal.tsx      # Credits exhausted modal (credit packs only, no Pro tab)
 │       │   └── ui/                   # shadcn/ui components (don't edit these)
 │       ├── context/
 │       │   ├── AppContext.tsx        # Global job/dossier state; re-throws QuotaExceededError
 │       │   ├── AuthContext.tsx       # Supabase auth state
-│       │   ├── UsageContext.tsx      # Credits balance, plan (free/pro), CREDIT_COSTS
+│       │   ├── UsageContext.tsx      # Credits balance, hasUnlimitedAskai, CREDIT_COSTS
 │       │   └── PaywallContext.tsx    # Global paywall trigger: triggerPaywall()
 │       ├── hooks/
 │       │   ├── useFavorites.ts
@@ -152,12 +152,13 @@ before committing to that path. Think of it as "test driving" a career.
 - An optional context description auto-fills when the career field loses focus; the user
   can edit it before requesting the ⚡2 roadmap.
 
-**AI Chat** (`/job/detail` — chat panel, and on Compare/Roadmap/Transition pages)
+- **Ask AI** (`/job/detail` — chat panel, and on Compare/Roadmap/Transition pages)
 - Contextual Q&A chat within any AI-generated page. User can ask follow-ups.
 - Uses `streamChat()` with streaming SSE responses.
-- **Pro-only** — the Ask AI floating button opens the panel for all users; free users see
-  a locked state inside the panel (lock icon + "Unlock with Pro" link) rather than being
-  immediately redirected to the paywall modal.
+- Costs **1 credit per message**. During an active Ask AI perk (from a credit pack purchase),
+  messages are free — up to 50 per day. `hasUnlimitedAskai` from `UsageContext` controls UI hints.
+- `ChatDailyCapError` is thrown when the daily cap is hit; pages show a "servers busy" toast.
+- The floating Ask AI button always opens the panel. The panel shows current cost/perk status.
 
 **Interview Prep** (`/interview-prep`)
 - Role-specific interview questions + model answers.
@@ -180,9 +181,13 @@ before committing to that path. Think of it as "test driving" a career.
 ### 5.2 Supporting Features
 
 - **PWA**: installable, offline-capable (service worker via vite-plugin-pwa)
-- **Onboarding tour**: first-time user walkthrough (`OnboardingTour.tsx`)
+- **Pre-auth teasers**: Quiz, Mood Match, Career Transition, Career Roadmap, and Career Comparison
+  pages show a centred teaser (feature name, description, "Get Started — It's Free" CTA) to
+  logged-out visitors instead of the full feature UI.
+- **Onboarding tour**: first-time logged-in user walkthrough (`OnboardingTour.tsx`). Only shown
+  after sign-in, not pre-auth. TOUR_KEY = `careersim_onboarded_v2`.
 - **Keyboard shortcuts**: `/` to focus search, etc. (`useKeyboardShortcuts.ts`)
-- **PDF export**: full dossier → PDF via jsPDF (**Pro-only**)
+- **PDF export**: full dossier → PDF via jsPDF (**free for all logged-in users**)
 - **Share**: encode dossier state in URL for sharing
 - **Streak tracking**: daily usage streak (`useStreak.ts`)
 - **Theme**: light/dark/system via CSS variables
@@ -191,6 +196,10 @@ before committing to that path. Think of it as "test driving" a career.
   in `trending_cache` (Supabase). Every visitor reads the same cached list — no per-user AI
   calls. The list auto-loads via IntersectionObserver when the section scrolls into view.
   Users cannot manually refresh it.
+- **Search bar typewriter animation**: `MagnifierSearch` cycles through 10 career title suggestions
+  as a typewriter placeholder when the input is idle; clears on focus or when the user types.
+- **Landing use case cards**: A "The questions CareerCase answers" section on the homepage
+  (visible only pre-auth) shows 8 concrete question cards with hints about which tool answers each.
 
 ---
 
@@ -250,7 +259,7 @@ Every AI call passes a `usageType` header to the Worker, which decides model tie
 |---|---|---|---|
 | `dossier` | premium (70B) | 3 | Main dossier generation |
 | `simulation` | premium (70B) | 5 | Full session: 10 scenarios + final assessment |
-| `chat` | premium (70B) | 1 | In-dossier chat (Pro-only on frontend) |
+| `chat` | premium (70B) | 1 | In-dossier chat (costs 1 credit; free during Ask AI perk) |
 | `compare` | premium (70B) | 2 | Career comparison |
 | `transition` | premium (70B) | 2 | Career transition plan |
 | `roadmap` | premium (70B) | 2 | Career roadmap |
@@ -265,22 +274,12 @@ Every AI call passes a `usageType` header to the Worker, which decides model tie
 | `mood` | standard (8B) | 0 | Mood match |
 | `refine` | standard (8B) | 0 | Content refinement |
 
-### 7.4 QuotaExceededError
+### 7.4 Error-handling Pattern
 
-When the Worker returns HTTP 402 (insufficient credits), `ai.ts` throws `QuotaExceededError`:
-
+Every page that calls a credit-costing AI function wraps it in try/catch:
 ```ts
-export class QuotaExceededError extends Error {
-  detail: { creditsRemaining: number; creditCost: number; plan: string }
-}
-```
-
-Every page that calls a credit-costing AI function wraps it in try/catch and calls:
-```ts
-if (err instanceof QuotaExceededError) {
-  triggerPaywall('featureName', err.detail);
-  return;
-}
+if (err instanceof QuotaExceededError) { triggerPaywall('featureName', err.detail); return; }
+if (err instanceof ChatDailyCapError) { /* show "daily cap" toast — no paywall */ return; }
 ```
 
 ---
@@ -295,8 +294,11 @@ Deployed at: `https://careercaseai.<subdomain>.workers.dev`
 3. Looks up the user's profile (`user_profiles` table) — creates with 20 free credits if missing.
    **If the Supabase lookup fails, the worker throws a 503** (no silent credit bypass).
 4. Determines credit cost for the `X-Usage-Type` (from `CREDIT_COSTS` map)
-5. Pro users skip credit checks; free users must have enough `credits_remaining`
-6. If insufficient credits → returns `HTTP 402` with JSON: `{ error, code: 'QUOTA_EXCEEDED', detail: { creditsRemaining, creditCost, plan } }`
+5. If `usageType` is `chat` and user has an active Ask AI perk (`ask_ai_unlimited_until` > now):
+   - Checks/resets daily counter (`ask_ai_daily_used`, `ask_ai_daily_reset`)
+   - Daily cap hit (50) → HTTP 402 `{ code: 'CHAT_DAILY_CAP' }` → `ChatDailyCapError` toast
+   - Under cap → increments `ask_ai_daily_used` → proceeds for free
+6. Otherwise, if insufficient `credits_remaining` → HTTP 402 `{ code: 'QUOTA_EXCEEDED', detail: { creditsRemaining, creditCost } }`
 7. If enough credits → deducts from `credits_remaining` (atomic decrement)
 8. Picks a Groq model based on `X-Usage-Type` header (using `USAGE_MODEL_TIER` map)
 9. Rotates through `GROQ_API_KEYS` (comma-separated secret), skipping rate-limited keys
@@ -308,6 +310,8 @@ Deployed at: `https://careercaseai.<subdomain>.workers.dev`
 | `GROQ_API_KEYS` | Comma-separated Groq API keys (no spaces) |
 | `SUPABASE_URL` | `https://mmwgnsggnllwgshipnwh.supabase.co` |
 | `SUPABASE_SERVICE_KEY` | service_role key from Supabase dashboard |
+| `RAZORPAY_KEY_SECRET` | Razorpay secret key (server-side signing) |
+| `RAZORPAY_WEBHOOK_SECRET` | Razorpay webhook verification secret |
 
 ### Allowed CORS Origins
 ```
@@ -342,12 +346,15 @@ Full definitions in `supabase-migration.sql`.
 id, user_id, job_title, content (jsonb), type, is_pinned, created_at
 ```
 
-**`user_profiles`** — Subscription plan + credits balance per user
+**`user_profiles`** — Credits balance and Ask AI perk per user
 ```
-user_id (FK → auth.users), plan ('free'|'pro'), plan_expires_at,
-credits_remaining (int, default 20), pro_daily_used (int, default 0),
-pro_daily_reset (date, nullable), created_at
+user_id (FK → auth.users), credits_remaining (int, default 20),
+ask_ai_unlimited_until (timestamptz, null = no perk),
+ask_ai_daily_used (int, default 0),   -- resets daily; capped at 50 during perk
+ask_ai_daily_reset (date),
+created_at
 ```
+**Note:** The old `plan`, `plan_expires_at`, `pro_daily_used`, `pro_daily_reset` columns have been dropped. There is no longer a Pro subscription plan.
 
 **`user_usage`** — (Legacy table, no longer used for quota enforcement. Kept for analytics.)
 ```
@@ -375,7 +382,7 @@ pack_id, status, created_at
 ### 10.1 Credits System
 
 All AI features use a **unified credits balance** (`credits_remaining` in `user_profiles`).
-No daily limits. No per-feature counters. One number.
+No daily limits. No subscription tiers. No Pro plan. One number.
 
 | Feature | Credit Cost |
 |---|---|
@@ -385,8 +392,9 @@ No daily limits. No per-feature counters. One number.
 | Career Roadmap | 2 |
 | Day-in-Life Simulation (full session) | 5 |
 | Interview Prep | 1 |
-| AI Chat message | 1 |
+| AI Chat message | 1 (free during Ask AI perk) |
 | GBU Analysis | 0 (included in dossier) |
+| PDF Export | 0 (free for all) |
 | Career Quiz | 0 (free) |
 | Mood Match | 0 (free) |
 | All standard-model features (suggestions, trending, related, WLB, refine, preliminary) | 0 |
@@ -396,76 +404,81 @@ No daily limits. No per-feature counters. One number.
 **Free Tier** (permanent — no trial expiry, no credit card required)
 - 20 credits on signup (one-time, never reset)
 - All features accessible while credits last
-- Quiz & Mood Match always free
+- Quiz, Mood Match, PDF Export, and GBU always free
+- Ask AI available for 1 credit/message
 - Can buy credit packs anytime
 
-**Pro Plan** — ₹249/month (early bird; original ₹499/month)
-- 100 credits/day (resets at midnight UTC, tracked in `pro_daily_used`)
-- Ask AI chat (Pro exclusive)
-- PDF Export (Pro exclusive)
-- Priority support
-- All free features
+### 10.3 One-Time Credit Packs (Razorpay — live)
 
-**One-Time Credit Packs** (credits never expire)
-| Pack | Price | Original Price | Tag |
-|---|---|---|---|
-| 30 Credits | ₹59 | ₹99 | Try it out |
-| 75 Credits | ₹129 | ₹249 | Most Popular |
-| 150 Credits | ₹199 | ₹399 | Best Value |
+Credits never expire. Each pack also grants an **Unlimited Ask AI perk** for a limited period.
+Ask AI messages during the perk period are free, subject to a daily cap of 50.
+If another pack is bought while a perk is active, the remaining days are preserved and new days are added on top.
 
-### 10.3 Pro-Only Features
+| Pack | Price | Original Price | Credits | Ask AI Perk | Tag |
+|---|---|---|---|---|---|
+| Starter | ₹59 | ₹99 | 30 | 7 days unlimited | Starter |
+| Popular | ₹129 | ₹249 | 75 | 15 days unlimited | Popular |
+| Best Value | ₹199 | ₹399 | 120 | 30 days unlimited | Best Value |
 
-Two features are **completely locked** for free users (frontend lock, not credit-based):
-- **Ask AI** (inline chat on dossier/comparison/transition/roadmap pages)
-  - The floating "Ask AI" button **always opens the panel** (never triggers paywall immediately).
-  - Inside the panel, free users see a locked state: lock icon + feature description +
-    "Unlock with Pro" button linking to `/pricing`.
-- **PDF Export** (download dossier as PDF)
-  - Free users see a Lock icon; clicking triggers the paywall modal.
+### 10.4 Ask AI
 
-### 10.4 Credit Enforcement Flow
+- Available to **all users** (no Pro subscription required).
+- Costs **1 credit per message** unless an Ask AI perk is active.
+- Pack purchase grants unlimited Ask AI for 7/15/30 days (capped at 50 messages/day).
+- When the daily cap is hit, the Worker returns HTTP 402 with `code: 'CHAT_DAILY_CAP'`.
+  `ai.ts` throws `ChatDailyCapError`; pages display a "servers busy" toast.
+- The floating Ask AI button always opens the panel; inside the panel the cost/perk status is shown.
+- `hasUnlimitedAskai` is exposed by `UsageContext` for UI hints.
+
+### 10.5 PDF Export
+
+- **Free for all users.** No credits required. No Pro gate. The download button is always enabled
+  on `JobDetailPage` for logged-in users.
+
+### 10.6 Credit Enforcement Flow
 
 ```
 User clicks feature → ai.ts sends request to Worker with JWT + X-Usage-Type header
 → Worker looks up user_profiles
-  → Pro user: check pro_daily_used vs 100 credits/day limit, reset if date changed
-    → Limit hit: HTTP 402 with dailyLimitHit: true → PaywallModal shows "Resets at midnight UTC"
-    → Under limit: deduct from pro_daily_used and proceed
-  → Free user with insufficient credits: HTTP 402 → QuotaExceededError thrown in ai.ts
-    → Page catches it → calls triggerPaywall('featureName', err.detail)
-    → PaywallModal opens (defaults to Pack tab)
-  → Free user with enough credits: Worker atomically decrements credits_remaining → proceeds with Groq call
+  → usageType is free (0 cost): always allowed, no DB write
+  → usageType is 'chat' + active Ask AI perk:
+    → Check/reset daily counter (ask_ai_daily_used, ask_ai_daily_reset)
+    → Daily cap (50) hit: HTTP 402 { code: 'CHAT_DAILY_CAP' } → ChatDailyCapError toast
+    → Under cap: increment ask_ai_daily_used → proceed
+  → Credit-costing usageType:
+    → Insufficient credits: HTTP 402 { code: 'QUOTA_EXCEEDED' } → QuotaExceededError
+      → Page catches it → triggerPaywall('featureName', err.detail)
+      → PaywallModal opens (shows credit packs)
+    → Enough credits: Worker atomically decrements credits_remaining → proceeds with Groq call
 ```
 
-Credits never reset. They are only added via pack purchase or Pro upgrade.
-
-### 10.5 Paywall UI
+### 10.7 Paywall UI
 
 **Navbar credits badge** — Shows `⚡{N}` credits count for logged-in users, clickable → `/pricing`.
-No separate "Pricing" nav link — the badge serves as the entry point.
+Pre-auth: a plain **Pricing** text link in the navbar replaces the badge.
 
 **`PaywallModal`** (`src/app/components/PaywallModal.tsx`)
-- Triggers automatically on any QuotaExceededError via `PaywallContext`
-- Also triggers on Pro-locked PDF Export click
-- Two tabs: **Pro Plan** and **Credit Packs**
-- Shows "Out of Credits" / "Not enough credits for {feature}" messaging
-- `handleRazorpay()` is a placeholder `alert()` — **Razorpay integration pending**
+- Triggers automatically on any `QuotaExceededError` via `PaywallContext`.
+- Shows only **Credit Packs** (no Pro tab).
+- Each pack shows its Ask AI perk days.
+- `handleRazorpay(packId)` calls Worker `/payment/create-order` → opens Razorpay Checkout → calls Worker `/payment/verify` → refreshes credits on success.
 
 **`PricingPage`** (`/pricing`)
-- Standalone pricing page (linked from credits badge; no separate navbar entry)
-- Free vs Pro grid + credit cost breakdown table + 3 pack cards + FAQ accordion
-- Credit costs per feature clearly listed
-- `handleRazorpay()` is also a placeholder here
+- Standalone pricing page; linked from the credits badge.
+- Free tier strip + 3 pack cards + credit cost breakdown table + FAQ accordion.
+- Same `handleRazorpay()` integration as PaywallModal.
 
-### 10.4 Razorpay Integration (TODO)
-When Razorpay account is approved:
-1. Get Key ID from Razorpay dashboard
-2. Create plan in Razorpay for recurring ₹59/month subscription
-3. Update `PLANS.pro.razorpayPlanId` in `PaywallModal.tsx`
-4. Replace `handleRazorpay()` in both `PaywallModal.tsx` and `PricingPage.tsx` with actual
-   Razorpay Checkout script call
-5. Add Razorpay webhook secret to Cloudflare Worker secrets to verify payments server-side
-6. Worker should update `user_profiles.plan = 'pro'` and `plan_expires_at` on successful payment
+### 10.8 Razorpay Integration (Live)
+
+Razorpay is fully integrated:
+- **Key ID:** `rzp_live_SOpKaXXi0qi4VA` (hardcoded in `worker/src/index.ts`)
+- Worker endpoints: `POST /payment/create-order` and `POST /payment/verify`
+- Pack config lives in `PACK_CONFIG` in `worker/src/index.ts`
+- On successful payment: Worker adds credits + sets `ask_ai_unlimited_until` in `user_profiles`
+- Required Worker secrets: `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`
+
+To add a new pack: add to `PACK_CONFIG` in `worker/src/index.ts` and `PACKS` array in
+`PaywallModal.tsx` and `PricingPage.tsx`.
 
 ---
 
@@ -492,19 +505,25 @@ When Razorpay account is approved:
 ## 12. Navigation Structure
 
 ### Desktop Navbar (`src/app/components/Navbar.tsx`)
-The `navLinks` array defines every desktop nav item. To add/remove/rename links, edit this array:
+The `navLinks` array defines every desktop nav item. Archive and Settings are auth-gated —
+only shown to logged-in users. Pre-auth visitors see a **Pricing** text link instead of the
+credits badge.
+
 ```ts
+// Logged-in users see all 8 links:
 const navLinks = [
-  { to: '/', icon: <Home size={14} />, label: 'Home' },
-  { to: '/quiz', icon: <FlaskConical size={14} />, label: 'Quiz' },
-  { to: '/mood', icon: <Brain size={14} />, label: 'Mood' },
-  { to: '/career-transition', icon: <ArrowLeftRight size={14} />, label: 'Transition' },
-  { to: '/roadmap', icon: <Map size={14} />, label: 'Roadmap' },
-  { to: '/compare', icon: <Scale size={14} />, label: 'Compare' },
-  { to: '/history', icon: <Clock size={14} />, label: 'Archive (n)' },
-  { to: '/settings', icon: <Settings size={14} />, label: 'Settings' },
+  { to: '/', label: 'Home' },
+  { to: '/quiz', label: 'Quiz' },
+  { to: '/mood', label: 'Mood' },
+  { to: '/career-transition', label: 'Transition' },
+  { to: '/roadmap', label: 'Roadmap' },
+  { to: '/compare', label: 'Compare' },
+  // Only when user is logged in:
+  { to: '/history', label: 'Archive (n)' },
+  { to: '/settings', label: 'Settings' },
 ];
-// Note: no Pricing link — the credits badge (⚡N) in the navbar links to /pricing instead.
+// Logged-in: credits badge (⚡N) → /pricing
+// Logged-out: plain "Pricing" text link → /pricing (replaces badge)
 ```
 The navbar **hides entirely on `/auth`** (no nav shown on login page).
 Logo: `StickFigure` + "Career**Case**" — "Career" full opacity, "Case" at 35% opacity.
@@ -610,6 +629,12 @@ const showLanding = isSupabaseConfigured && !user;
 // true  → show marketing landing page (for logged-out visitors)
 // false → show search interface (logged-in users, or Supabase not configured)
 ```
+The landing page includes a **"The questions CareerCase answers"** section (8 use-case cards,
+showing only when `showLanding = true`) between "How CareerCase Works" and "What You Get".
+
+Feature pages (Quiz, Mood Match, Career Transition, Career Roadmap, Compare) gate their UI
+behind auth: logged-out visitors see a centred teaser card with a "Get Started — It's Free"
+CTA instead of the full feature UI.
 
 If Supabase is not configured (`VITE_SUPABASE_URL` not set), the app skips auth entirely and goes straight to search — useful for dev without Supabase.
 
@@ -758,7 +783,8 @@ Add `utm_source=careercase` to any affiliate URL for tracking.
    // in catch block:
    if (err instanceof QuotaExceededError) { triggerPaywall('featureName', err.detail); return; }
    ```
-   For Pro-only features (Ask AI, PDF Export), check `plan !== 'pro'` and call `triggerPaywall('Feature Name')` before making the AI call.
+   Ask AI and PDF Export are available to all users — no Pro gate. Ask AI costs 1 credit/message
+   (or is free during an active Ask AI perk). PDF Export is always free.
 
 4. **Do not modify files in `src/app/components/ui/`** — those are shadcn/ui primitives.
    Create new components in `src/app/components/` instead.
@@ -797,4 +823,4 @@ Add `utm_source=careercase` to any affiliate URL for tracking.
 
 ---
 
-*Last updated: March 2026. Recent changes: worker bug-fix (no silent credit bypass on Supabase error), preliminary context descriptions for Compare/Roadmap/Transition, shared Supabase trending cache, credits auto-refresh after AI calls, AskAI locked state inside panel, Pricing removed from navbar (credits badge links to /pricing), simulation ⚡5 badge moved to JobDetailPage entry button, removed autoLoadTrending setting. Sections: Tech Stack, Pages, Features, Architecture, AI Service, Worker, Database, Monetization, Env Vars, Navigation, Theme, Data Files, Auth, Caching, Preferences, Build, Branding, Analytics, Affiliates, Conventions, Deployment. Keep this file current when making significant changes.*
+*Last updated: March 2026. Recent changes: credits-only monetisation (Pro plan removed), Razorpay credit pack payments live (30/75/120 credits; 7/15/30-day Ask AI perk bundled per pack), Ask AI now credit-based for all users (1 credit/message; free during perk; 50/day cap enforced by Worker → ChatDailyCapError), PDF Export free for all users, PaywallModal shows only packs (no Pro tab), PricingPage rewritten (no Pro grid), DB schema updated (plan/pro columns dropped; ask_ai_unlimited_until + ask_ai_daily_used added), feature page pre-auth teasers (Quiz/Mood/Transition/Roadmap/Compare), landing page use-case cards section, MagnifierSearch typewriter placeholder animation, OnboardingTour auth-gated (post-login only; TOUR_KEY = careersim_onboarded_v2), SettingsPage Reset Onboarding fixed (correct key + same-tab dispatchEvent), Navbar pre-auth cleanup (Archive/Settings hidden; Pricing link shown; AI-on badge removed), brand consistency pass (careercase.pages.dev canonical; CareerCase throughout PDF/OnboardingTour/InstallPrompt). Sections: Tech Stack, Pages, Features, Architecture, AI Service, Worker, Database, Monetization, Env Vars, Navigation, Theme, Data Files, Auth, Caching, Preferences, Build, Branding, Analytics, Affiliates, Conventions, Deployment. Keep this file current when making significant changes.*

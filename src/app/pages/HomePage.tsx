@@ -542,6 +542,70 @@ export function HomePage() {
         </div>
       </section>
 
+      {/* ── USE CASES ──────────────────────────────────────── */}
+      {showLanding && (
+        <section className="py-24 px-6 border-t border-black/8">
+          <div className="max-w-4xl mx-auto">
+            <motion.div
+              className="text-center mb-14"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <p className="font-[Inter] uppercase tracking-[0.2em] text-black/30 mb-3" style={{ fontSize: '0.65rem' }}>
+                Real Questions. Real Answers.
+              </p>
+              <h2 className="font-[Playfair_Display] text-black" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)' }}>
+                The questions CareerCase answers
+              </h2>
+            </motion.div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-black/8 border border-black/8">
+              {[
+                { q: "Should I choose UX Design or Product Management?", hint: "Compare both careers side by side" },
+                { q: "Can I actually move from customer support to data analysis?", hint: "Transition planner maps the exact steps" },
+                { q: "What does a product designer's actual Tuesday look like?", hint: "Day simulation shows the real routine" },
+                { q: "Am I cut out for consulting, or is it just glamorous on LinkedIn?", hint: "Dossier reveals the behind-the-scenes truth" },
+                { q: "I'm a nurse. Could I become a UX researcher?", hint: "Career transition planner will tell you" },
+                { q: "Is a career in AI realistic without a CS degree?", hint: "Roadmap builder lays out the path" },
+                { q: "What salary should I realistically expect 5 years into data science?", hint: "Full dossier includes salary progression" },
+                { q: "Should I take the startup offer or the MNC job?", hint: "Compare both career trajectories" },
+              ].map((item, i) => (
+                <motion.div
+                  key={item.q}
+                  className="p-7 bg-background hover:bg-black/2 transition-colors group cursor-default"
+                  initial={{ opacity: 0, y: 12 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <p className="font-[Playfair_Display] text-black leading-snug mb-2" style={{ fontSize: '1rem' }}>
+                    "{item.q}"
+                  </p>
+                  <p className="font-[Inter] text-black/35 group-hover:text-black/55 transition-colors" style={{ fontSize: '0.75rem' }}>
+                    → {item.hint}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+            <motion.div
+              className="text-center mt-10"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+            >
+              <button
+                onClick={() => navigate('/auth?mode=signup')}
+                className="inline-flex items-center gap-2 bg-black text-white px-7 py-3 font-[Inter] hover:bg-black/80 transition-colors"
+                style={{ fontSize: '0.88rem' }}
+              >
+                Find your answer
+                <ArrowRight size={15} />
+              </button>
+            </motion.div>
+          </div>
+        </section>
+      )}
+
       {/* ── WHAT YOU GET ───────────────────────────────────── */}
       <section className="py-24 px-6 border-t border-black/8">
         <div className="max-w-4xl mx-auto">
@@ -737,7 +801,7 @@ export function HomePage() {
               Found a bug? Have a feature idea? Just want to say hi? Drop me a line.
             </p>
             <motion.a
-              href="mailto:kamalcrreddy@gmail.com?subject=Career%20Sim%20Feedback"
+              href="mailto:kamalcrreddy@gmail.com?subject=CareerCase%20Feedback"
               className="inline-flex items-center gap-2 border-2 border-black text-black py-2.5 px-6 font-[Inter] hover:bg-black hover:text-white transition-all"
               style={{ fontSize: '0.85rem' }}
               whileHover={{ scale: 1.02 }}

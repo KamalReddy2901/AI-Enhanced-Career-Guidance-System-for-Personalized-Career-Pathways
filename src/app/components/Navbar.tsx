@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Clock, Home, Zap, FlaskConical, Scale, Settings, Brain, Menu, X, Map, ArrowLeftRight } from 'lucide-react';
+import { Clock, Home, FlaskConical, Scale, Settings, Brain, Menu, X, Map, ArrowLeftRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useUsage } from '../context/UsageContext';
@@ -34,13 +34,15 @@ export function Navbar() {
     { to: '/career-transition', icon: <ArrowLeftRight size={14} />, label: 'Transition', active: location.pathname === '/career-transition' },
     { to: '/roadmap', icon: <Map size={14} />, label: 'Roadmap', active: location.pathname === '/roadmap' },
     { to: '/compare', icon: <Scale size={14} />, label: 'Compare', active: location.pathname === '/compare' },
-    {
-      to: '/history',
-      icon: <Clock size={14} />,
-      label: historyCount > 0 ? `Archive (${historyCount})` : 'Archive',
-      active: location.pathname === '/history' || location.pathname === '/favorites',
-    },
-    { to: '/settings', icon: <Settings size={14} />, label: 'Settings', active: location.pathname === '/settings' },
+    ...user ? [
+      {
+        to: '/history',
+        icon: <Clock size={14} />,
+        label: historyCount > 0 ? `Archive (${historyCount})` : 'Archive',
+        active: location.pathname === '/history' || location.pathname === '/favorites',
+      },
+      { to: '/settings', icon: <Settings size={14} />, label: 'Settings', active: location.pathname === '/settings' },
+    ] : [],
   ];
 
   return (
@@ -97,13 +99,13 @@ export function Navbar() {
             )}
 
             {!user && (
-              <div
-                className="ml-1 flex items-center gap-1 px-2 py-1 bg-black/3 text-black/25"
-                style={{ fontSize: '0.6rem' }}
+              <Link
+                to="/pricing"
+                className="ml-1 flex items-center gap-1 px-2.5 py-1 border border-black/15 text-black/55 hover:border-black/30 hover:text-black transition-all font-[Inter]"
+                style={{ fontSize: '0.72rem' }}
               >
-                <Zap size={9} className="fill-current" />
-                <span className="font-[Inter]">AI on</span>
-              </div>
+                Pricing
+              </Link>
             )}
 
           </div>
