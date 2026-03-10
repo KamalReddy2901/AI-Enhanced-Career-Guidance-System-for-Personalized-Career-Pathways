@@ -780,49 +780,38 @@ export function HomePage() {
                   So I built CareerCase. It\'s the tool I wish existed when I was figuring things out. Pick a career, read the dossier, live a day, answer an interview question. Then do it again for a completely different career. Compare them. Decide.
                 </p>
               </div>
+
+              {/* More from developer — merged inline */}
+              <div className="mt-10 pt-8 border-t border-black/8 flex flex-col sm:flex-row sm:items-center gap-5">
+                <div className="shrink-0">
+                  <StickFigure pose="coding" size={52} animate={false} />
+                </div>
+                <div className="flex-1">
+                  <p className="font-[Inter] uppercase tracking-[0.15em] text-black/30 mb-1" style={{ fontSize: '0.6rem' }}>
+                    More from the developer
+                  </p>
+                  <p className="font-[Inter] text-black/50 leading-relaxed mb-3" style={{ fontSize: '0.88rem' }}>
+                    More projects, experiments, and ideas. Design-led, minimal, useful.
+                  </p>
+                  <motion.a
+                    href="https://kamrede.page/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 border border-black/30 text-black/60 py-2 px-5 font-[Inter] hover:border-black hover:text-black transition-all"
+                    style={{ fontSize: '0.82rem' }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Visit kamrede.page
+                    <ExternalLink size={13} />
+                  </motion.a>
+                </div>
+              </div>
+
               <div className="mt-8 flex items-center gap-4">
                 <div className="h-px flex-1 bg-black/10" />
                 <span className="font-[JetBrains_Mono] text-black/30" style={{ fontSize: '0.72rem' }}>- Kamal Reddy</span>
               </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── MORE FROM DEVELOPER ────────────────────────────── */}
-      <section className="py-20 px-6 border-t border-black/8">
-        <div className="max-w-3xl mx-auto">
-          <motion.div
-            className="flex flex-col sm:flex-row items-center gap-8"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <div className="shrink-0">
-              <StickFigure pose="coding" size={72} />
-            </div>
-            <div className="flex-1 sm:border-l-2 sm:border-black/10 sm:pl-10 text-center sm:text-left">
-              <p className="font-[Inter] uppercase tracking-[0.2em] text-black/30 mb-2" style={{ fontSize: '0.63rem' }}>
-                More from the developer
-              </p>
-              <h2 className="font-[Playfair_Display] text-black mb-3" style={{ fontSize: '1.5rem' }}>
-                See what else I've built
-              </h2>
-              <p className="font-[Inter] text-black/50 leading-relaxed mb-5" style={{ fontSize: '0.9rem' }}>
-                More projects, experiments, and ideas from Kamal Reddy. Design-led, minimal, useful.
-              </p>
-              <motion.a
-                href="https://kamrede.page/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 border-2 border-black text-black py-2.5 px-6 font-[Inter] hover:bg-black hover:text-white transition-all"
-                style={{ fontSize: '0.85rem' }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Visit kamrede.page
-                <ExternalLink size={14} />
-              </motion.a>
             </div>
           </motion.div>
         </div>
