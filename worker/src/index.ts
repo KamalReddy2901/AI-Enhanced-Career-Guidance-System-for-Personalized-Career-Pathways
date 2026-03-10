@@ -95,48 +95,52 @@ function rotateKey(keys: string[], usedKey: string): void {
 
 // ─── Credit check + deduction ──────────────────────────────────
 
+const UNLIMITED_DAILY_CAP = 50; // Max Ask AI questions per day during unlimited perk period
+
 interface UserProfile {
-  plan: string;
   credits_remaining: number;
-  pro_daily_used: number;
-  pro_daily_reset: string | null; // YYYY-MM-DD
+  ask_ai_unlimited_until: string | null; // ISO timestamp or null
+  ask_ai_daily_used: number;
+  ask_ai_daily_reset: string | null;     // YYYY-MM-DD
 }
 
 async function getUserProfile(env: Env, userId: string): Promise<UserProfile> {
   const resp = await supabaseRequest(
     env,
-    `/user_profiles?user_id=eq.${userId}&select=plan,plan_expires_at,credits_remaining,pro_daily_used,pro_daily_reset`,
+    `/user_profiles?user_id=eq.${userId}&select=credits_remaining,ask_ai_unlimited_until,ask_ai_daily_used,ask_ai_daily_reset`,
     'GET',
   );
 
-  // If Supabase is unreachable or returns an error, surface it — do NOT fall back
-  // to a fake default profile (that would silently allow unlimited free usage).
   if (!resp.ok) {
     const errBody = await resp.text().catch(() => '');
     throw new Error(`Supabase GET user_profiles failed (${resp.status}): ${errBody}`);
   }
 
-  const rows = await resp.json() as Array<{ plan: string; plan_expires_at: string | null; credits_remaining: number | null; pro_daily_used: number | null; pro_daily_reset: string | null }>;
+  const rows = await resp.json() as Array<{
+    credits_remaining: number | null;
+    ask_ai_unlimited_until: string | null;
+    ask_ai_daily_used: number | null;
+    ask_ai_daily_reset: string | null;
+  }>;
 
   if (!rows.length) {
     // New user — create their profile, then return the default.
     const createResp = await supabaseRequest(env, '/user_profiles', 'POST', {
-      user_id: userId, plan: 'free', credits_remaining: FREE_STARTING_CREDITS, pro_daily_used: 0,
+      user_id: userId, plan: 'free', credits_remaining: FREE_STARTING_CREDITS, ask_ai_daily_used: 0,
     });
     if (!createResp.ok) {
       const errBody = await createResp.text().catch(() => '');
       throw new Error(`Supabase POST user_profiles failed (${createResp.status}): ${errBody}`);
     }
-    return { plan: 'free', credits_remaining: FREE_STARTING_CREDITS, pro_daily_used: 0, pro_daily_reset: null };
+    return { credits_remaining: FREE_STARTING_CREDITS, ask_ai_unlimited_until: null, ask_ai_daily_used: 0, ask_ai_daily_reset: null };
   }
 
-  const { plan, plan_expires_at, credits_remaining, pro_daily_used, pro_daily_reset } = rows[0];
-  const activePlan = (plan === 'pro' && plan_expires_at && new Date(plan_expires_at) < new Date()) ? 'free' : plan;
+  const row = rows[0];
   return {
-    plan: activePlan,
-    credits_remaining: credits_remaining ?? 0,
-    pro_daily_used: pro_daily_used ?? 0,
-    pro_daily_reset: pro_daily_reset ?? null,
+    credits_remaining: row.credits_remaining ?? 0,
+    ask_ai_unlimited_until: row.ask_ai_unlimited_until ?? null,
+    ask_ai_daily_used: row.ask_ai_daily_used ?? 0,
+    ask_ai_daily_reset: row.ask_ai_daily_reset ?? null,
   };
 }
 
@@ -144,7 +148,7 @@ async function checkAndDeductCredits(
   env: Env,
   userId: string,
   usageType: string,
-): Promise<{ allowed: boolean; creditsRemaining: number; creditCost: number; plan: string; dailyLimitHit?: boolean }> {
+): Promise<{ allowed: boolean; creditsRemaining: number; creditCost: number; plan: string; chatDailyCap?: boolean }> {
   const creditCost = CREDIT_COSTS[usageType] ?? 0;
 
   // Free usage types — always allow, no deduction
@@ -154,33 +158,36 @@ async function checkAndDeductCredits(
 
   const profile = await getUserProfile(env, userId);
 
-  // Pro users: daily allowance (resets at midnight UTC)
-  if (profile.plan === 'pro') {
-    const today = new Date().toISOString().split('T')[0];
-    let dailyUsed = profile.pro_daily_used;
-    if (profile.pro_daily_reset !== today) {
-      dailyUsed = 0;
+  // Special case: Ask AI during unlimited perk period
+  if (usageType === 'chat' && profile.ask_ai_unlimited_until) {
+    const unlimitedUntil = new Date(profile.ask_ai_unlimited_until);
+    if (unlimitedUntil > new Date()) {
+      const today = new Date().toISOString().split('T')[0];
+      let dailyUsed = profile.ask_ai_daily_used;
+      if (profile.ask_ai_daily_reset !== today) {
+        dailyUsed = 0;
+        await supabaseRequest(env, `/user_profiles?user_id=eq.${userId}`, 'PATCH',
+          { ask_ai_daily_used: 0, ask_ai_daily_reset: today });
+      }
+      if (dailyUsed >= UNLIMITED_DAILY_CAP) {
+        return { allowed: false, creditsRemaining: profile.credits_remaining, creditCost: 0, plan: 'free', chatDailyCap: true };
+      }
       await supabaseRequest(env, `/user_profiles?user_id=eq.${userId}`, 'PATCH',
-        { pro_daily_used: 0, pro_daily_reset: today });
+        { ask_ai_daily_used: dailyUsed + 1 });
+      return { allowed: true, creditsRemaining: profile.credits_remaining, creditCost: 0, plan: 'free' };
     }
-    if (dailyUsed + creditCost > PRO_DAILY_CREDITS) {
-      return { allowed: false, creditsRemaining: PRO_DAILY_CREDITS - dailyUsed, creditCost, plan: 'pro', dailyLimitHit: true };
-    }
-    await supabaseRequest(env, `/user_profiles?user_id=eq.${userId}`, 'PATCH',
-      { pro_daily_used: dailyUsed + creditCost });
-    return { allowed: true, creditsRemaining: PRO_DAILY_CREDITS - dailyUsed - creditCost, creditCost, plan: 'pro' };
   }
 
-  // Free users: check credit balance
+  // Standard credit deduction for all users
   if (profile.credits_remaining < creditCost) {
-    return { allowed: false, creditsRemaining: profile.credits_remaining, creditCost, plan: profile.plan };
+    return { allowed: false, creditsRemaining: profile.credits_remaining, creditCost, plan: 'free' };
   }
 
   const newBalance = profile.credits_remaining - creditCost;
   await supabaseRequest(env, `/user_profiles?user_id=eq.${userId}`, 'PATCH',
     { credits_remaining: newBalance });
 
-  return { allowed: true, creditsRemaining: newBalance, creditCost, plan: profile.plan };
+  return { allowed: true, creditsRemaining: newBalance, creditCost, plan: 'free' };
 }
 
 // ─── Groq proxy ────────────────────────────────────────────────
@@ -251,13 +258,11 @@ async function proxyToGroq(
 
 const RAZORPAY_KEY_ID = 'rzp_live_SOpKaXXi0qi4VA';
 
-const PACK_CONFIG: Record<string, { credits: number; amount: number; label: string }> = {
-  pack_30:  { credits: 30,  amount: 5900,  label: '30 Credits' },
-  pack_75:  { credits: 75,  amount: 12900, label: '75 Credits' },
-  pack_150: { credits: 150, amount: 19900, label: '150 Credits' },
+const PACK_CONFIG: Record<string, { credits: number; amount: number; label: string; askAiDays: number }> = {
+  pack_30:  { credits: 30,  amount: 5900,  label: '30 Credits',  askAiDays: 7 },
+  pack_75:  { credits: 75,  amount: 12900, label: '75 Credits',  askAiDays: 15 },
+  pack_120: { credits: 120, amount: 19900, label: '120 Credits', askAiDays: 30 },
 };
-const PRO_AMOUNT = 24900;        // ₹249 in paise
-const PRO_DURATION_DAYS = 30;
 
 async function hmacSha256(key: string, message: string): Promise<string> {
   const enc = new TextEncoder();
@@ -296,32 +301,20 @@ async function handleCreateOrder(
   userId: string,
 ): Promise<Response> {
   const body = await request.json() as { type?: string; packId?: string };
-  const { type, packId } = body;
+  const { packId } = body;
 
-  let amount: number;
-  let label: string;
-  let notes: Record<string, string>;
-
-  if (type === 'pro') {
-    amount = PRO_AMOUNT;
-    label = 'Pro Plan';
-    notes = { user_id: userId, type: 'pro' };
-  } else if (type === 'pack' && packId && PACK_CONFIG[packId]) {
-    const pack = PACK_CONFIG[packId];
-    amount = pack.amount;
-    label = pack.label;
-    notes = { user_id: userId, type: 'pack', pack_id: packId };
-  } else {
-    return jsonResponse({ error: 'Invalid purchase type' }, 400, origin);
+  if (!packId || !PACK_CONFIG[packId]) {
+    return jsonResponse({ error: 'Invalid pack' }, 400, origin);
   }
 
+  const pack = PACK_CONFIG[packId];
   const receipt = `rcpt_${userId.slice(0, 8)}_${Date.now()}`;
-  const order = await createRazorpayOrder(env, amount, receipt, notes);
+  const order = await createRazorpayOrder(env, pack.amount, receipt, { user_id: userId, type: 'pack', pack_id: packId });
   if (!order) {
     return jsonResponse({ error: 'Failed to create payment order' }, 502, origin);
   }
 
-  return jsonResponse({ orderId: order.id, amount, currency: 'INR', keyId: RAZORPAY_KEY_ID, label }, 200, origin);
+  return jsonResponse({ orderId: order.id, amount: pack.amount, currency: 'INR', keyId: RAZORPAY_KEY_ID, label: pack.label }, 200, origin);
 }
 
 async function handleVerifyPayment(
@@ -337,7 +330,7 @@ async function handleVerifyPayment(
     type?: string;
     packId?: string;
   };
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, type, packId } = body;
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, packId } = body;
 
   if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
     return jsonResponse({ error: 'Missing payment fields' }, 400, origin);
@@ -352,31 +345,32 @@ async function handleVerifyPayment(
     return jsonResponse({ error: 'Payment verification failed', success: false }, 400, origin);
   }
 
-  // Update user profile based on purchase type
-  if (type === 'pro') {
-    const expiresAt = new Date(Date.now() + PRO_DURATION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  if (!packId || !PACK_CONFIG[packId]) {
+    return jsonResponse({ error: 'Invalid pack' }, 400, origin);
+  }
+
+  const { credits, askAiDays } = PACK_CONFIG[packId];
+
+  // Fetch current balance and Ask AI status
+  const profileResp = await supabaseRequest(
+    env, `/user_profiles?user_id=eq.${userId}&select=credits_remaining,ask_ai_unlimited_until`, 'GET',
+  );
+  if (profileResp.ok) {
+    const rows = await profileResp.json() as Array<{ credits_remaining: number | null; ask_ai_unlimited_until: string | null }>;
+    const current = rows[0]?.credits_remaining ?? 0;
+    const currentUnlimited = rows[0]?.ask_ai_unlimited_until;
+
+    // Extend Ask AI unlimited period (stack on top if already active)
+    const now = Date.now();
+    const existingExpiry = currentUnlimited ? new Date(currentUnlimited).getTime() : now;
+    const newExpiry = new Date(Math.max(existingExpiry, now) + askAiDays * 24 * 60 * 60 * 1000).toISOString();
+
     await supabaseRequest(env, `/user_profiles?user_id=eq.${userId}`, 'PATCH', {
-      plan: 'pro',
-      plan_expires_at: expiresAt,
-      pro_daily_used: 0,
-      pro_daily_reset: new Date().toISOString().split('T')[0],
+      credits_remaining: current + credits,
+      ask_ai_unlimited_until: newExpiry,
+      ask_ai_daily_used: 0,
+      ask_ai_daily_reset: new Date().toISOString().split('T')[0],
     });
-  } else if (type === 'pack' && packId && PACK_CONFIG[packId]) {
-    const { credits } = PACK_CONFIG[packId];
-    // Atomically increment credits using Supabase RPC-style PATCH with raw increment
-    // Fetch current balance first, then add
-    const profileResp = await supabaseRequest(
-      env, `/user_profiles?user_id=eq.${userId}&select=credits_remaining`, 'GET',
-    );
-    if (profileResp.ok) {
-      const rows = await profileResp.json() as Array<{ credits_remaining: number | null }>;
-      const current = rows[0]?.credits_remaining ?? 0;
-      await supabaseRequest(env, `/user_profiles?user_id=eq.${userId}`, 'PATCH', {
-        credits_remaining: current + credits,
-      });
-    }
-  } else {
-    return jsonResponse({ error: 'Invalid purchase type' }, 400, origin);
   }
 
   // Log payment
@@ -384,10 +378,10 @@ async function handleVerifyPayment(
     user_id: userId,
     razorpay_order_id,
     razorpay_payment_id,
-    amount: type === 'pro' ? PRO_AMOUNT : (packId ? PACK_CONFIG[packId]?.amount ?? 0 : 0),
+    amount: PACK_CONFIG[packId].amount,
     currency: 'INR',
-    plan_type: type === 'pro' ? 'pro' : 'pack',
-    pack_id: packId ?? null,
+    plan_type: 'pack',
+    pack_id: packId,
     status: 'captured',
   });
 
@@ -473,18 +467,25 @@ export default {
       }
 
       try {
-        const { allowed, creditsRemaining, creditCost: cost, plan, dailyLimitHit } = await checkAndDeductCredits(
+        const { allowed, creditsRemaining, creditCost: cost, plan, chatDailyCap } = await checkAndDeductCredits(
           env,
           jwtPayload.sub,
           usageType,
         );
 
         if (!allowed) {
+          if (chatDailyCap) {
+            return jsonResponse(
+              { error: "The AI is very busy right now. You've reached today's Ask AI limit. Please try again tomorrow.", code: 'CHAT_DAILY_CAP' },
+              429,
+              origin,
+            );
+          }
           return jsonResponse(
             {
-              error: dailyLimitHit ? 'Daily Pro credit limit reached' : 'Insufficient credits',
+              error: 'Insufficient credits',
               code: 'INSUFFICIENT_CREDITS',
-              detail: { creditsRemaining, creditCost: cost, plan, dailyLimitHit: dailyLimitHit ?? false },
+              detail: { creditsRemaining, creditCost: cost, plan },
             },
             402,
             origin,

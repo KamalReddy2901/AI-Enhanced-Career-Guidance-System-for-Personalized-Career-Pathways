@@ -58,14 +58,13 @@ create policy "Users can delete own favorites"
 -- ─── User Profiles (plan / subscription status) ───────────────
 
 create table if not exists public.user_profiles (
-  id               uuid primary key default gen_random_uuid(),
-  user_id          uuid references auth.users(id) on delete cascade not null unique,
-  plan             text not null default 'free',          -- 'free' | 'pro'
-  plan_expires_at  timestamptz,                           -- null = no expiry (lifetime or ongoing)
-  credits_remaining int not null default 20,              -- unified credit balance (20 = free welcome credits)
-  pro_daily_used    int not null default 0,               -- credits used today (Pro plan daily allowance)
-  pro_daily_reset   date,                                  -- date of last daily reset for Pro plan
-  created_at       timestamptz default now()
+  id                    uuid primary key default gen_random_uuid(),
+  user_id               uuid references auth.users(id) on delete cascade not null unique,
+  credits_remaining     int not null default 20,              -- unified credit balance (20 = free welcome credits)
+  ask_ai_unlimited_until timestamptz,                         -- null = no active perk; set by pack purchase
+  ask_ai_daily_used     int not null default 0,               -- ask-ai uses today (capped at 50 during perk)
+  ask_ai_daily_reset    date,                                  -- date of last daily reset
+  created_at            timestamptz default now()
 );
 
 alter table public.user_profiles enable row level security;
@@ -120,6 +119,52 @@ alter table public.payments enable row level security;
 
 create policy "Users can view own payments"
   on public.payments for select using (auth.uid() = user_id);
+
+-- ─── Migration: Add Unlimited Ask AI perk columns ─────────────
+-- Run these if your DB already has the old schema.
+-- Safe to run multiple times (uses IF NOT EXISTS).
+
+ALTER TABLE public.user_profiles
+  ADD COLUMN IF NOT EXISTS ask_ai_unlimited_until timestamptz,
+  ADD COLUMN IF NOT EXISTS ask_ai_daily_used int NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS ask_ai_daily_reset date;
+
+-- Remove old Pro plan columns if they exist
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'user_profiles' AND column_name = 'plan'
+  ) THEN
+    ALTER TABLE public.user_profiles DROP COLUMN plan;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'user_profiles' AND column_name = 'plan_expires_at'
+  ) THEN
+    ALTER TABLE public.user_profiles DROP COLUMN plan_expires_at;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'user_profiles' AND column_name = 'pro_daily_used'
+  ) THEN
+    ALTER TABLE public.user_profiles DROP COLUMN pro_daily_used;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'user_profiles' AND column_name = 'pro_daily_reset'
+  ) THEN
+    ALTER TABLE public.user_profiles DROP COLUMN pro_daily_reset;
+  END IF;
+END $$;
 
 -- ─── Migration: Switch to unified credits system ──────────────
 -- Run this if your DB already has the old schema (pack_credits jsonb column).

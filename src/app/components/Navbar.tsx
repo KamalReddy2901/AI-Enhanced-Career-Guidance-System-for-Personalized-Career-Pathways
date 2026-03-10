@@ -13,7 +13,7 @@ export function Navbar() {
   const location = useLocation();
   const { history } = useApp();
   const { user } = useAuth();
-  const { creditsRemaining, plan } = useUsage();
+  const { creditsRemaining } = useUsage();
   const { favorites } = useFavorites();
   const [menuOpen, setMenuOpen] = useState(false);
   const isHome = location.pathname === '/';
@@ -87,11 +87,11 @@ export function Navbar() {
                 to="/pricing"
                 className="ml-1.5 flex items-center gap-1 px-2.5 py-1 bg-black/5 hover:bg-black/8 text-black/80 transition-all rounded-full"
                 style={{ fontSize: '0.72rem' }}
-                title={plan === 'pro' ? `Pro — ${creditsRemaining} credits today` : `${creditsRemaining} credits remaining`}
+                title={`${creditsRemaining} credits remaining`}
               >
                 <Zap size={11} className="text-black fill-black" />
                 <span className="font-[JetBrains_Mono] font-semibold">
-                  {plan === 'pro' ? creditsRemaining : creditsRemaining}
+                  {creditsRemaining}
                 </span>
               </Link>
             )}

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  ChevronLeft, Play, MessageCircle, X, Send, Sparkles, Loader2, RefreshCw, Download, Zap, Lock,
+  ChevronLeft, Play, MessageCircle, X, Send, Sparkles, Loader2, RefreshCw, Download, Zap,
   Briefcase, GraduationCap, Wrench, MapPin, TrendingUp, Lightbulb, ArrowRight,
   Calendar, CalendarDays, CalendarRange, Scale, Star, UserCheck, Share2,
   BookOpen, Hash, Award, ExternalLink, Activity, Building2
@@ -15,7 +15,7 @@ import { useApp } from '../context/AppContext';
 import { useFavorites } from '../hooks/useFavorites';
 import {
   streamChat, getRelatedCareers, getLearnMoreResources, getWorkLifeBalance, getGoodBadUgly,
-  QuotaExceededError,
+  QuotaExceededError, ChatDailyCapError,
   type RelatedCareer, type LearnMoreResources, type WorkLifeBalance, type GoodBadUgly
 } from '../services/ai';
 import { usePaywallContext } from '../context/PaywallContext';
@@ -80,8 +80,7 @@ export function JobDetailPage() {
   const location = useLocation();
   const { currentJob, setCurrentJob, searchJobAI, addToHistory, setRefinementCount, setComparisonJob } = useApp();
   const { triggerPaywall } = usePaywallContext();
-  const { plan } = useUsage();
-  const isPro = plan === 'pro';
+  const { hasUnlimitedAskai } = useUsage();
   const { addFavorite, removeFavorite, isFavorite } = useFavorites();
   const { preferences } = usePreferences();
   const [activeTimeline, setActiveTimeline] = useState<'week' | 'quarter' | 'year'>(preferences.defaultView);
@@ -264,7 +263,6 @@ export function JobDetailPage() {
 
   const handlePrint = () => {
     if (!currentJob) return;
-    if (!isPro) { triggerPaywall('PDF Export'); return; }
     downloadDossierPDF({
       title: currentJob.title,
       category: currentJob.category,
@@ -312,7 +310,6 @@ export function JobDetailPage() {
   };
 
   const handleAskQuestion = async () => {
-    if (!isPro) { triggerPaywall('Ask AI'); return; }
     if (!chatInput.trim() || isStreaming) return;
     const userMsg = chatInput.trim();
     setChatInput('');
@@ -337,7 +334,10 @@ export function JobDetailPage() {
         });
       }
     } catch (error) {
-      if (error instanceof QuotaExceededError) {
+      if (error instanceof ChatDailyCapError) {
+        toast.error("We're sorry, the servers are very busy right now. Please try again tomorrow.");
+        setChatMessages(prev => prev.slice(0, -1));
+      } else if (error instanceof QuotaExceededError) {
         triggerPaywall('AI Chat', error.detail);
         setChatMessages(prev => prev.slice(0, -1)); // remove empty assistant message
       } else {
@@ -523,7 +523,6 @@ export function JobDetailPage() {
                 >
                   <Download size={12} />
                   Download PDF
-                  {!isPro && <Lock size={10} className="opacity-40" />}
                 </motion.button>
                 <motion.button
                   onClick={handleCompare}
@@ -1140,7 +1139,7 @@ export function JobDetailPage() {
             </motion.button>
 
           <motion.button
-            onClick={() => { if (!isPro) { triggerPaywall('Ask AI'); return; } setShowChat(true); sounds.slide(); }}
+            onClick={() => { setShowChat(true); sounds.slide(); }}
             className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-4 px-6 hover:border-black/40 hover:text-black transition-all font-[Inter]"
             style={{ fontSize: '0.88rem' }}
             whileHover={{ scale: 1.01 }}
@@ -1148,7 +1147,7 @@ export function JobDetailPage() {
           >
             <MessageCircle size={18} />
             Ask Questions
-            {isPro ? <Sparkles size={12} className="text-black/30" /> : <Lock size={12} className="text-black/30" />}
+            {hasUnlimitedAskai ? <Sparkles size={12} className="text-black/30" /> : <span className="font-[Inter] text-black/25 text-xs">1⚡</span>}
           </motion.button>
         </motion.div>
 
@@ -1240,7 +1239,7 @@ export function JobDetailPage() {
                       <Sparkles size={12} className="text-black/25" />
                     </h3>
                     <p className="font-[Inter] text-black/40" style={{ fontSize: '0.7rem' }}>
-                      AI-powered career assistant
+                      {hasUnlimitedAskai ? '∞ Unlimited Ask AI perk active' : '1 credit per question'}
                     </p>
                   </div>
                 </div>
@@ -1351,12 +1350,12 @@ export function JobDetailPage() {
             <span style={{ fontSize: '0.58rem', letterSpacing: '0.05em' }} className="font-[Inter] uppercase">Interview</span>
           </button>
         <button
-            onClick={() => { if (!isPro) { triggerPaywall('Ask AI'); return; } setShowChat(true); sounds.slide(); }}
+            onClick={() => { setShowChat(true); sounds.slide(); }}
             aria-label="Ask AI about this career"
             className="flex-1 flex flex-col items-center gap-1 py-3 text-black/60 hover:text-black transition-colors"
           >
-            {isPro ? <MessageCircle size={17} /> : <Lock size={17} className="opacity-40" />}
-            <span style={{ fontSize: '0.58rem', letterSpacing: '0.05em' }} className="font-[Inter] uppercase">{isPro ? 'Ask AI' : 'Pro'}</span>
+            <MessageCircle size={17} />
+            <span style={{ fontSize: '0.58rem', letterSpacing: '0.05em' }} className="font-[Inter] uppercase">Ask AI</span>
           </button>
         <button
           onClick={handleShare}

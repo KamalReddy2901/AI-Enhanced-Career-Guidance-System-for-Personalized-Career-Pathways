@@ -50,7 +50,7 @@ function rotateToNextKey(): boolean {
 }
 
 // ─── Quota exceeded error (thrown when worker returns 402) ─────
-export type CreditErrorDetail = { creditsRemaining: number; creditCost: number; plan: string; dailyLimitHit?: boolean };
+export type CreditErrorDetail = { creditsRemaining: number; creditCost: number; plan: string };
 
 export class QuotaExceededError extends Error {
   public detail: CreditErrorDetail;
@@ -58,6 +58,14 @@ export class QuotaExceededError extends Error {
     super('Insufficient credits');
     this.name = 'QuotaExceededError';
     this.detail = detail;
+  }
+}
+
+// Thrown when worker returns 429 CHAT_DAILY_CAP (unlimited perk abuse protection)
+export class ChatDailyCapError extends Error {
+  constructor() {
+    super('Daily Ask AI limit reached');
+    this.name = 'ChatDailyCapError';
   }
 }
 
@@ -366,6 +374,10 @@ Formatting rules:
       headers,
       body: JSON.stringify({ messages: apiMessages, temperature: 0.7, max_tokens: 1024, stream: true }),
     });
+    if (response.status === 429) {
+      const errData = await response.json().catch(() => ({})) as { code?: string };
+      if (errData.code === 'CHAT_DAILY_CAP') throw new ChatDailyCapError();
+    }
     if (response.status === 402) {
       const errData = await response.json().catch(() => ({})) as { detail?: CreditErrorDetail };
       throw new QuotaExceededError(errData.detail ?? { creditsRemaining: 0, creditCost: 0, plan: 'free' });

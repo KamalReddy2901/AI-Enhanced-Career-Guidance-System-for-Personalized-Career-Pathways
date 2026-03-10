@@ -32,10 +32,6 @@ export const CREDIT_COSTS: Record<string, number> = {
 };
 
 export const FREE_STARTING_CREDITS = 20;
-export const PRO_DAILY_CREDITS = 100;
-
-// Features that require a Pro subscription (not just credits)
-export const PRO_ONLY_FEATURES = ['pdf', 'chat'] as const;
 
 export interface CreditStatus {
   cost: number;
@@ -44,8 +40,9 @@ export interface CreditStatus {
 }
 
 interface UsageContextType {
-  plan: 'free' | 'pro';
   creditsRemaining: number;
+  /** True when the user has an active Ask AI unlimited perk */
+  hasUnlimitedAskai: boolean;
   isLoading: boolean;
   /** Check if a usage type can proceed (has enough credits). Returns cost + status. */
   checkCredits: (usageType: string) => CreditStatus;
@@ -53,52 +50,38 @@ interface UsageContextType {
   optimisticDeduct: (usageType: string) => void;
   /** Refresh credits from Supabase */
   refreshCredits: () => void;
-  /** Check if a feature is Pro-only (locked behind subscription, not credits) */
-  isProFeature: (feature: string) => boolean;
 }
 
 const UsageContext = createContext<UsageContextType | undefined>(undefined);
 
 export function UsageProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [plan, setPlan] = useState<'free' | 'pro'>('free');
   const [creditsRemaining, setCreditsRemaining] = useState<number>(
     isSupabaseConfigured ? 0 : 9999 // Dev mode: unlimited credits
   );
+  const [hasUnlimitedAskai, setHasUnlimitedAskai] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchCredits = useCallback(async () => {
     if (!user || !supabase || !isSupabaseConfigured) return;
     setIsLoading(true);
     try {
-      // Fetch plan + credits
       const { data: profileData } = await supabase
         .from('user_profiles')
-        .select('plan, plan_expires_at, credits_remaining, pro_daily_used, pro_daily_reset')
+        .select('credits_remaining, ask_ai_unlimited_until')
         .eq('user_id', user.id)
         .maybeSingle();
 
       if (profileData) {
-        let activePlan: 'free' | 'pro' = 'free';
-        if (profileData.plan === 'pro') {
-          const expiry = profileData.plan_expires_at;
-          if (!expiry || new Date(expiry) > new Date()) {
-            activePlan = 'pro';
-          }
-        }
-        setPlan(activePlan);
-        if (activePlan === 'pro') {
-          // Show daily remaining credits for Pro users
-          const today = new Date().toISOString().split('T')[0];
-          const dailyUsed = (profileData.pro_daily_reset === today ? (profileData.pro_daily_used ?? 0) : 0);
-          setCreditsRemaining(PRO_DAILY_CREDITS - dailyUsed);
-        } else {
-          setCreditsRemaining(profileData.credits_remaining ?? 0);
-        }
+        setCreditsRemaining(profileData.credits_remaining ?? 0);
+        const unlimitedUntil = profileData.ask_ai_unlimited_until
+          ? new Date(profileData.ask_ai_unlimited_until)
+          : null;
+        setHasUnlimitedAskai(!!unlimitedUntil && unlimitedUntil > new Date());
       } else {
         // No profile yet — will be created by worker on first AI call
-        setPlan('free');
         setCreditsRemaining(FREE_STARTING_CREDITS);
+        setHasUnlimitedAskai(false);
       }
     } catch {
       // Non-fatal
@@ -114,41 +97,37 @@ export function UsageProvider({ children }: { children: ReactNode }) {
   const checkCredits = useCallback((usageType: string): CreditStatus => {
     const cost = CREDIT_COSTS[usageType] ?? 0;
     if (cost === 0) {
-      // Free usage type — always allowed
       return { cost: 0, remaining: creditsRemaining, allowed: true };
     }
-    if (plan === 'pro') {
-      // Pro users: optimistic (backend enforces daily limit)
-      return { cost, remaining: creditsRemaining, allowed: true };
+    // Ask AI is free during unlimited perk period
+    if (usageType === 'chat' && hasUnlimitedAskai) {
+      return { cost: 0, remaining: creditsRemaining, allowed: true };
     }
     return {
       cost,
       remaining: creditsRemaining,
       allowed: creditsRemaining >= cost,
     };
-  }, [plan, creditsRemaining]);
+  }, [creditsRemaining, hasUnlimitedAskai]);
 
   const optimisticDeduct = useCallback((usageType: string) => {
+    // Ask AI is free during unlimited period — nothing to deduct
+    if (usageType === 'chat' && hasUnlimitedAskai) return;
     const cost = CREDIT_COSTS[usageType] ?? 0;
     if (cost === 0) return;
     setCreditsRemaining(prev => Math.max(0, prev - cost));
     // Re-sync with actual Supabase value after the worker has finished writing
     setTimeout(fetchCredits, 3000);
-  }, [fetchCredits]);
-
-  const isProFeature = useCallback((feature: string): boolean => {
-    return (PRO_ONLY_FEATURES as readonly string[]).includes(feature);
-  }, []);
+  }, [fetchCredits, hasUnlimitedAskai]);
 
   return (
     <UsageContext.Provider value={{
-      plan,
       creditsRemaining,
+      hasUnlimitedAskai,
       isLoading,
       checkCredits,
       optimisticDeduct,
       refreshCredits: fetchCredits,
-      isProFeature,
     }}>
       {children}
     </UsageContext.Provider>
