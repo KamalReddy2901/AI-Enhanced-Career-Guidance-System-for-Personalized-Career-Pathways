@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Clock, Home, FlaskConical, Scale, Settings, Brain, Menu, X, Map, ArrowLeftRight } from 'lucide-react';
+import { Clock, Home, FlaskConical, Scale, Settings, Brain, Menu, X, Map, ArrowLeftRight, Zap } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useUsage } from '../context/UsageContext';
