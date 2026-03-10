@@ -1,8 +1,36 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Zap, ChevronDown, ChevronUp, Star, Gift } from 'lucide-react';
+import { Zap, ChevronDown, ChevronUp, Star, Gift, Loader2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useUsage } from '../context/UsageContext';
+
+// Razorpay Checkout SDK type
+declare global {
+  interface Window {
+    Razorpay: new (options: RzpOptions) => { open(): void };
+  }
+}
+interface RzpOptions {
+  key: string; order_id: string; amount: number; currency: string;
+  name: string; description: string;
+  handler: (r: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => void;
+  prefill?: { email?: string }; theme?: { color?: string };
+  modal?: { ondismiss?: () => void };
+}
+
+function loadRazorpayScript(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (window.Razorpay) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('Failed to load Razorpay'));
+    document.head.appendChild(s);
+  });
+}
 
 interface PaywallModalProps {
   open: boolean;
@@ -43,10 +71,59 @@ const PACKS = [
 export function PaywallModal({ open, onClose, featureName, creditDetail }: PaywallModalProps) {
   const [showWhy, setShowWhy] = useState(false);
   const [activeTab, setActiveTab] = useState<'pro' | 'pack'>('pack');
+  const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+  const { session } = useAuth();
+  const { refreshCredits } = useUsage();
 
-  function handleRazorpay(type: 'pro' | 'pack', packId?: string) {
-    void type; void packId;
-    alert('Payment setup coming soon! We\'ll notify you when we launch. Until then, enjoy the free tier.');
+  async function handleRazorpay(type: 'pro' | 'pack', packId?: string) {
+    if (!session) { window.location.href = '/auth'; return; }
+    const workerUrl = import.meta.env.VITE_AI_PROXY_URL as string;
+    if (!workerUrl) { toast.error('Payments not available in dev mode.'); return; }
+    setIsPaymentLoading(true);
+    try {
+      const orderResp = await fetch(`${workerUrl}/payment/create-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ type, packId }),
+      });
+      const orderData = await orderResp.json() as { orderId?: string; amount?: number; keyId?: string; label?: string; error?: string };
+      if (!orderResp.ok || !orderData.orderId) {
+        toast.error(orderData.error ?? 'Could not initiate payment. Try again.');
+        return;
+      }
+      await loadRazorpayScript();
+      const rzp = new window.Razorpay({
+        key: orderData.keyId!,
+        order_id: orderData.orderId,
+        amount: orderData.amount!,
+        currency: 'INR',
+        name: 'CareerCase',
+        description: type === 'pro' ? 'Pro Plan — 30 Days' : (orderData.label ?? 'Credit Pack'),
+        handler: async (response) => {
+          const verifyResp = await fetch(`${workerUrl}/payment/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+            body: JSON.stringify({ ...response, type, packId }),
+          });
+          const result = await verifyResp.json() as { success?: boolean };
+          if (result.success) {
+            toast.success(type === 'pro' ? 'Pro activated! Enjoy 100 credits/day.' : 'Credits added to your account.');
+            refreshCredits();
+            onClose();
+          } else {
+            toast.error('Payment verification failed. Contact support if credits were deducted.');
+          }
+        },
+        prefill: { email: session.user.email ?? undefined },
+        theme: { color: '#030213' },
+        modal: { ondismiss: () => setIsPaymentLoading(false) },
+      });
+      rzp.open();
+    } catch {
+      toast.error('Payment failed. Please try again.');
+    } finally {
+      setIsPaymentLoading(false);
+    }
   }
 
   const isProDailyLimit = creditDetail?.dailyLimitHit === true;
@@ -115,7 +192,8 @@ export function PaywallModal({ open, onClose, featureName, creditDetail }: Paywa
               {PACKS.map(pack => (
                 <button
                   key={pack.packId}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left ${pack.highlight ? 'border-primary/50 bg-primary/5' : 'border-border/60 bg-muted/30 hover:bg-muted/60'}`}
+                  disabled={isPaymentLoading}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left disabled:opacity-60 disabled:cursor-not-allowed ${pack.highlight ? 'border-primary/50 bg-primary/5' : 'border-border/60 bg-muted/30 hover:bg-muted/60'}`}
                   onClick={() => handleRazorpay('pack', pack.packId)}
                 >
                   <div>
@@ -161,10 +239,11 @@ export function PaywallModal({ open, onClose, featureName, creditDetail }: Paywa
             <Button
               className="w-full mt-4 font-semibold"
               size="lg"
+              disabled={isPaymentLoading}
               onClick={() => handleRazorpay('pro')}
             >
-              <Zap className="w-4 h-4 mr-2" />
-              Upgrade to Pro — ₹59/month
+              {isPaymentLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2" />}
+              Upgrade to Pro — {PRO_PLAN.price}/month
             </Button>
           </div>
         )}

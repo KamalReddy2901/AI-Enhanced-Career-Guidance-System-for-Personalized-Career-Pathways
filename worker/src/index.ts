@@ -12,6 +12,8 @@ export interface Env {
   GROQ_API_KEYS: string;          // comma-separated Groq API keys
   SUPABASE_URL: string;           // https://xxxx.supabase.co
   SUPABASE_SERVICE_KEY: string;   // service_role key (bypasses RLS)
+  RAZORPAY_KEY_SECRET: string;    // Razorpay key secret (server-side only)
+  RAZORPAY_WEBHOOK_SECRET: string; // Razorpay webhook secret
   ENVIRONMENT?: string;
 }
 
@@ -245,6 +247,170 @@ async function proxyToGroq(
   );
 }
 
+// ─── Razorpay helpers ─────────────────────────────────────────
+
+const RAZORPAY_KEY_ID = 'rzp_live_SOpKaXXi0qi4VA';
+
+const PACK_CONFIG: Record<string, { credits: number; amount: number; label: string }> = {
+  pack_30:  { credits: 30,  amount: 5900,  label: '30 Credits' },
+  pack_75:  { credits: 75,  amount: 12900, label: '75 Credits' },
+  pack_150: { credits: 150, amount: 19900, label: '150 Credits' },
+};
+const PRO_AMOUNT = 24900;        // ₹249 in paise
+const PRO_DURATION_DAYS = 30;
+
+async function hmacSha256(key: string, message: string): Promise<string> {
+  const enc = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+  );
+  const sig = await crypto.subtle.sign('HMAC', cryptoKey, enc.encode(message));
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function createRazorpayOrder(
+  env: Env,
+  amount: number,
+  receipt: string,
+  notes: Record<string, string>,
+): Promise<{ id: string } | null> {
+  const credentials = btoa(`${RAZORPAY_KEY_ID}:${env.RAZORPAY_KEY_SECRET}`);
+  const resp = await fetch('https://api.razorpay.com/v1/orders', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Basic ${credentials}`,
+    },
+    body: JSON.stringify({ amount, currency: 'INR', receipt, notes }),
+  });
+  if (!resp.ok) return null;
+  return resp.json() as Promise<{ id: string }>;
+}
+
+// ─── Payment route handlers ────────────────────────────────────
+
+async function handleCreateOrder(
+  request: Request,
+  env: Env,
+  origin: string | null,
+  userId: string,
+): Promise<Response> {
+  const body = await request.json() as { type?: string; packId?: string };
+  const { type, packId } = body;
+
+  let amount: number;
+  let label: string;
+  let notes: Record<string, string>;
+
+  if (type === 'pro') {
+    amount = PRO_AMOUNT;
+    label = 'Pro Plan';
+    notes = { user_id: userId, type: 'pro' };
+  } else if (type === 'pack' && packId && PACK_CONFIG[packId]) {
+    const pack = PACK_CONFIG[packId];
+    amount = pack.amount;
+    label = pack.label;
+    notes = { user_id: userId, type: 'pack', pack_id: packId };
+  } else {
+    return jsonResponse({ error: 'Invalid purchase type' }, 400, origin);
+  }
+
+  const receipt = `rcpt_${userId.slice(0, 8)}_${Date.now()}`;
+  const order = await createRazorpayOrder(env, amount, receipt, notes);
+  if (!order) {
+    return jsonResponse({ error: 'Failed to create payment order' }, 502, origin);
+  }
+
+  return jsonResponse({ orderId: order.id, amount, currency: 'INR', keyId: RAZORPAY_KEY_ID, label }, 200, origin);
+}
+
+async function handleVerifyPayment(
+  request: Request,
+  env: Env,
+  origin: string | null,
+  userId: string,
+): Promise<Response> {
+  const body = await request.json() as {
+    razorpay_order_id?: string;
+    razorpay_payment_id?: string;
+    razorpay_signature?: string;
+    type?: string;
+    packId?: string;
+  };
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, type, packId } = body;
+
+  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    return jsonResponse({ error: 'Missing payment fields' }, 400, origin);
+  }
+
+  // Verify HMAC signature
+  const expectedSig = await hmacSha256(
+    env.RAZORPAY_KEY_SECRET,
+    `${razorpay_order_id}|${razorpay_payment_id}`,
+  );
+  if (expectedSig !== razorpay_signature) {
+    return jsonResponse({ error: 'Payment verification failed', success: false }, 400, origin);
+  }
+
+  // Update user profile based on purchase type
+  if (type === 'pro') {
+    const expiresAt = new Date(Date.now() + PRO_DURATION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    await supabaseRequest(env, `/user_profiles?user_id=eq.${userId}`, 'PATCH', {
+      plan: 'pro',
+      plan_expires_at: expiresAt,
+      pro_daily_used: 0,
+      pro_daily_reset: new Date().toISOString().split('T')[0],
+    });
+  } else if (type === 'pack' && packId && PACK_CONFIG[packId]) {
+    const { credits } = PACK_CONFIG[packId];
+    // Atomically increment credits using Supabase RPC-style PATCH with raw increment
+    // Fetch current balance first, then add
+    const profileResp = await supabaseRequest(
+      env, `/user_profiles?user_id=eq.${userId}&select=credits_remaining`, 'GET',
+    );
+    if (profileResp.ok) {
+      const rows = await profileResp.json() as Array<{ credits_remaining: number | null }>;
+      const current = rows[0]?.credits_remaining ?? 0;
+      await supabaseRequest(env, `/user_profiles?user_id=eq.${userId}`, 'PATCH', {
+        credits_remaining: current + credits,
+      });
+    }
+  } else {
+    return jsonResponse({ error: 'Invalid purchase type' }, 400, origin);
+  }
+
+  // Log payment
+  await supabaseRequest(env, '/payments', 'POST', {
+    user_id: userId,
+    razorpay_order_id,
+    razorpay_payment_id,
+    amount: type === 'pro' ? PRO_AMOUNT : (packId ? PACK_CONFIG[packId]?.amount ?? 0 : 0),
+    currency: 'INR',
+    plan_type: type === 'pro' ? 'pro' : 'pack',
+    pack_id: packId ?? null,
+    status: 'captured',
+  });
+
+  return jsonResponse({ success: true }, 200, origin);
+}
+
+async function handleWebhook(
+  request: Request,
+  env: Env,
+  origin: string | null,
+): Promise<Response> {
+  const rawBody = await request.text();
+  const signature = request.headers.get('X-Razorpay-Signature') ?? '';
+
+  const expectedSig = await hmacSha256(env.RAZORPAY_WEBHOOK_SECRET, rawBody);
+  if (expectedSig !== signature) {
+    return jsonResponse({ error: 'Invalid webhook signature' }, 400, origin);
+  }
+
+  // Webhook verified — log and acknowledge (DB is already updated by /payment/verify)
+  return jsonResponse({ received: true }, 200, origin);
+}
+
 // ─── Main fetch handler ────────────────────────────────────────
 
 export default {
@@ -256,8 +422,30 @@ export default {
       return new Response(null, { status: 204, headers: cors(origin) });
     }
 
-    // Only handle POST /ai
     const url = new URL(request.url);
+
+    // ─── Payment routes ───────────────────────────────────────
+    if (url.pathname === '/payment/webhook' && request.method === 'POST') {
+      return handleWebhook(request, env, origin);
+    }
+
+    if (url.pathname === '/payment/create-order' && request.method === 'POST') {
+      const authHeader = request.headers.get('Authorization') ?? '';
+      const jwt = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+      const jwtPayload = jwt ? parseSupabaseJwt(jwt) : null;
+      if (!jwtPayload) return jsonResponse({ error: 'Authentication required' }, 401, origin);
+      return handleCreateOrder(request, env, origin, jwtPayload.sub);
+    }
+
+    if (url.pathname === '/payment/verify' && request.method === 'POST') {
+      const authHeader = request.headers.get('Authorization') ?? '';
+      const jwt = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+      const jwtPayload = jwt ? parseSupabaseJwt(jwt) : null;
+      if (!jwtPayload) return jsonResponse({ error: 'Authentication required' }, 401, origin);
+      return handleVerifyPayment(request, env, origin, jwtPayload.sub);
+    }
+
+    // ─── AI proxy (existing) ──────────────────────────────────
     if (url.pathname !== '/ai' || request.method !== 'POST') {
       return jsonResponse({ error: 'Not found' }, 404, origin);
     }

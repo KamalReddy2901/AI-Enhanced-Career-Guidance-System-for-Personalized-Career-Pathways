@@ -1,8 +1,30 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { Check, Zap, Gift, Star, Lock } from 'lucide-react';
+import { toast } from 'sonner';
+import { Check, Zap, Gift, Star, Lock, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import { useAuth } from '../context/AuthContext';
+import { useUsage } from '../context/UsageContext';
+
+// Reuse the Razorpay type declared in PaywallModal (global Window)
+declare global {
+  interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Razorpay: new (options: any) => { open(): void };
+  }
+}
+
+function loadRazorpayScript(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (window.Razorpay) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('Failed to load Razorpay'));
+    document.head.appendChild(s);
+  });
+}
 
 const FREE_FEATURES = [
   '30 credits on signup (one-time)',
@@ -34,31 +56,9 @@ const CREDIT_COSTS = [
 ];
 
 const PACKS = [
-  {
-    label: '50 Credits',
-    price: '₹29',
-    original: '₹49',
-    tag: 'Try it out',
-    packId: 'pack_50',
-    desc: 'Enough for about 16 dossiers or 50 simulations.',
-  },
-  {
-    label: '200 Credits',
-    price: '₹99',
-    original: '₹199',
-    tag: 'Most Popular',
-    packId: 'pack_200',
-    highlight: true,
-    desc: 'Great for a deep-dive research session.',
-  },
-  {
-    label: '500 Credits',
-    price: '₹199',
-    original: '₹499',
-    tag: 'Best Value',
-    packId: 'pack_500',
-    desc: 'Power users. Credits never expire.',
-  },
+  { label: '30 Credits',  price: '₹59',  original: '₹99',  tag: 'Try it out',  packId: 'pack_30',  highlight: false, desc: 'Good for about 10 dossiers or 6 simulations.' },
+  { label: '75 Credits',  price: '₹129', original: '₹249', tag: 'Most Popular', packId: 'pack_75',  highlight: true,  desc: 'Great for a deep-dive research session.' },
+  { label: '150 Credits', price: '₹199', original: '₹399', tag: 'Best Value',   packId: 'pack_150', highlight: false, desc: 'Power users. Credits never expire.' },
 ];
 
 const FAQ = [
@@ -94,10 +94,58 @@ const FAQ = [
 
 export function PricingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+  const { session } = useAuth();
+  const { refreshCredits } = useUsage();
 
-  function handleRazorpay(type: 'pro' | 'pack', packId?: string) {
-    void type; void packId;
-    alert("Payment integration coming soon! Until then, enjoy the generous free tier.");
+  async function handleRazorpay(type: 'pro' | 'pack', packId?: string) {
+    if (!session) { window.location.href = '/auth'; return; }
+    const workerUrl = import.meta.env.VITE_AI_PROXY_URL as string;
+    if (!workerUrl) { toast.error('Payments not available in dev mode.'); return; }
+    setIsPaymentLoading(true);
+    try {
+      const orderResp = await fetch(`${workerUrl}/payment/create-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ type, packId }),
+      });
+      const orderData = await orderResp.json() as { orderId?: string; amount?: number; keyId?: string; label?: string; error?: string };
+      if (!orderResp.ok || !orderData.orderId) {
+        toast.error(orderData.error ?? 'Could not initiate payment. Try again.');
+        return;
+      }
+      await loadRazorpayScript();
+      const rzp = new window.Razorpay({
+        key: orderData.keyId,
+        order_id: orderData.orderId,
+        amount: orderData.amount,
+        currency: 'INR',
+        name: 'CareerCase',
+        description: type === 'pro' ? 'Pro Plan — 30 Days' : (orderData.label ?? 'Credit Pack'),
+        handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+          const verifyResp = await fetch(`${workerUrl}/payment/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+            body: JSON.stringify({ ...response, type, packId }),
+          });
+          const result = await verifyResp.json() as { success?: boolean };
+          if (result.success) {
+            toast.success(type === 'pro' ? 'Pro activated! Enjoy 100 credits/day.' : 'Credits added to your account.');
+            refreshCredits();
+          } else {
+            toast.error('Payment verification failed. Contact support if credits were deducted.');
+          }
+        },
+        prefill: { email: session.user.email ?? undefined },
+        theme: { color: '#030213' },
+        modal: { ondismiss: () => setIsPaymentLoading(false) },
+      });
+      rzp.open();
+    } catch {
+      toast.error('Payment failed. Please try again.');
+    } finally {
+      setIsPaymentLoading(false);
+    }
   }
 
   return (
@@ -181,8 +229,8 @@ export function PricingPage() {
                 </li>
               ))}
             </ul>
-              <Button className="w-full font-semibold" onClick={() => handleRazorpay('pro')}>
-              <Zap className="w-4 h-4 mr-2" />
+              <Button className="w-full font-semibold" disabled={isPaymentLoading} onClick={() => handleRazorpay('pro')}>
+              {isPaymentLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2" />}
               Upgrade to Pro — ₹249/month
             </Button>
           </motion.div>
@@ -221,9 +269,10 @@ export function PricingPage() {
                 <Button
                   variant={pack.highlight ? 'default' : 'outline'}
                   className="w-full text-sm"
+                  disabled={isPaymentLoading}
                   onClick={() => handleRazorpay('pack', pack.packId)}
                 >
-                  <Gift className="w-3.5 h-3.5 mr-1.5" />
+                  {isPaymentLoading ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Gift className="w-3.5 h-3.5 mr-1.5" />}
                   Buy {pack.label}
                 </Button>
               </div>
