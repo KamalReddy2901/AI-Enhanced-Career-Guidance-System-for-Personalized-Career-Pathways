@@ -9,7 +9,7 @@ import { InstallPrompt } from '../components/InstallPrompt';
 import { useAuth } from '../context/AuthContext';
 
 // Routes that are always public (no login required)
-const PUBLIC_ROUTES = ['/', '/auth'];
+const PUBLIC_ROUTES = ['/', '/auth', '/quiz', '/mood', '/career-transition', '/roadmap', '/compare', '/pricing'];
 
 export function RootLayout() {
   const navigate = useNavigate();

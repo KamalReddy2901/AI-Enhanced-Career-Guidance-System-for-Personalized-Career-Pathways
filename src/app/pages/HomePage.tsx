@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect, useRef } from 'react';
+import { useCallback, useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, FlaskConical, Scale, ChevronDown, FileText, Brain, Swords, Zap, BarChart2, MessageSquare, ArrowRight, ExternalLink, TrendingUp, TrendingDown, Rocket, Loader2, Map, ArrowLeftRight } from 'lucide-react';
@@ -11,6 +11,60 @@ import { useAuth } from '../context/AuthContext';
 import { getTrendingCareers, type TrendingCareers, QuotaExceededError } from '../services/ai';
 import { usePaywallContext } from '../context/PaywallContext';
 import { toast } from 'sonner';
+
+function ScrollSectionNav({ sections }: { sections: Array<{ id: string; label: string }> }) {
+  const [activeId, setActiveId] = useState(sections[0]?.id ?? '');
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) setActiveId(entry.target.id);
+        }
+      },
+      { rootMargin: '-20% 0px -60% 0px', threshold: 0 }
+    );
+    sections.forEach(s => {
+      const el = document.getElementById(s.id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sections.map(s => s.id).join(',')]);
+
+  return (
+    <div
+      className="fixed right-7 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col items-end print:hidden"
+      style={{ gap: '14px' }}
+    >
+      {sections.map(s => (
+        <motion.div
+          key={s.id}
+          className="flex items-center gap-2.5 group cursor-pointer"
+          onClick={() => document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth' })}
+          whileHover={{ x: -3 }}
+          transition={{ duration: 0.15 }}
+        >
+          <span
+            className={`font-[Inter] uppercase tracking-[0.12em] transition-all duration-200 select-none ${
+              activeId === s.id ? 'text-black/60' : 'text-black/0 group-hover:text-black/30'
+            }`}
+            style={{ fontSize: '0.58rem' }}
+          >
+            {s.label}
+          </span>
+          <div
+            className={`rounded-full transition-all duration-300 ${
+              activeId === s.id
+                ? 'w-2 h-2 bg-black'
+                : 'w-1.5 h-1.5 bg-black/20 group-hover:bg-black/50'
+            }`}
+          />
+        </motion.div>
+      ))}
+    </div>
+  );
+}
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -61,6 +115,22 @@ export function HomePage() {
 
   // When Supabase is configured, show landing to logged-out users; otherwise show search
   const showLanding = isSupabaseConfigured && !user;
+
+  const spySections = useMemo(() => showLanding
+    ? [
+        { id: 'hero', label: 'Home' },
+        { id: 'how-it-works', label: 'How It Works' },
+        { id: 'use-cases', label: 'Use Cases' },
+        { id: 'features', label: 'Features' },
+        { id: 'about', label: 'About' },
+      ]
+    : [
+        { id: 'hero', label: 'Home' },
+        { id: 'trending', label: 'Trending' },
+        { id: 'how-it-works', label: 'How It Works' },
+        { id: 'features', label: 'Features' },
+        { id: 'about', label: 'About' },
+      ], [showLanding]);
 
   // Auto-load shared trending list when the section scrolls into view.
   // getTrendingCareers() reads from Supabase daily cache first — the AI is only called
@@ -118,7 +188,7 @@ export function HomePage() {
   return (
     <div className="relative bg-background">
       {/* ── HERO SECTION ───────────────────────────────────── */}
-      <div className="min-h-screen relative overflow-hidden">
+      <div id="hero" className="min-h-screen relative overflow-hidden">
       <ScrollingTitles paused={isSearchAnimating} dimmed={isSearchAnimating} />
 
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6">
@@ -279,7 +349,9 @@ export function HomePage() {
       </div>
 
       {/* ── WHAT'S TRENDING ────────────────────────────────── */}
+      {!showLanding && (
       <section
+        id="trending"
         ref={trendingRef as React.RefObject<HTMLElement>}
         className="py-24 px-6 border-t border-black/8"
         aria-label="What's trending in careers"
@@ -298,36 +370,6 @@ export function HomePage() {
               What's Trending in Careers
             </h2>
 
-            {/* Always-visible feature buttons */}
-            <div className="flex flex-wrap gap-3 mt-5">
-              <motion.button
-                onClick={() => navigate('/career-transition')}
-                className="flex items-center gap-2 font-[Inter] text-black/50 border border-black/12 px-4 py-2.5 hover:border-black/30 hover:text-black/80 transition-all"
-                style={{ fontSize: '0.82rem' }}
-                whileHover={{ y: -1 }}
-              >
-                <ArrowLeftRight size={14} />
-                Career Transition Planner
-              </motion.button>
-              <motion.button
-                onClick={() => navigate('/roadmap')}
-                className="flex items-center gap-2 font-[Inter] text-black/50 border border-black/12 px-4 py-2.5 hover:border-black/30 hover:text-black/80 transition-all"
-                style={{ fontSize: '0.82rem' }}
-                whileHover={{ y: -1 }}
-              >
-                <Map size={14} />
-                Career Roadmap Builder
-              </motion.button>
-              <motion.button
-                onClick={() => navigate('/compare')}
-                className="flex items-center gap-2 font-[Inter] text-black/50 border border-black/12 px-4 py-2.5 hover:border-black/30 hover:text-black/80 transition-all"
-                style={{ fontSize: '0.82rem' }}
-                whileHover={{ y: -1 }}
-              >
-                <Scale size={14} />
-                Compare Careers
-              </motion.button>
-            </div>
           </motion.div>
 
 
@@ -472,9 +514,10 @@ export function HomePage() {
           )}
         </div>
       </section>
+      )}
 
       {/* ── HOW IT WORKS ───────────────────────────────────── */}
-      <section className="py-24 px-6 border-t border-black/8">
+      <section id="how-it-works" className="py-24 px-6 border-t border-black/8 bg-black/[0.018]">
         <div className="max-w-4xl mx-auto">
           <motion.div
             className="text-center mb-16"
@@ -520,7 +563,7 @@ export function HomePage() {
             ].map((item, i) => (
               <motion.div
                 key={item.step}
-                className={`p-8 border-black/10 ${i < 3 ? 'md:border-r' : ''} ${i > 0 ? 'border-t md:border-t-0' : ''}`}
+                className={`p-8 min-h-[240px] flex flex-col border-black/10 ${i < 3 ? 'md:border-r' : ''} ${i > 0 ? 'border-t md:border-t-0' : ''}`}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -544,7 +587,7 @@ export function HomePage() {
 
       {/* ── USE CASES ──────────────────────────────────────── */}
       {showLanding && (
-        <section className="py-24 px-6 border-t border-black/8">
+        <section id="use-cases" className="py-24 px-6 border-t border-black/8">
           <div className="max-w-4xl mx-auto">
             <motion.div
               className="text-center mb-14"
@@ -607,7 +650,7 @@ export function HomePage() {
       )}
 
       {/* ── WHAT YOU GET ───────────────────────────────────── */}
-      <section className="py-24 px-6 border-t border-black/8">
+      <section id="features" className="py-24 px-6 border-t border-black/8">
         <div className="max-w-4xl mx-auto">
           <motion.div
             className="text-center mb-16"
@@ -685,7 +728,7 @@ export function HomePage() {
             ].map((feat, i) => (
               <motion.div
                 key={feat.title}
-                className="p-8 bg-background hover:bg-black/2 transition-colors group"
+                className="p-8 bg-background hover:bg-black/[0.03] transition-colors group min-h-[200px] flex flex-col"
                 initial={{ opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -708,7 +751,7 @@ export function HomePage() {
       </section>
 
       {/* ── ABOUT ──────────────────────────────────────────── */}
-      <section className="py-24 px-6 border-t border-black/8">
+      <section id="about" className="py-24 px-6 border-t border-black/8 bg-black/[0.018]">
         <div className="max-w-3xl mx-auto">
           <motion.div
             className="flex flex-col sm:flex-row items-start gap-10"
@@ -758,7 +801,7 @@ export function HomePage() {
             <div className="shrink-0">
               <StickFigure pose="coding" size={72} />
             </div>
-            <div className="flex-1 sm:border-l-2 sm:border-black/8 sm:pl-8 text-center sm:text-left">
+            <div className="flex-1 sm:border-l-2 sm:border-black/10 sm:pl-10 text-center sm:text-left">
               <p className="font-[Inter] uppercase tracking-[0.2em] text-black/30 mb-2" style={{ fontSize: '0.63rem' }}>
                 More from the developer
               </p>
@@ -786,7 +829,7 @@ export function HomePage() {
       </section>
 
       {/* ── FEEDBACK ─────────────────────────────────────── */}
-      <section className="py-16 px-6 border-t border-black/6">
+      <section id="feedback" className="py-16 px-6 border-t border-black/6">
         <div className="max-w-2xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -832,6 +875,9 @@ export function HomePage() {
       </footer>
 
 
+
+      {/* Scroll Section Nav */}
+      <ScrollSectionNav sections={spySections} />
 
       {/* Floating Quick-Compare Bar */}
       <AnimatePresence>
