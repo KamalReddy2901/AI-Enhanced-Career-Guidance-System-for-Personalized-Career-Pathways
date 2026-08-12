@@ -42,6 +42,7 @@ import {
   Tooltip,
 } from "recharts";
 import { StickFigure } from "../components/StickFigure";
+import { TextReveal } from "../motion/TextReveal";
 import { useApp } from "../context/AppContext";
 import { useFavorites } from "../hooks/useFavorites";
 import {
@@ -441,7 +442,7 @@ export function JobDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pt-20 pb-16">
+    <div className="editorial-article min-h-screen bg-[var(--paper)] pt-20 pb-16">
       {/* ── SCROLL PROGRESS BAR ───────────────────────────── */}
       <motion.div
         className="fixed top-14 left-0 right-0 z-40 h-[3px] bg-black/5 print:hidden"
@@ -546,12 +547,7 @@ export function JobDetailPage() {
           <div className="flex flex-col sm:flex-row items-start gap-6">
             <StickFigure pose="presenting" size={90} />
             <div className="flex-1">
-              <h1
-                className="font-[Playfair_Display] text-black"
-                style={{ fontSize: "2.5rem" }}
-              >
-                {currentJob.title}
-              </h1>
+              <h1 className="font-display text-black"><TextReveal text={currentJob.title} /></h1>
               <div className="flex flex-wrap items-center gap-3 mt-2">
                 <span
                   className="font-[Inter] text-black/40 border border-black/10 px-2.5 py-1"

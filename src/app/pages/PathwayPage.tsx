@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useGSAP } from '@gsap/react';
 import { Link, useParams } from "react-router";
 import { StickFigure } from "../components/StickFigure";
 import { PathwayGraph } from "../components/guidance/PathwayGraph";
@@ -26,6 +27,8 @@ import { occupationName } from "../i18n/occupationNames";
 import { localizedConfidence, localizedStep, localizedStepKind, localizedTradeoff, localizedTrend } from "../i18n/guidanceFormatting";
 import { hapticLight, hapticSuccess } from '../utils/haptic';
 import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
+import { gsap } from '../motion/gsap';
+import { TextReveal } from '../motion/TextReveal';
 
 export function PathwayPage() {
   const { occupationId = "" } = useParams();
@@ -65,6 +68,7 @@ export function PathwayPage() {
     initial?.chosenRoute ?? initial?.routes[0]?.kind,
   );
   const [why, setWhy] = useState<ScoreEvidence | null>(null);
+  const timelineRef = useRef<HTMLElement>(null);
 
   useEffect(() => setPlan(initial), [initial]);
   useEffect(() => {
@@ -72,6 +76,12 @@ export function PathwayPage() {
     savePathwayPlan(plan);
     if (user?.id) void savePathway(user.id, plan);
   }, [plan, existing, savePathwayPlan, user]);
+
+  useGSAP(() => {
+    const fill = timelineRef.current?.querySelector('.pathway-spine-fill');
+    if (!fill) return;
+    gsap.fromTo(fill, { scaleY: 0 }, { scaleY: 1, ease: 'none', scrollTrigger: { trigger: timelineRef.current, start: 'top 70%', end: 'bottom 75%', scrub: 0.8 } });
+  }, { scope: timelineRef, dependencies: [chosenKind] });
 
   if (!passport || !plan)
     return (
@@ -179,18 +189,16 @@ export function PathwayPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8 pb-28">
+    <div className="min-h-screen bg-[var(--paper)] px-6 py-16 pb-28 md:py-24">
       <GuidanceEntrance className="max-w-6xl mx-auto">
-        <header className="flex items-center gap-4 border-y-4 border-double border-black py-6 mb-8">
+        <header className="mb-12 grid gap-6 border-b-2 border-[var(--ink)] pb-8 md:grid-cols-[1fr_auto]">
           <StickFigure pose="climbing" size={92} />
           <div>
             <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">
               NCO {occupation.ncoCode} · NSQF {occupation.nsqfEntryLevel} ·{" "}
               {market?.observedPeriod}
             </div>
-            <h1 className="text-4xl md:text-5xl font-[Playfair_Display]">
-              {occupationName(occupation.id, occupation.title, lang)}
-            </h1>
+            <h1 className="font-display mt-3 text-5xl leading-[1.05] tracking-tighter md:text-6xl"><TextReveal text={occupationName(occupation.id, occupation.title, lang)} /></h1>
             <p className="font-[Inter] text-black/60 mt-2">
               {market
                 ? `${c.demand} ${market.demandIndex} · ${localizedTrend(market.growthTrend, lang)} · ${market.regions.join(", ")}`
@@ -305,17 +313,19 @@ export function PathwayPage() {
           </h2>
           <PathwayGraph route={route} lang={lang} />
         </section>
-        <section className="bg-white border border-black/10 p-5">
+        <section ref={timelineRef} className="relative py-8">
+          <div className="absolute bottom-8 left-5 top-24 w-0.5 bg-[var(--ink)]/15 md:left-1/2"><div className="pathway-spine-fill h-full origin-top bg-[var(--ink)]" /></div>
           <div className="flex items-center justify-between gap-3"><h2 className="text-2xl font-[Playfair_Display]">{c.labels[route.kind]} {c.checklist}</h2><span className="font-[JetBrains_Mono] text-[10px] uppercase">{c.streak} · {streak.currentStreak} {c.day}</span></div>
-          <div className="mt-4 space-y-3">
+          <div className="relative mt-8 space-y-8">
             {route.steps.map((step, index) => (
               <div
                 key={`${step.kind}-${index}`}
-                className="flex gap-3 border-b border-black/10 pb-3"
+                className={`card-sketch relative ml-12 flex gap-4 p-6 md:w-[calc(50%-2rem)] ${index%2===0?'md:mr-auto':'md:ml-auto'}`}
               >
                 <button
                   onClick={() => toggleStep(index)}
-                  className={`min-h-11 min-w-11 border-2 ${step.done ? "bg-black text-white border-black" : "border-black/20"}`}
+                  className={`absolute -left-[43px] top-6 z-10 grid min-h-11 min-w-11 place-items-center rounded-full border-2 md:-left-[55px] ${index%2===1?'md:-left-[55px]':''} ${step.done ? "bg-black text-white border-black" : "border-black bg-[var(--paper)]"}`}
+                  data-testid={`pathway-step-${index+1}-complete-btn`}
                   aria-label={`Mark ${step.label} ${step.done ? "not done" : "done"}`}
                 >
                   {step.done ? "✓" : "○"}

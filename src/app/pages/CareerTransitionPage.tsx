@@ -9,6 +9,7 @@ import { AskAIPanel } from '../components/AskAIPanel';
 import { downloadTransitionPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
+import { TextReveal } from '../motion/TextReveal';
 
 const DIFFICULTY_COLOR: Record<string, string> = {
   Easy: 'text-emerald-700 bg-emerald-50 border-emerald-200',
@@ -129,7 +130,7 @@ export function CareerTransitionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pt-20 pb-16">
+    <div className="editorial-workflow min-h-screen bg-[var(--paper)] pt-20 pb-16">
       <div className="max-w-3xl mx-auto px-4 sm:px-6">
         <div className="mb-6 border-l-4 border-black bg-white p-4 font-[Inter] text-sm">Want this grounded in your evidence, constraints and segment lens? <Link to="/recommendations" className="font-semibold underline">Open your Career Landscape</Link> and build a deterministic Pathway plan.</div>
 
@@ -145,11 +146,7 @@ export function CareerTransitionPage() {
               Feature
             </p>
           </div>
-          <h1 className="font-[Playfair_Display] text-black leading-tight mb-3" style={{ fontSize: '2.4rem' }}>
-            Career Transition
-            <br />
-            <span className="text-black/35">Pathfinder</span>
-          </h1>
+          <h1 className="font-display text-black leading-tight mb-3"><TextReveal text="Career Transition Pathfinder" /></h1>
           <p className="font-[Inter] text-black/50" style={{ fontSize: '0.9rem' }}>
             Enter your current role and your target role to receive a detailed, personalised transition roadmap.
           </p>

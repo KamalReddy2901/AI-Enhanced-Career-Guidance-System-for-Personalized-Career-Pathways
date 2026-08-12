@@ -347,6 +347,27 @@ nav a, nav button {
   border-radius: 999px;
 }
 
+/* Phase 6: pathway and long-form career tools read as one casefile. */
+.editorial-workflow,
+.editorial-article { background: var(--paper); color: var(--ink); }
+.editorial-workflow h1,
+.editorial-article h1 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(2.5rem, 7vw, 4.25rem);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+.editorial-workflow input,
+.editorial-workflow textarea {
+  border-radius: 0;
+  background: transparent;
+}
+.editorial-article section,
+.editorial-workflow section { scroll-margin-top: 7rem; }
+.editorial-article [class*='rounded-xl'],
+.editorial-workflow [class*='rounded-xl'] { border-radius: 0; }
+
 /* Custom text selection — the one red accent */
 ::selection { background: var(--accent-news); color: var(--paper); }
 

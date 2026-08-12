@@ -9,6 +9,7 @@ import { downloadRoadmapPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
 import { JOB_TITLES } from '../data/jobs';
+import { TextReveal } from '../motion/TextReveal';
 
 const STAGE_COLORS: Record<string, { dot: string; bg: string; border: string }> = {
   blue:   { dot: 'bg-violet-500',  bg: 'bg-violet-50',  border: 'border-violet-200' },
@@ -110,7 +111,7 @@ export function CareerRoadmapPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pt-20 pb-16">
+    <div className="editorial-workflow min-h-screen bg-[var(--paper)] pt-20 pb-16">
       <div className="max-w-2xl mx-auto px-4 sm:px-6">
         <div className="mb-6 border-l-4 border-black bg-white p-4 font-[Inter] text-sm">Want this grounded in your evidence, constraints and segment lens? <Link to="/recommendations" className="font-semibold underline">Open your Career Landscape</Link> and build a deterministic Pathway plan.</div>
         {/* Header */}
@@ -125,11 +126,7 @@ export function CareerRoadmapPage() {
               Feature
             </p>
           </div>
-          <h1 className="font-[Playfair_Display] text-black leading-tight mb-3" style={{ fontSize: '2.4rem' }}>
-            Career
-            <br />
-            <span className="text-black/35">Roadmap Builder</span>
-          </h1>
+          <h1 className="font-display text-black leading-tight mb-3"><TextReveal text="Career Roadmap Builder" /></h1>
           <p className="font-[Inter] text-black/50" style={{ fontSize: '0.9rem' }}>
             Visualise your complete career journey from entry-level to expert — including milestones, salary progression, and key decision points.
           </p>

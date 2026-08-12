@@ -6,6 +6,7 @@ import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import { refineJobDescription } from '../services/ai';
 import { toast } from 'sonner';
+import { TextReveal } from '../motion/TextReveal';
 
 export function JobOverviewPage() {
   const navigate = useNavigate();
@@ -84,7 +85,7 @@ export function JobOverviewPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pt-20 pb-16">
+    <div className="editorial-article min-h-screen bg-[var(--paper)] pt-20 pb-16">
       <div className="max-w-3xl mx-auto px-6">
         {/* Back button */}
         <motion.button
@@ -116,9 +117,7 @@ export function JobOverviewPage() {
           <div className="flex items-start gap-5">
             <StickFigure pose="thinking" size={80} />
             <div className="flex-1">
-              <h1 className="font-[Playfair_Display] text-black mb-1" style={{ fontSize: '2.2rem' }}>
-                {currentJob.title}
-              </h1>
+              <h1 className="font-display text-black mb-1"><TextReveal text={currentJob.title} /></h1>
               <div className="flex items-center gap-2">
                 <span className="inline-block font-[Inter] text-black/40 border border-black/10 px-2 py-0.5" style={{ fontSize: '0.72rem' }}>
                   {currentJob.category}
