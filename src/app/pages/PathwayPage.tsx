@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useGSAP } from '@gsap/react';
 import { Link, useParams } from "react-router";
 import { StickFigure } from "../components/StickFigure";
@@ -29,6 +29,9 @@ import { hapticLight, hapticSuccess } from '../utils/haptic';
 import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 import { gsap } from '../motion/gsap';
 import { TextReveal } from '../motion/TextReveal';
+import { useRichVisuals } from '../hooks/useRichVisuals';
+
+const PathwayLineScene = lazy(() => import('../components/three/PathwayLineScene').then(module => ({ default: module.PathwayLineScene })));
 
 export function PathwayPage() {
   const { occupationId = "" } = useParams();
@@ -69,6 +72,7 @@ export function PathwayPage() {
   );
   const [why, setWhy] = useState<ScoreEvidence | null>(null);
   const timelineRef = useRef<HTMLElement>(null);
+  const richVisuals = useRichVisuals();
 
   useEffect(() => setPlan(initial), [initial]);
   useEffect(() => {
@@ -191,9 +195,10 @@ export function PathwayPage() {
   return (
     <div className="min-h-screen bg-[var(--paper)] px-6 py-16 pb-28 md:py-24">
       <GuidanceEntrance className="max-w-6xl mx-auto">
-        <header className="mb-12 grid gap-6 border-b-2 border-[var(--ink)] pb-8 md:grid-cols-[1fr_auto]">
+        <header className="relative mb-12 grid min-h-56 gap-6 overflow-hidden border-b-2 border-[var(--ink)] pb-8 md:grid-cols-[1fr_auto]">
+          {richVisuals && <div className="pointer-events-auto absolute inset-x-0 top-0 z-0 h-[40%] opacity-60" aria-hidden="true"><Suspense fallback={null}><PathwayLineScene labels={route.steps.map(step => localizedStep(step, lang))}/></Suspense></div>}
           <StickFigure pose="climbing" size={92} />
-          <div>
+          <div className="relative z-10">
             <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">
               NCO {occupation.ncoCode} · NSQF {occupation.nsqfEntryLevel} ·{" "}
               {market?.observedPeriod}

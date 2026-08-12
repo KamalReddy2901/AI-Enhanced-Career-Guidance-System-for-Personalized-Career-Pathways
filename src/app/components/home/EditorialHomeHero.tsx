@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import type { CareerPassport, CareerRecommendation, RecommendationSet } from '../../engine/types';
@@ -10,6 +11,9 @@ import { useReveal } from '../../motion/useReveal';
 import { Button } from '../ui/button';
 import { StickFigure } from '../StickFigure';
 import { StopPress } from '../guidance/StopPress';
+import { useRichVisuals } from '../../hooks/useRichVisuals';
+
+const FloatingNewsprintScene = lazy(() => import('../three/FloatingNewsprintScene').then(module => ({ default: module.FloatingNewsprintScene })));
 
 interface EditorialHomeHeroProps {
   passport: CareerPassport | null;
@@ -36,6 +40,7 @@ export function EditorialHomeHero({
   const picks = recommendations?.recommendations.slice(0, 3) ?? [];
   const progress = passport?.completeness ?? 0;
   const reveal = useReveal<HTMLDivElement>();
+  const richVisuals = useRichVisuals();
 
   const tools = [
     { number: '01', label: t('homeQuiz'), path: '/quiz' },
@@ -72,8 +77,8 @@ export function EditorialHomeHero({
               </Button>
             </div>
           </div>
-          <div className="hidden justify-self-end lg:block" aria-hidden="true">
-            <StickFigure pose="mapping" size={320} animated />
+          <div className="hidden h-[360px] w-[420px] justify-self-end lg:block" aria-hidden="true">
+            {richVisuals ? <Suspense fallback={<StickFigure pose="mapping" size={320} animated />}><FloatingNewsprintScene /></Suspense> : <StickFigure pose="mapping" size={320} animated />}
           </div>
         </div>
       </section>
