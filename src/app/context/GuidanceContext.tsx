@@ -23,8 +23,10 @@ import {
 } from "../services/guidanceDb";
 import { useAuth } from "./AuthContext";
 import { matchCareers } from "../engine/matching";
+import { buildPathwayPlan } from "../engine/pathways";
 import { saveRecommendationSet } from "../services/guidanceDb";
 import { logProgress } from "../services/guidanceDb";
+import { savePathway } from "../services/guidanceDb";
 
 // ─── Context Types ────────────────────────────────────────────────────────────
 
@@ -157,12 +159,14 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
         }
 
         // Save to Supabase if signed in
-      if (user?.id) {
-        savePassportToDb(user.id, updated).catch((err) => {
-          console.error("Failed to save passport to Supabase:", err);
-        });
-        void logProgress(user.id, "profile_edit", { passportVersion: updated.version });
-      }
+        if (user?.id) {
+          savePassportToDb(user.id, updated).catch((err) => {
+            console.error("Failed to save passport to Supabase:", err);
+          });
+          void logProgress(user.id, "profile_edit", {
+            passportVersion: updated.version,
+          });
+        }
 
         return updated;
       });
@@ -234,6 +238,38 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
       /* optional */
     }
     if (user?.id) void saveRecommendationSet(user.id, next);
+    setPathways((previous) => {
+      const refreshed = previous.map((saved) => {
+        const rebuilt = buildPathwayPlan(passport, saved.occupationId);
+        return {
+          ...rebuilt,
+          chosenRoute: saved.chosenRoute,
+          createdAt: saved.createdAt,
+          routes: rebuilt.routes.map((route) => {
+            const oldRoute = saved.routes.find(
+              (item) => item.kind === route.kind,
+            );
+            return {
+              ...route,
+              steps: route.steps.map((step, index) => ({
+                ...step,
+                done: oldRoute?.steps[index]?.done ?? false,
+              })),
+            };
+          }),
+        };
+      });
+      try {
+        localStorage.setItem(PATHWAYS_STORAGE_KEY, JSON.stringify(refreshed));
+      } catch {
+        /* optional */
+      }
+      if (user?.id)
+        refreshed.forEach((plan) => {
+          void savePathway(user.id, plan);
+        });
+      return refreshed;
+    });
   }, [passport, user]);
 
   const savePathwayPlan = useCallback((plan: PathwayPlan) => {
