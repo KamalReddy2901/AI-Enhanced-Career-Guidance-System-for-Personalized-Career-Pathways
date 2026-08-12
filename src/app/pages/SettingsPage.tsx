@@ -115,7 +115,7 @@ export function SettingsPage() {
         <Section title="Preferences">
           <div className="space-y-3">
             <div className="border border-black/10 p-4"><div className="mb-2 font-[Inter] text-sm font-medium">Guidance language</div><LanguageSwitcher /></div>
-            <ToggleSetting label="Voice assistance" description="Show and use read-aloud and dictation controls" enabled={voiceAssistance} onToggle={() => { const next = !voiceAssistance; setVoiceAssistance(next); localStorage.setItem('cc_guidance_voice', next ? 'on' : 'off'); }} icon={<Volume2 size={16}/>} />
+            <ToggleSetting label="Voice assistance" description="Enable read-aloud and dictation controls" enabled={voiceAssistance} onToggle={() => { const next = !voiceAssistance; setVoiceAssistance(next); localStorage.setItem('cc_guidance_voice', next ? 'on' : 'off'); }} icon={<Volume2 size={16}/>} />
             <ToggleSetting
               label="Sound Effects"
               description="Play subtle audio feedback for interactions"

@@ -40,6 +40,7 @@ export function AssessAspirationsPage() {
   const { updatePassport } = useGuidance();
   const { user } = useAuth();
   const { lang, locale } = useT();
+  const c = lang === "hi" ? { interview:"आकांक्षा संवाद", title:"आप किस दिशा में जाना चाहते हैं—उस पर एक छोटी बातचीत", finish:"चिंतन पूरा करें", send:"उत्तर भेजें", dictate:"बोलकर लिखें", unavailable:"संवाद सेवा उपलब्ध नहीं है। यही चिंतन AI के बिना स्थानीय रूप से सहेजें।", voice:"इस ब्राउज़र में वॉइस इनपुट उपलब्ध नहीं है।", save:"स्थानीय रूप से सहेजें", note:"एक बार में एक प्रश्न, अधिकतम पाँच। परिणाम को आप बाद में पासपोर्ट में बदल सकते हैं।" } : lang === "te" ? { interview:"ఆకాంక్షల సంభాషణ", title:"మీరు ఏ దిశలో వెళ్లాలనుకుంటున్నారో తెలిపే చిన్న సంభాషణ", finish:"ఆలోచన పూర్తి చేయండి", send:"సమాధానం పంపండి", dictate:"మాట్లాడి నమోదు చేయండి", unavailable:"సంభాషణ సేవ అందుబాటులో లేదు. ఇదే ఆలోచనను AI లేకుండా స్థానికంగా భద్రపరచండి.", voice:"ఈ బ్రౌజర్‌లో వాయిస్ ఇన్‌పుట్‌కు మద్దతు లేదు.", save:"స్థానికంగా భద్రపరచండి", note:"ఒక్కసారి ఒక ప్రశ్న, గరిష్ఠంగా ఐదు. ఫలితాన్ని తరువాత పాస్‌పోర్ట్‌లో మార్చవచ్చు." } : { interview:"aspiration interview", title:"A short conversation about where you want to head", finish:"Finish reflection", send:"Send answer", dictate:"Dictate", unavailable:"The conversation service is unavailable. Save the same reflection locally without AI.", voice:"Voice input is not supported on this browser.", save:"Save locally", note:"One question at a time, never more than five. You can edit the result later in your Passport." };
   const [index, setIndex] = useState(0);
   const [draft, setDraft] = useState("");
   const [answers, setAnswers] = useState<string[]>([]);
@@ -94,9 +95,7 @@ export function AssessAspirationsPage() {
       sounds.assessComplete();
       navigate("/assess");
     } catch {
-      setError(
-        "The conversation service is unavailable. Save the same reflection locally without AI.",
-      );
+      setError(c.unavailable);
     } finally {
       setBusy(false);
     }
@@ -117,10 +116,10 @@ export function AssessAspirationsPage() {
           <StickFigure pose="talking" size={80} />
           <div>
             <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">
-              CareerCase · aspiration interview · question {index + 1}/5
+              CareerCase · {c.interview} · {index + 1}/5
             </div>
             <h1 className="text-3xl font-[Playfair_Display] md:text-4xl">
-              A short conversation about where you want to head
+              {c.title}
             </h1>
           </div>
         </header>
@@ -160,19 +159,19 @@ export function AssessAspirationsPage() {
                 disabled={!draft.trim() || busy}
                 className="min-h-11 bg-black px-5 py-3 font-[Inter] text-white disabled:opacity-30"
               >
-                {index === 4 ? "Finish reflection" : "Send answer"}
+                {index === 4 ? c.finish : c.send}
               </button>
               <button
                 onClick={() =>
                   void listen(locale)
                     .then(setDraft)
                     .catch(() =>
-                      setError("Voice input is not supported on this browser."),
+                      setError(c.voice),
                     )
                 }
                 className="min-h-11 border border-black/20 px-4 py-3 font-[Inter]"
               >
-                🎙 Dictate
+                🎙 {c.dictate}
               </button>
             </div>
           </div>
@@ -191,13 +190,12 @@ export function AssessAspirationsPage() {
                 }
                 className="ml-2 underline"
               >
-                Save locally
+                {c.save}
               </button>
             </div>
           )}
           <p className="mt-5 font-[Inter] text-xs text-black/45">
-            One question at a time, never more than five. You can edit the
-            result later in your Passport.
+            {c.note}
           </p>
         </div>
       </div>

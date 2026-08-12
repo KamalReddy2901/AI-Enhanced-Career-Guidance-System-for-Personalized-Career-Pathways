@@ -30,7 +30,8 @@ export function RecommendationsPage() {
     dismissRecommendationChanges,
     recompute,
   } = useGuidance();
-  const { t, locale } = useT();
+  const { t, locale, lang } = useT();
+  const c = lang === "hi" ? { start:"आपका करियर परिदृश्य पासपोर्ट से शुरू होता है", onboarding:"ऑनबोर्डिंग शुरू करें", preparing:"आपका नियम-आधारित परिदृश्य तैयार हो रहा है…", title:"खोजने योग्य मज़बूत विकल्प", intro:"आपकी मौजूदा प्रोफ़ाइल पर आधारित। स्कोर प्रमाण-आधारित संकेत हैं, अंतिम निर्णय नहीं।", ask:"क्यों पूछें · अगर ऐसा हो तो पूछें", confidence:"विश्वसनीयता", demand:"माँग", why:"यह क्यों?", build:"मार्ग बनाएँ", dossier:"पूरा विवरण पढ़ें" } : lang === "te" ? { start:"మీ కెరీర్ దృశ్యం పాస్‌పోర్ట్‌తో మొదలవుతుంది", onboarding:"ఆన్‌బోర్డింగ్ ప్రారంభించండి", preparing:"మీ నియమ-ఆధారిత దృశ్యం సిద్ధమవుతోంది…", title:"అన్వేషించదగిన బలమైన ఎంపికలు", intro:"మీ ప్రస్తుత ప్రొఫైల్ ఆధారంగా. స్కోర్లు ఆధారాలతో కూడిన సంకేతాలు మాత్రమే, తీర్పు కాదు.", ask:"ఎందుకో అడగండి · పరిస్థితి మారితే అడగండి", confidence:"నమ్మకం", demand:"డిమాండ్", why:"ఇది ఎందుకు?", build:"మార్గం నిర్మించండి", dossier:"పూర్తి వివరాలు చదవండి" } : { start:"Your career landscape starts with a passport", onboarding:"Start onboarding", preparing:"Preparing your deterministic landscape…", title:"Strong options to explore", intro:"Based on your current profile. Scores are evidence-led signals, never a verdict.", ask:"Ask why · Ask what-if", confidence:"confidence", demand:"Demand", why:"Why this?", build:"Build pathway", dossier:"Read the full dossier" };
   const [explanation, setExplanation] = useState<CareerRecommendation | null>(
     null,
   );
@@ -57,20 +58,20 @@ export function RecommendationsPage() {
       <div className="min-h-screen p-8 text-center">
         <StickFigure pose="mapping" size={120} />
         <h1 className="mt-6 text-4xl font-[Playfair_Display]">
-          Your career landscape starts with a passport
+          {c.start}
         </h1>
         <Link
           to="/onboarding"
           className="mt-5 inline-block bg-black px-5 py-3 font-[Inter] text-white"
         >
-          Start onboarding
+          {c.onboarding}
         </Link>
       </div>
     );
   if (!recommendations)
     return (
       <div className="min-h-screen p-8 text-center font-[Inter]">
-        Preparing your deterministic landscape…
+        {c.preparing}
       </div>
     );
   return (
@@ -85,11 +86,10 @@ export function RecommendationsPage() {
               · profile v{passport.version} · {recommendations.kbVersion}
             </div>
             <h1 className="text-4xl font-[Playfair_Display] md:text-5xl">
-              Strong options to explore
+              {c.title}
             </h1>
             <p className="mt-2 font-[Inter] text-black/60">
-              Based on your current profile. Scores are evidence-led signals,
-              never a verdict.
+              {c.intro}
             </p>
           </div>
         </header>
@@ -108,6 +108,7 @@ export function RecommendationsPage() {
                   key={recommendation.occupationId}
                   recommendation={recommendation}
                   locale={locale}
+                  copy={c}
                   onExplain={() => setExplanation(recommendation)}
                 />
               ))}
@@ -122,7 +123,7 @@ export function RecommendationsPage() {
           to="/counselor"
           className="fixed bottom-20 right-5 z-30 border-2 border-black bg-[#f9f8f7] px-4 py-3 font-[Inter] text-sm shadow-[3px_3px_0_#1a1a1a]"
         >
-          Ask why · Ask what-if
+          {c.ask}
         </Link>
       </div>
       {explanation && (
@@ -139,10 +140,12 @@ export function RecommendationsPage() {
 function RecommendationCard({
   recommendation,
   locale,
+  copy,
   onExplain,
 }: {
   recommendation: CareerRecommendation;
   locale: string;
+  copy: { confidence:string; demand:string; why:string; build:string; dossier:string };
   onExplain: () => void;
 }) {
   const occupation = occupationById.get(recommendation.occupationId)!;
@@ -174,7 +177,7 @@ function RecommendationCard({
           {recommendation.totalScore}
         </div>
         <div className="font-[JetBrains_Mono] text-[10px] uppercase">
-          confidence · {recommendation.confidence}
+          {copy.confidence} · {recommendation.confidence}
         </div>
       </div>
       <div className="mt-2 h-2 bg-black/10">
@@ -202,7 +205,7 @@ function RecommendationCard({
       </div>
       {market && (
         <p className="mt-4 font-[JetBrains_Mono] text-[9px] uppercase text-black/50">
-          Demand {market.demandIndex} · {market.growthTrend} ·{" "}
+          {copy.demand} {market.demandIndex} · {market.growthTrend} ·{" "}
           {market.observedPeriod} · {market.regions.join(", ")}
         </p>
       )}
@@ -214,20 +217,20 @@ function RecommendationCard({
           }}
           className="min-h-11 border border-black/20 font-[Inter] text-sm"
         >
-          Why this?
+          {copy.why}
         </button>
         <Link
           to={`/pathway/${occupation.id}`}
           className="flex min-h-11 items-center justify-center bg-black font-[Inter] text-sm text-white"
         >
-          Build pathway
+          {copy.build}
         </Link>
       </div>
       <Link
         to={`/job/detail?occupation=${occupation.id}`}
         className="mt-3 block text-center font-[Inter] text-xs underline"
       >
-        Read the full dossier
+        {copy.dossier}
       </Link>
     </article>
   );

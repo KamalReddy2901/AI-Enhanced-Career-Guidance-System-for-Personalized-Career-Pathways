@@ -4,16 +4,17 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Home, Compass, Map, Settings, MessageCircle } from 'lucide-react';
 import { hapticTap } from '../utils/haptic';
 import { sounds } from '../utils/sounds';
-
-const NAV_ITEMS = [
-  { path: '/', icon: Home, label: 'Home' },
-  { path: '/job', icon: Compass, label: 'Explore' },
-  { path: '/passport', icon: Map, label: 'Pathways' },
-  { path: '/counselor', icon: MessageCircle, label: 'Counselor' },
-  { path: '/settings', icon: Settings, label: 'Settings' },
-];
+import { useT } from '../i18n';
 
 export function BottomNav() {
+  const { t } = useT();
+  const navItems = [
+    { path: '/', icon: Home, label: t('home') },
+    { path: '/job', icon: Compass, label: t('explore') },
+    { path: '/passport', icon: Map, label: t('pathways') },
+    { path: '/counselor', icon: MessageCircle, label: t('counselor') },
+    { path: '/settings', icon: Settings, label: t('settings') },
+  ];
   const location = useLocation();
   const navigate = useNavigate();
   const [visible, setVisible] = useState(true);
@@ -51,7 +52,7 @@ export function BottomNav() {
           aria-label="Bottom navigation"
         >
           <div className="flex items-center justify-around h-14">
-            {NAV_ITEMS.map(({ path, icon: Icon, label }) => {
+            {navItems.map(({ path, icon: Icon, label }) => {
               const isActive = location.pathname === path ||
                 (path === '/' && location.pathname === '/') ||
                 (path !== '/' && location.pathname.startsWith(path));

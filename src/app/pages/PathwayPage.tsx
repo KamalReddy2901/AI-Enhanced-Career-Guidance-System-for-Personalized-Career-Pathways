@@ -20,6 +20,7 @@ import type { Proficiency, SkillClaim } from "../engine/types";
 import { logProgress, savePathway } from "../services/guidanceDb";
 import { sounds } from "../utils/sounds";
 import { useStreak } from "../hooks/useStreak";
+import { useT } from "../i18n";
 
 export function PathwayPage() {
   const { occupationId = "" } = useParams();
@@ -32,6 +33,8 @@ export function PathwayPage() {
   } = useGuidance();
   const { user } = useAuth();
   const streak = useStreak();
+  const { lang } = useT();
+  const c = lang === "hi" ? { start:"पहले ऑनबोर्डिंग शुरू करें", missing:"यह व्यवसाय मौजूदा ज्ञान-आधार में नहीं है।", demand:"माँग", unavailable:"माँग का सांकेतिक डेटा उपलब्ध नहीं", gaps:"कौशल-अंतर रिपोर्ट · दक्षता और विश्वसनीयता के अनुसार", evidence:"प्रमाण की विश्वसनीयता", readiness:"तैयारी", bring:"आपके मौजूदा उपयोगी कौशल", validate:"स्थानांतरित होने वाले प्रमाण दिखाने के लिए पूर्व सीख को सत्यापित करें।", routes:"तीन व्यावहारिक मार्ग", months:"महीने", confidence:"विश्वसनीयता", map:"इंटरैक्टिव मार्ग मानचित्र", checklist:"जाँच-सूची", streak:"विकास क्रम", day:"दिन", find:"यहाँ खोजें", complete:"मार्ग पूरा—बातचीत की तैयारी करें", completeNote:"आपके प्रमाण और तैयारी की दोबारा गणना हुई है। आवेदन से पहले भूमिका-विशिष्ट प्रश्नों का अभ्यास करें।", interview:"साक्षात्कार अभ्यास खोलें", ask:"क्यों पूछें · अगर ऐसा हो तो पूछें", labels:{direct:"सबसे तेज़",stepping_stone:"कम जोखिम",qualification_first:"प्रमाणपत्र मार्ग"} } : lang === "te" ? { start:"ముందుగా ఆన్‌బోర్డింగ్ ప్రారంభించండి", missing:"ఈ వృత్తి ప్రస్తుత జ్ఞాన భాండాగారంలో లేదు.", demand:"డిమాండ్", unavailable:"సూచనాత్మక డిమాండ్ సమాచారం అందుబాటులో లేదు", gaps:"నైపుణ్య లోటు నివేదిక · ప్రావీణ్యం, నమ్మకం ప్రకారం", evidence:"ఆధారాల నమ్మకం", readiness:"సిద్ధత", bring:"మీరు ఇప్పటికే తీసుకువచ్చేవి", validate:"బదిలీ చేయగల ఆధారాలను చూపడానికి గత అభ్యాసాన్ని ధృవీకరించండి.", routes:"మూడు ఆచరణీయ మార్గాలు", months:"నెలలు", confidence:"నమ్మకం", map:"ఇంటరాక్టివ్ మార్గ పటం", checklist:"తనిఖీ జాబితా", streak:"ఎదుగుదల పరంపర", day:"రోజు", find:"ఇక్కడ కనుగొనండి", complete:"మార్గం పూర్తి—సంభాషణకు సిద్ధం కండి", completeNote:"మీ ఆధారాలు, సిద్ధత మళ్లీ లెక్కించబడ్డాయి. దరఖాస్తుకు ముందు పాత్ర-నిర్దిష్ట ప్రశ్నలను సాధన చేయండి.", interview:"ఇంటర్వ్యూ సాధన తెరవండి", ask:"ఎందుకో అడగండి · పరిస్థితి మారితే అడగండి", labels:{direct:"అత్యంత వేగవంతం",stepping_stone:"తక్కువ ప్రమాదం",qualification_first:"అర్హత మార్గం"} } : { start:"Start onboarding first", missing:"This occupation is not in the current knowledge base.", demand:"Demand", unavailable:"Indicative demand signal unavailable", gaps:"Skill gap report · proficiency & confidence adjusted", evidence:"Evidence confidence", readiness:"Readiness", bring:"What you already bring", validate:"Validate prior learning to surface transferable evidence.", routes:"Three plausible routes", months:"months", confidence:"confidence", map:"Interactive pathway map", checklist:"checklist", streak:"growth streak", day:"day", find:"Find via", complete:"Route complete—prepare for the conversation", completeNote:"Your evidence and readiness have been recomputed. Practice role-specific questions before applying.", interview:"Open interview prep", ask:"Ask why · Ask what-if", labels:{direct:"Fastest",stepping_stone:"Lower-risk",qualification_first:"Credential route"} };
   const existing = pathways.find((plan) => plan.occupationId === occupationId);
   const initial = useMemo(() => {
     if (!passport) return null;
@@ -68,7 +71,7 @@ export function PathwayPage() {
     return (
       <div className="min-h-screen p-8 text-center">
         <Link to="/onboarding" className="underline">
-          Start onboarding first
+          {c.start}
         </Link>
       </div>
     );
@@ -76,7 +79,7 @@ export function PathwayPage() {
   if (!occupation)
     return (
       <div className="min-h-screen p-8 text-center font-[Inter]">
-        This occupation is not in the current knowledge base.
+        {c.missing}
       </div>
     );
   const market = marketFor(occupationId);
@@ -183,15 +186,15 @@ export function PathwayPage() {
             </h1>
             <p className="font-[Inter] text-black/60 mt-2">
               {market
-                ? `Demand ${market.demandIndex} · ${market.growthTrend} · ${market.regions.join(", ")}`
-                : "Indicative demand signal unavailable"}
+                ? `${c.demand} ${market.demandIndex} · ${market.growthTrend} · ${market.regions.join(", ")}`
+                : c.unavailable}
             </p>
           </div>
         </header>
         <section className="grid lg:grid-cols-[1.5fr_.75fr] gap-4 mb-8">
           <div className="bg-white border border-black/10 p-5">
             <div className="font-[JetBrains_Mono] text-xs uppercase tracking-wide">
-              Skill gap report · proficiency & confidence adjusted
+              {c.gaps}
             </div>
             <div className="mt-4 space-y-4">
               {plan.gapReport.gaps.slice(0, 8).map((gap) => (
@@ -201,7 +204,7 @@ export function PathwayPage() {
                     value={gap.severity}
                   />
                   <p className="mt-1 font-[Inter] text-xs text-black/50">
-                    Evidence confidence {Math.round(gap.confidence * 100)}%
+                    {c.evidence} {Math.round(gap.confidence * 100)}%
                   </p>
                 </div>
               ))}
@@ -236,10 +239,10 @@ export function PathwayPage() {
               </text>
             </svg>
             <div className="text-center font-[JetBrains_Mono] text-xs uppercase">
-              Readiness · SGI {plan.gapReport.sgi}
+              {c.readiness} · SGI {plan.gapReport.sgi}
             </div>
             <h2 className="font-[Playfair_Display] text-xl mt-6">
-              What you already bring
+              {c.bring}
             </h2>
             {plan.gapReport.transferable.length ? (
               <ul className="mt-3 space-y-2">
@@ -255,14 +258,14 @@ export function PathwayPage() {
               </ul>
             ) : (
               <p className="mt-3 font-[Inter] text-sm text-black/55">
-                Validate prior learning to surface transferable evidence.
+                {c.validate}
               </p>
             )}
           </div>
         </section>
         <section className="mb-8">
           <h2 className="text-3xl font-[Playfair_Display] mb-4">
-            Three plausible routes
+            {c.routes}
           </h2>
           <div className="grid md:grid-cols-3 gap-3">
             {plan.routes.map((candidate) => (
@@ -272,16 +275,16 @@ export function PathwayPage() {
                 className={`min-h-44 text-left bg-white border-2 p-5 ${route.kind === candidate.kind ? "border-black shadow-[3px_3px_0_#1a1a1a]" : "border-black/10"}`}
               >
                 <div className="font-[JetBrains_Mono] text-xs uppercase">
-                  {candidate.label}
+                  {c.labels[candidate.kind]}
                 </div>
                 <div className="text-3xl font-[Playfair_Display] mt-3">
-                  {candidate.totalMonths} months
+                  {candidate.totalMonths} {c.months}
                 </div>
                 <p className="font-[Inter] text-sm text-black/60 mt-2">
                   {candidate.tradeoff}
                 </p>
                 <div className="font-[JetBrains_Mono] text-[10px] uppercase mt-4">
-                  {candidate.confidence} confidence
+                  {candidate.confidence} {c.confidence}
                 </div>
               </button>
             ))}
@@ -289,12 +292,12 @@ export function PathwayPage() {
         </section>
         <section className="mb-8">
           <h2 className="text-3xl font-[Playfair_Display] mb-4">
-            Interactive pathway map
+            {c.map}
           </h2>
           <PathwayGraph route={route} />
         </section>
         <section className="bg-white border border-black/10 p-5">
-          <div className="flex items-center justify-between gap-3"><h2 className="text-2xl font-[Playfair_Display]">{route.label} checklist</h2><span className="font-[JetBrains_Mono] text-[10px] uppercase">growth streak · {streak.currentStreak} day{streak.currentStreak===1?'':'s'}</span></div>
+          <div className="flex items-center justify-between gap-3"><h2 className="text-2xl font-[Playfair_Display]">{c.labels[route.kind]} {c.checklist}</h2><span className="font-[JetBrains_Mono] text-[10px] uppercase">{c.streak} · {streak.currentStreak} {c.day}</span></div>
           <div className="mt-4 space-y-3">
             {route.steps.map((step, index) => (
               <div
@@ -313,7 +316,7 @@ export function PathwayPage() {
                     {step.label}
                   </div>
                   <div className="font-[JetBrains_Mono] text-[10px] uppercase text-black/50">
-                    {step.kind} · {step.estMonths} months
+                    {step.kind} · {step.estMonths} {c.months}
                   </div>
                   {step.refId && qualificationById.has(step.refId) && (
                     <a
@@ -322,7 +325,7 @@ export function PathwayPage() {
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Find via {qualificationById.get(step.refId)!.providerHint}
+                      {c.find} {qualificationById.get(step.refId)!.providerHint}
                     </a>
                   )}
                 </div>
@@ -330,7 +333,7 @@ export function PathwayPage() {
             ))}
           </div>
         </section>
-        {routeComplete && <section className="mt-6 flex items-center gap-4 border-2 border-black bg-white p-5"><StickFigure pose="celebrating" size={72}/><div><h2 className="text-2xl font-[Playfair_Display]">Route complete—prepare for the conversation</h2><p className="mt-1 font-[Inter] text-sm text-black/60">Your evidence and readiness have been recomputed. Practice role-specific questions before applying.</p><Link to={`/interview-prep?job=${encodeURIComponent(occupation.title)}`} className="mt-3 inline-block min-h-11 bg-black px-4 py-3 font-[Inter] text-sm text-white">Open interview prep →</Link></div></section>}
+        {routeComplete && <section className="mt-6 flex items-center gap-4 border-2 border-black bg-white p-5"><StickFigure pose="celebrating" size={72}/><div><h2 className="text-2xl font-[Playfair_Display]">{c.complete}</h2><p className="mt-1 font-[Inter] text-sm text-black/60">{c.completeNote}</p><Link to={`/interview-prep?job=${encodeURIComponent(occupation.title)}`} className="mt-3 inline-block min-h-11 bg-black px-4 py-3 font-[Inter] text-sm text-white">{c.interview} →</Link></div></section>}
         <p className="mt-6 font-[JetBrains_Mono] text-[10px] uppercase text-black/45">
           Deterministic scoring over KB kb-2026.06.1 · profile v
           {passport.version} · LLM used for wording only.
@@ -339,7 +342,7 @@ export function PathwayPage() {
           to="/counselor"
           className="fixed right-5 bottom-20 border-2 border-black bg-[#f9f8f7] px-4 py-3 font-[Inter] text-sm shadow-[3px_3px_0_#1a1a1a]"
         >
-          Ask why · Ask what-if
+          {c.ask}
         </Link>
       </div>
     </div>

@@ -18,6 +18,8 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const { updatePassport, passport } = useGuidance();
   const { user } = useAuth();
+  const { lang } = useT();
+  const nav = lang === 'hi' ? { steps:['स्थिति','लक्ष्य','पृष्ठभूमि','सीमाएँ','सहमति','पूर्ण'], back:'वापस', next:'आगे बढ़ें', finish:'मेरी यात्रा शुरू करें' } : lang === 'te' ? { steps:['స్థితి','లక్ష్యాలు','నేపథ్యం','పరిమితులు','సమ్మతి','పూర్తి'], back:'వెనుకకు', next:'కొనసాగించండి', finish:'నా ప్రయాణం ప్రారంభించండి' } : { steps:['segment','goals','background','constraints','consent','finish'], back:'Back', next:'Continue', finish:'Start My Journey' };
   
   const [currentStep, setCurrentStep] = useState<Step>('segment');
   const [segment, setSegment] = useState<Segment | null>(null);
@@ -163,7 +165,7 @@ export function OnboardingPage() {
             <div key={step} className={`w-1/6 text-center text-[8px] sm:text-xs font-[JetBrains_Mono] uppercase sm:tracking-wide ${
               idx <= stepIndex ? 'text-black' : 'text-black/30'
             }`}>
-              {step}
+              {nav.steps[idx]}
             </div>
           ))}
         </div>
@@ -185,7 +187,7 @@ export function OnboardingPage() {
               onClick={handleBack}
               className="px-6 py-2 border border-black/20 hover:bg-black/5 font-[Inter] text-sm transition-colors"
             >
-              ← Back
+              ← {nav.back}
             </button>
           )}
           {currentStep !== 'finish' ? (
@@ -194,14 +196,14 @@ export function OnboardingPage() {
               disabled={!canProceed()}
               className="px-6 py-2 bg-black text-white hover:bg-black/90 disabled:bg-black/20 disabled:text-black/40 font-[Inter] text-sm transition-colors ml-auto"
             >
-              Continue →
+              {nav.next} →
             </button>
           ) : (
             <button
               onClick={handleFinish}
               className="px-6 py-2 bg-black text-white hover:bg-black/90 font-[Inter] text-sm transition-colors ml-auto"
             >
-              Start My Journey →
+              {nav.finish} →
             </button>
           )}
         </div>
@@ -213,18 +215,23 @@ export function OnboardingPage() {
 // ─── Step Components ──────────────────────────────────────────────────────────
 
 function SegmentStep({ segment, setSegment }: { segment: Segment | null; setSegment: (s: Segment) => void }) {
-  const segments: Array<{ value: Segment; label: string; pose: StickFigurePose; description: string }> = [
+  const { lang } = useT();
+  const base: Array<{ value: Segment; label: string; pose: StickFigurePose; description: string }> = [
     { value: 'school_student', label: 'School Student', pose: 'reading', description: 'Class 10-12, exploring career options' },
     { value: 'college_student', label: 'College Student', pose: 'thinking', description: 'Undergraduate/postgraduate, planning next steps' },
     { value: 'job_seeker', label: 'Job Seeker', pose: 'pointing', description: 'Looking for my first job or re-entering workforce' },
     { value: 'career_switcher', label: 'Career Switcher', pose: 'walking', description: 'Changing careers, exploring new paths' },
     { value: 'professional', label: 'Working Professional', pose: 'celebrating', description: 'Advancing my career, upskilling' },
   ];
+  const local = lang === 'hi' ? [['स्कूल विद्यार्थी','कक्षा 10–12, करियर विकल्प खोज रहे हैं'],['कॉलेज विद्यार्थी','स्नातक/स्नातकोत्तर, अगले कदम की योजना'],['नौकरी खोजने वाले','पहली नौकरी या काम पर वापसी की तलाश'],['करियर बदलने वाले','नए करियर मार्ग खोज रहे हैं'],['कार्यरत पेशेवर','करियर में आगे बढ़ना और कौशल बढ़ाना']] : lang === 'te' ? [['పాఠశాల విద్యార్థి','10–12 తరగతులు, కెరీర్ ఎంపికల అన్వేషణ'],['కళాశాల విద్యార్థి','డిగ్రీ/పీజీ, తదుపరి దశ ప్రణాళిక'],['ఉద్యోగ అన్వేషి','మొదటి ఉద్యోగం లేదా తిరిగి పనిలో చేరడం'],['కెరీర్ మార్పుదారు','కొత్త కెరీర్ మార్గాల అన్వేషణ'],['పని చేసే వృత్తి నిపుణుడు','కెరీర్ పురోగతి, నైపుణ్యాభివృద్ధి']] : null;
+  const segments = base.map((item,index)=>local?{...item,label:local[index][0],description:local[index][1]}:item);
+  const title=lang==='hi'?'आप अभी किस स्थिति में हैं?':lang==='te'?'మీరు ప్రస్తుతం ఏ దశలో ఉన్నారు?':'Where are you right now?';
+  const intro=lang==='hi'?'अपनी मौजूदा स्थिति समझने में हमारी मदद करें':lang==='te'?'మీ ప్రస్తుత పరిస్థితిని అర్థం చేసుకోవడానికి సహాయపడండి':'Help us understand your current situation';
 
   return (
     <div>
-      <h2 className="text-3xl font-[Playfair_Display] text-black mb-2">Where are you right now?</h2>
-      <p className="text-black/60 font-[Inter] mb-6">Help us understand your current situation</p>
+      <h2 className="text-3xl font-[Playfair_Display] text-black mb-2">{title}</h2>
+      <p className="text-black/60 font-[Inter] mb-6">{intro}</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {segments.map(({ value, label, pose, description }) => (
@@ -250,7 +257,8 @@ function SegmentStep({ segment, setSegment }: { segment: Segment | null; setSegm
 }
 
 function GoalsStep({ goals, setGoals }: { goals: string[]; setGoals: (g: string[]) => void }) {
-  const goalOptions = [
+  const { lang } = useT();
+  const goalValues = [
     'Explore career options',
     'Choose education path',
     'Find my first job',
@@ -258,6 +266,7 @@ function GoalsStep({ goals, setGoals }: { goals: string[]; setGoals: (g: string[
     'Advance in current field',
     'Upskill or reskill',
   ];
+  const labels = lang==='hi'?['करियर विकल्प खोजें','शिक्षा का मार्ग चुनें','पहली नौकरी पाएँ','करियर बदलें','मौजूदा क्षेत्र में आगे बढ़ें','नया कौशल सीखें']:lang==='te'?['కెరీర్ ఎంపికలను అన్వేషించండి','విద్యా మార్గాన్ని ఎంచుకోండి','మొదటి ఉద్యోగం పొందండి','కెరీర్ మార్చండి','ప్రస్తుత రంగంలో ఎదగండి','కొత్త నైపుణ్యాలు నేర్చుకోండి']:goalValues;
 
   const toggleGoal = (goal: string) => {
     if (goals.includes(goal)) {
@@ -270,11 +279,11 @@ function GoalsStep({ goals, setGoals }: { goals: string[]; setGoals: (g: string[
 
   return (
     <div>
-      <h2 className="text-3xl font-[Playfair_Display] text-black mb-2">What are you trying to figure out?</h2>
-      <p className="text-black/60 font-[Inter] mb-6">Select all that apply (optional)</p>
+      <h2 className="text-3xl font-[Playfair_Display] text-black mb-2">{lang==='hi'?'आप क्या समझना चाहते हैं?':lang==='te'?'మీరు ఏమి తెలుసుకోవాలనుకుంటున్నారు?':'What are you trying to figure out?'}</h2>
+      <p className="text-black/60 font-[Inter] mb-6">{lang==='hi'?'लागू होने वाले सभी विकल्प चुनें (वैकल्पिक)':lang==='te'?'వర్తించే అన్నింటినీ ఎంచుకోండి (ఐచ్ఛికం)':'Select all that apply (optional)'}</p>
       
       <div className="flex flex-wrap gap-3">
-        {goalOptions.map(goal => (
+        {goalValues.map((goal,index) => (
           <button
             key={goal}
             onClick={() => toggleGoal(goal)}
@@ -282,7 +291,7 @@ function GoalsStep({ goals, setGoals }: { goals: string[]; setGoals: (g: string[
               goals.includes(goal) ? 'bg-black text-white border-black' : 'border-black/20 hover:border-black/40'
             }`}
           >
-            {goal}
+            {labels[index]}
           </button>
         ))}
       </div>
@@ -296,6 +305,8 @@ function BackgroundStep({ education, setEducation, experiences, setExperiences }
   experiences: Experience[]; 
   setExperiences: (e: Experience[]) => void; 
 }) {
+  const { lang } = useT();
+  const c=lang==='hi'?{title:'शिक्षा और अनुभव',intro:'अपनी पृष्ठभूमि बताएँ',level:'उच्चतम शिक्षा स्तर',below:'कक्षा 10 से नीचे',c10:'कक्षा 10',c12:'कक्षा 12',iti:'ITI/डिप्लोमा',ug:'स्नातक',pg:'स्नातकोत्तर',field:'अध्ययन क्षेत्र (वैकल्पिक)',fieldPh:'जैसे कंप्यूटर विज्ञान, वाणिज्य, मैकेनिकल इंजीनियरिंग',work:'कार्य अनुभव (वैकल्पिक)',job:'पद का नाम',years:'वर्ष',desc:'संक्षिप्त विवरण',remove:'हटाएँ',add:'अनुभव जोड़ें'}:lang==='te'?{title:'విద్య మరియు అనుభవం',intro:'మీ నేపథ్యాన్ని తెలియజేయండి',level:'అత్యున్నత విద్యా స్థాయి',below:'10వ తరగతి కంటే తక్కువ',c10:'10వ తరగతి',c12:'12వ తరగతి',iti:'ITI/డిప్లొమా',ug:'డిగ్రీ',pg:'పీజీ',field:'అధ్యయన రంగం (ఐచ్ఛికం)',fieldPh:'ఉదా: కంప్యూటర్ సైన్స్, కామర్స్, మెకానికల్ ఇంజినీరింగ్',work:'పని అనుభవం (ఐచ్ఛికం)',job:'ఉద్యోగ పేరు',years:'సంవత్సరాలు',desc:'సంక్షిప్త వివరణ',remove:'తొలగించండి',add:'అనుభవం జోడించండి'}:{title:'Education & Experience',intro:'Tell us about your background',level:'Highest Education Level',below:'Below Class 10',c10:'Class 10',c12:'Class 12',iti:'ITI/Diploma',ug:'Undergraduate',pg:'Postgraduate',field:'Field of Study (optional)',fieldPh:'e.g., Computer Science, Commerce, Mechanical Engineering',work:'Work Experience (optional)',job:'Job title',years:'Years',desc:'Brief description',remove:'Remove',add:'Add Experience'};
   const addExperience = () => {
     setExperiences([...experiences, { title: '', years: 0, description: '' }]);
     sounds.click();
@@ -320,47 +331,42 @@ function BackgroundStep({ education, setEducation, experiences, setExperiences }
 
   return (
     <div>
-      <h2 className="text-3xl font-[Playfair_Display] text-black mb-2">Education & Experience</h2>
-      <p className="text-black/60 font-[Inter] mb-6">Tell us about your background</p>
+      <h2 className="text-3xl font-[Playfair_Display] text-black mb-2">{c.title}</h2>
+      <p className="text-black/60 font-[Inter] mb-6">{c.intro}</p>
       
       <div className="mb-6">
-        <label className="block font-[Inter] text-sm font-semibold mb-2">Highest Education Level</label>
+        <label className="block font-[Inter] text-sm font-semibold mb-2">{c.level}</label>
         <select
           value={education.level}
           onChange={(e) => setEducation({ ...education, level: e.target.value as Education['level'] })}
           className="w-full p-3 border border-black/20 rounded-sm font-[Inter] text-sm"
         >
-          <option value="below_10">Below Class 10</option>
-          <option value="class_10">Class 10</option>
-          <option value="class_12">Class 12</option>
-          <option value="iti_diploma">ITI/Diploma</option>
-          <option value="undergraduate">Undergraduate</option>
-          <option value="postgraduate">Postgraduate</option>
+          <option value="below_10">{c.below}</option><option value="class_10">{c.c10}</option><option value="class_12">{c.c12}</option><option value="iti_diploma">{c.iti}</option><option value="undergraduate">{c.ug}</option><option value="postgraduate">{c.pg}</option>
         </select>
       </div>
 
       {(education.level === 'iti_diploma' || education.level === 'undergraduate' || education.level === 'postgraduate') && (
         <div className="mb-6">
-          <label className="block font-[Inter] text-sm font-semibold mb-2">Field of Study (optional)</label>
+          <label className="block font-[Inter] text-sm font-semibold mb-2">{c.field}</label>
           <input
             type="text"
             value={education.field || ''}
             onChange={(e) => setEducation({ ...education, field: e.target.value })}
-            placeholder="e.g., Computer Science, Commerce, Mechanical Engineering"
+            placeholder={c.fieldPh}
             className="w-full p-3 border border-black/20 rounded-sm font-[Inter] text-sm"
           />
         </div>
       )}
 
       <div className="mb-4">
-        <label className="block font-[Inter] text-sm font-semibold mb-2">Work Experience (optional)</label>
+        <label className="block font-[Inter] text-sm font-semibold mb-2">{c.work}</label>
         {experiences.map((exp, idx) => (
           <div key={idx} className="mb-4 p-4 border border-black/10 rounded-sm">
             <input
               type="text"
               value={exp.title}
               onChange={(e) => updateExperience(idx, 'title', e.target.value)}
-              placeholder="Job title"
+              placeholder={c.job}
               className="w-full p-2 border border-black/20 rounded-sm font-[Inter] text-sm mb-2"
               list="occupation-title-options"
             />
@@ -369,7 +375,7 @@ function BackgroundStep({ education, setEducation, experiences, setExperiences }
               type="number"
               value={exp.years || ''}
               onChange={(e) => updateExperience(idx, 'years', parseFloat(e.target.value) || 0)}
-              placeholder="Years"
+              placeholder={c.years}
               step="0.5"
               min="0"
               className="w-full p-2 border border-black/20 rounded-sm font-[Inter] text-sm mb-2"
@@ -377,14 +383,14 @@ function BackgroundStep({ education, setEducation, experiences, setExperiences }
             <textarea
               value={exp.description}
               onChange={(e) => updateExperience(idx, 'description', e.target.value)}
-              placeholder="Brief description"
+              placeholder={c.desc}
               className="w-full p-2 border border-black/20 rounded-sm font-[Inter] text-sm mb-2 resize-none"
               rows={2}
             />
-            <button onClick={() => removeExperience(idx)} className="text-xs font-[Inter] text-black/50 hover:text-black">Remove</button>
+            <button onClick={() => removeExperience(idx)} className="text-xs font-[Inter] text-black/50 hover:text-black">{c.remove}</button>
           </div>
         ))}
-        <button onClick={addExperience} className="text-sm font-[Inter] text-black hover:underline">+ Add Experience</button>
+        <button onClick={addExperience} className="text-sm font-[Inter] text-black hover:underline">+ {c.add}</button>
       </div>
     </div>
   );
@@ -395,19 +401,20 @@ function ConstraintsStep({ constraints, setConstraints, segment }: {
   setConstraints: (c: Constraints) => void; 
   segment: Segment | null;
 }) {
+  const { lang }=useT();
+  const c=lang==='hi'?{title:'आपकी सीमाएँ',intro:'अपनी स्थिति समझने में हमारी मदद करें',location:'स्थान',locationPh:'शहर या क्षेत्र',relocate:'स्थान बदलने के लिए तैयार',hours:'साप्ताहिक सीखने के घंटे',budget:'सीखने का बजट',low:'कम (मुख्यतः निःशुल्क संसाधन)',medium:'मध्यम (कुछ सशुल्क पाठ्यक्रम)',high:'अधिक (औपचारिक कार्यक्रम और प्रमाणपत्र)',languages:'भाषाएँ',income:'सीखते समय आय बनाए रखना आवश्यक है'}:lang==='te'?{title:'మీ పరిమితులు',intro:'మీ పరిస్థితిని అర్థం చేసుకోవడానికి సహాయపడండి',location:'ప్రాంతం',locationPh:'నగరం లేదా ప్రాంతం',relocate:'స్థలం మారడానికి సిద్ధం',hours:'వారానికి అభ్యాస గంటలు',budget:'అభ్యాస బడ్జెట్',low:'తక్కువ (ప్రధానంగా ఉచిత వనరులు)',medium:'మధ్యస్థం (కొన్ని చెల్లింపు కోర్సులు)',high:'ఎక్కువ (అధికారిక కార్యక్రమాలు, ధృవపత్రాలు)',languages:'భాషలు',income:'నేర్చుకునే సమయంలో ఆదాయం కొనసాగాలి'}:{title:'Your Constraints',intro:'Help us understand your situation',location:'Location',locationPh:'City or region',relocate:'Open to relocation',hours:'Weekly Learning Hours',budget:'Learning Budget',low:'Low (primarily free resources)',medium:'Medium (some paid courses)',high:'High (formal programs, certifications)',languages:'Languages',income:'Need to maintain income while learning'};
   return (
     <div>
-      <h2 className="text-3xl font-[Playfair_Display] text-black mb-2">Your Constraints</h2>
-      <p className="text-black/60 font-[Inter] mb-6">Help us understand your situation</p>
+      <h2 className="text-3xl font-[Playfair_Display] text-black mb-2">{c.title}</h2><p className="text-black/60 font-[Inter] mb-6">{c.intro}</p>
       
       <div className="space-y-4">
         <div>
-          <label className="block font-[Inter] text-sm font-semibold mb-2">Location</label>
+          <label className="block font-[Inter] text-sm font-semibold mb-2">{c.location}</label>
           <input
             type="text"
             value={constraints.location}
             onChange={(e) => setConstraints({ ...constraints, location: e.target.value })}
-            placeholder="City or region"
+            placeholder={c.locationPh}
             className="w-full p-3 border border-black/20 rounded-sm font-[Inter] text-sm"
           />
         </div>
@@ -420,12 +427,12 @@ function ConstraintsStep({ constraints, setConstraints, segment }: {
             onChange={(e) => setConstraints({ ...constraints, canRelocate: e.target.checked })}
             className="w-4 h-4"
           />
-          <label htmlFor="relocate" className="font-[Inter] text-sm">Open to relocation</label>
+          <label htmlFor="relocate" className="font-[Inter] text-sm">{c.relocate}</label>
         </div>
 
         <div>
           <label className="block font-[Inter] text-sm font-semibold mb-2">
-            Weekly Learning Hours: {constraints.weeklyLearningHours}h
+            {c.hours}: {constraints.weeklyLearningHours}h
           </label>
           <input
             type="range"
@@ -438,20 +445,18 @@ function ConstraintsStep({ constraints, setConstraints, segment }: {
         </div>
 
         <div>
-          <label className="block font-[Inter] text-sm font-semibold mb-2">Learning Budget</label>
+          <label className="block font-[Inter] text-sm font-semibold mb-2">{c.budget}</label>
           <select
             value={constraints.budgetLevel}
             onChange={(e) => setConstraints({ ...constraints, budgetLevel: e.target.value as Constraints['budgetLevel'] })}
             className="w-full p-3 border border-black/20 rounded-sm font-[Inter] text-sm"
           >
-            <option value="low">Low (primarily free resources)</option>
-            <option value="medium">Medium (some paid courses)</option>
-            <option value="high">High (formal programs, certifications)</option>
+            <option value="low">{c.low}</option><option value="medium">{c.medium}</option><option value="high">{c.high}</option>
           </select>
         </div>
 
         <div>
-          <label className="block font-[Inter] text-sm font-semibold mb-2">Languages</label>
+          <label className="block font-[Inter] text-sm font-semibold mb-2">{c.languages}</label>
           <input value={constraints.languages.join(', ')} onChange={(event) => setConstraints({ ...constraints, languages: event.target.value.split(',').map(value => value.trim()).filter(Boolean) })} placeholder="English, Hindi, Telugu" className="w-full p-3 border border-black/20 rounded-sm font-[Inter] text-sm" />
         </div>
 
@@ -464,7 +469,7 @@ function ConstraintsStep({ constraints, setConstraints, segment }: {
               onChange={(e) => setConstraints({ ...constraints, needsIncomeContinuity: e.target.checked })}
               className="w-4 h-4"
             />
-            <label htmlFor="income" className="font-[Inter] text-sm">Need to maintain income while learning</label>
+            <label htmlFor="income" className="font-[Inter] text-sm">{c.income}</label>
           </div>
         )}
       </div>
@@ -483,7 +488,8 @@ interface ConsentStepProps {
 }
 
 function ConsentStep({ isMinor, setIsMinor, guardianName, setGuardianName, guardianEmail, setGuardianEmail, guardianConfirmed, setGuardianConfirmed, dataConsentGiven, setDataConsentGiven, cloudHistoryConsent, setCloudHistoryConsent, userId, guardianPendingLogged, setGuardianPendingLogged }: ConsentStepProps) {
-  const { t } = useT();
+  const { t,lang } = useT();
+  const c=lang==='hi'?{title:'सहमति और गोपनीयता',age:'आयु घोषणा',adult:'मेरी आयु 18 वर्ष या अधिक है',minor:'मेरी आयु 18 वर्ष से कम है',guardianName:'अभिभावक का नाम',guardianEmail:'अभिभावक का ईमेल',generate:'अभिभावक पुष्टि अनुरोध बनाएँ',pending:'अभिभावक की सहमति लंबित है—पुष्टि अनुरोध बनाया गया है।',confirmed:'पुष्टि हुई मानें (प्रदर्शन प्रवाह—अभिभावक ने स्वीकृति दी है)',demo:'प्रदर्शन प्रवाह—वास्तविक सेवा DigiLocker-सत्यापित अभिभावक सहमति का उपयोग करेगी।',dataTitle:'हम कौन-सा डेटा क्यों उपयोग करते हैं',data:'डेटा',purpose:'उद्देश्य',storage:'भंडारण',profile:'प्रोफ़ाइल और आकलन',matching:'करियर मिलान',browser:'ब्राउज़र + वैकल्पिक क्लाउड',usage:'उपयोग का तरीका',improve:'सुझाव बेहतर करना',aggregate:'केवल समेकित'}:lang==='te'?{title:'సమ్మతి మరియు గోప్యత',age:'వయస్సు ప్రకటన',adult:'నా వయస్సు 18 సంవత్సరాలు లేదా అంతకంటే ఎక్కువ',minor:'నా వయస్సు 18 సంవత్సరాల కంటే తక్కువ',guardianName:'సంరక్షకుని పేరు',guardianEmail:'సంరక్షకుని ఇమెయిల్',generate:'సంరక్షకుని నిర్ధారణ అభ్యర్థన రూపొందించండి',pending:'సంరక్షకుని సమ్మతి పెండింగ్‌లో ఉంది—నిర్ధారణ అభ్యర్థన రూపొందించబడింది.',confirmed:'నిర్ధారించబడినట్లు గుర్తించండి (ప్రదర్శన ప్రవాహం—సంరక్షకుడు ఆమోదించారు)',demo:'ప్రదర్శన ప్రవాహం—అసలు సేవ DigiLocker ధృవీకరించిన సంరక్షక సమ్మతిని ఉపయోగిస్తుంది.',dataTitle:'మేము ఏ డేటాను ఎందుకు ఉపయోగిస్తాము',data:'డేటా',purpose:'ఉద్దేశ్యం',storage:'నిల్వ',profile:'ప్రొఫైల్ మరియు అంచనాలు',matching:'కెరీర్ సరిపోలిక',browser:'బ్రౌజర్ + ఐచ్ఛిక క్లౌడ్',usage:'వినియోగ నమూనాలు',improve:'సిఫార్సులను మెరుగుపరచడం',aggregate:'సమగ్ర రూపంలో మాత్రమే'}:{title:'Consent & Privacy',age:'Age Declaration',adult:'I am 18 years or older',minor:'I am under 18 years old',guardianName:'Guardian name',guardianEmail:'Guardian email',generate:'Generate guardian confirmation request',pending:'Guardian consent pending — a confirmation request has been generated.',confirmed:'Mark as confirmed (demonstration flow — guardian has approved)',demo:'Demonstration flow — production uses DigiLocker-verified guardian consent.',dataTitle:'What data we use and why',data:'Data',purpose:'Purpose',storage:'Storage',profile:'Profile & assessments',matching:'Career matching',browser:'Browser + optional cloud',usage:'Usage patterns',improve:'Improve recommendations',aggregate:'Aggregated only'};
   const requestGuardianConsent = () => {
     if (!guardianName.trim() || !guardianEmail.trim()) return;
     setGuardianPendingLogged(true);
@@ -492,24 +498,24 @@ function ConsentStep({ isMinor, setIsMinor, guardianName, setGuardianName, guard
   };
   return (
     <div>
-      <h2 className="text-3xl font-[Playfair_Display] text-black mb-2">Consent & Privacy</h2>
+      <h2 className="text-3xl font-[Playfair_Display] text-black mb-2">{c.title}</h2>
       <p className="text-black/60 font-[Inter] mb-6">{t('consent')}</p>
       
       <div className="space-y-6">
         <div>
-          <label className="block font-[Inter] text-sm font-semibold mb-2">Age Declaration</label>
+          <label className="block font-[Inter] text-sm font-semibold mb-2">{c.age}</label>
           <div className="space-y-2">
             <button
               onClick={() => { setIsMinor(false); sounds.click(); }}
               className={`w-full p-3 border rounded-sm text-left font-[Inter] text-sm ${isMinor === false ? 'border-black bg-black/5' : 'border-black/20'}`}
             >
-              I am 18 years or older
+              {c.adult}
             </button>
             <button
               onClick={() => { setIsMinor(true); sounds.click(); }}
               className={`w-full p-3 border rounded-sm text-left font-[Inter] text-sm ${isMinor === true ? 'border-black bg-black/5' : 'border-black/20'}`}
             >
-              I am under 18 years old
+              {c.minor}
             </button>
           </div>
         </div>
@@ -524,22 +530,22 @@ function ConsentStep({ isMinor, setIsMinor, guardianName, setGuardianName, guard
                 type="text"
                 value={guardianName}
                 onChange={(e) => setGuardianName(e.target.value)}
-                placeholder="Guardian name"
+                placeholder={c.guardianName}
                 className="w-full p-2 border border-black/20 rounded-sm font-[Inter] text-sm"
               />
               <input
                 type="email"
                 value={guardianEmail}
                 onChange={(e) => setGuardianEmail(e.target.value)}
-                placeholder="Guardian email"
+                placeholder={c.guardianEmail}
                 className="w-full p-2 border border-black/20 rounded-sm font-[Inter] text-sm"
               />
               {!guardianPendingLogged ? (
                 <button type="button" onClick={requestGuardianConsent} disabled={!guardianName.trim() || !guardianEmail.trim()} className="min-h-11 w-full border border-black/20 bg-white px-3 py-2 font-[Inter] text-sm disabled:opacity-40">
-                  Generate guardian confirmation request
+                  {c.generate}
                 </button>
               ) : (
-                <p className="border-l-4 border-amber-500 bg-white p-3 font-[Inter] text-sm">Guardian consent pending — a confirmation request has been generated.</p>
+                <p className="border-l-4 border-amber-500 bg-white p-3 font-[Inter] text-sm">{c.pending}</p>
               )}
               <div className="flex items-center gap-2 mt-3">
                 <input
@@ -553,34 +559,28 @@ function ConsentStep({ isMinor, setIsMinor, guardianName, setGuardianName, guard
                   className="w-4 h-4"
                 />
                 <label htmlFor="guardian-confirm" className="font-[Inter] text-sm">
-                  Mark as confirmed (demonstration flow — guardian has approved)
+                  {c.confirmed}
                 </label>
               </div>
-              <p className="font-[JetBrains_Mono] text-[10px] uppercase tracking-wide text-black/50">Demonstration flow — production uses DigiLocker-verified guardian consent.</p>
+              <p className="font-[JetBrains_Mono] text-[10px] uppercase tracking-wide text-black/50">{c.demo}</p>
             </div>
           </div>
         )}
 
         <div className="p-4 border border-black/10 rounded-sm">
-          <h3 className="font-[Inter] font-semibold text-sm mb-3">What data we use and why</h3>
+          <h3 className="font-[Inter] font-semibold text-sm mb-3">{c.dataTitle}</h3>
           <table className="w-full text-xs font-[Inter]">
             <thead className="border-b border-black/10">
               <tr>
-                <th className="text-left py-2">Data</th>
-                <th className="text-left py-2">Purpose</th>
-                <th className="text-left py-2">Storage</th>
+                <th className="text-left py-2">{c.data}</th><th className="text-left py-2">{c.purpose}</th><th className="text-left py-2">{c.storage}</th>
               </tr>
             </thead>
             <tbody className="text-black/70">
               <tr className="border-b border-black/5">
-                <td className="py-2">Profile & assessments</td>
-                <td className="py-2">Career matching</td>
-                <td className="py-2">Browser + optional cloud</td>
+                <td className="py-2">{c.profile}</td><td className="py-2">{c.matching}</td><td className="py-2">{c.browser}</td>
               </tr>
               <tr className="border-b border-black/5">
-                <td className="py-2">Usage patterns</td>
-                <td className="py-2">Improve recommendations</td>
-                <td className="py-2">Aggregated only</td>
+                <td className="py-2">{c.usage}</td><td className="py-2">{c.improve}</td><td className="py-2">{c.aggregate}</td>
               </tr>
             </tbody>
           </table>
@@ -607,12 +607,13 @@ function ConsentStep({ isMinor, setIsMinor, guardianName, setGuardianName, guard
 }
 
 function FinishStep() {
+  const {lang}=useT();
   return (
     <div className="text-center py-8">
       <StickFigure pose="celebrating" size={120} />
-      <h2 className="mt-6 text-3xl font-[Playfair_Display] text-black mb-2">You're all set!</h2>
+      <h2 className="mt-6 text-3xl font-[Playfair_Display] text-black mb-2">{lang==='hi'?'सब तैयार है!':lang==='te'?'అంతా సిద్ధం!':"You're all set!"}</h2>
       <p className="text-black/60 font-[Inter] mb-6">
-        Let's start building your Career Passport
+        {lang==='hi'?'आइए आपका करियर पासपोर्ट बनाना शुरू करें':lang==='te'?'మీ కెరీర్ పాస్‌పోర్ట్‌ను నిర్మించడం ప్రారంభిద్దాం':"Let's start building your Career Passport"}
       </p>
     </div>
   );

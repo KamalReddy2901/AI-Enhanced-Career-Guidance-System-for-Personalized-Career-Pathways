@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { saveAssessment } from "../services/guidanceDb";
 import { sounds } from "../utils/sounds";
 import { useT } from "../i18n";
+import { aptitudeItemText } from "../i18n/aptitudeItems";
 import { speak } from "../utils/voice";
 
 const TOTAL_SECONDS = 300;
@@ -17,7 +18,7 @@ export function AssessAptitudePage() {
   const navigate = useNavigate();
   const { updatePassport } = useGuidance();
   const { user } = useAuth();
-  const { locale } = useT();
+  const { lang, locale } = useT();
   const [form] = useState<0 | 1>(() =>
     localStorage.getItem(FORM_STORAGE_KEY) === "1" ? 1 : 0,
   );
@@ -90,7 +91,7 @@ export function AssessAptitudePage() {
     return (
       <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8">
         <div className="max-w-3xl mx-auto">
-          <Header result />
+          <Header result lang={lang} />
           <div className="max-w-xl mx-auto">
             {Object.entries(result).map(([dimension, score]) => (
               <div key={dimension} className="mb-4">
@@ -107,14 +108,13 @@ export function AssessAptitudePage() {
               </div>
             ))}
             <p className="border-t border-black/10 pt-4 mt-6 text-sm font-[Inter] text-black/60">
-              A 5-minute screener, not a full psychometric battery — treat as a
-              first signal.
+              {lang === "hi" ? "यह 5 मिनट की प्रारंभिक जाँच है, पूर्ण मनोमितीय परीक्षण नहीं—इसे पहला संकेत मानें।" : lang === "te" ? "ఇది 5 నిమిషాల ప్రాథమిక పరీక్ష మాత్రమే, పూర్తి సైకోమెట్రిక్ పరీక్ష కాదు—దీనిని తొలి సంకేతంగా చూడండి." : "A 5-minute screener, not a full psychometric battery — treat as a first signal."}
             </p>
             <button
               onClick={() => navigate("/assess")}
               className="mt-6 min-h-11 w-full bg-black text-white p-3 font-[Inter]"
             >
-              Back to assessment desk
+              {lang === "hi" ? "आकलन डेस्क पर वापस जाएँ" : lang === "te" ? "అంచనా విభాగానికి తిరిగి వెళ్ళండి" : "Back to assessment desk"}
             </button>
           </div>
         </div>
@@ -122,14 +122,15 @@ export function AssessAptitudePage() {
     );
 
   const question = questions[index];
+  const localized = aptitudeItemText(lang, question);
   return (
     <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8">
       <div className="max-w-3xl mx-auto">
-        <Header />
+        <Header lang={lang} />
         <div className="max-w-xl mx-auto">
           <div className="flex justify-between font-[JetBrains_Mono] text-xs mb-3">
             <span>
-              FORM {form + 1} · {index + 1}/{questions.length} ·{" "}
+              {lang === "hi" ? "प्रपत्र" : lang === "te" ? "ఫారం" : "FORM"} {form + 1} · {index + 1}/{questions.length} ·{" "}
               {question.dimension}
             </span>
             <span>
@@ -143,9 +144,9 @@ export function AssessAptitudePage() {
             />
           </div>
           {question.dimension === "spatial" && <SpatialSketch id={question.id} />}
-          <div className="mb-6 flex items-start gap-3"><h2 className="flex-1 text-2xl font-[Playfair_Display]">{question.prompt}</h2><button onClick={()=>speak(`${question.prompt}. ${question.options.join(". ")}`,locale)} className="min-h-11 min-w-11 border border-black/20" aria-label="Read question aloud">🔊</button></div>
+          <div className="mb-6 flex items-start gap-3"><h2 className="flex-1 text-2xl font-[Playfair_Display]">{localized.prompt}</h2><button onClick={()=>speak(`${localized.prompt}. ${localized.options.join(". ")}`,locale)} className="min-h-11 min-w-11 border border-black/20" aria-label="Read question aloud">🔊</button></div>
           <div className="space-y-3">
-            {question.options.map((option, optionIndex) => (
+            {localized.options.map((option, optionIndex) => (
               <button
                 key={option}
                 onClick={() => answer(optionIndex)}
@@ -161,16 +162,16 @@ export function AssessAptitudePage() {
   );
 }
 
-function Header({ result = false }: { result?: boolean }) {
+function Header({ result = false, lang }: { result?: boolean; lang: "en" | "hi" | "te" }) {
   return (
     <header className="flex items-center gap-4 border-b-2 border-black pb-5 mb-8">
       <StickFigure pose={result ? "celebrating" : "working"} size={76} />
       <div>
         <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">
-          CareerCase · five-minute screener
+          CareerCase · {lang === "hi" ? "पाँच मिनट की जाँच" : lang === "te" ? "ఐదు నిమిషాల పరీక్ష" : "five-minute screener"}
         </div>
         <h1 className="text-3xl md:text-4xl font-[Playfair_Display]">
-          {result ? "Aptitude snapshot" : "Work through the signal"}
+          {result ? (lang === "hi" ? "योग्यता की झलक" : lang === "te" ? "సామర్థ్య సంక్షిప్త చిత్రం" : "Aptitude snapshot") : (lang === "hi" ? "संकेतों पर काम करें" : lang === "te" ? "సంకేతాలను పూర్తి చేయండి" : "Work through the signal")}
         </h1>
       </div>
     </header>

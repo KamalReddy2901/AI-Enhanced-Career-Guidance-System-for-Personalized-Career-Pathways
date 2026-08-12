@@ -15,6 +15,7 @@ export function AssessValuesPage() {
   const { passport, updatePassport } = useGuidance();
   const { user } = useAuth();
   const { lang, locale } = useT();
+  const c = lang === "hi" ? { desk:"कार्य-मूल्य डेस्क", result:"आपके कार्य-मूल्य", question:"आपके लिए क्या अधिक महत्त्वपूर्ण है?", note:"काम में आपकी प्राथमिकताओं की विकल्प-आधारित झलक। संदर्भ के साथ प्राथमिकताएँ बदल सकती हैं।", back:"आकलन डेस्क पर वापस जाएँ", choose:"एक चुनें", read:"सुनें" } : lang === "te" ? { desk:"పని విలువల విభాగం", result:"మీ పని విలువలు", question:"మీకు ఏది ఎక్కువ ముఖ్యం?", note:"పనిలో మీరు విలువిచ్చే అంశాల ఎంపిక-ఆధారిత చిత్రం. సందర్భంతో ప్రాధాన్యతలు మారవచ్చు.", back:"అంచనా విభాగానికి తిరిగి వెళ్ళండి", choose:"ఒకటి ఎంచుకోండి", read:"వినండి" } : { desk:"values desk", result:"Your work values", question:"Which matters more to you?", note:"A forced-choice snapshot of what you value at work. Your priorities can change with context.", back:"Back to assessment desk", choose:"choose one", read:"Read" };
   const [i, setI] = useState(0);
   const [answers, setAnswers] = useState<Record<string, "left" | "right">>({});
   const [result, setResult] = useState<ReturnType<typeof scoreValues> | null>(
@@ -47,10 +48,10 @@ export function AssessValuesPage() {
           <StickFigure pose={result ? "celebrating" : "thinking"} size={76} />
           <div>
             <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">
-              CareerCase · values desk
+              CareerCase · {c.desk}
             </div>
             <h1 className="text-3xl md:text-4xl font-[Playfair_Display]">
-              {result ? "Your work values" : "Which matters more to you?"}
+              {result ? c.result : c.question}
             </h1>
           </div>
         </div>
@@ -75,20 +76,19 @@ export function AssessValuesPage() {
                 ))}
             </div>
             <p className="mt-6 text-sm font-[Inter] text-black/60">
-              A forced-choice snapshot of what you value at work. Your
-              priorities can change with context.
+              {c.note}
             </p>
             <button
               onClick={() => navigate("/assess")}
               className="mt-6 w-full bg-black text-white p-3 font-[Inter]"
             >
-              Back to assessment desk
+              {c.back}
             </button>
           </div>
         ) : (
           <div className="max-w-xl mx-auto">
             <div className="font-[JetBrains_Mono] text-xs mb-4">
-              {i + 1} / {VALUE_CHOICES.length} · choose one
+              {i + 1} / {VALUE_CHOICES.length} · {c.choose}
             </div>
             <div className="grid md:grid-cols-2 gap-4">
               {(["left", "right"] as const).map((side) => (
@@ -103,7 +103,7 @@ export function AssessValuesPage() {
                   <div className="mt-4 text-xl font-[Playfair_Display]">
                   {valueItemText(lang, i, side, choice[side].label)}
                   </div>
-                <span onClick={(event)=>{event.stopPropagation();speak(valueItemText(lang,i,side,choice[side].label),locale)}} className="mt-3 inline-block min-h-11 py-3 text-sm" role="button" aria-label="Read choice aloud">🔊 Read</span>
+                <span onClick={(event)=>{event.stopPropagation();speak(valueItemText(lang,i,side,choice[side].label),locale)}} className="mt-3 inline-block min-h-11 py-3 text-sm" role="button" aria-label="Read choice aloud">🔊 {c.read}</span>
               </button>
               ))}
             </div>

@@ -7,8 +7,10 @@ import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { StickFigure } from './StickFigure';
 import { sounds } from '../utils/sounds';
+import { useT } from '../i18n';
 
 export function Navbar() {
+  const { t } = useT();
   const location = useLocation();
   const { history } = useApp();
   const { user } = useAuth();
@@ -26,10 +28,10 @@ export function Navbar() {
   if (isAuthPage) return null;
 
   const navLinks = [
-    { to: '/', icon: <Home size={14} />, label: 'Home', active: isHome },
-    { to: '/job', icon: <Compass size={14} />, label: 'Explore', active: ['/job','/quiz','/mood','/compare','/career-transition','/roadmap'].some(path => location.pathname.startsWith(path)) },
-    { to: '/passport', icon: <Map size={14} />, label: 'Pathways', active: ['/passport','/assess','/recommendations','/pathway'].some(path => location.pathname.startsWith(path)) },
-    { to: '/counselor', icon: <MessageCircle size={14} />, label: 'Counselor', active: location.pathname === '/counselor' },
+    { to: '/', icon: <Home size={14} />, label: t('home'), active: isHome },
+    { to: '/job', icon: <Compass size={14} />, label: t('explore'), active: ['/job','/quiz','/mood','/compare','/career-transition','/roadmap'].some(path => location.pathname.startsWith(path)) },
+    { to: '/passport', icon: <Map size={14} />, label: t('pathways'), active: ['/passport','/assess','/recommendations','/pathway'].some(path => location.pathname.startsWith(path)) },
+    { to: '/counselor', icon: <MessageCircle size={14} />, label: t('counselor'), active: location.pathname === '/counselor' },
     ...user ? [
       {
         to: '/history',
@@ -37,8 +39,8 @@ export function Navbar() {
         label: historyCount > 0 ? `Archive (${historyCount})` : 'Archive',
         active: location.pathname === '/history' || location.pathname === '/favorites',
       },
-      { to: '/settings', icon: <Settings size={14} />, label: 'Settings', active: location.pathname === '/settings' },
-    ] : [{ to: '/settings', icon: <Settings size={14} />, label: 'Settings', active: location.pathname === '/settings' }],
+      { to: '/settings', icon: <Settings size={14} />, label: t('settings'), active: location.pathname === '/settings' },
+    ] : [{ to: '/settings', icon: <Settings size={14} />, label: t('settings'), active: location.pathname === '/settings' }],
   ];
 
   return (

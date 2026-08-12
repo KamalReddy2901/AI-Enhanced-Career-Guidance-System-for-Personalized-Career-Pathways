@@ -174,7 +174,7 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
     [user],
   );
 
-  // ─── Recompute stub (Phase 5) ───────────────────────────────────────────────
+  // ─── Deterministic recommendation and active-pathway recomputation ─────────
   const recompute = useCallback(() => {
     if (!passport) return;
     const next = matchCareers(passport);
