@@ -1,18 +1,3 @@
-import { StickFigure } from '../components/StickFigure';
-
-export function AssessmentHubPage() {
-  return (
-    <div className="min-h-screen p-6 flex flex-col items-center justify-center">
-      <StickFigure pose="reading" size={140} />
-      <h1 className="mt-8 text-4xl font-[Playfair_Display] text-black">
-        Assessment Hub
-      </h1>
-      <p className="mt-4 text-center text-black/70 max-w-md">
-        Coming in Phase 4 — RIASEC inventory, aptitude screeners, work values sorter, 
-        and conversational aspiration elicitation.
-      </p>
-    </div>
-  );
-}
-
+import { Link } from 'react-router'; import { StickFigure } from '../components/StickFigure'; import { useGuidance } from '../context/GuidanceContext';
+export function AssessmentHubPage(){const {passport}=useGuidance();const modules=[['Interests','RIASEC work-activity inventory · 6 minutes','/assess/interests',passport?.riasec],['Aptitude','Numerical, verbal, logical and spatial screener · 5 minutes','/assess/aptitude',passport?.aptitude],['Values','Forced-choice work values sorter · 3 minutes','/assess/values',passport?.values],['Aspirations','A short conversation or quick form · 5 minutes','/assess/aspirations',passport?.aspiration]] as const;return <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8"><div className="max-w-4xl mx-auto"><header className="flex items-center gap-4 border-b-2 border-black pb-6 mb-8"><StickFigure pose="reading" size={88}/><div><div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">CareerCase · examination hall</div><h1 className="text-4xl font-[Playfair_Display]">Assessment desk</h1><p className="font-[Inter] text-black/60 mt-2">Four small signals help make your career landscape more personal.</p></div></header><div className="grid md:grid-cols-2 gap-4">{modules.map(([title,desc,path,done])=><Link key={path} to={path} className="bg-white border border-black/10 p-6 hover:border-black transition-colors"><div className="flex justify-between"><span className="font-[JetBrains_Mono] text-xs uppercase tracking-wide">{done?'COMPLETE':'NOT STARTED'}</span><span className="text-black/40">→</span></div><h2 className="text-2xl font-[Playfair_Display] mt-6">{title}</h2><p className="font-[Inter] text-sm text-black/60 mt-2">{desc}</p><div className="mt-5 font-[Inter] text-sm underline">{done?'Retake module':'Begin module'}</div></Link>)}</div><div className="mt-8 flex gap-3"><Link to="/passport" className="border border-black/20 px-5 py-3 font-[Inter] text-sm">View passport</Link><Link to="/recommendations" className="bg-black text-white px-5 py-3 font-[Inter] text-sm">See my landscape</Link></div></div></div>}
 export default AssessmentHubPage;

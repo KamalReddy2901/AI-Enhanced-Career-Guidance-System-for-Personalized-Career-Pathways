@@ -1,17 +1,8 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { StickFigure } from '../components/StickFigure';
-
-export function AssessAptitudePage() {
-  return (
-    <div className="min-h-screen p-6 flex flex-col items-center justify-center">
-      <StickFigure pose="working" size={140} />
-      <h1 className="mt-8 text-4xl font-[Playfair_Display] text-black">
-        Aptitude Screener
-      </h1>
-      <p className="mt-4 text-center text-black/70 max-w-md">
-        Coming in Phase 4 — Timed mini-tests: numerical, verbal, logical, spatial.
-      </p>
-    </div>
-  );
-}
-
+import { APTITUDE_QUESTIONS, scoreAptitude, type AptitudeQuestion } from '../engine/aptitude';
+import { calculateCompleteness } from '../engine/skillProfile';
+import { useGuidance } from '../context/GuidanceContext'; import { useAuth } from '../context/AuthContext'; import { saveAssessment } from '../services/guidanceDb'; import { sounds } from '../utils/sounds';
+export function AssessAptitudePage(){const nav=useNavigate();const {passport,updatePassport}=useGuidance();const {user}=useAuth();const questions=APTITUDE_QUESTIONS.filter((_,n)=>n%12<6);const [i,setI]=useState(0);const [answers,setAnswers]=useState<Record<string,number>>({});const [seconds,setSeconds]=useState(300);const [result,setResult]=useState<ReturnType<typeof scoreAptitude>|null>(null);useEffect(()=>{if(result)return;const id=window.setInterval(()=>setSeconds(s=>{if(s<=1){window.clearInterval(id);return 0} if(s<=10)sounds.tick();return s-1}),1000);return()=>window.clearInterval(id)},[result]);const q: AptitudeQuestion=questions[i];const answer=(n:number)=>{const next={...answers,[q.id]:n};sounds.quizAnswer();if(i===questions.length-1||seconds===0){const scored=scoreAptitude(next,300-seconds);setResult(scored);updatePassport(prev=>{if(!prev)throw new Error('Complete onboarding first');const p={...prev,aptitude:scored};p.completeness=calculateCompleteness(p);return p});if(user?.id)void saveAssessment(user.id,'aptitude',scored);sounds.success()}else setAnswers(next),setI(i+1)};return <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8"><div className="max-w-3xl mx-auto"><header className="flex items-center gap-4 border-b-2 border-black pb-5 mb-8"><StickFigure pose={result?'celebrating':'working'} size={76}/><div><div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">CareerCase · five-minute screener</div><h1 className="text-3xl md:text-4xl font-[Playfair_Display]">{result?'Aptitude snapshot':'Work through the signal'}</h1></div></header>{result?<div className="max-w-xl mx-auto">{Object.entries(result).map(([k,v])=><div key={k} className="mb-4"><div className="flex justify-between font-[JetBrains_Mono] text-xs uppercase"><span>{k}</span><span>{v}</span></div><div className="h-3 bg-black/10"><div className="h-3 bg-black" style={{width:`${v}%`}}/></div></div>)}<p className="border-t border-black/10 pt-4 mt-6 text-sm font-[Inter] text-black/60">A 5-minute screener, not a full psychometric battery — treat as a first signal.</p><button onClick={()=>nav('/assess')} className="mt-6 w-full bg-black text-white p-3 font-[Inter]">Back to assessment desk</button></div>:<div className="max-w-xl mx-auto"><div className="flex justify-between font-[JetBrains_Mono] text-xs mb-3"><span>{i+1} / {questions.length} · {q.dimension}</span><span>{Math.floor(seconds/60)}:{String(seconds%60).padStart(2,'0')}</span></div><div className="h-1 bg-black/10 mb-8"><div className="h-1 bg-black" style={{width:`${(i+1)/questions.length*100}%`}}/></div><h2 className="text-2xl font-[Playfair_Display] mb-6">{q.prompt}</h2><div className="space-y-3">{q.options.map((option,n)=><button key={option} onClick={()=>answer(n)} className="w-full min-h-12 border border-black/20 bg-white p-3 text-left font-[Inter] hover:bg-black hover:text-white transition-colors">{String.fromCharCode(65+n)}. {option}</button>)}</div></div>}</div></div>}
 export default AssessAptitudePage;

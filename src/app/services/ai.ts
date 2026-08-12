@@ -655,6 +655,35 @@ Return this exact JSON:
   }
 }
 
+export interface AspirationExtraction {
+  statement: string;
+  horizonYears: number;
+  themes: string[];
+  dreamOccupationIds: string[];
+  entrepreneurialIntent: 'none' | 'curious' | 'strong';
+}
+
+export async function extractAspiration(statement: string, horizonYears: number, themes: string[], entrepreneurialIntent: AspirationExtraction['entrepreneurialIntent']): Promise<AspirationExtraction> {
+  const raw = await callGroq(
+    'You are a warm career interviewer. Return only JSON. Never promise a perfect career; preserve user agency.',
+    'Turn this user reflection into a compact aspiration object. Do not invent facts or occupation codes. Return {"statement":"...","horizonYears":' + horizonYears + ',"themes":[...],"dreamOccupationIds":[plain role titles],"entrepreneurialIntent":"' + entrepreneurialIntent + '"}. Reflection: ' + statement + '. Themes: ' + themes.join(', '),
+    { temperature: 0.3, maxTokens: 500, jsonMode: true, usageType: 'aspiration' },
+  );
+  try {
+    const fence = String.fromCharCode(96).repeat(3);
+    const parsed = JSON.parse(raw.replace(fence + 'json\n', '').replace(fence, '')) as Partial<AspirationExtraction>;
+    return {
+      statement: typeof parsed.statement === 'string' ? parsed.statement.slice(0, 500) : statement,
+      horizonYears: typeof parsed.horizonYears === 'number' ? Math.max(1, Math.min(20, parsed.horizonYears)) : horizonYears,
+      themes: Array.isArray(parsed.themes) ? parsed.themes.filter((v): v is string => typeof v === 'string').slice(0, 8) : themes,
+      dreamOccupationIds: Array.isArray(parsed.dreamOccupationIds) ? parsed.dreamOccupationIds.filter((v): v is string => typeof v === 'string').slice(0, 5) : [],
+      entrepreneurialIntent: parsed.entrepreneurialIntent === 'strong' || parsed.entrepreneurialIntent === 'curious' ? parsed.entrepreneurialIntent : entrepreneurialIntent,
+    };
+  } catch {
+    return { statement, horizonYears, themes, dreamOccupationIds: [], entrepreneurialIntent };
+  }
+}
+
 // ─── Generate Simulation (Cached + Retry) ─────────────────────
 
 export interface AISimScenario {

@@ -115,10 +115,10 @@ export function getTopCode(scores: RiasecScores): string {
 export function interpretTopDimension(dimension: RiasecDimension): string {
   const interpretations: Record<RiasecDimension, string> = {
     R: 'You enjoy hands-on work with tools, machines, or nature. Practical problem-solving energizes you.',
-    I: 'You're drawn to analysis, research, and understanding how things work. Curiosity drives you.',
+    I: "You're drawn to analysis, research, and understanding how things work. Curiosity drives you.",
     A: 'You value creativity and self-expression. Original ideas and aesthetic work fulfill you.',
     S: 'You find meaning in helping others and working with people. Connection and care matter to you.',
-    E: 'You're motivated by leadership, persuasion, and making things happen. You thrive on influence.',
+    E: "You're motivated by leadership, persuasion, and making things happen. You thrive on influence.",
     C: 'You appreciate structure, accuracy, and organization. Systematic work gives you satisfaction.',
   };
   return interpretations[dimension];
