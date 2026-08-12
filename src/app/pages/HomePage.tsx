@@ -79,6 +79,7 @@ export function HomePage() {
 
   const [trending, setTrending] = useState<TrendingCareers | null>(null);
   const [trendingLoading, setTrendingLoading] = useState(false);
+  const [trendingError, setTrendingError] = useState(false);
   const [searchingCareer, setSearchingCareer] = useState<string | null>(null);
   const [compareQueue, setCompareQueue] = useState<string[]>([]);
   const [homeExplanation, setHomeExplanation] = useState<CareerRecommendation | null>(null);
@@ -113,6 +114,16 @@ export function HomePage() {
     }
   };
 
+  const loadTrending = useCallback(() => {
+    if (trendingLoading) return;
+    setTrendingLoading(true);
+    setTrendingError(false);
+    import('../services/ai').then(({ getTrendingCareers }) => getTrendingCareers())
+      .then(data => setTrending(data))
+      .catch(() => setTrendingError(true))
+      .finally(() => setTrendingLoading(false));
+  }, [trendingLoading]);
+
 
   // The public page explains the product; the working journey begins only
   // after an account is established so every piece of progress is attributable.
@@ -121,12 +132,14 @@ export function HomePage() {
   const spySections = useMemo(() => showLanding
     ? [
         { id: 'hero', label: 'Home' },
+        { id: 'how-to-use', label: 'How to use' },
         { id: 'how-it-works', label: 'How It Works' },
         { id: 'use-cases', label: 'Use Cases' },
         { id: 'features', label: 'Features' },
       ]
     : [
         { id: 'hero', label: 'Home' },
+        { id: 'how-to-use', label: 'How to use' },
         { id: 'trending', label: 'Trending' },
         { id: 'how-it-works', label: 'How It Works' },
         { id: 'features', label: 'Features' },
@@ -142,17 +155,13 @@ export function HomePage() {
     const obs = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && !trendingFetched.current) {
         trendingFetched.current = true;
-        setTrendingLoading(true);
-        import('../services/ai').then(({ getTrendingCareers }) => getTrendingCareers())
-          .then(data => setTrending(data))
-          .catch(() => null)
-          .finally(() => setTrendingLoading(false));
+        loadTrending();
       }
     }, { threshold: 0.2 });
     obs.observe(el);
     return () => obs.disconnect();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadTrending]);
 
   const handleSearchComplete = useCallback(async (jobTitle: string) => {
     // Guard: prevent concurrent searches
@@ -177,17 +186,62 @@ export function HomePage() {
   return (
     <div className="relative bg-background">
       <WordCloudMasthead passport={passport} showLanding={showLanding} onNavigate={navigate} />
-      <Suspense fallback={null}><EditorialHomeHero
-        passport={passport}
-        recommendations={recommendations}
-        recommendationChanges={recommendationChanges}
-        onNavigate={navigate}
-        onExplain={setHomeExplanation}
-        onDismissChanges={dismissRecommendationChanges}
-      /></Suspense>
-      {homeExplanation && passport && (
+      {!showLanding && <Suspense fallback={null}><EditorialHomeHero
+          passport={passport}
+          recommendations={recommendations}
+          recommendationChanges={recommendationChanges}
+          onNavigate={navigate}
+          onExplain={setHomeExplanation}
+          onDismissChanges={dismissRecommendationChanges}
+        /></Suspense>}
+      {!showLanding && homeExplanation && passport && (
         <Suspense fallback={null}><WhyPanel recommendation={homeExplanation} segment={passport.segment} onClose={() => setHomeExplanation(null)} /></Suspense>
       )}
+
+      {/* ── HOW TO USE ─────────────────────────────────────── */}
+      <section id="how-to-use" className="border-t border-black/8 bg-[var(--paper-raised)] px-6 py-16 md:py-20">
+        <div className="mx-auto max-w-4xl">
+          <div className="max-w-2xl">
+            <p className="label-caps text-[var(--ink-soft)]">Start here</p>
+            <h2 className="mt-3 font-display text-3xl leading-tight md:text-4xl">How to use CareerCase</h2>
+            <p className="mt-4 text-sm leading-relaxed text-[var(--ink-soft)] md:text-base">There is one simple loop: tell us where you are, review your matches, then act on a pathway. Your progress is saved to your account as you go.</p>
+          </div>
+          <ol className="mt-10 grid gap-px border border-[var(--ink-faint)] bg-[var(--ink-faint)] md:grid-cols-3">
+            {[
+              {
+                number: '01',
+                title: user ? (passport ? 'Review your passport' : 'Build your passport') : 'Create your account',
+                body: user ? (passport ? 'Add your resume, skills, experience and constraints whenever they change.' : 'Answer a few basics so recommendations can reflect your situation.') : 'Use an email or Google account so your career work is private and available on every device.',
+                action: user ? (passport ? 'Open passport' : 'Start onboarding') : 'Create account',
+                path: user ? (passport ? '/passport' : '/onboarding') : '/auth?mode=signup',
+              },
+              {
+                number: '02',
+                title: 'Complete the essentials',
+                body: passport ? 'Take the short interests, aptitude and work-values assessments. Each one makes your matches more useful.' : 'Finish the short onboarding profile first. It records the context the assessments and recommendations need.',
+                action: user ? (passport ? 'Open assessments' : 'Finish onboarding') : 'Sign in to continue',
+                path: user ? (passport ? '/assess' : '/onboarding') : '/auth?mode=signup',
+              },
+              {
+                number: '03',
+                title: 'Choose your next move',
+                body: 'Read why a role fits, compare routes, and tick off pathway steps as you build evidence and confidence.',
+                action: user ? 'See recommendations' : 'Create account',
+                path: user ? '/recommendations' : '/auth?mode=signup',
+              },
+            ].map((step) => (
+              <li key={step.number} className="flex min-h-64 flex-col bg-[var(--paper-raised)] p-6 md:p-8">
+                <span className="font-mono-ui text-xs text-[var(--accent-news)]">STEP {step.number}</span>
+                <h3 className="mt-5 font-display text-2xl">{step.title}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-[var(--ink-soft)]">{step.body}</p>
+                <button type="button" onClick={() => navigate(step.path)} className="mt-auto inline-flex min-h-11 items-center gap-2 self-start pt-6 font-mono-ui text-xs uppercase underline decoration-[var(--accent-news)] decoration-2 underline-offset-4 hover:text-[var(--accent-news)]">
+                  {step.action} <ArrowRight size={14} aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
 
       {/* ── WHAT'S TRENDING ────────────────────────────────── */}
       {!showLanding && (
@@ -219,6 +273,13 @@ export function HomePage() {
             <div className="flex items-center justify-center gap-3 py-12">
               <Loader2 size={18} className="animate-spin text-[var(--ink-faint)]" />
               <span className="text-[var(--ink-soft)]" style={{ fontSize: '0.85rem' }}>{t('homeTrendingLoading')}</span>
+            </div>
+          )}
+
+          {trendingError && !trendingLoading && (
+            <div className="border border-[var(--accent-news)] bg-[var(--paper-raised)] p-5 text-center">
+              <p className="text-sm text-[var(--ink-soft)]">Live trends are unavailable right now. You can still explore any career from the Explore section.</p>
+              <button type="button" onClick={loadTrending} className="mt-3 min-h-11 font-mono-ui text-xs uppercase underline underline-offset-4">Try again</button>
             </div>
           )}
 
@@ -254,7 +315,7 @@ export function HomePage() {
                         <button
                           onClick={() => handleQuickCompare(item.title)}
                           title={t('homeAddCompare')}
-                          className={`mt-0.5 shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity p-0.5 ${
+                          className={`mt-0.5 shrink-0 opacity-100 md:opacity-0 md:group-hover/item:opacity-100 transition-opacity p-0.5 ${
                             compareQueue.includes(item.title) ? 'text-[var(--ink)] opacity-100' : 'text-[var(--ink-faint)] hover:text-[var(--ink-soft)]'
                           }`}
                         >
@@ -290,7 +351,7 @@ export function HomePage() {
                         <button
                           onClick={() => handleQuickCompare(item.title)}
                           title={t('homeAddCompare')}
-                          className={`mt-0.5 shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity p-0.5 ${
+                          className={`mt-0.5 shrink-0 opacity-100 md:opacity-0 md:group-hover/item:opacity-100 transition-opacity p-0.5 ${
                             compareQueue.includes(item.title) ? 'text-[var(--accent-news)] opacity-100' : 'text-[var(--ink-faint)] hover:text-[var(--accent-news)]'
                           }`}
                         >
@@ -326,7 +387,7 @@ export function HomePage() {
                         <button
                           onClick={() => handleQuickCompare(item.title)}
                           title={t('homeAddCompare')}
-                          className={`mt-0.5 shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity p-0.5 ${
+                          className={`mt-0.5 shrink-0 opacity-100 md:opacity-0 md:group-hover/item:opacity-100 transition-opacity p-0.5 ${
                             compareQueue.includes(item.title) ? 'text-[var(--ink)] opacity-100' : 'text-[var(--ink-faint)] hover:text-[var(--ink-soft)]'
                           }`}
                         >
@@ -599,9 +660,11 @@ export function HomePage() {
             <span className="font-[Playfair_Display] text-black/60" style={{ fontSize: '0.92rem' }}>CareerCase</span>
           </div>
           <div className="flex items-center gap-4 font-[Inter] text-[var(--ink-soft)]" style={{ fontSize: '0.72rem' }}>
-            <button onClick={() => navigate('/how-it-works')} className="hover:text-black transition-colors">How guidance works</button>
-            <button onClick={() => navigate('/settings')} className="hover:text-black transition-colors">Settings</button>
-            <button onClick={() => navigate('/history')} className="hover:text-black transition-colors">History</button>
+            <button onClick={() => document.getElementById('how-to-use')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-black transition-colors">How to use</button>
+            {user ? <>
+              <button onClick={() => navigate('/settings')} className="hover:text-black transition-colors">Settings</button>
+              <button onClick={() => navigate('/history')} className="hover:text-black transition-colors">History</button>
+            </> : <button onClick={() => navigate('/auth?mode=signup')} className="hover:text-black transition-colors">Create account</button>}
           </div>
         </div>
       </footer>

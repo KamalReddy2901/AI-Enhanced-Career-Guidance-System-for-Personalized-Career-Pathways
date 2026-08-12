@@ -35,9 +35,10 @@ export function useFavorites() {
 
   // Sync remote favorites when user logs in
   useEffect(() => {
+    let active = true;
     if (!user) return;
     import('../services/supabase').then(({ fetchRemoteFavorites }) => fetchRemoteFavorites(user.id)).then(remote => {
-      if (remote.length === 0) return;
+      if (!active || remote.length === 0) return;
       const remoteFavs: Favorite[] = remote.map(r => ({
         id: r.id,
         jobTitle: r.job_title,
@@ -56,6 +57,7 @@ export function useFavorites() {
         return merged;
       });
     }).catch(() => {});
+    return () => { active = false; };
   }, [user?.id]);
 
   const saveFavorites = useCallback((favs: Favorite[]) => {

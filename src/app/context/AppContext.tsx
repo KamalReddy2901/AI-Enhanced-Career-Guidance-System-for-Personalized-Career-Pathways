@@ -45,6 +45,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Sync history from Supabase when user logs in
   useEffect(() => {
+    let active = true;
     if (!user) {
       setHistory([]);
       setCurrentJob(null);
@@ -53,7 +54,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return;
     }
     import('../services/supabase').then(({ fetchRemoteHistory }) => fetchRemoteHistory(user.id)).then(entries => {
-      if (entries.length === 0) return;
+      if (!active || entries.length === 0) return;
       setHistory(prev => {
         const remoteItems: HistoryEntry[] = entries.map(e => ({
           id: e.id,
@@ -74,6 +75,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .slice(0, 50);
       });
     }).catch(() => {});
+    return () => { active = false; };
   }, [user?.id]);
 
   const refreshAIStatus = useCallback(() => {

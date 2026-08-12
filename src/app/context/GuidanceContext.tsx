@@ -126,6 +126,7 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
 
   // ─── Load passport from localStorage or Supabase ────────────────────────────
   useEffect(() => {
+    let cancelled = false;
     const loadInitialData = async () => {
       setLoading(true);
 
@@ -133,11 +134,13 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
       // browser profile in a signed-out session. Cloud data is loaded only for
       // the authenticated account below.
       if (isSupabaseConfigured && !user) {
-        setPassport(null);
-        setRecommendations(null);
-        setPathways([]);
-        setRecommendationChanges([]);
-        setLoading(false);
+        if (!cancelled) {
+          setPassport(null);
+          setRecommendations(null);
+          setPathways([]);
+          setRecommendationChanges([]);
+          setLoading(false);
+        }
         return;
       }
 
@@ -147,14 +150,14 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
         if (localRaw) {
           const localPassport = normalizeStoredPassport(JSON.parse(localRaw) as CareerPassport);
           localStorage.setItem(PASSPORT_STORAGE_KEY, JSON.stringify(localPassport));
-          setPassport(localPassport);
+          if (!cancelled) setPassport(localPassport);
         }
       } catch (err) {
         console.error("Failed to load passport from localStorage:", err);
       }
       try {
         const pathwayRaw = localStorage.getItem(PATHWAYS_STORAGE_KEY);
-        if (pathwayRaw) setPathways(JSON.parse(pathwayRaw) as PathwayPlan[]);
+        if (pathwayRaw && !cancelled) setPathways(JSON.parse(pathwayRaw) as PathwayPlan[]);
       } catch {
         /* ignore invalid local pathway data */
       }
@@ -164,20 +167,23 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
         try {
           const { migrateLocalGuidanceToCloud } = await import("../services/guidanceDb");
           const migration = await migrateLocalGuidanceToCloud(user.id);
-          if (migration.passport) setPassport(normalizeStoredPassport(migration.passport));
-          setPathways(migration.pathways);
-          localStorage.setItem("cc_guidance_last_sync", JSON.stringify({ userId: user.id, at: new Date().toISOString(), uploaded: migration.uploaded }));
+          if (!cancelled) {
+            if (migration.passport) setPassport(normalizeStoredPassport(migration.passport));
+            setPathways(migration.pathways);
+            localStorage.setItem("cc_guidance_last_sync", JSON.stringify({ userId: user.id, at: new Date().toISOString(), uploaded: migration.uploaded }));
+          }
         } catch (error) {
           // Never discard the anonymous browser copy when cloud sync is unavailable.
           console.error("Guidance migration failed; local data retained:", error);
-          localStorage.setItem("cc_guidance_last_sync", JSON.stringify({ userId: user.id, at: new Date().toISOString(), error: String(error) }));
+          if (!cancelled) localStorage.setItem("cc_guidance_last_sync", JSON.stringify({ userId: user.id, at: new Date().toISOString(), error: String(error) }));
         }
       }
 
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     };
 
     if (!authLoading) void loadInitialData();
+    return () => { cancelled = true; };
   }, [user?.id, authLoading, isSupabaseConfigured]);
 
   // ─── Update passport ────────────────────────────────────────────────────────

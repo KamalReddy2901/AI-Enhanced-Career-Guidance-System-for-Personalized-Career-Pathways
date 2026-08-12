@@ -4,18 +4,43 @@ const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 export interface Env {
   GROQ_API_KEYS: string;
-  ENVIRONMENT?: string;
+  SUPABASE_URL: string;
+  SUPABASE_ANON_KEY: string;
 }
 
+const ALLOWED_ORIGINS = new Set([
+  'https://career-sim.pages.dev',
+  'https://careercasehq.pages.dev',
+  'https://careercase.pages.dev',
+  'https://careercase.kamrede.page',
+  'http://localhost:5173',
+  'http://localhost:5174',
+]);
+
 function cors(origin: string | null) {
-  const allowed = ['https://career-sim.pages.dev', 'https://careercasehq.pages.dev', 'https://careercase.pages.dev', 'https://careercase.kamrede.page', 'http://localhost:5173', 'http://localhost:5174'];
-  const allowOrigin = (origin && allowed.includes(origin)) ? origin : allowed[0];
+  const allowOrigin = (origin && ALLOWED_ORIGINS.has(origin)) ? origin : 'https://career-sim.pages.dev';
   return {
     'Access-Control-Allow-Origin': allowOrigin,
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Usage-Type, X-Stream',
     'Access-Control-Max-Age': '86400',
   };
+}
+
+async function hasValidSupabaseSession(request: Request, env: Env): Promise<boolean> {
+  const authorization = request.headers.get('Authorization') ?? '';
+  if (!authorization.startsWith('Bearer ') || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) return false;
+  try {
+    const response = await fetch(`${env.SUPABASE_URL.replace(/\/$/, '')}/auth/v1/user`, {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: authorization,
+      },
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
 }
 
 function jsonResponse(data: unknown, status = 200, origin: string | null = null) {
@@ -123,6 +148,10 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const origin = request.headers.get('Origin');
 
+    if (origin && !ALLOWED_ORIGINS.has(origin)) {
+      return jsonResponse({ error: 'Origin not allowed' }, 403, origin);
+    }
+
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: cors(origin) });
     }
@@ -131,6 +160,10 @@ export default {
 
     if (url.pathname !== '/ai' || request.method !== 'POST') {
       return jsonResponse({ error: 'Not found' }, 404, origin);
+    }
+
+    if (!await hasValidSupabaseSession(request, env)) {
+      return jsonResponse({ error: 'Sign in is required to use AI features' }, 401, origin);
     }
 
     let body: unknown;

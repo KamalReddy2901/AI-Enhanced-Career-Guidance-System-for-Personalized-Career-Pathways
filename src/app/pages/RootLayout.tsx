@@ -8,11 +8,13 @@ import { BottomNav } from '../components/BottomNav';
 import { InstallPrompt } from '../components/InstallPrompt';
 import { PageTransition } from '../motion/PageTransition';
 import { useAuth } from '../context/AuthContext';
+import { useGuidance } from '../context/GuidanceContext';
 
 export function RootLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, loading } = useAuth();
+  const { passport, loading: guidanceLoading } = useGuidance();
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -86,6 +88,12 @@ export function RootLayout() {
   if (!user && !isPublicRoute) {
     const redirect = `${location.pathname}${location.search}${location.hash}`;
     return <Navigate to={`/auth?redirect=${encodeURIComponent(redirect)}`} replace />;
+  }
+  // Individual assessment URLs are easy to bookmark or paste. They require an
+  // onboarding profile, so send a new user to the one place that creates it
+  // instead of letting a later submit handler throw an error.
+  if (user && !guidanceLoading && location.pathname.startsWith('/assess/') && !passport) {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return (

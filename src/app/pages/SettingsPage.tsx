@@ -62,17 +62,17 @@ export function SettingsPage() {
   const [showClearDialog, setShowClearDialog] = useState(false);
 
   const handleClearAll = () => {
-    clearHistory();
     clearAllCache();
     resetPreferences();
+    resetGuidance();
     localStorage.removeItem('careersim_onboarded_v2');
     window.dispatchEvent(new StorageEvent('storage', { key: 'careersim_onboarded_v2', newValue: null }));
     // Clear simulation cached results
     Object.keys(localStorage)
-      .filter(k => k.startsWith('sim_result_'))
+      .filter(k => k.startsWith('sim_result_') || k.startsWith('cs_'))
       .forEach(k => localStorage.removeItem(k));
     setShowClearDialog(false);
-    toast.success('All data cleared — reload to start fresh');
+    toast.success('Local app data cleared — your account data is still safely saved');
   };
 
   // Detect if already installed as PWA
@@ -246,8 +246,8 @@ export function SettingsPage() {
               <AlertDialogTrigger asChild>
                 <div>
                   <ActionButton
-                    label="Clear All Data"
-                    description="Remove everything: history, cache, settings, API key"
+                    label="Clear Local App Data"
+                    description="Remove local profile, cached results, simulations and preferences; keep account data"
                     icon={<Trash2 size={16} />}
                     onClick={() => setShowClearDialog(true)}
                     danger
@@ -256,9 +256,9 @@ export function SettingsPage() {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Clear all data?</AlertDialogTitle>
+                  <AlertDialogTitle>Clear local app data?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently remove your history, cache, preferences, simulation results, and API key. This action cannot be undone.
+                    This removes this device's profile copy, cached results, simulation results and preferences. Your saved account data remains available after you sign in again.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

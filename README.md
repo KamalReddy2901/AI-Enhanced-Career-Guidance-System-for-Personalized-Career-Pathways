@@ -27,8 +27,8 @@ Onboarding + Resume + Assessments + Legacy activity
 
  React 18 + Vite + Tailwind v4 PWA
           │
-          ├── localStorage (complete signed-out flow)
-          ├── Supabase (optional auth + six guidance tables, RLS)
+├── localStorage (account-scoped cache and offline recovery)
+├── Supabase (required authentication + six guidance tables, RLS)
           └── Cloudflare Worker (Groq proxy, model routing, key rotation)
 ```
 
@@ -105,9 +105,9 @@ VITE_SUPABASE_ANON_KEY=...
 VITE_AI_PROXY_URL=https://your-worker.example.workers.dev
 ```
 
-For cloud persistence, apply both `supabase-migration.sql` and `supabase-guidance-migration.sql` in the Supabase SQL editor. The second migration is idempotent and creates `guidance_profiles`, `guidance_assessments`, `guidance_recommendations`, `guidance_pathways`, `guidance_progress` and `guidance_consents` with own-row RLS policies.
+Authentication and progress restoration require both `supabase-migration.sql` and `supabase-guidance-migration.sql` to be applied in the Supabase SQL editor. The second migration is idempotent and creates `guidance_profiles`, `guidance_assessments`, `guidance_recommendations`, `guidance_pathways`, `guidance_progress` and `guidance_consents` with own-row RLS policies.
 
-The worker reads comma-separated Groq keys from its configured secret/environment. Browser code never needs a Groq key in production.
+The worker reads comma-separated Groq keys from its configured secret/environment. Browser code never needs a Groq key in production. Before deploying the worker, set its `SUPABASE_URL` and `SUPABASE_ANON_KEY` variables to the same public values used by the app and set `GROQ_API_KEYS` as a Wrangler secret. The worker verifies the active Supabase session before it proxies any AI request.
 
 ## Release verification
 
