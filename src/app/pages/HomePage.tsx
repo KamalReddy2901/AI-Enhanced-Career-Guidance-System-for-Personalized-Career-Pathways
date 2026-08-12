@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect, useRef, useMemo } from 'react';
+import { lazy, Suspense, useCallback, useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, FlaskConical, Scale, ChevronDown, FileText, Brain, Swords, Zap, BarChart2, MessageSquare, ArrowRight, ExternalLink, TrendingUp, TrendingDown, Rocket, Loader2, Map, ArrowLeftRight } from 'lucide-react';
@@ -15,6 +15,13 @@ import { useGuidance } from '../context/GuidanceContext';
 import { occupationById } from '../data/knowledge';
 import { getTrendingCareers, type TrendingCareers } from '../services/ai';
 import { toast } from 'sonner';
+
+const ShowpieceHero = lazy(() => import('../components/hero/ShowpieceHero').then(module => ({ default: module.ShowpieceHero })));
+
+function showpieceCapable() {
+  const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+  return window.innerWidth >= 1024 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches && (navigator.hardwareConcurrency ?? 4) > 4 && (memory === undefined || memory >= 4);
+}
 
 function ScrollSectionNav({ sections }: { sections: Array<{ id: string; label: string }> }) {
   const [activeId, setActiveId] = useState(sections[0]?.id ?? '');
@@ -82,6 +89,8 @@ export function HomePage() {
   const [compareQueue, setCompareQueue] = useState<string[]>([]);
   const [homeExplanation, setHomeExplanation] = useState<CareerRecommendation | null>(null);
   const [comparingTitles, setComparingTitles] = useState(false);
+  const [useShowpiece, setUseShowpiece] = useState(showpieceCapable);
+  const [showpieceReady, setShowpieceReady] = useState(false);
   const trendingRef = useRef<HTMLElement | null>(null);
   const trendingFetched = useRef(false);
 
@@ -176,7 +185,8 @@ export function HomePage() {
   }, [searchingCareer, searchJob, searchJobAI, setCurrentJob, addToHistory, navigate, setRefinementCount, isSupabaseConfigured, user]);
 
   return (
-    <div className="relative bg-background">
+    <div className={`relative bg-background ${showpieceReady ? '[&>#hero]:hidden' : ''}`}>
+      {useShowpiece && <Suspense fallback={null}><ShowpieceHero hasPassport={Boolean(passport)} showLanding={showLanding} onNavigate={navigate} onReady={()=>setShowpieceReady(true)} onFallback={()=>{setShowpieceReady(false);setUseShowpiece(false)}} /></Suspense>}
       <EditorialHomeHero
         passport={passport}
         recommendations={recommendations}
