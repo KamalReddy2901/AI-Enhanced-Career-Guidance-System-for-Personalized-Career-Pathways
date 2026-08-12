@@ -192,8 +192,7 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
             item.totalScore,
           ]),
         );
-        setRecommendationChanges(
-          next.recommendations
+        const changes = next.recommendations
             .flatMap((item, index) => {
               const previousScore = priorScore.get(item.occupationId);
               const previousRank = priorRank.get(item.occupationId);
@@ -219,8 +218,18 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
                 Math.abs(b.score - b.previousScore) -
                 Math.abs(a.score - a.previousScore),
             )
-            .slice(0, 3),
-        );
+            .slice(0, 3);
+        if (changes.length) setRecommendationChanges(changes);
+        else if (previous.passportVersion !== next.passportVersion) {
+          const item = next.recommendations[0];
+          setRecommendationChanges([{
+            occupationId: item.occupationId,
+            previousScore: priorScore.get(item.occupationId) ?? item.totalScore,
+            score: item.totalScore,
+            previousRank: priorRank.get(item.occupationId) ?? 1,
+            rank: 1,
+          }]);
+        }
         try {
           localStorage.setItem(
             "cc_guidance_previous_recommendations",
@@ -251,9 +260,9 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
             );
             return {
               ...route,
-              steps: route.steps.map((step, index) => ({
+              steps: route.steps.map((step) => ({
                 ...step,
-                done: oldRoute?.steps[index]?.done ?? false,
+                done: oldRoute?.steps.some(oldStep => oldStep.done && oldStep.kind === step.kind && oldStep.refId === step.refId && oldStep.label === step.label) ?? false,
               })),
             };
           }),

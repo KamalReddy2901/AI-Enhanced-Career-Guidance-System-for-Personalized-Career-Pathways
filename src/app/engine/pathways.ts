@@ -9,10 +9,15 @@ const monthFactor = (hours: number): number => Math.max(.6, Math.min(2, 6 / Math
 const qualificationMonths = (qualification: Qualification, hours: number): number => Math.max(1, Math.round(qualification.typicalMonths * monthFactor(hours)));
 
 function bestQualificationForGaps(passport: CareerPassport, occupationId: string, skillIds: string[]): Qualification | undefined {
+  const direct = qualificationsForOccupation(occupationId);
+  if (direct.length) return [...direct].sort((a, b) => {
+    const coverage = (qualification: Qualification) => skillIds.filter(id => qualification.developsSkillIds.includes(id)).length;
+    const targetLevel = occupationById.get(occupationId)!.nsqfEntryLevel;
+    return coverage(b) - coverage(a) || Math.abs(a.nsqfLevel - targetLevel) - Math.abs(b.nsqfLevel - targetLevel) || a.typicalMonths - b.typicalMonths;
+  })[0];
   const candidates = new Map<string, Qualification>();
-  qualificationsForOccupation(occupationId).forEach(qualification => candidates.set(qualification.id, qualification));
   skillIds.flatMap(qualificationsForSkill).forEach(qualification => candidates.set(qualification.id, qualification));
-  return [...candidates.values()].sort((a, b) => {
+  return [...candidates.values()].filter(qualification => skillIds.filter(id => qualification.developsSkillIds.includes(id)).length >= 2).sort((a, b) => {
     const coverage = (qualification: Qualification) => skillIds.filter(id => qualification.developsSkillIds.includes(id)).length;
     return coverage(b) - coverage(a) || a.typicalMonths - b.typicalMonths;
   })[0];

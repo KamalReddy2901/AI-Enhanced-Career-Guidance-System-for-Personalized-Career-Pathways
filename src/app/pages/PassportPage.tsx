@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { sounds } from '../utils/sounds';
 import { hapticSuccess } from '../utils/haptic';
 import { extractProfileFromResume, type ResumeExtraction } from '../services/ai';
-import { matchSkillsToKB, mergeSkillClaims, groupSkillsByCategory, estimateNSQFLevel } from '../engine/skillProfile';
+import { matchSkillsToKB, mergeSkillClaims, groupSkillsByCategory, estimateNSQFLevel, extractLiteralResumeSkills } from '../engine/skillProfile';
 import { skillById } from '../data/knowledge';
 import { SkillValidationDialog } from '../components/guidance/SkillValidationDialog';
 import { RiasecHexagon } from '../components/guidance/RiasecHexagon';
@@ -23,6 +23,7 @@ export function PassportPage() {
   const [resumeText, setResumeText] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractError, setExtractError] = useState('');
+  const [extractNotice, setExtractNotice] = useState('');
   const [unmatchedSkills, setUnmatchedSkills] = useState<string[]>([]);
   const [expandedEvidence, setExpandedEvidence] = useState<string | null>(null);
   const [validating, setValidating] = useState<SkillClaim | null>(null);
@@ -49,6 +50,7 @@ export function PassportPage() {
     
     setIsExtracting(true);
     setExtractError('');
+    setExtractNotice('');
     setUnmatchedSkills([]);
     
     try {
@@ -66,21 +68,24 @@ export function PassportPage() {
       setUnmatchedSkills(unmatched);
       
       // Merge into passport
-      updatePassport(prev => ({
-        ...prev!,
-        skills: mergeSkillClaims(prev!.skills, matched),
-        experiences: [
-          ...prev!.experiences,
-          ...extracted.experiences.filter(e => e.title.trim() && e.years > 0),
-        ],
-        education: extracted.education || prev!.education,
-      }));
+      updatePassport(prev => {
+        const next = {...prev!,skills:mergeSkillClaims(prev!.skills,matched),experiences:[...prev!.experiences,...extracted.experiences.filter(e=>e.title.trim()&&e.years>0)],education:extracted.education||prev!.education};
+        next.completeness=calculateCompleteness(next);
+        return next;
+      });
       
       sounds.success();
       hapticSuccess();
       setResumeText('');
     } catch (err: unknown) {
-      setExtractError(err instanceof Error ? err.message : 'Failed to parse resume');
+      const literal=extractLiteralResumeSkills(resumeText);
+      if(literal.length){
+        const {matched,unmatched}=matchSkillsToKB(literal);
+        setUnmatchedSkills(unmatched);
+        updatePassport(prev=>{const next={...prev!,skills:mergeSkillClaims(prev!.skills,matched)};next.completeness=calculateCompleteness(next);return next});
+        setExtractNotice(`AI extraction was unavailable. CareerCase preserved ${matched.length} exact resume skill matches locally; review and validate them below.`);
+        sounds.success();hapticSuccess();setResumeText('');
+      } else setExtractError(err instanceof Error ? err.message : 'Failed to parse resume');
     } finally {
       setIsExtracting(false);
     }
@@ -152,6 +157,7 @@ export function PassportPage() {
               {extractError}
             </div>
           )}
+          {extractNotice && <div className="mb-3 border-l-4 border-black bg-[#f9f8f7] p-3 text-sm font-[Inter]">{extractNotice}</div>}
           {unmatchedSkills.length > 0 && (
             <div className="mb-3 p-3 bg-amber-50 border border-amber-200 text-sm font-[Inter] rounded-sm">
               <p className="font-semibold mb-1">Some skills couldn't be matched:</p>

@@ -48,9 +48,9 @@ export function PathwayPage() {
         const saved = existing.routes.find((item) => item.kind === route.kind);
         return {
           ...route,
-          steps: route.steps.map((step, index) => ({
+          steps: route.steps.map((step) => ({
             ...step,
-            done: saved?.steps[index]?.done ?? false,
+            done: saved?.steps.some(savedStep => savedStep.done && savedStep.kind === step.kind && savedStep.refId === step.refId && savedStep.label === step.label) ?? false,
           })),
         };
       }),

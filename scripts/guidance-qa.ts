@@ -7,7 +7,7 @@ import type { CareerPassport } from '../src/app/engine/types';
 
 const passport: CareerPassport = {
   segment: 'career_switcher', education: { level: 'undergraduate', field: 'Commerce' },
-  experiences: [{ title: 'Retail Store Manager', occupationId: 'retail-store-manager', years: 5, description: 'Led store operations, sales and inventory.' }],
+  experiences: [{ title: 'Retail Store Manager', occupationId: 'store-manager', years: 5, description: 'Led store operations, sales and inventory.' }],
   skills: [], riasec: { R:35,I:65,A:40,S:62,E:72,C:70 }, aptitude: { numerical:75,verbal:70,logical:78,spatial:48 }, values: { stability:18,growth:20,autonomy:14,impact:14,balance:18,compensation:16 },
   aspiration: { statement:'Move into analytical business work.', horizonYears:3, themes:['analytics','business'], dreamOccupationIds:['business-analyst'], entrepreneurialIntent:'curious', capturedVia:'form' },
   constraints: { location:'Test Region A', canRelocate:true, weeklyLearningHours:8, budgetLevel:'medium', languages:['English'], needsIncomeContinuity:true }, completeness:90, version:1, updatedAt:new Date(0).toISOString(),

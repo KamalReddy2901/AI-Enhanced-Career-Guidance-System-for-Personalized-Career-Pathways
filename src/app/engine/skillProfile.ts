@@ -19,6 +19,25 @@ export interface SkillMatchResult {
   unmatched: string[];
 }
 
+/** Offline fallback that emits only literal canonical-name or alias matches and
+ * preserves the exact resume line as evidence. */
+export function extractLiteralResumeSkills(resumeText: string): ExtractedSkill[] {
+  const lines = resumeText.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  const extracted: ExtractedSkill[] = [];
+  const ambiguousAliases = new Set(['planning','education','service','support','management','operations','training','instruction','security','finance','analysis','research']);
+  for (const skill of skillById.values()) {
+    const phrases = [skill.name, ...skill.aliases.filter(alias=>!ambiguousAliases.has(alias.toLowerCase()))].sort((a, b) => b.length - a.length);
+    const evidence = lines.find(line => phrases.some(phrase => {
+      const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, 'i').test(line);
+    }));
+    if (!evidence) continue;
+    extracted.push({ name: skill.name, proficiency: 2, evidence });
+    if (extracted.length === 25) break;
+  }
+  return extracted;
+}
+
 export function combineEvidenceConfidence(evidence: SkillEvidence[]): number {
   return Math.min(.97, 1 - evidence.reduce((product, item) => product * (1 - item.confidence), 1));
 }
@@ -33,28 +52,12 @@ export function matchSkillsToKB(extracted: ExtractedSkill[]): SkillMatchResult {
 
   for (const ex of extracted) {
     const normalized = ex.name.toLowerCase().trim();
+    const exact=[...skillById].find(([,skill])=>normalized===skill.name.toLowerCase()||skill.aliases.some(alias=>alias.toLowerCase()===normalized));
+    if(exact){const [skillId]=exact;matched.push({skillId,proficiency:ex.proficiency,confidence:.6,evidence:[{type:'inferred_from_resume',description:ex.evidence,confidence:.6,observedAt:new Date().toISOString()}]});continue;}
     let found = false;
 
     for (const [skillId, skill] of skillById) {
       const nameLower = skill.name.toLowerCase();
-      const aliasesLower = skill.aliases.map(a => a.toLowerCase());
-
-      // Exact match or alias match
-      if (normalized === nameLower || aliasesLower.includes(normalized)) {
-        matched.push({
-          skillId,
-          proficiency: ex.proficiency,
-          confidence: 0.6, // Resume-inferred baseline
-          evidence: [{
-            type: 'inferred_from_resume',
-            description: ex.evidence,
-            confidence: 0.6,
-            observedAt: new Date().toISOString(),
-          }],
-        });
-        found = true;
-        break;
-      }
 
       // Simple token match (e.g., "react" in "react native")
       const tokens = normalized.split(/\s+/);
