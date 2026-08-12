@@ -6,6 +6,7 @@ import { OnboardingTour } from '../components/OnboardingTour';
 import { Breadcrumb } from '../components/Breadcrumb';
 import { BottomNav } from '../components/BottomNav';
 import { InstallPrompt } from '../components/InstallPrompt';
+import { PageTransition } from '../motion/PageTransition';
 
 export function RootLayout() {
   const navigate = useNavigate();
@@ -85,7 +86,9 @@ export function RootLayout() {
       <Navbar />
       <main id="main-content">
         <Breadcrumb />
-        <Outlet />
+        <PageTransition>
+          <Outlet />
+        </PageTransition>
       </main>
       <Toaster
         position="top-right"

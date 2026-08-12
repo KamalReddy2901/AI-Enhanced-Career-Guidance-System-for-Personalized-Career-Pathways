@@ -1,5 +1,4 @@
 import { useLocation, useNavigate } from 'react-router';
-import { ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
 
@@ -62,7 +61,7 @@ export function Breadcrumb() {
       <motion.nav
         key={pathname}
         aria-label="Breadcrumb"
-        className="w-full bg-background/80 backdrop-blur-sm border-b border-black/6 print:hidden"
+        className="w-full border-b border-[var(--ink)] bg-[var(--paper)]/80 backdrop-blur-sm print:hidden"
         initial={{ opacity: 0, y: -4 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -4 }}
@@ -76,7 +75,7 @@ export function Breadcrumb() {
               <span key={path} className="flex items-center gap-1">
                 {isLast ? (
                   <span
-                    className="font-[Inter] text-black/50"
+                    className="label-caps !text-[var(--ink-soft)]"
                     aria-current="page"
                     style={{ fontSize: '0.7rem' }}
                   >
@@ -85,13 +84,12 @@ export function Breadcrumb() {
                 ) : (
                   <button
                     onClick={() => navigate(path)}
-                    className="font-[Inter] text-black/30 hover:text-black/60 transition-colors"
-                    style={{ fontSize: '0.7rem' }}
+                    className="label-caps !text-[var(--ink-faint)] transition-colors hover:!text-[var(--ink)]"
                   >
                     {label}
                   </button>
                 )}
-                {!isLast && <ChevronRight size={10} className="text-black/20" />}
+                {!isLast && <span className="font-mono-ui text-[var(--ink-faint)]" aria-hidden="true">/</span>}
               </span>
             );
           })}

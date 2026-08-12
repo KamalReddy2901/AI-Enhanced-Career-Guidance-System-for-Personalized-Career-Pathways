@@ -6,6 +6,7 @@ import { ScrollingTitles } from '../components/ScrollingTitles';
 import { MagnifierSearch } from '../components/MagnifierSearch';
 import { StickFigure } from '../components/StickFigure';
 import { WhyPanel } from '../components/guidance/WhyPanel';
+import { EditorialHomeHero } from '../components/home/EditorialHomeHero';
 import type { CareerRecommendation } from '../engine/types';
 
 import { useApp } from '../context/AppContext';
@@ -73,7 +74,7 @@ export function HomePage() {
   const navigate = useNavigate();
   const { searchJob, searchJobAI, searchJobPreliminary, setCurrentJob, addToHistory, isSearchAnimating, setIsSearchAnimating, setRefinementCount, setComparisonJob } = useApp();
   const { user, isSupabaseConfigured } = useAuth();
-  const { passport, recommendations, pathways } = useGuidance();
+  const { passport, recommendations, recommendationChanges, pathways, dismissRecommendationChanges } = useGuidance();
 
   const [trending, setTrending] = useState<TrendingCareers | null>(null);
   const [trendingLoading, setTrendingLoading] = useState(false);
@@ -176,8 +177,20 @@ export function HomePage() {
 
   return (
     <div className="relative bg-background">
+      <EditorialHomeHero
+        passport={passport}
+        recommendations={recommendations}
+        recommendationChanges={recommendationChanges}
+        showLanding={showLanding}
+        onNavigate={navigate}
+        onExplain={setHomeExplanation}
+        onDismissChanges={dismissRecommendationChanges}
+      />
+      {homeExplanation && passport && (
+        <WhyPanel recommendation={homeExplanation} segment={passport.segment} onClose={() => setHomeExplanation(null)} />
+      )}
       {/* ── HERO SECTION ───────────────────────────────────── */}
-      <div id="hero" className="min-h-screen relative overflow-hidden">
+      <div className="hidden" aria-hidden="true">
       <ScrollingTitles paused={isSearchAnimating} dimmed={isSearchAnimating} />
 
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6">
@@ -827,7 +840,9 @@ export function HomePage() {
               Found a bug? Have a feature idea? Just want to say hi? Drop me a line.
             </p>
             <motion.a
-              href="mailto:kamalcrreddy@gmail.com?subject=CareerCase%20Feedback"
+              href="https://github.com/KamalReddy2901/AI-Enhanced-Career-Guidance-System-for-Personalized-Career-Pathways/issues/new"
+              target="_blank"
+              rel="noreferrer"
               className="inline-flex items-center gap-2 border-2 border-black text-black py-2.5 px-6 font-[Inter] hover:bg-black hover:text-white transition-all"
               style={{ fontSize: '0.85rem' }}
               whileHover={{ scale: 1.02 }}
