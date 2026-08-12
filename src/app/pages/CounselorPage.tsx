@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { StickFigure } from "../components/StickFigure";
 import { useGuidance } from "../context/GuidanceContext";
 import {
@@ -8,9 +8,9 @@ import {
 } from "../data/knowledge";
 import { streamCounselorChat } from "../services/ai";
 import { useT } from "../i18n";
-import { listen, speak } from "../utils/voice";
+import { listen, speak, stopSpeaking } from "../utils/voice";
 import { motion, useReducedMotion } from "motion/react";
-import { Mic, Send, Volume2 } from "lucide-react";
+import { Mic, Send, Volume2, Square } from "lucide-react";
 import { TextReveal } from '../motion/TextReveal';
 
 const escalationPattern =
@@ -24,7 +24,17 @@ export function CounselorPage() {
   const [busy, setBusy] = useState(false);
   const [escalate, setEscalate] = useState(false);
   const [history, setHistory] = useState<Array<{ role: "user" | "assistant"; text: string }>>([]);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const reducedMotion = useReducedMotion();
+  const readableAnswer = useMemo(() => answer || [...history].reverse().find(message => message.role === 'assistant')?.text || '', [answer, history]);
+  useEffect(() => {
+    const onVoiceStatus = (event: Event) => {
+      const status = (event as CustomEvent<{ status?: string }>).detail?.status;
+      if (status === 'idle' || status === 'success' || status === 'error') setIsSpeaking(false);
+    };
+    window.addEventListener('cc-voice-status', onVoiceStatus);
+    return () => window.removeEventListener('cc-voice-status', onVoiceStatus);
+  }, []);
   const ask = async () => {
     const question = input.trim();
     if (!question) return;
@@ -101,8 +111,14 @@ export function CounselorPage() {
       setHistory(previous => [...previous, { role: "assistant", text: response }]);
       setAnswer("");
     } catch {
-      setAnswer(t("counselorUnavailable"));
-      setHistory(previous => [...previous, { role: "assistant", text: t("counselorUnavailable") }]);
+      const top = recommendations?.recommendations[0];
+      const title = top ? occupationById.get(top.occupationId)?.title : undefined;
+      const readiness = pathways.find(plan => plan.occupationId === top?.occupationId)?.gapReport.readiness;
+      const fallback = title
+        ? lang === 'hi' ? `आपकी सहेजी प्रोफ़ाइल के आधार पर ${title} अभी खोजने के लिए आपका सबसे मजबूत विकल्प है${readiness !== undefined ? `, ${readiness}% तैयारी के साथ` : ''}। मैच का कारण देखें और छोटे अगले चरणों के लिए एक मार्ग बनाएँ। लाइव काउंसलर उपलब्ध न होने पर भी मैं विकल्पों की तुलना और योजना बनाने में मदद कर सकता हूँ।` : lang === 'te' ? `మీ సేవ్ చేసిన ప్రొఫైల్ ఆధారంగా ${title} ప్రస్తుతం అన్వేషించడానికి మీకు అత్యంత బలమైన ఎంపిక${readiness !== undefined ? `, ${readiness}% సిద్ధతతో` : ''}। మ్యాచ్ వివరణను చూసి చిన్న తదుపరి దశల కోసం ఒక మార్గాన్ని నిర్మించండి. ప్రత్యక్ష కౌన్సిలర్ అందుబాటులో లేకపోయినా నేను ఎంపికలను పోల్చడంలో, ప్రణాళికలో సహాయం చేయగలను.` : `Based on your saved profile, ${title} is your current strongest option to explore${readiness !== undefined ? `, with ${readiness}% readiness` : ''}. Start by reviewing its match explanation and create a pathway to see the smallest next steps. I can still help you compare options or make a plan while the live counselor is unavailable.`
+        : lang === 'hi' ? `मैं लाइव काउंसलर के बिना भी मदद कर सकता हूँ। पहले आकलन पूरे करें, फिर मैं आपकी रुचियों, शक्तियों, मूल्यों और सीमाओं से व्यावहारिक अगले कदमों पर बात करूँगा।` : lang === 'te' ? `ప్రత్యక్ష కౌన్సిలర్ లేకపోయినా నేను సహాయం చేయగలను. ముందుగా మీ అంచనాలను పూర్తి చేయండి; ఆపై మీ ఆసక్తులు, బలాలు, విలువలు, పరిమితుల ఆధారంగా ఆచరణాత్మక తదుపరి దశలను చర్చిస్తాను.` : `I can still help without the live counselor. Complete your assessments first, then I’ll use your interests, strengths, values, and constraints to discuss practical next steps.`;
+      setAnswer(fallback);
+      setHistory(previous => [...previous, { role: "assistant", text: fallback }]);
       setAnswer("");
     } finally {
       setBusy(false);
@@ -151,12 +167,15 @@ export function CounselorPage() {
               <Mic size={15}/> {t("counselorSpeak")}
             </button>
             <button
-              disabled={!answer}
-              onClick={() => speak(answer, locale)}
+              disabled={!readableAnswer && !isSpeaking}
+              onClick={() => {
+                if (isSpeaking) { stopSpeaking(); setIsSpeaking(false); }
+                else if (readableAnswer && speak(readableAnswer, locale)) setIsSpeaking(true);
+              }}
               data-testid="counselor-read-answer-btn"
               className="min-h-11 border border-[var(--ink)]/20 px-4 py-3 disabled:opacity-30"
             >
-              <Volume2 size={15}/> {t("counselorRead")}
+              {isSpeaking ? <Square size={15}/> : <Volume2 size={15}/>} {isSpeaking ? 'Stop reading' : t("counselorRead")}
             </button>
           </div>
           </div>

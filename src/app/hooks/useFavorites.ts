@@ -14,19 +14,24 @@ export interface Favorite {
 }
 
 export function useFavorites() {
-  const { user } = useAuth();
+  const { user, isSupabaseConfigured } = useAuth();
   const { passport, updatePassport } = useGuidance();
   const [favorites, setFavorites] = useState<Favorite[]>([]);
 
   // Load from localStorage first, then merge with remote
   useEffect(() => {
+    if (isSupabaseConfigured && !user) {
+      setFavorites([]);
+      return;
+    }
     try {
       const stored = localStorage.getItem(FAVORITES_KEY);
       if (stored) setFavorites(JSON.parse(stored));
+      else setFavorites([]);
     } catch {
       setFavorites([]);
     }
-  }, []);
+  }, [user?.id, isSupabaseConfigured]);
 
   // Sync remote favorites when user logs in
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { StickFigure } from '../components/StickFigure';
 import { useGuidance } from '../context/GuidanceContext';
@@ -18,6 +18,7 @@ import { WhyPanel, type ScoreEvidence } from '../components/guidance/WhyPanel';
 import { motion } from 'motion/react';
 import { TextReveal } from '../motion/TextReveal';
 import { useT } from '../i18n';
+import { readResumeText } from '../utils/resumeText';
 
 export function PassportPage() {
   const navigate = useNavigate();
@@ -45,6 +46,23 @@ export function PassportPage() {
   const [validating, setValidating] = useState<SkillClaim | null>(null);
   const [editingConstraints, setEditingConstraints] = useState(false);
   const [scoreEvidence, setScoreEvidence] = useState<ScoreEvidence | null>(null);
+  const resumeInputRef = useRef<HTMLInputElement>(null);
+
+  const handleResumeFile = async (file: File | undefined) => {
+    if (!file) return;
+    setExtractError('');
+    setExtractNotice('');
+    try {
+      const text = await readResumeText(file);
+      if (text.trim().length < 20) throw new Error('No readable resume text was found in that file.');
+      setResumeText(text);
+      setExtractNotice(`Loaded ${file.name}. Review the extracted text, then choose Extract profile.`);
+    } catch (error) {
+      setExtractError(error instanceof Error ? error.message : 'Could not read that resume file.');
+    } finally {
+      if (resumeInputRef.current) resumeInputRef.current.value = '';
+    }
+  };
 
   if (!passport) {
     return (
@@ -144,6 +162,8 @@ export function PassportPage() {
           <p className="mb-4 text-sm text-[var(--ink-soft)]">
             {t('passportResumeHelp')}
           </p>
+          <input ref={resumeInputRef} type="file" accept=".pdf,.doc,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" className="sr-only" onChange={(event) => void handleResumeFile(event.target.files?.[0])} />
+          <button type="button" onClick={() => resumeInputRef.current?.click()} disabled={isExtracting} className="mb-3 min-h-11 border-2 border-[var(--ink)] px-4 font-mono-ui text-xs uppercase disabled:opacity-40">Upload PDF, DOCX or TXT</button>
           <textarea
             value={resumeText}
             onChange={(e) => setResumeText(e.target.value)}

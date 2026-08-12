@@ -8,6 +8,7 @@ import { useApp } from '../context/AppContext';
 import { refineJobDescription } from '../services/ai';
 import { toast } from 'sonner';
 import { TextReveal } from '../motion/TextReveal';
+import { ScrollingTitles } from '../components/ScrollingTitles';
 
 function JobSearchEmptyState() {
   const { searchJobPreliminary, setCurrentJob, setIsSearchAnimating, isSearchAnimating } = useApp();
@@ -18,8 +19,9 @@ function JobSearchEmptyState() {
   }, [searchJobPreliminary, setCurrentJob]);
 
   return (
-    <div className="min-h-[80vh] flex flex-col items-center justify-center px-6 py-24" data-testid="job-search-empty-state">
-      <div className="w-full max-w-xl text-center">
+    <div className="relative min-h-[80vh] overflow-hidden flex flex-col items-center justify-center px-6 py-24" data-testid="job-search-empty-state">
+      <ScrollingTitles dimmed />
+      <div className="relative z-10 w-full max-w-xl text-center">
         <div className="flex justify-center mb-8">
           <StickFigure pose="searching" size={80} />
         </div>
@@ -112,8 +114,9 @@ export function JobOverviewPage() {
   };
 
   return (
-    <div className="editorial-article min-h-screen bg-[var(--paper)] pt-20 pb-16">
-      <div className="max-w-3xl mx-auto px-6">
+    <div className="editorial-article relative min-h-screen overflow-hidden bg-[var(--paper)] pt-20 pb-16">
+      <ScrollingTitles dimmed />
+      <div className="relative z-10 max-w-3xl mx-auto px-6">
         {/* Back button */}
         <motion.button
           onClick={() => navigate('/')}
