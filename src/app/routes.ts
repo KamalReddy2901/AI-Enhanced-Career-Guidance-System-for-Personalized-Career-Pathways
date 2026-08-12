@@ -29,6 +29,7 @@ const AssessAspirationsPage = lazy(() => import('./pages/AssessAspirationsPage')
 const PassportPage = lazy(() => import('./pages/PassportPage').then(m => ({ default: m.PassportPage })));
 const RecommendationsPage = lazy(() => import('./pages/RecommendationsPage').then(m => ({ default: m.RecommendationsPage })));
 const PathwayPage = lazy(() => import('./pages/PathwayPage').then(m => ({ default: m.PathwayPage })));
+const HowItWorksPage = lazy(() => import('./pages/HowItWorksPage').then(m => ({ default: m.HowItWorksPage })));
 
 export const router = createBrowserRouter([
   { path: '/', Component: RootLayout, children: [
@@ -57,6 +58,7 @@ export const router = createBrowserRouter([
     { path: 'passport', Component: PassportPage },
     { path: 'recommendations', Component: RecommendationsPage },
     { path: 'pathway/:occupationId', Component: PathwayPage },
+    { path: 'how-it-works', Component: HowItWorksPage },
     { path: '*', Component: NotFoundPage },
   ]},
 ]);

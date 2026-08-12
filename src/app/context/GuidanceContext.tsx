@@ -150,6 +150,12 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
     const raw = localStorage.getItem('cc_guidance_recommendations');
     if (raw) { try { setRecommendations(JSON.parse(raw) as RecommendationSet); } catch { /* stale cache */ } }
   }, [passport]);
+
+  useEffect(() => {
+    if (!passport) return;
+    const timer = window.setTimeout(() => recompute(), 1500);
+    return () => window.clearTimeout(timer);
+  }, [passport, recompute]);
   
   return (
     <GuidanceContext.Provider
