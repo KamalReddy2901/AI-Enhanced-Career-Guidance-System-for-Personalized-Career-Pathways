@@ -1,12 +1,44 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Check, RefreshCw, ArrowRight, ChevronLeft, Sparkles, Loader2, Zap } from 'lucide-react';
+import { Check, RefreshCw, ArrowRight, ChevronLeft, Sparkles, Loader2, Zap, Compass } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
+import { MagnifierSearch } from '../components/MagnifierSearch';
 import { useApp } from '../context/AppContext';
 import { refineJobDescription } from '../services/ai';
 import { toast } from 'sonner';
 import { TextReveal } from '../motion/TextReveal';
+
+function JobSearchEmptyState() {
+  const { searchJobPreliminary, setCurrentJob, setIsSearchAnimating, isSearchAnimating } = useApp();
+
+  const handleSearchComplete = useCallback(async (title: string) => {
+    const job = await searchJobPreliminary(title);
+    setCurrentJob(job);
+  }, [searchJobPreliminary, setCurrentJob]);
+
+  return (
+    <div className="min-h-[80vh] flex flex-col items-center justify-center px-6 py-24" data-testid="job-search-empty-state">
+      <div className="w-full max-w-xl text-center">
+        <div className="flex justify-center mb-8">
+          <StickFigure pose="searching" size={80} />
+        </div>
+        <p className="label-caps mb-3 text-[var(--ink-soft)]">CareerCase · Explore</p>
+        <h1 className="font-display text-4xl leading-snug tracking-tight text-[var(--ink)] mb-3">
+          What do you want<br/>to explore?
+        </h1>
+        <p className="text-sm text-[var(--ink-soft)] mb-10">
+          Type any job title — even made-up ones. AI will build a full dossier for you.
+        </p>
+        <MagnifierSearch
+          onSearchComplete={handleSearchComplete}
+          isAnimating={isSearchAnimating}
+          setIsAnimating={setIsSearchAnimating}
+        />
+      </div>
+    </div>
+  );
+}
 
 export function JobOverviewPage() {
   const navigate = useNavigate();
@@ -19,18 +51,13 @@ export function JobOverviewPage() {
   const [refinementHistory, setRefinementHistory] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!currentJob) {
-      navigate('/');
-    }
-  }, [currentJob, navigate]);
-
-  useEffect(() => {
     if (currentJob) {
       setDescription(currentJob.shortDescription);
     }
   }, [currentJob]);
 
-  if (!currentJob) return null;
+  // Show search state when no career selected (no more silent redirect)
+  if (!currentJob) return <JobSearchEmptyState />;
 
   const handleConfirm = async () => {
     if (!currentJob) return;

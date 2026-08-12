@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, Clock, ArrowRight, RotateCcw, CheckCircle2, XCircle, Sparkles, Loader2, Download, TrendingUp, Zap } from 'lucide-react';
+import { ChevronLeft, Clock, ArrowRight, RotateCcw, CheckCircle2, XCircle, Sparkles, Loader2, Download, TrendingUp, Zap, Search } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import { generateSimulation, type SimulationScenario } from '../data/simulations';
@@ -66,7 +66,7 @@ export function SimulationPage() {
   const simResultKey = (title: string) => `sim_result_${title.toLowerCase().replace(/\s+/g, '_')}`;
 
   useEffect(() => {
-    if (!currentJob) { navigate('/'); return; }
+    if (!currentJob) return;
     // Check for saved result — if found, restore and skip straight to completion screen
     const saved = (() => { try { return JSON.parse(localStorage.getItem(simResultKey(currentJob.title)) || 'null'); } catch { return null; } })();
     if (saved && saved.scenarios && saved.aiSummary) {
@@ -77,7 +77,7 @@ export function SimulationPage() {
     } else {
       loadScenarios(false);
     }
-  }, [currentJob, navigate]);
+  }, [currentJob]);
 
   // Fire completion sounds
   useEffect(() => {
@@ -129,7 +129,25 @@ export function SimulationPage() {
     }
   };
 
-  if (!currentJob) return null;
+  if (!currentJob) return (
+    <div className="min-h-[80vh] flex flex-col items-center justify-center px-6 text-center" data-testid="simulation-no-career">
+      <StickFigure pose="confused" size={80} />
+      <p className="label-caps mt-6 mb-3 text-[var(--ink-soft)]">No career selected</p>
+      <h1 className="font-display text-3xl text-[var(--ink)] mb-4">Choose a career to simulate</h1>
+      <p className="text-sm text-[var(--ink-soft)] mb-8 max-w-sm">
+        Search for any job title to experience a day in that role.
+      </p>
+      <button
+        type="button"
+        onClick={() => navigate('/job')}
+        className="inline-flex items-center gap-2 rounded-full border-2 border-[var(--ink)] bg-[var(--ink)] px-6 py-3 font-mono-ui text-sm text-[var(--paper)] hover:opacity-80 transition-opacity"
+        data-testid="simulation-explore-link"
+      >
+        <Search size={14} />
+        Explore careers
+      </button>
+    </div>
+  );
 
   const currentScenario = currentIndex >= 0 && currentIndex < scenarios.length ? scenarios[currentIndex] : null;
   const progress = scenarios.length > 0 ? ((currentIndex + 1) / scenarios.length) * 100 : 0;
