@@ -1180,8 +1180,8 @@ export async function getCareerRoadmap(jobTitle: string, signal?: AbortSignal, d
 
   return withRetry(async () => {
     const raw = await callGroqStreaming(
-      'You are a career development strategist. Return ONLY valid JSON. Be specific to this profession.',
-      `Create a comprehensive career roadmap for "${jobTitle}"${isIndia ? ' in the Indian job market. Use INR (LPA format) for salaries, reference relevant Indian companies, certifications (e.g. GATE, CA, UPSC where relevant), and realistic Indian career progression timelines.' : ''}.${description ? ` The user's specific context for this role: "${description}" — tailor the roadmap to this specialisation and setting.` : ''} ${detailInstruction} Return this exact JSON:
+      'You are a career development strategist. Return ONLY valid JSON with no markdown formatting. Do not use ** for bold or any other markdown syntax. Be specific to this profession.',
+      `Create a comprehensive career roadmap for "${jobTitle}"${isIndia ? ' in the Indian job market. Use INR (LPA format) for salaries, reference relevant Indian companies, certifications (e.g. GATE, CA, UPSC where relevant), and realistic Indian career progression timelines.' : ''}.${description ? ` The user's specific context for this role: "${description}" — tailor the roadmap to this specialisation and setting.` : ''} ${detailInstruction} Return this exact JSON with NO markdown formatting:
 {
   "title": "${jobTitle}",
   "totalYears": "e.g. 20+ years to reach peak",
@@ -1205,9 +1205,24 @@ Include 5 stages (Entry, Junior, Mid-level, Senior, Expert/Leadership). Use dist
       { temperature: 0.6, maxTokens: 1400, signal, usageType: 'roadmap' }
     );
 
-    const result = JSON.parse(raw) as CareerRoadmap;
-    setCache(cacheKey, result);
-    return result;
+    // Clean the response: remove markdown code fences and any markdown formatting
+    let cleaned = raw.trim();
+    // Remove markdown code blocks (```json ... ``` or ``` ... ```)
+    cleaned = cleaned.replace(/^```(?:json)?\s*\n?/g, '').replace(/\n?```\s*$/g, '');
+    // Remove any remaining triple backticks
+    cleaned = cleaned.replace(/```/g, '');
+    // Trim whitespace again
+    cleaned = cleaned.trim();
+
+    try {
+      const result = JSON.parse(cleaned) as CareerRoadmap;
+      setCache(cacheKey, result);
+      return result;
+    } catch (parseError) {
+      console.error('Failed to parse roadmap JSON:', parseError);
+      console.error('Cleaned response:', cleaned);
+      throw new Error('Failed to generate roadmap. The AI response was not in the expected format. Please try again.');
+    }
   });
 }
 
