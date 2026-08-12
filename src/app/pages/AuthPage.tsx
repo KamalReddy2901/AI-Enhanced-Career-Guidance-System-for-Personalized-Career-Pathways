@@ -10,7 +10,7 @@ import { TextReveal } from '../motion/TextReveal';
 export function AuthPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { signIn, signUp, signInWithGoogle, user, loading } = useAuth();
+  const { signIn, signUp, signInWithGoogle, user, loading, isSupabaseConfigured } = useAuth();
 
   const [mode, setMode] = useState<'signin' | 'signup'>(
     searchParams.get('mode') === 'signup' ? 'signup' : 'signin'
@@ -60,6 +60,10 @@ export function AuthPage() {
         <Loader2 size={24} className="animate-spin text-black/30" />
       </div>
     );
+  }
+
+  if (!isSupabaseConfigured) {
+    return <div className="min-h-screen bg-background flex items-center justify-center p-6"><div className="max-w-md border border-black/10 bg-white p-8"><h1 className="font-display text-3xl">Account service unavailable</h1><p className="mt-3 font-[Inter] text-sm leading-relaxed text-black/60">CareerCase requires its Supabase account service before a journey can begin. Add the public Supabase URL and anon key to the deployment environment, then reload.</p></div></div>;
   }
 
   return (

@@ -74,7 +74,7 @@ export function HomePage() {
   const navigate = useNavigate();
   const { t } = useT();
   const { searchJob, searchJobAI, searchJobPreliminary, setCurrentJob, addToHistory, isSearchAnimating, setIsSearchAnimating, setRefinementCount, setComparisonJob } = useApp();
-  const { user, isSupabaseConfigured } = useAuth();
+  const { user } = useAuth();
   const { passport, recommendations, recommendationChanges, pathways, dismissRecommendationChanges } = useGuidance();
 
   const [trending, setTrending] = useState<TrendingCareers | null>(null);
@@ -114,8 +114,9 @@ export function HomePage() {
   };
 
 
-  // When Supabase is configured, show landing to logged-out users; otherwise show search
-  const showLanding = isSupabaseConfigured && !user;
+  // The public page explains the product; the working journey begins only
+  // after an account is established so every piece of progress is attributable.
+  const showLanding = !user;
 
   const spySections = useMemo(() => showLanding
     ? [
@@ -156,8 +157,7 @@ export function HomePage() {
   const handleSearchComplete = useCallback(async (jobTitle: string) => {
     // Guard: prevent concurrent searches
     if (searchingCareer) return;
-    // Auth guard: if Supabase is configured the user must be logged in
-    if (isSupabaseConfigured && !user) {
+    if (!user) {
       navigate(`/auth?redirect=${encodeURIComponent('/job')}`);
       return;
     }
@@ -172,7 +172,7 @@ export function HomePage() {
     } finally {
       setSearchingCareer(null);
     }
-  }, [searchingCareer, searchJob, searchJobAI, setCurrentJob, addToHistory, navigate, setRefinementCount, isSupabaseConfigured, user]);
+  }, [searchingCareer, searchJobPreliminary, setCurrentJob, navigate, setRefinementCount, user]);
 
   return (
     <div className="relative bg-background">

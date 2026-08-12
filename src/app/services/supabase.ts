@@ -4,8 +4,12 @@ const viteEnv = (import.meta as ImportMeta & { env?: Record<string, string | und
 const supabaseUrl = viteEnv?.VITE_SUPABASE_URL ?? '';
 const supabaseAnonKey = viteEnv?.VITE_SUPABASE_ANON_KEY ?? '';
 
-// Guard: app still works without Supabase configured
-const isConfigured = !!(supabaseUrl && supabaseUrl !== 'your_supabase_project_url');
+// An account-backed journey needs both public Supabase values. Treat a partial
+// configuration as unavailable instead of letting authentication fail later.
+const isConfigured = Boolean(
+  supabaseUrl && supabaseUrl !== 'your_supabase_project_url'
+  && supabaseAnonKey && supabaseAnonKey !== 'your_supabase_anon_key_here',
+);
 
 export const supabase = isConfigured
   ? createClient(supabaseUrl, supabaseAnonKey)

@@ -3,7 +3,8 @@ import type { User, Session } from '@supabase/supabase-js';
 
 const viteEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
 const isSupabaseConfigured = Boolean(
-  viteEnv?.VITE_SUPABASE_URL && viteEnv.VITE_SUPABASE_URL !== 'your_supabase_project_url',
+  viteEnv?.VITE_SUPABASE_URL && viteEnv.VITE_SUPABASE_URL !== 'your_supabase_project_url'
+  && viteEnv?.VITE_SUPABASE_ANON_KEY && viteEnv.VITE_SUPABASE_ANON_KEY !== 'your_supabase_anon_key_here',
 );
 
 interface AuthContextType {

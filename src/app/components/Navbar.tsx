@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Clock, Home, Compass, Settings, Menu, X, Map, MessageCircle, ClipboardCheck, Route, UserRound } from 'lucide-react';
+import { Clock, Home, Compass, Settings, Menu, X, Map, MessageCircle, ClipboardCheck, Route, UserRound, LogIn } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../hooks/useFavorites';
@@ -73,6 +73,7 @@ export function Navbar() {
             </span>
           </Link>
 
+          {user ? <>
           {/* Desktop nav links */}
           <div className="hidden md:flex min-w-0 items-center gap-0.5 overflow-x-auto">
             {navLinks.map(link => (
@@ -92,6 +93,7 @@ export function Navbar() {
               {menuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
+          </> : <Link to="/auth?mode=signup" className="flex min-h-11 items-center gap-2 bg-black px-4 font-mono-ui text-xs uppercase text-white transition-opacity hover:opacity-80"><LogIn size={14} />Sign in</Link>}
         </div>
 
         {/* Keyboard shortcut hint */}
