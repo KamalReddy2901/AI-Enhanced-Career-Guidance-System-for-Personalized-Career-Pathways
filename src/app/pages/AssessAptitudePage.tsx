@@ -9,6 +9,7 @@ import { saveAssessment } from "../services/guidanceDb";
 import { sounds } from "../utils/sounds";
 import { useT } from "../i18n";
 import { aptitudeItemText } from "../i18n/aptitudeItems";
+import { WhyPanel, type ScoreEvidence } from "../components/guidance/WhyPanel";
 import { speak } from "../utils/voice";
 
 const TOTAL_SECONDS = 300;
@@ -29,6 +30,9 @@ export function AssessAptitudePage() {
   const [result, setResult] = useState<ReturnType<typeof scoreAptitude> | null>(
     null,
   );
+  const [completedAnswers, setCompletedAnswers] = useState<Record<string, number>>({});
+  const [elapsed, setElapsed] = useState(0);
+  const [why, setWhy] = useState<ScoreEvidence | null>(null);
 
   const complete = (
     finalAnswers: Record<string, number>,
@@ -42,6 +46,8 @@ export function AssessAptitudePage() {
       form,
     );
     setResult(scores);
+    setCompletedAnswers(finalAnswers);
+    setElapsed(TOTAL_SECONDS - remainingSeconds);
     localStorage.setItem(FORM_STORAGE_KEY, form === 0 ? "1" : "0");
     updatePassport((previous) => {
       if (!previous) throw new Error("Complete onboarding first");
@@ -94,7 +100,7 @@ export function AssessAptitudePage() {
           <Header result lang={lang} />
           <div className="max-w-xl mx-auto">
             {Object.entries(result).map(([dimension, score]) => (
-              <div key={dimension} className="mb-4">
+              <button key={dimension} className="mb-4 block min-h-11 w-full text-left" onClick={()=>{const dimensionQuestions=questions.filter(question=>question.dimension===dimension);const correct=dimensionQuestions.filter(question=>completedAnswers[question.id]===question.answer).length;const speedBonus=Math.min(10,Math.max(0,Math.round(10*Math.max(0,TOTAL_SECONDS-elapsed)/TOTAL_SECONDS)));setWhy({title:`Why ${dimension} is ${score}`,eyebrow:"Aptitude evidence desk",summary:`This result combines ${correct} correct answers out of 6 with the same capped timing bonus used across this form.`,method:"score = round(100 × correct ÷ 6) + speed bonus; speed bonus = min(10, round(10 × time remaining ÷ 300)); result capped at 100.",items:[{label:"Accuracy contribution",value:Math.round(100*correct/6),detail:`${correct} of 6 ${dimension} items answered correctly.`},{label:"Timing bonus",value:speedBonus*10,detail:`${elapsed} seconds used across the complete 24-item form; ${speedBonus} points added, capped at 10.`}],source:`Aptitude screener form ${form+1}`})}} aria-label={`Explain ${dimension} score ${score}`}>
                 <div className="flex justify-between font-[JetBrains_Mono] text-xs uppercase">
                   <span>{dimension}</span>
                   <span>{score}</span>
@@ -105,7 +111,8 @@ export function AssessAptitudePage() {
                     style={{ width: `${score}%` }}
                   />
                 </div>
-              </div>
+                <div className="mt-1 font-[Inter] text-[10px] underline">Why this score?</div>
+              </button>
             ))}
             <p className="border-t border-black/10 pt-4 mt-6 text-sm font-[Inter] text-black/60">
               {lang === "hi" ? "यह 5 मिनट की प्रारंभिक जाँच है, पूर्ण मनोमितीय परीक्षण नहीं—इसे पहला संकेत मानें।" : lang === "te" ? "ఇది 5 నిమిషాల ప్రాథమిక పరీక్ష మాత్రమే, పూర్తి సైకోమెట్రిక్ పరీక్ష కాదు—దీనిని తొలి సంకేతంగా చూడండి." : "A 5-minute screener, not a full psychometric battery — treat as a first signal."}
@@ -116,6 +123,7 @@ export function AssessAptitudePage() {
             >
               {lang === "hi" ? "आकलन डेस्क पर वापस जाएँ" : lang === "te" ? "అంచనా విభాగానికి తిరిగి వెళ్ళండి" : "Back to assessment desk"}
             </button>
+            {why && <WhyPanel evidence={why} onClose={()=>setWhy(null)}/>}
           </div>
         </div>
       </div>

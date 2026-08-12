@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router";
 import { StickFigure } from "../components/StickFigure";
 import { PathwayGraph } from "../components/guidance/PathwayGraph";
 import { ScoreBar } from "../components/guidance/ScoreBar";
+import { WhyPanel, type ScoreEvidence } from "../components/guidance/WhyPanel";
 import { useGuidance } from "../context/GuidanceContext";
 import { useAuth } from "../context/AuthContext";
 import { buildPathwayPlan } from "../engine/pathways";
@@ -59,6 +60,7 @@ export function PathwayPage() {
   const [chosenKind, setChosenKind] = useState(
     initial?.chosenRoute ?? initial?.routes[0]?.kind,
   );
+  const [why, setWhy] = useState<ScoreEvidence | null>(null);
 
   useEffect(() => setPlan(initial), [initial]);
   useEffect(() => {
@@ -198,7 +200,7 @@ export function PathwayPage() {
             </div>
             <div className="mt-4 space-y-4">
               {plan.gapReport.gaps.slice(0, 8).map((gap) => (
-                <div key={gap.skillId}>
+                <button key={gap.skillId} className="block min-h-11 w-full text-left" onClick={()=>setWhy({title:`Why the ${skillName(gap.skillId)} gap is ${gap.severity}`,eyebrow:"Skill-gap evidence desk",summary:`This gap compares your current proficiency ${gap.current}/4 with the role requirement ${gap.required}/4, then adjusts for requirement importance and evidence confidence.`,method:"severity = (required − current) ÷ 4 × importance × (2 − claim confidence), normalized over the occupation requirement set.",items:[{label:"Current proficiency",value:gap.current*25,detail:`Current Career Passport level: ${gap.current}/4.`},{label:"Required proficiency",value:gap.required*25,detail:`Curated requirement for ${occupation.title}: ${gap.required}/4.`},{label:"Requirement importance",value:gap.importance*100,detail:"Importance comes from the versioned occupation knowledge base."},{label:"Evidence confidence",value:gap.confidence*100,detail:"Accumulated from the evidence ledger; weaker evidence increases uncertainty."}],source:`KB kb-2026.06.1 · ${occupation.ncoCode}`})} aria-label={`Explain ${skillName(gap.skillId)} gap score ${gap.severity}`}>
                   <ScoreBar
                     label={`${skillName(gap.skillId)} · current ${gap.current} → required ${gap.required}`}
                     value={gap.severity}
@@ -206,11 +208,12 @@ export function PathwayPage() {
                   <p className="mt-1 font-[Inter] text-xs text-black/50">
                     {c.evidence} {Math.round(gap.confidence * 100)}%
                   </p>
-                </div>
+                  <div className="mt-1 font-[Inter] text-[10px] underline">Why this gap?</div>
+                </button>
               ))}
             </div>
           </div>
-          <div className="bg-white border border-black/10 p-5">
+          <button className="block min-h-11 w-full bg-white border border-black/10 p-5 text-left" onClick={()=>setWhy({title:`Why readiness is ${plan.gapReport.readiness}`,eyebrow:"Readiness evidence desk",summary:"Readiness is the complement of the proficiency- and confidence-adjusted Skill Gap Index. It is a planning signal, not a prediction of success.",method:"Each requirement gap is weighted by importance and adjusted for evidence confidence. SGI is the normalized weighted total; readiness = 100 − SGI.",items:[{label:"Readiness",value:plan.gapReport.readiness,detail:"The share of required proficiency currently evidenced after confidence adjustment."},{label:"Skill Gap Index",value:plan.gapReport.sgi,detail:"Lower is better; this is the remaining normalized gap across all role requirements."},...plan.gapReport.gaps.slice(0,4).map(gap=>({label:skillName(gap.skillId),value:gap.severity,detail:`Current ${gap.current}/4 → required ${gap.required}/4 · ${Math.round(gap.confidence*100)}% evidence confidence.`}))],source:`KB kb-2026.06.1 · profile v${passport.version}`})} aria-label={`Explain readiness score ${plan.gapReport.readiness}`}>
             <svg viewBox="0 0 160 100" className="mx-auto w-full max-w-[220px]">
               <path
                 d="M20 80a60 60 0 01120 0"
@@ -241,6 +244,7 @@ export function PathwayPage() {
             <div className="text-center font-[JetBrains_Mono] text-xs uppercase">
               {c.readiness} · SGI {plan.gapReport.sgi}
             </div>
+            <div className="mt-1 text-center font-[Inter] text-[10px] underline">Why these scores?</div>
             <h2 className="font-[Playfair_Display] text-xl mt-6">
               {c.bring}
             </h2>
@@ -261,7 +265,7 @@ export function PathwayPage() {
                 {c.validate}
               </p>
             )}
-          </div>
+          </button>
         </section>
         <section className="mb-8">
           <h2 className="text-3xl font-[Playfair_Display] mb-4">
@@ -344,6 +348,7 @@ export function PathwayPage() {
         >
           {c.ask}
         </Link>
+        {why && <WhyPanel evidence={why} onClose={()=>setWhy(null)}/>}
       </div>
     </div>
   );

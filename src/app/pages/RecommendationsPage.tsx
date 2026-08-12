@@ -96,6 +96,7 @@ export function RecommendationsPage() {
         <StopPress
           changes={recommendationChanges}
           onDismiss={dismissRecommendationChanges}
+          onExplain={(occupationId)=>{const item=recommendations.recommendations.find(recommendation=>recommendation.occupationId===occupationId);if(item)setExplanation(item)}}
         />
         {groups.map(([group, items]) => (
           <section key={group} className="mb-10">

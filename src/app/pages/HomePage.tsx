@@ -5,6 +5,8 @@ import { Sparkles, FlaskConical, Scale, ChevronDown, FileText, Brain, Swords, Za
 import { ScrollingTitles } from '../components/ScrollingTitles';
 import { MagnifierSearch } from '../components/MagnifierSearch';
 import { StickFigure } from '../components/StickFigure';
+import { WhyPanel } from '../components/guidance/WhyPanel';
+import type { CareerRecommendation } from '../engine/types';
 
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -77,6 +79,7 @@ export function HomePage() {
   const [trendingLoading, setTrendingLoading] = useState(false);
   const [searchingCareer, setSearchingCareer] = useState<string | null>(null);
   const [compareQueue, setCompareQueue] = useState<string[]>([]);
+  const [homeExplanation, setHomeExplanation] = useState<CareerRecommendation | null>(null);
   const [comparingTitles, setComparingTitles] = useState(false);
   const trendingRef = useRef<HTMLElement | null>(null);
   const trendingFetched = useRef(false);
@@ -248,7 +251,8 @@ export function HomePage() {
           >
             <div className="mb-6 border-y-4 border-double border-black bg-[#f9f8f7]/95 p-4 text-left">
               <div className="font-[JetBrains_Mono] text-[10px] uppercase tracking-widest">{passport ? 'Your living career map' : 'Start with guidance'}</div>
-              {passport && recommendations ? <><div className="mt-3 grid grid-cols-3 gap-2">{recommendations.recommendations.slice(0,3).map(item=><div key={item.occupationId} className="border border-black/10 bg-white p-2"><div className="font-[Playfair_Display] text-sm leading-tight">{occupationById.get(item.occupationId)?.title}</div><div className="mt-1 font-[JetBrains_Mono] text-lg">{item.totalScore}</div></div>)}</div>{pathways[0]&&<p className="mt-3 font-[Inter] text-xs">Active pathway readiness · <strong>{pathways[0].gapReport.readiness}</strong></p>}<button onClick={()=>navigate('/recommendations')} className="mt-3 min-h-11 w-full bg-black px-4 py-3 font-[Inter] text-sm text-white">Open my career landscape →</button></>:<><p className="mt-2 font-[Inter] text-sm text-black/60">Assess your signals, compare transparent matches, and chart three grounded routes.</p><button onClick={()=>navigate('/onboarding')} className="mt-3 min-h-11 w-full bg-black px-4 py-3 font-[Inter] text-sm text-white">Chart my pathway →</button></>}
+              {passport && recommendations ? <><div className="mt-3 grid grid-cols-3 gap-2">{recommendations.recommendations.slice(0,3).map(item=><button key={item.occupationId} onClick={()=>setHomeExplanation(item)} className="min-h-11 border border-black/10 bg-white p-2 text-left hover:border-black" aria-label={`Explain ${occupationById.get(item.occupationId)?.title} score ${item.totalScore}`}><div className="font-[Playfair_Display] text-sm leading-tight">{occupationById.get(item.occupationId)?.title}</div><div className="mt-1 font-[JetBrains_Mono] text-lg">{item.totalScore}</div><div className="font-[Inter] text-[9px] underline">Why?</div></button>)}</div>{pathways[0]&&<button onClick={()=>navigate(`/pathway/${pathways[0].occupationId}`)} className="mt-3 min-h-11 font-[Inter] text-xs underline">Active pathway readiness · <strong>{pathways[0].gapReport.readiness}</strong> · explain</button>}<button onClick={()=>navigate('/recommendations')} className="mt-3 min-h-11 w-full bg-black px-4 py-3 font-[Inter] text-sm text-white">Open my career landscape →</button></>:<><p className="mt-2 font-[Inter] text-sm text-black/60">Assess your signals, compare transparent matches, and chart three grounded routes.</p><button onClick={()=>navigate('/onboarding')} className="mt-3 min-h-11 w-full bg-black px-4 py-3 font-[Inter] text-sm text-white">Chart my pathway →</button></>}
+              {homeExplanation && passport && <WhyPanel recommendation={homeExplanation} segment={passport.segment} onClose={()=>setHomeExplanation(null)}/>}
             </div>
             <MagnifierSearch
               onSearchComplete={handleSearchComplete}

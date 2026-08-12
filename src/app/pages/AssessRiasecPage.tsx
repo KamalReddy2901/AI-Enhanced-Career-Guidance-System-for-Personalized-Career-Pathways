@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 import { StickFigure } from "../components/StickFigure";
 import { RiasecHexagon } from "../components/guidance/RiasecHexagon";
+import { WhyPanel, type ScoreEvidence } from "../components/guidance/WhyPanel";
 import {
   RIASEC_ITEMS,
   scoreRiasec,
@@ -27,6 +28,7 @@ export function AssessRiasecPage() {
   const [result, setResult] = useState<ReturnType<typeof scoreRiasec> | null>(
     null,
   );
+  const [why, setWhy] = useState<ScoreEvidence | null>(null);
   const item = RIASEC_ITEMS[index];
   const itemText = riasecItemText(lang, index, item.text);
   const responseLabels = lang === "hi" ? ["बिल्कुल नहीं", "पसंद नहीं", "तटस्थ", "पसंद", "बहुत पसंद"] : lang === "te" ? ["అస్సలు కాదు", "నచ్చదు", "తటస్థం", "నచ్చుతుంది", "చాలా ఇష్టం"] : ["Not for me", "Dislike", "Neutral", "Like", "Love it"];
@@ -53,10 +55,11 @@ export function AssessRiasecPage() {
           <RiasecHexagon scores={result} />
           <div className="mb-6 grid grid-cols-3 gap-2">
             {Object.entries(result).map(([key, value]) => (
-              <div key={key} className="border border-black/10 p-3 text-center">
+              <button key={key} onClick={()=>{const dimensionItems=RIASEC_ITEMS.filter(item=>item.dimension===key);setWhy({title:`Why ${key} is ${value}`,eyebrow:"Interest evidence desk",summary:"This score reflects only your six responses in this RIASEC work-activity family.",method:"Each response is recorded from 1 to 5. The six-item total is shifted from the minimum and normalized to 0–100: (sum − 6) ÷ 24 × 100.",items:dimensionItems.map((item,itemIndex)=>({label:`Response ${itemIndex+1} · ${answers[item.id]??0}/5`,value:((answers[item.id]??1)-1)*25,detail:item.text})),source:"36-item RIASEC work-activity inventory"})}} className="min-h-11 border border-black/10 p-3 text-center hover:border-black" aria-label={`Explain ${key} score ${value}`}>
                 <div className="font-[JetBrains_Mono] text-xs">{key}</div>
                 <div className="text-2xl font-[Playfair_Display]">{value}</div>
-              </div>
+                <div className="font-[Inter] text-[10px] underline">Why?</div>
+              </button>
             ))}
           </div>
           <p className="mb-2 font-[JetBrains_Mono] text-sm">
@@ -75,6 +78,7 @@ export function AssessRiasecPage() {
           >
             Back to assessment desk
           </button>
+          {why && <WhyPanel evidence={why} onClose={()=>setWhy(null)}/>}
         </div>
       </AssessmentShell>
     );

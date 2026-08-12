@@ -10,6 +10,7 @@ import { sounds } from "../utils/sounds";
 import { useT } from "../i18n";
 import { valueItemText } from "../i18n/assessmentItems";
 import { speak } from "../utils/voice";
+import { WhyPanel, type ScoreEvidence } from "../components/guidance/WhyPanel";
 export function AssessValuesPage() {
   const navigate = useNavigate();
   const { passport, updatePassport } = useGuidance();
@@ -21,6 +22,7 @@ export function AssessValuesPage() {
   const [result, setResult] = useState<ReturnType<typeof scoreValues> | null>(
     null,
   );
+  const [why, setWhy] = useState<ScoreEvidence | null>(null);
   const choice = VALUE_CHOICES[i];
   const choose = (side: "left" | "right") => {
     const next = { ...answers, [choice.id]: side };
@@ -61,7 +63,7 @@ export function AssessValuesPage() {
               {Object.entries(result)
                 .sort(([, a], [, b]) => b - a)
                 .map(([key, value]) => (
-                  <div key={key}>
+                  <button key={key} className="block min-h-11 w-full text-left" onClick={()=>{const selected=VALUE_CHOICES.filter(choice=>choice[answers[choice.id]??"left"].dimension===key);setWhy({title:`Why ${key} is ${value}`,eyebrow:"Work-values evidence desk",summary:`You selected ${selected.length} choices associated with ${key} across 15 forced-choice pairs.`,method:"Each selected side adds one count to its value dimension. Counts are divided by all 15 choices and normalized so the six displayed dimensions sum to exactly 100.",items:selected.map((choice,index)=>({label:`Selected evidence ${index+1}`,detail:choice[answers[choice.id]??"left"].label})),source:"15-pair deterministic work-values sorter"})}} aria-label={`Explain ${key} score ${value}`}>
                     <div className="flex justify-between font-[JetBrains_Mono] text-xs uppercase">
                       <span>{key}</span>
                       <span>{value}</span>
@@ -72,7 +74,8 @@ export function AssessValuesPage() {
                         style={{ width: `${value}%` }}
                       />
                     </div>
-                  </div>
+                    <div className="mt-1 font-[Inter] text-[10px] underline">Why this score?</div>
+                  </button>
                 ))}
             </div>
             <p className="mt-6 text-sm font-[Inter] text-black/60">
@@ -84,6 +87,7 @@ export function AssessValuesPage() {
             >
               {c.back}
             </button>
+            {why && <WhyPanel evidence={why} onClose={()=>setWhy(null)}/>}
           </div>
         ) : (
           <div className="max-w-xl mx-auto">

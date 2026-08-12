@@ -13,6 +13,7 @@ import { RiasecHexagon } from '../components/guidance/RiasecHexagon';
 import { addSkillEvidence, calculateCompleteness } from '../engine/skillProfile';
 import type { SkillClaim } from '../engine/types';
 import { logProgress } from '../services/guidanceDb';
+import { WhyPanel, type ScoreEvidence } from '../components/guidance/WhyPanel';
 
 export function PassportPage() {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ export function PassportPage() {
   const [expandedEvidence, setExpandedEvidence] = useState<string | null>(null);
   const [validating, setValidating] = useState<SkillClaim | null>(null);
   const [editingConstraints, setEditingConstraints] = useState(false);
+  const [scoreEvidence, setScoreEvidence] = useState<ScoreEvidence | null>(null);
 
   if (!passport) {
     return (
@@ -248,10 +250,10 @@ export function PassportPage() {
                 <RiasecHexagon scores={passport.riasec} compact />
                 <div className="grid grid-cols-2 gap-2 text-xs font-[JetBrains_Mono]">
                   {Object.entries(passport.riasec).map(([key, val]) => (
-                    <div key={key} className="flex justify-between">
+                    <button key={key} className="flex min-h-11 w-full items-center justify-between hover:underline" onClick={()=>setScoreEvidence({title:`Why ${key} is ${val}`,eyebrow:'Interest evidence desk',summary:'This is the normalized result saved from your six responses in this RIASEC family.',method:'Six 1–5 responses are summed and normalized to 0–100: (sum − 6) ÷ 24 × 100.',items:[{label:`Saved ${key} score`,value:val,detail:'Retake the inventory to inspect and update the underlying item responses.'}],source:'Career Passport · RIASEC assessment'})}>
                       <span>{key}:</span>
                       <span>{val}</span>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -272,10 +274,10 @@ export function PassportPage() {
                 <div className="font-[Inter] text-sm font-semibold mb-2">Aptitude Scores</div>
                 <div className="grid grid-cols-2 gap-2 text-xs font-[JetBrains_Mono]">
                   {Object.entries(passport.aptitude).map(([key, val]) => (
-                    <div key={key} className="flex justify-between">
+                    <button key={key} className="flex min-h-11 w-full items-center justify-between hover:underline" onClick={()=>setScoreEvidence({title:`Why ${key} is ${val}`,eyebrow:'Aptitude evidence desk',summary:'This saved result combines six questions in this aptitude dimension with the shared capped timing bonus.',method:'round(100 × correct ÷ 6) + min(10, round(10 × time remaining ÷ total time)), capped at 100.',items:[{label:`Saved ${key} score`,value:val,detail:'Retake the screener to inspect current item-level accuracy and timing evidence.'}],source:'Career Passport · five-minute aptitude screener'})}>
                       <span>{key}:</span>
                       <span>{val}</span>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -298,10 +300,10 @@ export function PassportPage() {
                   {Object.entries(passport.values)
                     .sort(([, a], [, b]) => b - a)
                     .map(([key, val]) => (
-                      <div key={key} className="flex justify-between">
+                      <button key={key} className="flex min-h-11 w-full items-center justify-between hover:underline" onClick={()=>setScoreEvidence({title:`Why ${key} is ${val}`,eyebrow:'Work-values evidence desk',summary:'This is the normalized share of forced choices associated with this work value.',method:'Each selected side contributes one count. Counts are divided by 15 and apportioned so all six values sum to exactly 100.',items:[{label:`Saved ${key} score`,value:val,detail:'Retake the sorter to inspect and update the underlying selected statements.'}],source:'Career Passport · 15-pair work-values sorter'})}>
                         <span>{key}:</span>
                         <span>{val}</span>
-                      </div>
+                      </button>
                     ))}
                 </div>
               </div>
@@ -358,6 +360,7 @@ export function PassportPage() {
         </div>
       </div>
       {validating && <SkillValidationDialog claim={validating} onClose={()=>setValidating(null)} onValidate={evidence=>{updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');const skills=previous.skills.map(claim=>claim.skillId===validating.skillId?addSkillEvidence(claim,evidence):claim);const next={...previous,skills};next.completeness=calculateCompleteness(next);return next});if(user?.id)void logProgress(user.id,'skill_validated',{skillId:validating.skillId,evidence});sounds.success();setValidating(null)}}/>}
+      {scoreEvidence && <WhyPanel evidence={scoreEvidence} onClose={()=>setScoreEvidence(null)}/>}
     </div>
   );
 }
