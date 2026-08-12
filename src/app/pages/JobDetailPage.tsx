@@ -15,11 +15,8 @@ import { useApp } from '../context/AppContext';
 import { useFavorites } from '../hooks/useFavorites';
 import {
   streamChat, getRelatedCareers, getLearnMoreResources, getWorkLifeBalance, getGoodBadUgly,
-  QuotaExceededError, ChatDailyCapError,
   type RelatedCareer, type LearnMoreResources, type WorkLifeBalance, type GoodBadUgly
 } from '../services/ai';
-import { usePaywallContext } from '../context/PaywallContext';
-import { useUsage } from '../context/UsageContext';
 import { toast } from 'sonner';
 import { renderMarkdown } from '../utils/markdown';
 import { downloadDossierPDF } from '../utils/pdfExport';
@@ -79,8 +76,6 @@ export function JobDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentJob, setCurrentJob, searchJobAI, addToHistory, setRefinementCount, setComparisonJob } = useApp();
-  const { triggerPaywall } = usePaywallContext();
-  const { hasUnlimitedAskai } = useUsage();
   const { addFavorite, removeFavorite, isFavorite } = useFavorites();
   const { preferences } = usePreferences();
   const [activeTimeline, setActiveTimeline] = useState<'week' | 'quarter' | 'year'>(preferences.defaultView);
@@ -238,13 +233,9 @@ export function JobDetailPage() {
       addToHistory(fresh);
       toast.success('Fresh dossier generated!');
     } catch (error) {
-      if (error instanceof QuotaExceededError) {
-        triggerPaywall('Career Dossier', error.detail);
-      } else {
-        toast.error('Regeneration failed', {
-          description: error instanceof Error ? error.message : 'Please try again',
-        });
-      }
+      toast.error('Regeneration failed', {
+        description: error instanceof Error ? error.message : 'Please try again',
+      });
     } finally {
       setIsRegenerating(false);
     }
@@ -293,11 +284,7 @@ export function JobDetailPage() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       toast.success(`Now viewing: ${title}`);
     } catch (err) {
-      if (err instanceof QuotaExceededError) {
-        triggerPaywall('Career Dossier', err.detail);
-      } else {
-        toast.error('Failed to load career');
-      }
+      toast.error('Failed to load career');
     } finally {
       setExploringRelated(null);
     }
@@ -334,23 +321,15 @@ export function JobDetailPage() {
         });
       }
     } catch (error) {
-      if (error instanceof ChatDailyCapError) {
-        toast.error("We're sorry, the servers are very busy right now. Please try again tomorrow.");
-        setChatMessages(prev => prev.slice(0, -1));
-      } else if (error instanceof QuotaExceededError) {
-        triggerPaywall('AI Chat', error.detail);
-        setChatMessages(prev => prev.slice(0, -1)); // remove empty assistant message
-      } else {
-        toast.error('Chat error');
-        setChatMessages(prev => {
-          const msgs = [...prev];
-          msgs[msgs.length - 1] = {
-            role: 'assistant',
-            text: `Sorry, I encountered an error. ${error instanceof Error ? error.message : 'Please try again.'}`
-          };
-          return msgs;
-        });
-      }
+      toast.error('Chat error');
+      setChatMessages(prev => {
+        const msgs = [...prev];
+        msgs[msgs.length - 1] = {
+          role: 'assistant',
+          text: `Sorry, I encountered an error. ${error instanceof Error ? error.message : 'Please try again.'}`
+        };
+        return msgs;
+      });
     } finally {
       setIsStreaming(false);
     }
@@ -1239,7 +1218,7 @@ export function JobDetailPage() {
                       <Sparkles size={12} className="text-black/25" />
                     </h3>
                     <p className="font-[Inter] text-black/40" style={{ fontSize: '0.7rem' }}>
-                      {hasUnlimitedAskai ? '∞ Unlimited Ask AI perk active' : '1 credit per question'}
+                      Ask AI chat is included
                     </p>
                   </div>
                 </div>

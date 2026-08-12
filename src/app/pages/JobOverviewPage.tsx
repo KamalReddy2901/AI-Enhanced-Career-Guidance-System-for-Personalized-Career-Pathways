@@ -4,8 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Check, RefreshCw, ArrowRight, ChevronLeft, Sparkles, Loader2, Zap } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
-import { refineJobDescription, QuotaExceededError } from '../services/ai';
-import { usePaywallContext } from '../context/PaywallContext';
+import { refineJobDescription } from '../services/ai';
 import { toast } from 'sonner';
 
 export function JobOverviewPage() {
@@ -32,8 +31,6 @@ export function JobOverviewPage() {
 
   if (!currentJob) return null;
 
-  const { triggerPaywall } = usePaywallContext();
-
   const handleConfirm = async () => {
     if (!currentJob) return;
     // If this is already a full dossier (has fullDescription), go straight to detail
@@ -52,11 +49,7 @@ export function JobOverviewPage() {
       toast.success('Dossier ready!', { id: tid });
       navigate('/job/detail');
     } catch (error) {
-      if (error instanceof QuotaExceededError) {
-        triggerPaywall('Career Dossier', error.detail);
-      } else {
-        toast.error('Failed to generate dossier — please try again', { id: tid });
-      }
+      toast.error('Failed to generate dossier — please try again', { id: tid });
       setIsLoadingFull(false);
     }
   };
@@ -83,12 +76,8 @@ export function JobOverviewPage() {
       setRefinementText('');
       setShowRefinement(false);
     } catch (error) {
-      if (error instanceof QuotaExceededError) {
-        triggerPaywall('AI Refinement', error.detail);
-      } else {
-        console.error('Refinement failed:', error);
-        toast.error('AI refinement failed — please try again');
-      }
+      console.error('Refinement failed:', error);
+      toast.error('AI refinement failed — please try again');
     } finally {
       setIsRefining(false);
     }

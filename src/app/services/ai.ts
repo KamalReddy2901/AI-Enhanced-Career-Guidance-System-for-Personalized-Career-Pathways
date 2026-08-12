@@ -49,26 +49,6 @@ function rotateToNextKey(): boolean {
   allKeysExhausted = true; return false;
 }
 
-// ─── Quota exceeded error (thrown when worker returns 402) ─────
-export type CreditErrorDetail = { creditsRemaining: number; creditCost: number; plan: string };
-
-export class QuotaExceededError extends Error {
-  public detail: CreditErrorDetail;
-  constructor(detail: CreditErrorDetail) {
-    super('Insufficient credits');
-    this.name = 'QuotaExceededError';
-    this.detail = detail;
-  }
-}
-
-// Thrown when worker returns 429 CHAT_DAILY_CAP (unlimited perk abuse protection)
-export class ChatDailyCapError extends Error {
-  constructor() {
-    super('Daily Ask AI limit reached');
-    this.name = 'ChatDailyCapError';
-  }
-}
-
 export function getApiKey(): string { return getActiveKey(); }
 export function setApiKey(_key: string) { /* no-op: proxy handles keys */ }
 export function hasApiKey(): boolean {
@@ -197,10 +177,6 @@ export async function callGroq(
 
     const response = await fetch(`${AI_PROXY_URL}/ai`, { method: 'POST', signal, headers, body: JSON.stringify(body) });
 
-    if (response.status === 402) {
-      const errData = await response.json().catch(() => ({})) as { detail?: CreditErrorDetail };
-      throw new QuotaExceededError(errData.detail ?? { creditsRemaining: 0, creditCost: 0, plan: 'free' });
-    }
     if (!response.ok) {
       const err = await response.json().catch(() => ({})) as { error?: string };
       throw new Error(err?.error ?? `AI service error: ${response.status}`);
@@ -282,10 +258,6 @@ export async function callGroqStreaming(
     if (jwt) headers['Authorization'] = `Bearer ${jwt}`;
     const body = { messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], temperature, max_tokens: maxTokens, stream: true, response_format: { type: 'json_object' } };
     const response = await fetch(`${AI_PROXY_URL}/ai`, { method: 'POST', signal, headers, body: JSON.stringify(body) });
-    if (response.status === 402) {
-      const errData = await response.json().catch(() => ({})) as { detail?: CreditErrorDetail };
-      throw new QuotaExceededError(errData.detail ?? { creditsRemaining: 0, creditCost: 0, plan: 'free' });
-    }
     if (!response.ok) { const err = await response.json().catch(() => ({})) as { error?: string }; throw new Error(err?.error ?? `AI error: ${response.status}`); }
     return readStream(response);
   }
@@ -374,14 +346,6 @@ Formatting rules:
       headers,
       body: JSON.stringify({ messages: apiMessages, temperature: 0.7, max_tokens: 1024, stream: true }),
     });
-    if (response.status === 429) {
-      const errData = await response.json().catch(() => ({})) as { code?: string };
-      if (errData.code === 'CHAT_DAILY_CAP') throw new ChatDailyCapError();
-    }
-    if (response.status === 402) {
-      const errData = await response.json().catch(() => ({})) as { detail?: CreditErrorDetail };
-      throw new QuotaExceededError(errData.detail ?? { creditsRemaining: 0, creditCost: 0, plan: 'free' });
-    }
     if (!response.ok) { const err = await response.json().catch(() => ({})) as { error?: string }; throw new Error(err?.error ?? `AI error: ${response.status}`); }
     yield* readStream(response);
     return;

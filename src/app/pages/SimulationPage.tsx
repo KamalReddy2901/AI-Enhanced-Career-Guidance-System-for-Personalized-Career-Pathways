@@ -5,8 +5,7 @@ import { ChevronLeft, Clock, ArrowRight, RotateCcw, CheckCircle2, XCircle, Spark
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import { generateSimulation, type SimulationScenario } from '../data/simulations';
-import { generateSimulationAI, generateSimulationSummary, QuotaExceededError } from '../services/ai';
-import { usePaywallContext } from '../context/PaywallContext';
+import { generateSimulationAI, generateSimulationSummary } from '../services/ai';
 import { downloadAssessmentPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
@@ -62,8 +61,6 @@ export function SimulationPage() {
   const [aiSummary, setAiSummary] = useState('');
   const [loadingSummary, setLoadingSummary] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const { triggerPaywall } = usePaywallContext();
 
   const simResultKey = (title: string) => `sim_result_${title.toLowerCase().replace(/\s+/g, '_')}`;
 
@@ -122,13 +119,9 @@ export function SimulationPage() {
       setScenarios(formatted);
       if (!skipCache) toast.success('Simulation ready!');
     } catch (error) {
-      if (error instanceof QuotaExceededError) {
-        triggerPaywall('Simulation', error.detail);
-      } else {
-        console.error('AI simulation generation failed:', error);
-        toast.error('AI failed - using template scenarios');
-        setScenarios(generateSimulation(currentJob.title));
-      }
+      console.error('AI simulation generation failed:', error);
+      toast.error('AI failed - using template scenarios');
+      setScenarios(generateSimulation(currentJob.title));
     } finally {
       clearInterval(interval);
       setIsLoadingScenarios(false);

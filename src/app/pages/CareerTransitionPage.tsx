@@ -2,8 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, Loader2, ChevronDown, ChevronUp, CheckCircle, XCircle, AlertTriangle, ArrowLeftRight, ExternalLink, Download, Share2, Clock, X, Zap, Pencil } from 'lucide-react';
-import { getCareerTransition, getQuickDescription, getJobSuggestions, type CareerTransitionPlan, QuotaExceededError } from '../services/ai';
-import { usePaywallContext } from '../context/PaywallContext';
+import { getCareerTransition, getQuickDescription, getJobSuggestions, type CareerTransitionPlan } from '../services/ai';
 import { useAuth } from '../context/AuthContext';
 import { JOB_TITLES } from '../data/jobs';
 import { StickFigure } from '../components/StickFigure';
@@ -66,8 +65,6 @@ export function CareerTransitionPage() {
   });
   const [showTransitionHistory, setShowTransitionHistory] = useState(false);
 
-  const { triggerPaywall } = usePaywallContext();
-
   // AI suggestions for "from" field
   useEffect(() => {
     if (!fromFocused || fromCareer.length < 2) { setFromSuggestions([]); return; }
@@ -127,11 +124,7 @@ export function CareerTransitionPage() {
       });
     } catch (err) {
       if ((err as Error).name === 'AbortError') return;
-      if (err instanceof QuotaExceededError) {
-        triggerPaywall('Career Transition', err.detail);
-      } else {
-        setError((err as Error).message || 'Failed to generate transition plan.');
-      }
+      setError((err as Error).message || 'Failed to generate transition plan.');
     } finally {
       setLoading(false);
     }

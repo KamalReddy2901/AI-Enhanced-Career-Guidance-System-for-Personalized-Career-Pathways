@@ -4,8 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ArrowRight, Sparkles, Loader2, RotateCcw, MessageSquare, ListChecks } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
-import { getQuizResults, getQuizFromScratch, QuotaExceededError, type QuizResult } from '../services/ai';
-import { usePaywallContext } from '../context/PaywallContext';
+import { getQuizResults, getQuizFromScratch, type QuizResult } from '../services/ai';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
@@ -111,8 +110,6 @@ export function QuizPage() {
     }
   };
 
-  const { triggerPaywall } = usePaywallContext();
-
   const submitQuiz = async (finalAnswers: Record<string, string>) => {
     setIsLoading(true);
     try {
@@ -120,13 +117,9 @@ export function QuizPage() {
       setResult(quizResult);
       sounds.reveal();
     } catch (error) {
-      if (error instanceof QuotaExceededError) {
-        triggerPaywall('Career Quiz', error.detail);
-      } else {
-        toast.error('Failed to analyze quiz results', {
-          description: error instanceof Error ? error.message : 'Please try again',
-        });
-      }
+      toast.error('Failed to analyze quiz results', {
+        description: error instanceof Error ? error.message : 'Please try again',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -154,11 +147,7 @@ export function QuizPage() {
       setResult(quizResult);
       sounds.reveal();
     } catch (error) {
-      if (error instanceof QuotaExceededError) {
-        triggerPaywall('Career Quiz', error.detail);
-      } else {
-        toast.error('Failed to analyze your description', { description: error instanceof Error ? error.message : 'Please try again' });
-      }
+      toast.error('Failed to analyze your description', { description: error instanceof Error ? error.message : 'Please try again' });
     } finally {
       setIsLoading(false);
     }

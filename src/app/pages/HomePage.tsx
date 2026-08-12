@@ -8,8 +8,7 @@ import { StickFigure } from '../components/StickFigure';
 
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
-import { getTrendingCareers, type TrendingCareers, QuotaExceededError } from '../services/ai';
-import { usePaywallContext } from '../context/PaywallContext';
+import { getTrendingCareers, type TrendingCareers } from '../services/ai';
 import { toast } from 'sonner';
 
 function ScrollSectionNav({ sections }: { sections: Array<{ id: string; label: string }> }) {
@@ -79,8 +78,6 @@ export function HomePage() {
   const trendingRef = useRef<HTMLElement | null>(null);
   const trendingFetched = useRef(false);
 
-  const { triggerPaywall } = usePaywallContext();
-
   const handleQuickCompare = (title: string) => {
     setCompareQueue(prev => {
       if (prev.includes(title)) return prev.filter(t => t !== title);
@@ -101,11 +98,7 @@ export function HomePage() {
       setComparisonJob(1, jB);
       navigate('/compare');
     } catch (err) {
-      if (err instanceof QuotaExceededError) {
-        triggerPaywall('Career Comparison', err.detail);
-      } else {
-        toast.error('Failed to load careers for comparison');
-      }
+      toast.error('Failed to load careers for comparison');
     } finally {
       setComparingTitles(false);
       setCompareQueue([]);
@@ -170,16 +163,6 @@ export function HomePage() {
       setRefinementCount(0);
       toast.dismiss('dossier-load');
       navigate('/job');
-    } catch (err) {
-      if (err instanceof QuotaExceededError) {
-        triggerPaywall('Career Dossier', err.detail);
-      } else {
-        const jobData = searchJob(jobTitle);
-        setCurrentJob(jobData);
-        setRefinementCount(0);
-        toast.dismiss('dossier-load');
-        navigate('/job');
-      }
     } finally {
       setSearchingCareer(null);
     }

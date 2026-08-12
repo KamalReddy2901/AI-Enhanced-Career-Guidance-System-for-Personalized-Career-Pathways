@@ -4,8 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, Sparkles, Loader2, ArrowRight, RotateCcw } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
-import { getMoodMatches, QuotaExceededError, type MoodMatch } from '../services/ai';
-import { usePaywallContext } from '../context/PaywallContext';
+import { getMoodMatches, type MoodMatch } from '../services/ai';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
@@ -14,8 +13,6 @@ export function MoodMatchPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { searchJobAI, setCurrentJob, addToHistory, setRefinementCount } = useApp();
-  const { triggerPaywall } = usePaywallContext();
-
   const [mood, setMood] = useState('');
   const [matches, setMatches] = useState<MoodMatch[]>([]);
   const [loading, setLoading] = useState(false);
@@ -47,11 +44,7 @@ export function MoodMatchPage() {
       setRefinementCount(0);
       navigate('/job');
     } catch (err) {
-      if (err instanceof QuotaExceededError) {
-        triggerPaywall('Mood Match', err.detail);
-      } else {
-        toast.error('Could not load career');
-      }
+      toast.error('Could not load career');
     } finally {
       setExploringTitle(null);
     }

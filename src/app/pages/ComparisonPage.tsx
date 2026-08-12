@@ -9,10 +9,9 @@ import type { JobData } from '../data/jobs';
 import { useAuth } from '../context/AuthContext';
 import {
   getWorkLifeBalance, getLearnMoreResources, getInterviewDifficulty, getGrowthOutlook,
-  getJobSuggestions, getQuickDescription, getComparisonInsight, QuotaExceededError,
+  getJobSuggestions, getQuickDescription, getComparisonInsight,
   type WorkLifeBalance, type LearnMoreResources, type InterviewDifficulty,
 } from '../services/ai';
-import { usePaywallContext } from '../context/PaywallContext';
 import { downloadComparisonPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
@@ -73,7 +72,6 @@ export function ComparisonPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { history, comparisonJobs, setComparisonJob, searchJobAI, addToHistory } = useApp();
-  const { triggerPaywall } = usePaywallContext();
   const [showPicker, setShowPicker] = useState<0 | 1 | null>(null);
   const [customTitle, setCustomTitle] = useState('');
   const [loadingSlot, setLoadingSlot] = useState<0 | 1 | null>(null);
@@ -118,11 +116,7 @@ export function ComparisonPage() {
       searchJobAI(paramA)
         .then(job => { setComparisonJob(0, job); addToHistory(job); })
         .catch((err) => {
-          if (err instanceof QuotaExceededError) {
-            triggerPaywall('Career Comparison', err.detail);
-          } else {
-            toast.error(`Failed to load "${paramA}"`);
-          }
+          toast.error(`Failed to load "${paramA}"`);
         })
         .finally(() => setLoadingSlot(prev => prev === 0 ? null : prev));
     }
@@ -131,11 +125,7 @@ export function ComparisonPage() {
       searchJobAI(paramB)
         .then(job => { setComparisonJob(1, job); addToHistory(job); })
         .catch((err) => {
-          if (err instanceof QuotaExceededError) {
-            triggerPaywall('Career Comparison', err.detail);
-          } else {
-            toast.error(`Failed to load "${paramB}"`);
-          }
+          toast.error(`Failed to load "${paramB}"`);
         })
         .finally(() => setLoadingSlot(prev => prev === 1 ? null : prev));
     }
@@ -197,12 +187,11 @@ export function ComparisonPage() {
       .finally(() => setDescBLoading(false));
   }, [jobB?.title]);
 
-  // handleCompare — explicitly triggered by button, charges 'compare' credits
+  // handleCompare — explicitly triggered by button
   const handleCompare = useCallback(async () => {
     if (!jobA || !jobB) return;
     setCompareLoading(true);
     try {
-      // getComparisonInsight charges 'compare' (2 credits)
       const ins = await getComparisonInsight(jobA.title, descA, jobB.title, descB);
       setInsight(ins);
       setCompareTriggered(true);
@@ -228,15 +217,11 @@ export function ComparisonPage() {
         .catch(() => {})
         .finally(() => setGrowthLoading(false));
     } catch (err) {
-      if (err instanceof QuotaExceededError) {
-        triggerPaywall('Career Comparison', err.detail);
-      } else {
-        toast.error('Failed to run comparison — please try again.');
-      }
+      toast.error('Failed to run comparison — please try again.');
     } finally {
       setCompareLoading(false);
     }
-  }, [jobA, jobB, descA, descB, triggerPaywall]);
+  }, [jobA, jobB, descA, descB]);
 
   const handleShare = () => {
     const params = new URLSearchParams();
@@ -271,11 +256,7 @@ export function ComparisonPage() {
       sounds.addCompare();
       setCustomTitle('');
     } catch (err) {
-      if (err instanceof QuotaExceededError) {
-        triggerPaywall('Career Comparison', err.detail);
-      } else {
-        toast.error('Failed to load career');
-      }
+      toast.error('Failed to load career');
     } finally {
       setLoadingSlot(null);
     }

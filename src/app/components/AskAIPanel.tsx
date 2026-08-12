@@ -1,10 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { MessageCircle, X, Send, Loader2, Lock, Zap } from 'lucide-react';
-import { streamChat, QuotaExceededError } from '../services/ai';
-import { usePaywallContext } from '../context/PaywallContext';
-import { useUsage } from '../context/UsageContext';
+import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
+import { streamChat } from '../services/ai';
 import { renderMarkdown } from '../utils/markdown';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
@@ -29,19 +26,12 @@ export function AskAIPanel({ contextTitle, contextBody }: AskAIPanelProps) {
   const [chatInput, setChatInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const { triggerPaywall } = usePaywallContext();
-  const { plan } = useUsage();
-  const isLocked = plan !== 'pro';
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
   const handleAsk = async () => {
-    if (isLocked) {
-      triggerPaywall('Ask AI');
-      return;
-    }
     if (!chatInput.trim() || isStreaming) return;
     const userMsg = chatInput.trim();
     setChatInput('');
@@ -64,20 +54,15 @@ export function AskAIPanel({ contextTitle, contextBody }: AskAIPanelProps) {
         });
       }
     } catch (error) {
-      if (error instanceof QuotaExceededError) {
-        triggerPaywall('AI Chat', error.detail);
-        setChatMessages(prev => prev.slice(0, -1));
-      } else {
-        toast.error('Chat error');
-        setChatMessages(prev => {
-          const msgs = [...prev];
-          msgs[msgs.length - 1] = {
-            role: 'assistant',
-            text: `Sorry, I encountered an error. ${error instanceof Error ? error.message : 'Please try again.'}`
-          };
-          return msgs;
-        });
-      }
+      toast.error('Chat error');
+      setChatMessages(prev => {
+        const msgs = [...prev];
+        msgs[msgs.length - 1] = {
+          role: 'assistant',
+          text: `Sorry, I encountered an error. ${error instanceof Error ? error.message : 'Please try again.'}`
+        };
+        return msgs;
+      });
     } finally {
       setIsStreaming(false);
     }
@@ -99,8 +84,6 @@ export function AskAIPanel({ contextTitle, contextBody }: AskAIPanelProps) {
       >
         <MessageCircle size={16} />
         Ask AI
-        {isLocked && <Lock size={12} className="text-white/50" />}
-        {!isLocked && <span className="text-white/50 text-xs">Pro</span>}
       </motion.button>
 
       {/* Chat overlay */}
@@ -127,7 +110,7 @@ export function AskAIPanel({ contextTitle, contextBody }: AskAIPanelProps) {
                     Ask AI
                   </h3>
                   <span className="font-[Inter] text-black/30" style={{ fontSize: '0.7rem' }}>
-                    about {contextTitle}
+                    included on every page
                   </span>
                 </div>
                 <button
@@ -138,72 +121,46 @@ export function AskAIPanel({ contextTitle, contextBody }: AskAIPanelProps) {
                 </button>
               </div>
 
-              {/* Messages or Locked state */}
+              {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                {isLocked ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center py-8 gap-5">
-                    <div className="w-14 h-14 rounded-full bg-black/5 flex items-center justify-center">
-                      <Lock size={24} className="text-black/30" />
-                    </div>
-                    <div>
-                      <p className="font-[Playfair_Display] text-black mb-1.5" style={{ fontSize: '1.05rem' }}>Pro feature</p>
-                      <p className="font-[Inter] text-black/40 leading-relaxed" style={{ fontSize: '0.82rem' }}>
-                        Ask AI lets you have a conversation about any career page — salaries, day-to-day work, skills needed, and more.
-                      </p>
-                    </div>
-                    <Link
-                      to="/pricing"
-                      onClick={() => setIsOpen(false)}
-                      className="inline-flex items-center gap-2 bg-black text-white px-5 py-2.5 font-[Inter] hover:bg-black/80 transition-colors"
-                      style={{ fontSize: '0.85rem' }}
-                    >
-                      <Zap size={14} className="fill-current" />
-                      Unlock with Pro
-                    </Link>
+                {chatMessages.length === 0 && (
+                  <div className="text-center py-8">
+                    <MessageCircle size={28} className="text-black/15 mx-auto mb-3" />
+                    <p className="font-[Inter] text-black/30" style={{ fontSize: '0.82rem' }}>
+                      Ask anything about this page's content
+                    </p>
                   </div>
-                ) : (
-                  <>
-                    {chatMessages.length === 0 && (
-                      <div className="text-center py-8">
-                        <MessageCircle size={28} className="text-black/15 mx-auto mb-3" />
-                        <p className="font-[Inter] text-black/30" style={{ fontSize: '0.82rem' }}>
-                          Ask anything about this page's content
-                        </p>
-                      </div>
-                    )}
-                    {chatMessages.map((msg, i) => (
-                      <motion.div
-                        key={i}
-                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                      >
-                        <div
-                          className={`max-w-[85%] px-4 py-3 font-[Inter] whitespace-pre-wrap ${
-                            msg.role === 'user'
-                              ? 'bg-black text-white'
-                              : 'bg-black/5 text-black/70 border border-black/10'
-                          }`}
-                          style={{ fontSize: '0.85rem', lineHeight: 1.6 }}
-                        >
-                          {msg.text ? (
-                            msg.role === 'assistant' ? renderMarkdown(msg.text) : msg.text
-                          ) : (
-                            <span className="flex items-center gap-2 text-black/40">
-                              <Loader2 size={14} className="animate-spin" />
-                              Thinking...
-                            </span>
-                          )}
-                        </div>
-                      </motion.div>
-                    ))}
-                    <div ref={chatEndRef} />
-                  </>
                 )}
+                {chatMessages.map((msg, i) => (
+                  <motion.div
+                    key={i}
+                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <div
+                      className={`max-w-[85%] px-4 py-3 font-[Inter] whitespace-pre-wrap ${
+                        msg.role === 'user'
+                          ? 'bg-black text-white'
+                          : 'bg-black/5 text-black/70 border border-black/10'
+                      }`}
+                      style={{ fontSize: '0.85rem', lineHeight: 1.6 }}
+                    >
+                      {msg.text ? (
+                        msg.role === 'assistant' ? renderMarkdown(msg.text) : msg.text
+                      ) : (
+                        <span className="flex items-center gap-2 text-black/40">
+                          <Loader2 size={14} className="animate-spin" />
+                          Thinking...
+                        </span>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+                <div ref={chatEndRef} />
               </div>
 
               {/* Input */}
-              {!isLocked && (
               <div className="border-t border-black/10 p-4 shrink-0">
                 <div className="flex gap-2">
                   <input
@@ -226,7 +183,6 @@ export function AskAIPanel({ contextTitle, contextBody }: AskAIPanelProps) {
                   </motion.button>
                 </div>
               </div>
-              )}
             </motion.div>
           </motion.div>
         )}

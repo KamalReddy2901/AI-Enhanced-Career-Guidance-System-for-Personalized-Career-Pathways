@@ -20,6 +20,7 @@
 # production
 /build
 /dist
+/Lvl-up/
 
 # misc
 .DS_Store

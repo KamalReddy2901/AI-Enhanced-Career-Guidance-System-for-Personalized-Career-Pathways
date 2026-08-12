@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Clock, Home, FlaskConical, Scale, Settings, Brain, Menu, X, Map, ArrowLeftRight, Zap } from 'lucide-react';
+import { Clock, Home, FlaskConical, Scale, Settings, Brain, Menu, X, Map, ArrowLeftRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
-import { useUsage } from '../context/UsageContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { StickFigure } from './StickFigure';
 import { sounds } from '../utils/sounds';
@@ -13,7 +12,6 @@ export function Navbar() {
   const location = useLocation();
   const { history } = useApp();
   const { user } = useAuth();
-  const { creditsRemaining } = useUsage();
   const { favorites } = useFavorites();
   const [menuOpen, setMenuOpen] = useState(false);
   const isHome = location.pathname === '/';
@@ -82,31 +80,6 @@ export function Navbar() {
             {navLinks.map(link => (
               <NavLink key={link.to} {...link} />
             ))}
-
-            {/* Credits badge */}
-            {user && (
-              <Link
-                to="/pricing"
-                className="ml-1.5 flex items-center gap-1 px-2.5 py-1 bg-black/5 hover:bg-black/8 text-black/80 transition-all rounded-full"
-                style={{ fontSize: '0.72rem' }}
-                title={`${creditsRemaining} credits remaining`}
-              >
-                <Zap size={11} className="text-black fill-black" />
-                <span className="font-[JetBrains_Mono] font-semibold">
-                  {creditsRemaining}
-                </span>
-              </Link>
-            )}
-
-            {!user && (
-              <Link
-                to="/pricing"
-                className="ml-1 flex items-center gap-1 px-2.5 py-1 border border-black/15 text-black/55 hover:border-black/30 hover:text-black transition-all font-[Inter]"
-                style={{ fontSize: '0.72rem' }}
-              >
-                Pricing
-              </Link>
-            )}
 
           </div>
 

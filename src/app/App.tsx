@@ -3,8 +3,6 @@ import { RouterProvider } from 'react-router';
 import { router } from './routes';
 import { AppProvider } from './context/AppContext';
 import { AuthProvider } from './context/AuthContext';
-import { UsageProvider } from './context/UsageContext';
-import { PaywallProvider } from './context/PaywallContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 function PageFallback() {
@@ -28,13 +26,9 @@ export default function App() {
     <ErrorBoundary>
       <AuthProvider>
         <AppProvider>
-          <UsageProvider>
-            <PaywallProvider>
-              <Suspense fallback={<PageFallback />}>
-                <RouterProvider router={router} />
-              </Suspense>
-            </PaywallProvider>
-          </UsageProvider>
+          <Suspense fallback={<PageFallback />}>
+            <RouterProvider router={router} />
+          </Suspense>
         </AppProvider>
       </AuthProvider>
     </ErrorBoundary>

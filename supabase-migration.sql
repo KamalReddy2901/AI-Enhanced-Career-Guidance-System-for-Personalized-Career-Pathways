@@ -1,5 +1,6 @@
--- Run this SQL in your Supabase project's SQL Editor
--- (Project → SQL Editor → New query → paste & run)
+-- Legacy migration reference.
+-- The live app no longer uses credits, subscriptions, or payment flows.
+-- Keep this file only as historical Supabase schema context.
 
 -- Career history table
 create table if not exists public.career_history (

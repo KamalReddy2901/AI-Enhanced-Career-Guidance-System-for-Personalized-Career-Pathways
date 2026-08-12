@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { type JobData } from '../data/jobs';
-import { generateJobDataAI, generatePreliminaryAssessmentAI, clearAllCache, QuotaExceededError } from '../services/ai';
+import { generateJobDataAI, generatePreliminaryAssessmentAI, clearAllCache } from '../services/ai';
 import { fetchRemoteHistory, saveHistoryEntry, clearRemoteHistory } from '../services/supabase';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
@@ -141,7 +141,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         relevantForCompanies: aiData.relevantForCompanies,
       };
     } catch (error) {
-      if (error instanceof QuotaExceededError) throw error; // let pages handle paywall
       console.error('AI generation failed:', error);
       toast.error('AI generation failed — please try again', {
         description: error instanceof Error ? error.message : 'Unknown error',
