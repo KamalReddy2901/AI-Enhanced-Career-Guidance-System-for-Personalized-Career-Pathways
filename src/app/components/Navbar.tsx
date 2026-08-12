@@ -71,10 +71,7 @@ export function Navbar() {
               }
             }}
           >
-            <span className="flex flex-col leading-none">
-              <BrandMark compact className="transition-opacity group-hover:opacity-70" />
-              <span className="font-mono-ui text-[8px] tracking-[.14em] text-[var(--ink-soft)]">EST. 2025 — VOL. II</span>
-            </span>
+            <BrandMark compact className="transition-opacity group-hover:opacity-70" />
           </Link>
 
           {user ? <>
