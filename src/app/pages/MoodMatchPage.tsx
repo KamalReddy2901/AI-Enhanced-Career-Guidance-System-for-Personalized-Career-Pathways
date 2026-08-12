@@ -132,7 +132,7 @@ export function MoodMatchPage() {
                 <button
                   key={p}
                   onClick={() => { setMood(p); sounds.select(); }}
-                  className="font-[Inter] text-black/45 border border-black/10 px-3 py-1.5 hover:border-black/30 hover:text-black/65 transition-all text-left"
+                  className="font-[Inter] text-black/45 border border-black/10 px-3 py-1.5 hover:border-black/30 hover:text-black/65 transition-[color,background-color,border-color,opacity,transform,box-shadow] text-left"
                   style={{ fontSize: '0.78rem' }}
                 >
                   {p}
@@ -214,7 +214,7 @@ export function MoodMatchPage() {
                     <motion.button
                       onClick={() => handleExplore(match.title)}
                       disabled={exploringTitle !== null}
-                      className="shrink-0 flex items-center gap-1.5 border border-black/15 px-3 py-2 font-[Inter] text-black/50 hover:bg-black hover:text-white hover:border-black transition-all disabled:opacity-40"
+                      className="shrink-0 flex items-center gap-1.5 border border-black/15 px-3 py-2 font-[Inter] text-black/50 hover:bg-black hover:text-white hover:border-black transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-40"
                       style={{ fontSize: '0.75rem' }}
                       whileHover={{ scale: 1.02 }}
                     >

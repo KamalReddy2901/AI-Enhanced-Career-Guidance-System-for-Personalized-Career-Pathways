@@ -194,7 +194,7 @@ export function JobOverviewPage() {
           {refinementCount < 5 && !isLoadingFull && (
             <motion.button
               onClick={() => setShowRefinement(!showRefinement)}
-              className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3.5 px-6 hover:border-black/40 hover:text-black transition-all font-[Inter]"
+              className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3.5 px-6 hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
               style={{ fontSize: '0.88rem' }}
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}

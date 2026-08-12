@@ -170,7 +170,7 @@ export function HistoryPage() {
         >
           <button
             onClick={() => { setActiveTab('history'); sounds.pageFlip(); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 font-[Inter] transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 font-[Inter] transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
               activeTab === 'history'
                 ? 'bg-black text-white'
                 : 'text-black/50 hover:bg-black/5 hover:text-black'
@@ -192,7 +192,7 @@ export function HistoryPage() {
           </button>
           <button
             onClick={() => { setActiveTab('saved'); sounds.pageFlip(); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 font-[Inter] transition-all border-l-2 border-black/12 ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 font-[Inter] transition-[color,background-color,border-color,opacity,transform,box-shadow] border-l-2 border-black/12 ${
               activeTab === 'saved'
                 ? 'bg-black text-white'
                 : 'text-black/50 hover:bg-black/5 hover:text-black'
@@ -264,7 +264,7 @@ export function HistoryPage() {
                     return (
                     <motion.div
                       key={entry.id}
-                      className={`border border-black/10 hover:border-black/25 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.04)] transition-all group border-l-4 ${colorConfig.border}`}
+                      className={`border border-black/10 hover:border-black/25 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.04)] transition-[color,background-color,border-color,opacity,transform,box-shadow] group border-l-4 ${colorConfig.border}`}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.04 }}
@@ -401,7 +401,7 @@ export function HistoryPage() {
                     {favorites.map((entry, i) => (
                       <motion.div
                         key={entry.id}
-                        className="border-2 border-black/10 hover:border-black/20 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.05)] transition-all group"
+                        className="border-2 border-black/10 hover:border-black/20 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.05)] transition-[color,background-color,border-color,opacity,transform,box-shadow] group"
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, x: -20 }}

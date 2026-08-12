@@ -497,7 +497,7 @@ export function JobDetailPage() {
                         window.scrollTo({ top, behavior: "smooth" });
                       }
                     }}
-                    className={`shrink-0 px-2.5 py-1 font-[Inter] transition-all whitespace-nowrap ${
+                    className={`shrink-0 px-2.5 py-1 font-[Inter] transition-[color,background-color,border-color,opacity,transform,box-shadow] whitespace-nowrap ${
                       activeSection === section.id
                         ? "bg-black text-white"
                         : "text-black/40 hover:text-black/70 hover:bg-black/5"
@@ -586,7 +586,7 @@ export function JobDetailPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         title={company.name}
-                        className="flex items-center gap-1.5 border border-black/12 px-2 py-1 hover:border-black/30 hover:bg-black/3 transition-all group"
+                        className="flex items-center gap-1.5 border border-black/12 px-2 py-1 hover:border-black/30 hover:bg-black/3 transition-[color,background-color,border-color,opacity,transform,box-shadow] group"
                       >
                         <div className="w-4 h-4 flex items-center justify-center overflow-hidden shrink-0">
                           <img
@@ -624,7 +624,7 @@ export function JobDetailPage() {
                 <motion.button
                   onClick={handleRegenerate}
                   disabled={isRegenerating}
-                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all disabled:opacity-40 font-[Inter]"
+                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-40 font-[Inter]"
                   style={{ fontSize: "0.72rem" }}
                   whileHover={{ y: -1 }}
                 >
@@ -637,7 +637,7 @@ export function JobDetailPage() {
                 </motion.button>
                 <motion.button
                   onClick={handlePrint}
-                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all font-[Inter]"
+                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
                   style={{ fontSize: "0.72rem" }}
                   whileHover={{ y: -1 }}
                 >
@@ -646,7 +646,7 @@ export function JobDetailPage() {
                 </motion.button>
                 <motion.button
                   onClick={handleCompare}
-                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all font-[Inter]"
+                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
                   style={{ fontSize: "0.72rem" }}
                   whileHover={{ y: -1 }}
                 >
@@ -655,7 +655,7 @@ export function JobDetailPage() {
                 </motion.button>
                 <motion.button
                   onClick={toggleFavorite}
-                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all font-[Inter]"
+                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
                   style={{ fontSize: "0.72rem" }}
                   whileHover={{ y: -1 }}
                 >
@@ -668,7 +668,7 @@ export function JobDetailPage() {
                 </motion.button>
                 <motion.button
                   onClick={handleShare}
-                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all font-[Inter]"
+                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
                   style={{ fontSize: "0.72rem" }}
                   whileHover={{ y: -1 }}
                 >
@@ -892,7 +892,7 @@ export function JobDetailPage() {
             {currentJob.skills.map((skill, i) => (
               <motion.span
                 key={skill + i}
-                className="font-[Inter] text-black/60 border border-black/12 px-3 py-1.5 hover:bg-black hover:text-white hover:border-black transition-all cursor-default"
+                className="font-[Inter] text-black/60 border border-black/12 px-3 py-1.5 hover:bg-black hover:text-white hover:border-black transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-default"
                 style={{ fontSize: "0.82rem" }}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -1016,7 +1016,7 @@ export function JobDetailPage() {
               <button
                 key={tab.key}
                 onClick={() => setActiveTimeline(tab.key)}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 font-[Inter] transition-all ${
+                className={`flex-1 flex items-center justify-center gap-2 py-3 font-[Inter] transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                   activeTimeline === tab.key
                     ? "bg-black text-white"
                     : "text-black/50 hover:bg-black/5"
@@ -1458,7 +1458,7 @@ export function JobDetailPage() {
                       key={career.title}
                       onClick={() => handleExploreRelated(career.title)}
                       disabled={exploringRelated !== null}
-                      className="text-left border border-black/10 p-4 hover:border-black/25 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] transition-all group disabled:opacity-50"
+                      className="text-left border border-black/10 p-4 hover:border-black/25 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] transition-[color,background-color,border-color,opacity,transform,box-shadow] group disabled:opacity-50"
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1 + i * 0.05 }}
@@ -1598,7 +1598,7 @@ export function JobDetailPage() {
                       href={link.url}
                       target="_blank"
                       rel="noopener noreferrer sponsored"
-                      className="flex items-center gap-1.5 px-3 py-1.5 border border-black/12 hover:border-black/30 hover:shadow-sm transition-all font-[Inter] text-black/60 hover:text-black"
+                      className="flex items-center gap-1.5 px-3 py-1.5 border border-black/12 hover:border-black/30 hover:shadow-sm transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter] text-black/60 hover:text-black"
                       style={{ fontSize: "0.75rem" }}
                     >
                       <ExternalLink size={10} className="text-black/25" />
@@ -1643,7 +1643,7 @@ export function JobDetailPage() {
 
           <motion.button
             onClick={() => navigate("/interview-prep")}
-            className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-4 px-6 hover:border-black/40 hover:text-black transition-all font-[Inter]"
+            className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-4 px-6 hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
             style={{ fontSize: "0.88rem" }}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
@@ -1658,7 +1658,7 @@ export function JobDetailPage() {
               setShowChat(true);
               sounds.slide();
             }}
-            className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-4 px-6 hover:border-black/40 hover:text-black transition-all font-[Inter]"
+            className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-4 px-6 hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
             style={{ fontSize: "0.88rem" }}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
@@ -1675,7 +1675,7 @@ export function JobDetailPage() {
             onClick={() =>
               navigate(`/roadmap?job=${encodeURIComponent(currentJob.title)}`)
             }
-            className="flex items-center justify-center gap-2 border border-black/15 text-black/55 py-3 px-4 hover:border-black/35 hover:text-black transition-all font-[Inter]"
+            className="flex items-center justify-center gap-2 border border-black/15 text-black/55 py-3 px-4 hover:border-black/35 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
             style={{ fontSize: "0.85rem" }}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
@@ -1689,7 +1689,7 @@ export function JobDetailPage() {
                 `/career-transition?to=${encodeURIComponent(currentJob.title)}`,
               )
             }
-            className="flex items-center justify-center gap-2 border border-black/15 text-black/55 py-3 px-4 hover:border-black/35 hover:text-black transition-all font-[Inter]"
+            className="flex items-center justify-center gap-2 border border-black/15 text-black/55 py-3 px-4 hover:border-black/35 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
             style={{ fontSize: "0.85rem" }}
             aria-label="Plan a career transition into this role"
             whileHover={{ scale: 1.01 }}

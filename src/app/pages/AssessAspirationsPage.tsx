@@ -14,6 +14,7 @@ import { useVoiceStatus } from "../hooks/useVoiceStatus";
 import { hapticLight, hapticSuccess } from '../utils/haptic';
 import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 import { TextReveal } from '../motion/TextReveal';
+import { Mic, Volume2 } from 'lucide-react';
 
 const questions = {
   en: [
@@ -149,7 +150,7 @@ export function AssessAspirationsPage() {
                 className="min-h-11 min-w-11 border border-black/20"
                 aria-label="Read question aloud"
               >
-                🔊
+                <Volume2 size={16} aria-hidden="true" />
               </button>
             </div>
             <textarea
@@ -174,7 +175,7 @@ export function AssessAspirationsPage() {
                 }
                 className="min-h-11 border border-black/20 px-4 py-3 font-[Inter]"
               >
-                🎙 {c.dictate}
+                <Mic size={16} aria-hidden="true" /> {c.dictate}
               </button>
             </div>
             {busy && <div className="rule-top mt-5 flex items-center gap-3 py-4" role="status" aria-live="polite"><StickFigure pose="working" size={44} /><span className="font-mono-ui text-xs uppercase tracking-widest">{c.typesetting}<span className="button-loading-dots ml-2" aria-hidden="true"><i/><i/><i/></span></span></div>}

@@ -116,7 +116,7 @@ export function InterviewPrepPage() {
                     sounds.download();
                     toast.success('Downloading interview prep PDF…');
                   }}
-                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all font-[Inter]"
+                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
                   style={{ fontSize: '0.72rem' }}
                   whileHover={{ y: -1 }}
                 >
@@ -125,7 +125,7 @@ export function InterviewPrepPage() {
                 </motion.button>
                 <motion.button
                   onClick={handleRegenerateAll}
-                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all font-[Inter]"
+                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
                   style={{ fontSize: '0.72rem' }}
                   whileHover={{ y: -1 }}
                 >

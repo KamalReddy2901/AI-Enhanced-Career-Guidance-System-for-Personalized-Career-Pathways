@@ -16,6 +16,7 @@ import { hapticLight, hapticSuccess } from '../utils/haptic';
 import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 import { TextReveal } from '../motion/TextReveal';
 import { ScoreBar } from '../components/guidance/ScoreBar';
+import { Volume2 } from 'lucide-react';
 
 const TOTAL_SECONDS = 300;
 const FORM_STORAGE_KEY = "cc_guidance_aptitude_form";
@@ -148,7 +149,7 @@ export function AssessAptitudePage() {
             <div className="h-1 origin-left bg-black transition-transform duration-300" style={{ transform: `scaleX(${(index + 1) / questions.length})` }} />
           </div>
           {question.dimension === "spatial" && <SpatialSketch id={question.id} />}
-          <div className="mb-6 flex items-start gap-3"><h2 className="flex-1 text-2xl font-[Playfair_Display]">{localized.prompt}</h2><button onClick={()=>speak(`${localized.prompt}. ${localized.options.join(". ")}`,locale)} className="min-h-11 min-w-11 border border-black/20" aria-label="Read question aloud">🔊</button></div>
+          <div className="mb-6 flex items-start gap-3"><h2 className="flex-1 text-2xl font-[Playfair_Display]">{localized.prompt}</h2><button onClick={()=>speak(`${localized.prompt}. ${localized.options.join(". ")}`,locale)} className="grid min-h-11 min-w-11 place-items-center border border-black/20" aria-label="Read question aloud"><Volume2 size={16} aria-hidden="true" /></button></div>
           {voiceStatus.message && <p className="-mt-4 mb-4 font-[Inter] text-xs text-black/55" role="status" aria-live="polite">{voiceStatus.message}</p>}
           <div className="space-y-3">
             {localized.options.map((option, optionIndex) => (

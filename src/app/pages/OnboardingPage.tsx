@@ -239,7 +239,7 @@ function SegmentStep({ segment, setSegment }: { segment: Segment | null; setSegm
           <button
             key={value}
             onClick={() => { setSegment(value); sounds.click(); }}
-            className={`p-6 border-2 rounded-sm text-left transition-all hover:border-black/40 ${
+            className={`p-6 border-2 rounded-sm text-left transition-[color,background-color,border-color,opacity,transform,box-shadow] hover:border-black/40 ${
               segment === value ? 'border-black bg-black/5' : 'border-black/10'
             }`}
           >
@@ -288,7 +288,7 @@ function GoalsStep({ goals, setGoals }: { goals: string[]; setGoals: (g: string[
           <button
             key={goal}
             onClick={() => toggleGoal(goal)}
-            className={`px-4 py-2 border rounded-full font-[Inter] text-sm transition-all ${
+            className={`px-4 py-2 border rounded-full font-[Inter] text-sm transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
               goals.includes(goal) ? 'bg-black text-white border-black' : 'border-black/20 hover:border-black/40'
             }`}
           >

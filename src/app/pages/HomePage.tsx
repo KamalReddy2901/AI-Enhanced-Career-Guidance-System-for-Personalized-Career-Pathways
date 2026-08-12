@@ -50,7 +50,7 @@ function ScrollSectionNav({ sections }: { sections: Array<{ id: string; label: s
           transition={{ duration: 0.15 }}
         >
           <span
-            className={`font-[Inter] uppercase tracking-[0.12em] transition-all duration-200 select-none ${
+            className={`font-[Inter] uppercase tracking-[0.12em] transition-[color,background-color,border-color,opacity,transform,box-shadow] duration-200 select-none ${
               activeId === s.id ? 'text-black/60' : 'text-black/0 group-hover:text-black/30'
             }`}
             style={{ fontSize: '0.58rem' }}
@@ -58,7 +58,7 @@ function ScrollSectionNav({ sections }: { sections: Array<{ id: string; label: s
             {s.label}
           </span>
           <div
-            className={`rounded-full transition-all duration-300 ${
+            className={`rounded-full transition-[color,background-color,border-color,opacity,transform,box-shadow] duration-300 ${
               activeId === s.id
                 ? 'w-2 h-2 bg-black'
                 : 'w-1.5 h-1.5 bg-black/20 group-hover:bg-black/50'
@@ -287,7 +287,7 @@ export function HomePage() {
             <div className="flex flex-wrap justify-center gap-2">
                   <motion.button
                     onClick={() => navigate('/quiz')}
-                    className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
+                    className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                     style={{ fontSize: '0.72rem' }}
                     whileHover={{ y: -1 }}
                   >
@@ -296,7 +296,7 @@ export function HomePage() {
                   </motion.button>
                   <motion.button
                     onClick={() => navigate('/mood')}
-                    className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
+                    className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                     style={{ fontSize: '0.72rem' }}
                     whileHover={{ y: -1 }}
                   >
@@ -305,7 +305,7 @@ export function HomePage() {
                   </motion.button>
                   <motion.button
                     onClick={() => navigate('/career-transition')}
-                    className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
+                    className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                     style={{ fontSize: '0.72rem' }}
                     whileHover={{ y: -1 }}
                   >
@@ -314,7 +314,7 @@ export function HomePage() {
                   </motion.button>
                   <motion.button
                     onClick={() => navigate('/roadmap')}
-                    className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
+                    className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                     style={{ fontSize: '0.72rem' }}
                     whileHover={{ y: -1 }}
                   >
@@ -323,7 +323,7 @@ export function HomePage() {
                   </motion.button>
               <motion.button
                 onClick={() => navigate('/compare')}
-                className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
+                className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                 style={{ fontSize: '0.72rem' }}
                 whileHover={{ y: -1 }}
               >
@@ -804,7 +804,7 @@ export function HomePage() {
                     href="https://kamrede.page/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 border border-black/30 text-black/60 py-2 px-5 font-[Inter] hover:border-black hover:text-black transition-all"
+                    className="inline-flex items-center gap-2 border border-black/30 text-black/60 py-2 px-5 font-[Inter] hover:border-black hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                     style={{ fontSize: '0.82rem' }}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -843,7 +843,7 @@ export function HomePage() {
               href="https://github.com/KamalReddy2901/AI-Enhanced-Career-Guidance-System-for-Personalized-Career-Pathways/issues/new"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 border-2 border-black text-black py-2.5 px-6 font-[Inter] hover:bg-black hover:text-white transition-all"
+              className="inline-flex items-center gap-2 border-2 border-black text-black py-2.5 px-6 font-[Inter] hover:bg-black hover:text-white transition-[color,background-color,border-color,opacity,transform,box-shadow]"
               style={{ fontSize: '0.85rem' }}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}

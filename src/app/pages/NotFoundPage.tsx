@@ -43,7 +43,7 @@ export function NotFoundPage() {
           </motion.button>
           <motion.button
             onClick={() => navigate('/history')}
-            className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-6 font-[Inter] hover:border-black/40 hover:text-black transition-all"
+            className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-6 font-[Inter] hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow]"
             style={{ fontSize: '0.88rem' }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}

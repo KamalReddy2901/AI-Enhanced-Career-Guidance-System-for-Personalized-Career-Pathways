@@ -153,7 +153,7 @@ export function CareerTransitionPage() {
           {transitionHistory.length > 0 && (
             <button
               onClick={() => setShowTransitionHistory(true)}
-              className="mt-3 inline-flex items-center gap-1.5 font-[Inter] text-black/35 hover:text-black/60 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all"
+              className="mt-3 inline-flex items-center gap-1.5 font-[Inter] text-black/35 hover:text-black/60 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
               style={{ fontSize: '0.72rem' }}
             >
               <Clock size={11} />
@@ -215,7 +215,7 @@ export function CareerTransitionPage() {
                   const tempD = fromDesc; setFromDesc(toDesc); setToDesc(tempD);
                   sounds.click();
                 }}
-                className="p-2 text-black/20 hover:text-black/50 hover:bg-black/5 transition-all rounded-full"
+                className="p-2 text-black/20 hover:text-black/50 hover:bg-black/5 transition-[color,background-color,border-color,opacity,transform,box-shadow] rounded-full"
                 title="Swap careers"
                 aria-label="Swap from and to careers"
               >
@@ -669,7 +669,7 @@ export function CareerTransitionPage() {
               <div className="flex items-center justify-center gap-3 pb-4">
                 <motion.button
                   onClick={() => { downloadTransitionPDF(plan); sounds.download(); toast.success('Downloading transition PDF…'); }}
-                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all font-[Inter]"
+                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
                   style={{ fontSize: '0.72rem' }}
                   whileHover={{ y: -1 }}
                 >
@@ -681,7 +681,7 @@ export function CareerTransitionPage() {
                     const url = `${window.location.origin}/career-transition?from=${encodeURIComponent(plan.fromTitle)}&to=${encodeURIComponent(plan.toTitle)}`;
                     navigator.clipboard.writeText(url).then(() => toast.success('Transition link copied!')).catch(() => toast.error('Could not copy link'));
                   }}
-                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all font-[Inter]"
+                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
                   style={{ fontSize: '0.72rem' }}
                   whileHover={{ y: -1 }}
                 >

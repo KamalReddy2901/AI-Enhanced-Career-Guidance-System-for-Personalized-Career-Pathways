@@ -215,7 +215,7 @@ export function AuthPage() {
                     if (error) toast.error(error);
                   }}
                   disabled={isSubmitting}
-                  className="w-full flex items-center justify-center gap-3 border-2 border-black/12 py-3 font-[Inter] text-black/70 hover:border-black/30 hover:text-black transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-3 border-2 border-black/12 py-3 font-[Inter] text-black/70 hover:border-black/30 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{ fontSize: '0.9rem' }}
                   whileHover={{ scale: 1.005 }}
                   whileTap={{ scale: 0.995 }}

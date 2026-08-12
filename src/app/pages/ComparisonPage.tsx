@@ -304,7 +304,7 @@ export function ComparisonPage() {
           {compareHistory.length > 0 && (
             <button
               onClick={() => setShowCompareHistory(true)}
-              className="mt-3 inline-flex items-center gap-1.5 font-[Inter] text-black/35 hover:text-black/60 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all mx-auto"
+              className="mt-3 inline-flex items-center gap-1.5 font-[Inter] text-black/35 hover:text-black/60 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] mx-auto"
               style={{ fontSize: '0.72rem' }}
             >
               <Scale size={11} />

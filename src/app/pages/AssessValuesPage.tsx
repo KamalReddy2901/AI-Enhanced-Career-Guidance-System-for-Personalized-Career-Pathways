@@ -16,6 +16,7 @@ import { hapticLight, hapticSuccess } from '../utils/haptic';
 import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 import { TextReveal } from '../motion/TextReveal';
 import { ScoreBar } from '../components/guidance/ScoreBar';
+import { Volume2 } from 'lucide-react';
 export function AssessValuesPage() {
   const navigate = useNavigate();
   const { passport, updatePassport } = useGuidance();
@@ -106,7 +107,7 @@ export function AssessValuesPage() {
                   <div className="mt-4 text-xl font-[Playfair_Display]">
                   {valueItemText(lang, i, side, choice[side].label)}
                   </div>
-                <span onClick={(event)=>{event.stopPropagation();speak(valueItemText(lang,i,side,choice[side].label),locale)}} className="mt-3 inline-block min-h-11 py-3 text-sm" role="button" aria-label="Read choice aloud">🔊 {c.read}</span>
+                <span onClick={(event)=>{event.stopPropagation();speak(valueItemText(lang,i,side,choice[side].label),locale)}} className="mt-3 inline-flex min-h-11 items-center gap-2 py-3 text-sm" role="button" aria-label="Read choice aloud"><Volume2 size={16} aria-hidden="true" /> {c.read}</span>
               </button>
               ))}
             </div>

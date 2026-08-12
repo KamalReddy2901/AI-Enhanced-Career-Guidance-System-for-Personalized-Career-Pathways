@@ -428,7 +428,7 @@ export function CareerRoadmapPage() {
               <div className="flex items-center justify-center gap-3 pb-4">
                 <motion.button
                   onClick={() => { downloadRoadmapPDF(roadmap); sounds.download(); toast.success('Downloading roadmap PDF…'); }}
-                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all font-[Inter]"
+                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
                   style={{ fontSize: '0.72rem' }}
                   whileHover={{ y: -1 }}
                 >
@@ -440,7 +440,7 @@ export function CareerRoadmapPage() {
                     const url = `${window.location.origin}/roadmap?job=${encodeURIComponent(roadmap.title)}`;
                     navigator.clipboard.writeText(url).then(() => toast.success('Roadmap link copied!')).catch(() => toast.error('Could not copy link'));
                   }}
-                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-all font-[Inter]"
+                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
                   style={{ fontSize: '0.72rem' }}
                   whileHover={{ y: -1 }}
                 >

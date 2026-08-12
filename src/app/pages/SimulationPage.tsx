@@ -447,7 +447,7 @@ export function SimulationPage() {
                       key={i}
                       onClick={() => handleChoiceSelect(i)}
                       disabled={selectedChoice !== null}
-                      className={`w-full text-left p-5 border-2 transition-all font-[Inter] ${
+                      className={`w-full text-left p-5 border-2 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter] ${
                         !isRevealed
                           ? 'border-black/12 hover:border-black/30 hover:bg-black/2'
                           : isCorrect
@@ -667,7 +667,7 @@ export function SimulationPage() {
                 {(aiSummary || !loadingSummary) && (
                   <motion.button
                     onClick={handleDownloadPDF}
-                    className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-6 hover:border-black/40 hover:text-black transition-all font-[Inter] whitespace-nowrap"
+                    className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-6 hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter] whitespace-nowrap"
                     style={{ fontSize: '0.85rem' }}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -678,7 +678,7 @@ export function SimulationPage() {
                 )}
                 <motion.button
                   onClick={handleRestart}
-                  className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-6 hover:border-black/40 hover:text-black transition-all font-[Inter] whitespace-nowrap"
+                  className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-6 hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter] whitespace-nowrap"
                   style={{ fontSize: '0.85rem' }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -689,7 +689,7 @@ export function SimulationPage() {
                 {scenarios.length > 0 && (
                   <motion.button
                     onClick={handleRedo}
-                    className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-6 hover:border-black/40 hover:text-black transition-all font-[Inter] whitespace-nowrap"
+                    className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-6 hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter] whitespace-nowrap"
                     style={{ fontSize: '0.85rem' }}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -714,7 +714,7 @@ export function SimulationPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 max-w-md mx-auto">
                 <motion.button
                   onClick={() => navigate(`/roadmap?job=${encodeURIComponent(currentJob!.title)}`)}
-                  className="flex items-center justify-center gap-2 border border-black/15 text-black/55 py-2.5 px-4 hover:border-black/35 hover:text-black transition-all font-[Inter]"
+                  className="flex items-center justify-center gap-2 border border-black/15 text-black/55 py-2.5 px-4 hover:border-black/35 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
                   style={{ fontSize: '0.82rem' }}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
@@ -724,7 +724,7 @@ export function SimulationPage() {
                 </motion.button>
                 <motion.button
                   onClick={() => navigate(`/career-transition?to=${encodeURIComponent(currentJob!.title)}`)}
-                  className="flex items-center justify-center gap-2 border border-black/15 text-black/55 py-2.5 px-4 hover:border-black/35 hover:text-black transition-all font-[Inter]"
+                  className="flex items-center justify-center gap-2 border border-black/15 text-black/55 py-2.5 px-4 hover:border-black/35 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
                   style={{ fontSize: '0.82rem' }}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}

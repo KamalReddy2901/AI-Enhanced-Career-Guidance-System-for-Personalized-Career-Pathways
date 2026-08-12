@@ -103,8 +103,8 @@ export function PassportPage() {
     <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8 pb-24">
       <GuidanceEntrance className="max-w-4xl mx-auto">
         <div className="passport-toolbar mb-4 flex justify-end gap-2 print:hidden">
-          <button onClick={() => window.print()} className="min-h-11 border-2 border-black px-4 font-[JetBrains_Mono] text-xs uppercase">Print passport</button>
-          <button onClick={() => void navigator.clipboard?.writeText(window.location.href)} className="min-h-11 bg-black px-4 font-[JetBrains_Mono] text-xs uppercase text-white">Copy share link</button>
+          <button onClick={() => window.print()} data-testid="passport-print-btn" className="min-h-11 border-2 border-black px-4 font-[JetBrains_Mono] text-xs uppercase">Print passport</button>
+          <button onClick={() => void navigator.clipboard?.writeText(window.location.href)} data-testid="passport-share-btn" className="min-h-11 bg-black px-4 font-[JetBrains_Mono] text-xs uppercase text-white">Copy share link</button>
         </div>
         {/* Header "Identity Card" */}
         <div className="career-passport-document relative bg-white p-6 mb-6 md:p-10">

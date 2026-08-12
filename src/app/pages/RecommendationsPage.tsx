@@ -20,6 +20,7 @@ import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 import { TextReveal } from '../motion/TextReveal';
 import { useReveal } from '../motion/useReveal';
 import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Volume2 } from 'lucide-react';
 
 type LandscapeFilter = 'all' | 'safe' | 'stretch' | 'frontier';
 const landscapeGroup = (group: RecommendationGroup): Exclude<LandscapeFilter, 'all'> =>
@@ -157,7 +158,7 @@ function RecommendationCard({
           className="min-h-11 min-w-11"
           aria-label={`Read ${occupation.title} aloud`}
         >
-          🔊
+          <Volume2 size={16} aria-hidden="true" />
         </button>
       </div>
       <div className="mt-4 flex items-end justify-between">

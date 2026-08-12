@@ -304,7 +304,7 @@ export function QuizPage() {
                   <motion.button
                     key={option}
                     onClick={() => handleAnswer(option)}
-                    className="w-full text-left p-5 border-2 border-black/10 hover:border-black/30 hover:bg-black/2 transition-all font-[Inter]"
+                    className="w-full text-left p-5 border-2 border-black/10 hover:border-black/30 hover:bg-black/2 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
                     style={{ fontSize: '0.9rem' }}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -397,7 +397,7 @@ export function QuizPage() {
                     return (
                     <motion.div
                       key={career.title}
-                      className={`border-2 border-black/10 p-5 hover:border-black/25 transition-all ${accentClass}`}
+                      className={`border-2 border-black/10 p-5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] ${accentClass}`}
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.1 }}
@@ -458,7 +458,7 @@ export function QuizPage() {
               <div className="flex gap-3 mt-8">
                 <motion.button
                   onClick={handleRestart}
-                  className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-6 hover:border-black/40 hover:text-black transition-all font-[Inter] flex-1"
+                  className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-6 hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter] flex-1"
                   style={{ fontSize: '0.85rem' }}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}

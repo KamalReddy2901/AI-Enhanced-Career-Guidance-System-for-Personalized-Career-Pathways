@@ -349,7 +349,7 @@ export function OnboardingTour() {
                   <button
                     key={i}
                     onClick={() => setStep(i)}
-                    className={`rounded-full transition-all ${
+                    className={`rounded-full transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                       i === step ? 'w-4 h-1.5 bg-black' : 'w-1.5 h-1.5 bg-black/15 hover:bg-black/30'
                     }`}
                     aria-label={`Go to step ${i + 1}`}

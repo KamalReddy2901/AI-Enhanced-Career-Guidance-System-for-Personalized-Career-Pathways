@@ -21,6 +21,7 @@ import { useVoiceStatus } from "../hooks/useVoiceStatus";
 import { hapticLight, hapticSuccess } from '../utils/haptic';
 import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 import { TextReveal } from '../motion/TextReveal';
+import { Volume2 } from 'lucide-react';
 
 export function AssessRiasecPage() {
   const navigate = useNavigate();
@@ -115,7 +116,7 @@ export function AssessRiasecPage() {
             className="min-h-11 min-w-11 border border-black/20"
             aria-label="Read question aloud"
           >
-            🔊
+            <Volume2 size={16} aria-hidden="true" />
           </button>
         </div>
         {voiceStatus.message && <p className="-mt-5 mb-5 font-[Inter] text-xs text-black/55" role="status" aria-live="polite">{voiceStatus.message}</p>}

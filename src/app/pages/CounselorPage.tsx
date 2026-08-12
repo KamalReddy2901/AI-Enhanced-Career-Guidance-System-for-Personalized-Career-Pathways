@@ -141,6 +141,7 @@ export function CounselorPage() {
             <button
               onClick={() => void ask()}
               disabled={busy}
+              data-testid="counselor-send-btn"
               className="min-h-11 bg-black px-5 py-3 font-[Inter] text-white disabled:opacity-40"
             >
               <Send size={15}/>{busy ? "Thinking…" : "Ask counselor"}
@@ -151,6 +152,7 @@ export function CounselorPage() {
                   .then(setInput)
                   .catch((voiceError) => setAnswer(voiceError instanceof Error ? voiceError.message : "Voice input is not supported on this browser."))
               }
+              data-testid="counselor-voice-input-btn"
               className="min-h-11 border border-black/20 px-4 py-3 font-[Inter]"
             >
               <Mic size={15}/> Speak
@@ -158,6 +160,7 @@ export function CounselorPage() {
             <button
               disabled={!answer}
               onClick={() => speak(answer, locale)}
+              data-testid="counselor-read-answer-btn"
               className="min-h-11 border border-black/20 px-4 py-3 font-[Inter] disabled:opacity-30"
             >
               <Volume2 size={15}/> Read

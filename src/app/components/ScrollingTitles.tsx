@@ -80,7 +80,7 @@ function ScrollRow({
           return (
             <span
               key={`${item.text}-${j}`}
-              className={`inline-block px-4 py-1 font-[Playfair_Display] whitespace-nowrap select-none transition-all duration-500 ${
+              className={`inline-block px-4 py-1 font-[Playfair_Display] whitespace-nowrap select-none transition-[color,background-color,border-color,opacity,transform,box-shadow] duration-500 ${
                 isHighlighted
                   ? 'text-black opacity-100 bg-amber-200/80 rounded px-3 py-0.5 scale-110'
                   : 'text-black/80'

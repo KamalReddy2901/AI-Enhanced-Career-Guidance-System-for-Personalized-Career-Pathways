@@ -339,7 +339,7 @@ export function SettingsPage() {
                       toast.success('Signed out');
                       navigate('/');
                     }}
-                    className="flex items-center gap-2 border border-black/15 px-4 py-2 font-[Inter] text-black/50 hover:text-black hover:border-black/30 transition-all"
+                    className="flex items-center gap-2 border border-black/15 px-4 py-2 font-[Inter] text-black/50 hover:text-black hover:border-black/30 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                     style={{ fontSize: '0.82rem' }}
                   >
                     <LogOut size={14} />
@@ -548,7 +548,7 @@ function ActionButton({
   return (
     <button
       onClick={onClick}
-      className={`w-full border border-black/10 p-4 hover:border-black/20 transition-all text-left group ${
+      className={`w-full border border-black/10 p-4 hover:border-black/20 transition-[color,background-color,border-color,opacity,transform,box-shadow] text-left group ${
         danger ? 'hover:border-red-200 hover:bg-red-50/30' : ''
       }`}
     >

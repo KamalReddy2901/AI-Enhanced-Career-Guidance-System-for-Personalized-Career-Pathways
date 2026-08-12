@@ -85,7 +85,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="flex gap-3 justify-center">
             <button
               onClick={this.handleGoHome}
-              className="px-5 py-2.5 border-2 border-black/20 font-[Inter] text-black/60 hover:border-black/50 hover:text-black transition-all"
+              className="px-5 py-2.5 border-2 border-black/20 font-[Inter] text-black/60 hover:border-black/50 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow]"
               style={{ fontSize: '0.85rem' }}
             >
               ← Go Home
