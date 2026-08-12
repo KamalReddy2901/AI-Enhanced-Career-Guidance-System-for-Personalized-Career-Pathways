@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Check, RefreshCw, ArrowRight, ChevronLeft, Sparkles, Loader2, Zap, Compass, Map, ArrowLeftRight, Brain, Scale } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
@@ -19,7 +19,8 @@ function JobSearchEmptyState() {
   const handleSearchComplete = useCallback(async (title: string) => {
     const job = await searchJobPreliminary(title);
     setCurrentJob(job);
-  }, [searchJobPreliminary, setCurrentJob]);
+    navigate('/job', { replace: true });
+  }, [searchJobPreliminary, setCurrentJob, navigate]);
 
   return (
     <div className="relative min-h-[80vh] overflow-hidden flex flex-col items-center justify-center px-6 py-24" data-testid="job-search-empty-state">
@@ -61,6 +62,7 @@ function JobSearchEmptyState() {
 
 export function JobOverviewPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { currentJob, setCurrentJob, refinementCount, setRefinementCount, searchJobAI, addToHistory } = useApp();
   const [showRefinement, setShowRefinement] = useState(false);
   const [refinementText, setRefinementText] = useState('');
@@ -68,6 +70,11 @@ export function JobOverviewPage() {
   const [isLoadingFull, setIsLoadingFull] = useState(false);
   const [description, setDescription] = useState(currentJob?.shortDescription || '');
   const [refinementHistory, setRefinementHistory] = useState<string[]>([]);
+  const isFreshSearch = searchParams.get('fresh') === '1';
+
+  useEffect(() => {
+    if (isFreshSearch) setCurrentJob(null);
+  }, [isFreshSearch, setCurrentJob]);
 
   useEffect(() => {
     if (currentJob) {
@@ -76,7 +83,7 @@ export function JobOverviewPage() {
   }, [currentJob]);
 
   // Show search state when no career selected (no more silent redirect)
-  if (!currentJob) return <JobSearchEmptyState />;
+  if (isFreshSearch || !currentJob) return <JobSearchEmptyState />;
 
   const handleConfirm = async () => {
     if (!currentJob) return;
@@ -136,7 +143,7 @@ export function JobOverviewPage() {
       <div className="relative z-10 max-w-3xl mx-auto px-6">
         {/* Back button */}
         <motion.button
-          onClick={() => navigate('/job')}
+          onClick={() => { setCurrentJob(null); navigate('/job?fresh=1'); }}
           className="flex items-center gap-1.5 text-black/40 hover:text-black transition-colors mb-8 font-[Inter]"
           style={{ fontSize: '0.82rem' }}
           initial={{ opacity: 0, x: -10 }}

@@ -143,7 +143,7 @@ export function SimulationPage() {
       </p>
       <button
         type="button"
-        onClick={() => navigate('/job')}
+        onClick={() => navigate('/job?fresh=1')}
         className="inline-flex items-center gap-2 rounded-full border-2 border-[var(--ink)] bg-[var(--ink)] px-6 py-3 font-mono-ui text-sm text-[var(--paper)] hover:opacity-80 transition-opacity"
         data-testid="simulation-explore-link"
       >
@@ -750,7 +750,7 @@ export function SimulationPage() {
                   </motion.button>
                 )}
                 <motion.button
-                  onClick={() => navigate('/job')}
+                  onClick={() => navigate('/job?fresh=1')}
                   className="flex items-center justify-center gap-2 bg-black text-white py-3 px-6 hover:bg-black/85 transition-colors font-[Inter] whitespace-nowrap"
                   style={{ fontSize: '0.85rem' }}
                   whileHover={{ scale: 1.02 }}

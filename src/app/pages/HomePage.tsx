@@ -242,9 +242,9 @@ export function HomePage() {
               </li>
             ))}
           </ol>
-          <p className="mx-auto mt-8 max-w-2xl text-center font-[Inter] text-sm leading-relaxed text-[var(--accent-news)] md:text-base">
-            Or feel free to explore any career you want in the <Link to="/job" className="font-semibold underline decoration-2 underline-offset-4 hover:opacity-70">Explore tab</Link>.<br />
-            Or talk to an AI counselor — open the <Link to="/counselor" className="font-semibold underline decoration-2 underline-offset-4 hover:opacity-70">Counselor tab</Link>.
+          <p className="mx-auto mt-8 max-w-2xl text-center font-[Inter] text-sm leading-relaxed text-[var(--ink-soft)] md:text-base">
+            Or feel free to explore any career you want in the <Link to="/job?fresh=1" className="font-semibold text-[var(--ink)] underline decoration-[var(--accent-news)] decoration-2 underline-offset-4 hover:text-[var(--accent-news)]">Explore tab</Link>.<br />
+            Or talk to an AI counselor — open the <Link to="/counselor" className="font-semibold text-[var(--ink)] underline decoration-[var(--accent-news)] decoration-2 underline-offset-4 hover:text-[var(--accent-news)]">Counselor tab</Link>.
           </p>
         </div>
       </section>

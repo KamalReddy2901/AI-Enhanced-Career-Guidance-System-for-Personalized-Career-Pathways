@@ -289,7 +289,7 @@ export function JobDetailPage() {
   }, [currentJob?.title]);
 
   if (!currentJob) {
-    navigate("/job");
+    navigate("/job?fresh=1");
     return null;
   }
 
@@ -535,7 +535,7 @@ export function JobDetailPage() {
       <div className="max-w-4xl mx-auto px-6">
         {/* Back */}
         <motion.button
-          onClick={() => navigate("/job")}
+            onClick={() => { setCurrentJob(null); navigate("/job?fresh=1"); }}
           className="flex items-center gap-1.5 text-black/40 hover:text-black transition-colors mb-8 font-[Inter] print:hidden"
           style={{ fontSize: "0.82rem" }}
           initial={{ opacity: 0, x: -10 }}

@@ -22,9 +22,7 @@ export function RootLayout() {
       // Ctrl/Cmd + K: Focus search
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        if (location.pathname !== '/job') {
-          navigate('/job');
-        }
+        navigate('/job?fresh=1');
         setTimeout(() => {
           const input = document.querySelector('input[placeholder*="job title"]') as HTMLInputElement;
           input?.focus();
@@ -66,7 +64,7 @@ export function RootLayout() {
         if (modals.length > 0) return;
 
         if (location.pathname === '/simulation') navigate('/job/detail');
-        else if (location.pathname === '/job/detail') navigate('/job');
+        else if (location.pathname === '/job/detail') navigate('/job?fresh=1');
         else if (location.pathname === '/job') navigate('/');
         else if (location.pathname !== '/') navigate('/');
       }

@@ -28,7 +28,7 @@ export function Navbar() {
 
   const navLinks = [
     { to: '/', icon: <Home size={12} />, label: t('home'), active: isHome },
-    { to: '/job', icon: <Compass size={12} />, label: t('explore'), active: ['/job','/quiz','/mood','/compare','/career-transition','/roadmap'].some(path => location.pathname.startsWith(path)) },
+    { to: '/job?fresh=1', icon: <Compass size={12} />, label: t('explore'), active: ['/job','/quiz','/mood','/compare','/career-transition','/roadmap'].some(path => location.pathname.startsWith(path)) },
     { to: '/counselor', icon: <MessageCircle size={12} />, label: t('counselor'), active: location.pathname === '/counselor' },
     ...user ? [
       {

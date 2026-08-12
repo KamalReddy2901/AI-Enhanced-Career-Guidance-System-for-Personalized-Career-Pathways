@@ -140,7 +140,7 @@ export function WordCloudMasthead({ passport, showLanding, onNavigate }: WordClo
               type="button"
               variant="ghost"
               data-testid="hero-explore-cta"
-              onClick={() => onNavigate('/job')}
+              onClick={() => onNavigate('/job?fresh=1')}
             >
               {t('homeExplore')}
             </Button>
