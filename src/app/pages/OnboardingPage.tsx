@@ -173,7 +173,7 @@ export function OnboardingPage() {
       </div>
 
       {/* Content */}
-      <AnimatePresence mode="wait"><motion.div key={currentStep} initial={{opacity:0,x:12}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-12}} transition={{duration:.2}} className="max-w-2xl mx-auto bg-white border border-black/10 p-8 rounded-sm">
+      <AnimatePresence mode="wait"><motion.div key={currentStep} initial={{opacity:0,x:32}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-32}} transition={{duration:.28}} className={`max-w-2xl mx-auto bg-white border border-black/10 p-8 ${currentStep === 'consent' ? 'consent-contract' : ''}`}>
         {currentStep === 'segment' && <SegmentStep segment={segment} setSegment={setSegment} />}
         {currentStep === 'goals' && <GoalsStep goals={goals} setGoals={setGoals} />}
         {currentStep === 'background' && <BackgroundStep education={education} setEducation={setEducation} experiences={experiences} setExperiences={setExperiences} />}
@@ -332,7 +332,7 @@ function BackgroundStep({ education, setEducation, experiences, setExperiences }
 
   return (
     <div>
-      <h2 className="text-3xl font-[Playfair_Display] text-black mb-2">{c.title}</h2>
+      <div className="label-caps">DPDP consent · clause sheet</div><h2 className="text-3xl font-[Playfair_Display] text-black mb-2">The Fine Print</h2>
       <p className="text-black/60 font-[Inter] mb-6">{c.intro}</p>
       
       <div className="mb-6">

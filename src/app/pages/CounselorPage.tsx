@@ -9,6 +9,8 @@ import {
 import { streamCounselorChat } from "../services/ai";
 import { useT } from "../i18n";
 import { listen, speak } from "../utils/voice";
+import { motion } from "motion/react";
+import { Mic, Send, Volume2 } from "lucide-react";
 
 const escalationPattern =
   /suicid|self.?harm|hopeless|depress|panic|abuse|forced|family conflict|cannot cope|खुदकुशी|आत्महत्या|निराश|जबरदस्ती|కృంగి|ఆత్మహత్య|బలవంత/i;
@@ -20,6 +22,7 @@ export function CounselorPage() {
   const [answer, setAnswer] = useState("");
   const [busy, setBusy] = useState(false);
   const [escalate, setEscalate] = useState(false);
+  const [lastQuestion, setLastQuestion] = useState("");
   const history = useMemo(
     () => [] as { role: "user" | "assistant"; text: string }[],
     [],
@@ -27,6 +30,7 @@ export function CounselorPage() {
   const ask = async () => {
     const question = input.trim();
     if (!question) return;
+    setLastQuestion(question);
     if (escalationPattern.test(question)) {
       setEscalate(true);
       setAnswer(
@@ -123,7 +127,9 @@ export function CounselorPage() {
             </p>
           </div>
         </header>
-        <div className="border border-black/10 bg-white p-6">
+        <div className="counselor-strip border border-black/10 bg-white p-6">
+          {lastQuestion && <motion.div initial={{y:12,opacity:0}} animate={{y:0,opacity:1}} className="mb-4 ml-auto max-w-[82%] rounded-2xl rounded-br-sm bg-black p-4 font-[Inter] text-sm text-white">{lastQuestion}</motion.div>}
+          {(answer || busy) && <div className="mb-5 flex items-end gap-2"><StickFigure pose="standing" size={28}/><motion.div initial={{y:12,opacity:0}} animate={{y:0,opacity:1}} className="card-sketch counselor-answer relative max-w-[86%] p-4 font-[Inter] text-sm whitespace-pre-wrap">{answer}{busy && <span className="typing-dots ml-2" aria-label="Counselor is typing"><i/><i/><i/></span>}</motion.div></div>}
           <textarea
             value={input}
             onChange={(event) => setInput(event.target.value)}
@@ -137,7 +143,7 @@ export function CounselorPage() {
               disabled={busy}
               className="min-h-11 bg-black px-5 py-3 font-[Inter] text-white disabled:opacity-40"
             >
-              {busy ? "Thinking…" : "Ask counselor"}
+              <Send size={15}/>{busy ? "Thinking…" : "Ask counselor"}
             </button>
             <button
               onClick={() =>
@@ -147,21 +153,16 @@ export function CounselorPage() {
               }
               className="min-h-11 border border-black/20 px-4 py-3 font-[Inter]"
             >
-              🎙 Speak
+              <Mic size={15}/> Speak
             </button>
             <button
               disabled={!answer}
               onClick={() => speak(answer, locale)}
               className="min-h-11 border border-black/20 px-4 py-3 font-[Inter] disabled:opacity-30"
             >
-              🔊 Read
+              <Volume2 size={15}/> Read
             </button>
           </div>
-          {answer && (
-            <div className="mt-6 whitespace-pre-wrap border-t border-black/10 pt-5 font-[Inter]">
-              {answer}
-            </div>
-          )}
           {escalate && (
             <aside className="mt-5 border-2 border-black bg-[#fff8dc] p-5">
               <div className="font-[JetBrains_Mono] text-xs uppercase tracking-wide">

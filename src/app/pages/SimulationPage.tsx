@@ -241,7 +241,7 @@ export function SimulationPage() {
   const correctCount = completedScenarios.filter(s => s.wasCorrect).length;
 
   return (
-    <div className="min-h-screen bg-background" ref={containerRef}>
+    <div className="editorial-utility min-h-screen bg-[var(--paper)]" ref={containerRef}>
       {/* Progress Bar */}
       {currentIndex >= 0 && !isComplete && (
         <motion.div

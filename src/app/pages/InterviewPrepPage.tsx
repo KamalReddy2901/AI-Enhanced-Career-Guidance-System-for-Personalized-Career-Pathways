@@ -70,7 +70,7 @@ export function InterviewPrepPage() {
 
 
   return (
-    <div className="min-h-screen bg-background pt-20 pb-16">
+    <div className="editorial-utility min-h-screen bg-[var(--paper)] pt-20 pb-16">
       <div className="max-w-4xl mx-auto px-6">
         {/* Back */}
         <motion.button

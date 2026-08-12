@@ -15,9 +15,7 @@ export function NotFoundPage() {
       >
         <StickFigure pose="searching" size={120} className="mx-auto mb-6" />
 
-        <h1 className="font-[Playfair_Display] text-black mb-3" style={{ fontSize: '3rem' }}>
-          404
-        </h1>
+        <h1 className="font-[Playfair_Display] text-black mb-3 text-5xl">404 — Page not filed</h1>
 
         <div className="flex items-center gap-3 justify-center mb-4">
           <div className="h-px w-8 bg-black/20" />

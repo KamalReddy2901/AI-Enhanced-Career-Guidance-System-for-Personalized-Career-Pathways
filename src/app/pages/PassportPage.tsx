@@ -15,6 +15,7 @@ import { addSkillEvidence, calculateCompleteness } from '../engine/skillProfile'
 import type { SkillClaim } from '../engine/types';
 import { logProgress } from '../services/guidanceDb';
 import { WhyPanel, type ScoreEvidence } from '../components/guidance/WhyPanel';
+import { motion } from 'motion/react';
 
 export function PassportPage() {
   const navigate = useNavigate();
@@ -94,50 +95,33 @@ export function PassportPage() {
 
   const nsqfLevel = estimateNSQFLevel(passport.education);
   const groupedSkills = groupSkillsByCategory(passport.skills);
+  const riasecCode = passport.riasec
+    ? Object.entries(passport.riasec).sort(([, a], [, b]) => b - a).slice(0, 3).map(([key]) => key[0].toUpperCase()).join('')
+    : 'PENDING';
 
   return (
     <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8 pb-24">
       <GuidanceEntrance className="max-w-4xl mx-auto">
+        <div className="passport-toolbar mb-4 flex justify-end gap-2 print:hidden">
+          <button onClick={() => window.print()} className="min-h-11 border-2 border-black px-4 font-[JetBrains_Mono] text-xs uppercase">Print passport</button>
+          <button onClick={() => void navigator.clipboard?.writeText(window.location.href)} className="min-h-11 bg-black px-4 font-[JetBrains_Mono] text-xs uppercase text-white">Copy share link</button>
+        </div>
         {/* Header "Identity Card" */}
-        <div className="bg-white border-2 border-black/10 p-6 mb-6">
+        <div className="career-passport-document relative bg-white p-6 mb-6 md:p-10">
+          <div className="label-caps mb-6 border-b border-black pb-3">Republic of CareerCase — Career Passport</div>
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-4xl font-[Playfair_Display] text-black mb-1">Career Passport</h1>
-              <div className="flex items-center gap-4 font-[JetBrains_Mono] text-xs text-black/60 uppercase tracking-wide">
-                <span>{passport.segment.replace('_', ' ')}</span>
-                <span>•</span>
-                <span>NSQF ~{nsqfLevel}</span>
-                <span>•</span>
-                <span>v{passport.version}</span>
+              <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-4 font-[JetBrains_Mono] text-xs uppercase tracking-wide md:grid-cols-4">
+                <span><b className="block text-[9px] text-black/45">Name</b>{user?.email?.split('@')[0] ?? 'Career explorer'}</span>
+                <span><b className="block text-[9px] text-black/45">RIASEC code</b>{riasecCode}</span>
+                <span><b className="block text-[9px] text-black/45">Top match</b>{passport.aspiration?.themes[0] ?? passport.segment.replace('_', ' ')}</span>
+                <span><b className="block text-[9px] text-black/45">NSQF</b>~{nsqfLevel}</span>
               </div>
             </div>
-            <div className="flex flex-col items-center">
-              <svg width="80" height="80" viewBox="0 0 100 100" className="mb-1">
-                <circle cx="50" cy="50" r="45" fill="none" stroke="#e5e5e5" strokeWidth="8" />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="none"
-                  stroke="black"
-                  strokeWidth="8"
-                  strokeDasharray={`${(passport.completeness / 100) * 283} 283`}
-                  strokeLinecap="round"
-                  transform="rotate(-90 50 50)"
-                />
-                <text
-                  x="50"
-                  y="50"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  className="font-[Playfair_Display] text-2xl fill-black"
-                >
-                  {passport.completeness}
-                </text>
-              </svg>
-              <span className="font-[JetBrains_Mono] text-xs text-black/60">COMPLETE</span>
-            </div>
+            <motion.div initial={{scale:.5,rotate:-18,opacity:0}} animate={{scale:1,rotate:-8,opacity:1}} transition={{type:'spring',bounce:.55,duration:.8}} className="passport-stamp hidden h-24 w-24 shrink-0 items-center justify-center rounded-full border-[3px] border-[var(--accent-news)] text-center font-[JetBrains_Mono] text-[10px] font-bold uppercase text-[var(--accent-news)] md:flex">Assessed<br/>✓ 2026<br/>{passport.completeness}%</motion.div>
           </div>
+          <div className="mt-8 overflow-hidden border-t-2 border-black pt-3 whitespace-nowrap font-[JetBrains_Mono] text-[10px] tracking-[.2em]">P&lt;CAREERCASE&lt;&lt;{riasecCode}&lt;&lt;NSQF{nsqfLevel}&lt;&lt;V{passport.version}&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</div>
         </div>
 
         {/* Resume Extraction */}

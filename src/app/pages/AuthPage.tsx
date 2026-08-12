@@ -79,8 +79,9 @@ export function AuthPage() {
         </span>
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-6 py-16">
-        <div className="w-full max-w-md">
+      <div className="mx-auto grid w-full max-w-5xl flex-1 items-center gap-12 px-6 py-16 lg:grid-cols-2">
+        <aside className="hidden border-r-2 border-black pr-12 lg:block"><div className="label-caps">CareerCase account desk</div><h2 className="mt-4 font-[Playfair_Display] text-6xl leading-[.95]">Keep your case file moving.</h2><p className="mt-5 font-[Inter] text-black/55">Save evidence, revisit pathways, and carry your career passport across devices.</p><StickFigure pose="walking" size={150} className="mt-8"/></aside>
+        <div className="w-full max-w-sm justify-self-center">
           <AnimatePresence mode="wait">
             {signUpSuccess ? (
               <motion.div
