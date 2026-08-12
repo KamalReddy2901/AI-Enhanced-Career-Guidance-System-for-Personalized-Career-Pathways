@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useState, useEffect, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, FlaskConical, Scale, ChevronDown, FileText, Brain, Swords, Zap, BarChart2, MessageSquare, ArrowRight, ExternalLink, TrendingUp, TrendingDown, Rocket, Loader2, Map, ArrowLeftRight } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
@@ -208,6 +208,7 @@ export function HomePage() {
             {[
               {
                 number: '01',
+                pose: 'reading' as const,
                 title: user ? (passport ? 'Review your passport' : 'Build your passport') : 'Create your account',
                 body: user ? (passport ? 'Add your resume, skills, experience and constraints whenever they change.' : 'Answer a few basics so recommendations can reflect your situation.') : 'Use an email or Google account so your career work is private and available on every device.',
                 action: user ? (passport ? 'Open passport' : 'Start onboarding') : 'Create account',
@@ -215,6 +216,7 @@ export function HomePage() {
               },
               {
                 number: '02',
+                pose: 'mapping' as const,
                 title: 'Complete the essentials',
                 body: passport ? 'Take the short interests, aptitude and work-values assessments. Each one makes your matches more useful.' : 'Finish the short onboarding profile first. It records the context the assessments and recommendations need.',
                 action: user ? (passport ? 'Open assessments' : 'Finish onboarding') : 'Sign in to continue',
@@ -222,6 +224,7 @@ export function HomePage() {
               },
               {
                 number: '03',
+                pose: 'climbing' as const,
                 title: 'Choose your next move',
                 body: 'Read why a role fits, compare routes, and tick off pathway steps as you build evidence and confidence.',
                 action: user ? 'See recommendations' : 'Create account',
@@ -229,8 +232,8 @@ export function HomePage() {
               },
             ].map((step) => (
               <li key={step.number} className="flex min-h-64 flex-col bg-[var(--paper-raised)] p-6 md:p-8">
-                <span className="font-mono-ui text-xs text-[var(--accent-news)]">STEP {step.number}</span>
-                <h3 className="mt-5 font-display text-2xl">{step.title}</h3>
+                <div className="flex items-start justify-between gap-4"><span className="font-mono-ui text-xs text-[var(--accent-news)]">STEP {step.number}</span><StickFigure pose={step.pose} size={48} /></div>
+                <h3 className="mt-4 font-display text-2xl">{step.title}</h3>
                 <p className="mt-3 text-sm leading-relaxed text-[var(--ink-soft)]">{step.body}</p>
                 <button type="button" onClick={() => navigate(step.path)} className="mt-auto inline-flex min-h-11 items-center gap-2 self-start pt-6 font-mono-ui text-xs uppercase underline decoration-[var(--accent-news)] decoration-2 underline-offset-4 hover:text-[var(--accent-news)]">
                   {step.action} <ArrowRight size={14} aria-hidden="true" />
@@ -238,6 +241,10 @@ export function HomePage() {
               </li>
             ))}
           </ol>
+          <p className="mx-auto mt-8 max-w-2xl text-center font-[Inter] text-sm leading-relaxed text-[var(--accent-news)] md:text-base">
+            Or feel free to explore any career you want in the <Link to="/job" className="font-semibold underline decoration-2 underline-offset-4 hover:opacity-70">Explore tab</Link>.<br />
+            Or talk to an AI counselor — open the <Link to="/counselor" className="font-semibold underline decoration-2 underline-offset-4 hover:opacity-70">Counselor tab</Link>.
+          </p>
         </div>
       </section>
 

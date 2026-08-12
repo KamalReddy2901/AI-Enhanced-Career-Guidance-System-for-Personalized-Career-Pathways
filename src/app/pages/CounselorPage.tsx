@@ -130,7 +130,7 @@ export function CounselorPage() {
         <header className="mb-8 flex items-center gap-4 border-b-2 border-[var(--ink)] pb-6">
           <StickFigure pose="pointing" size={84} />
           <div>
-            <div className="label-caps text-[var(--ink-soft)]">{t("counselorDesk")}</div>
+            <div className="label-caps text-[var(--accent-news)]">{t("counselorDesk")}</div>
             <h1 className="font-display text-5xl leading-[1.25]"><TextReveal text={t("counselorTitle")} /></h1>
             <p className="mt-2 text-sm text-[var(--ink-soft)]">{t("counselorIntro")}</p>
           </div>
@@ -151,7 +151,7 @@ export function CounselorPage() {
               onClick={() => void ask()}
               disabled={busy}
               data-testid="counselor-send-btn"
-              className="min-h-11 bg-[var(--ink)] px-5 py-3 text-[var(--paper)] disabled:opacity-40"
+              className="min-h-11 bg-[var(--ink)] px-5 py-3 text-[var(--paper)] transition-shadow hover:shadow-[3px_3px_0_var(--accent-news)] disabled:opacity-40"
             >
               <Send size={15}/>{busy ? t("counselorThinking") : t("counselorAsk")}
             </button>

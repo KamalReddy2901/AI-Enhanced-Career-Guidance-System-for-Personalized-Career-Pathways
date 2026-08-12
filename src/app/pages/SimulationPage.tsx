@@ -699,8 +699,8 @@ export function SimulationPage() {
                 </div>
               )}
 
-              {(compatibility || checkingCompatibility) && <div className="mx-auto mb-8 max-w-3xl border-2 border-black/15 bg-black/[.015] p-6 text-left">
-                <p className="mb-3 flex items-center gap-2 font-[Inter] text-black/45 uppercase tracking-[0.1em]" style={{ fontSize: '0.65rem' }}><Sparkles size={12}/> Personal compatibility check</p>
+              {(compatibility || checkingCompatibility) && <div className="mx-auto mb-8 max-w-3xl border-l-4 border-[var(--accent-news)] border-y border-r border-black/15 bg-black/[.015] p-6 text-left">
+                <p className="mb-3 flex items-center gap-2 font-[Inter] text-[var(--accent-news)] uppercase tracking-[0.1em]" style={{ fontSize: '0.65rem' }}><Sparkles size={12}/> Personal compatibility check</p>
                 {checkingCompatibility ? <div className="flex items-center gap-2 text-sm text-black/50"><Loader2 size={15} className="animate-spin"/> Connecting your Passport, dossier, and simulation choices…</div> : <div className="whitespace-pre-wrap font-[Inter] text-sm leading-relaxed text-black/75">{compatibility}</div>}
               </div>}
 

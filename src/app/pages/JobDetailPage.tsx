@@ -1700,8 +1700,8 @@ export function JobDetailPage() {
           </motion.button>
         </motion.div>
 
-        {(compatibility || checkingCompatibility) && <div className="mb-8 border-2 border-black/15 bg-black/[.015] p-6 print:hidden">
-          <p className="mb-3 flex items-center gap-2 font-mono-ui text-[.65rem] uppercase tracking-[.12em] text-black/45"><Sparkles size={13}/> Personal compatibility check</p>
+        {(compatibility || checkingCompatibility) && <div className="mb-8 border-l-4 border-[var(--accent-news)] border-y border-r border-black/15 bg-black/[.015] p-6 print:hidden">
+          <p className="mb-3 flex items-center gap-2 font-mono-ui text-[.65rem] uppercase tracking-[.12em] text-[var(--accent-news)]"><Sparkles size={13}/> Personal compatibility check</p>
           {checkingCompatibility ? <div className="flex items-center gap-2 text-sm text-black/50"><Loader2 size={15} className="animate-spin"/> Reading your Passport and this dossier…</div> : <div className="whitespace-pre-wrap font-[Inter] text-sm leading-relaxed text-black/75">{compatibility}</div>}
         </div>}
 

@@ -28,7 +28,7 @@ function JobSearchEmptyState() {
         <div className="flex justify-center mb-8">
           <StickFigure pose="searching" size={80} />
         </div>
-        <p className="label-caps mb-3 text-[var(--ink-soft)]">CareerCase · Explore</p>
+        <p className="label-caps mb-3 text-[var(--accent-news)]">CareerCase · Explore</p>
         <h1 className="font-display text-4xl leading-snug tracking-tight text-[var(--ink)] mb-3">
           What do you want<br/>to explore?
         </h1>
@@ -40,17 +40,17 @@ function JobSearchEmptyState() {
           isAnimating={isSearchAnimating}
           setIsAnimating={setIsSearchAnimating}
         />
-        <div className="mt-8 border-t border-black/10 pt-5 text-left">
-          <p className="mb-3 text-center font-mono-ui text-[0.62rem] uppercase tracking-[.14em] text-black/35">Explore tools</p>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="mt-8 border-t border-[var(--accent-news)]/45 pt-4 text-left">
+          <p className="mb-3 text-center font-mono-ui text-[0.62rem] uppercase tracking-[.14em] text-[var(--accent-news)]">Explore tools</p>
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
             {[
               { label: passport?.experiences[0]?.title ? 'Build from my current job' : 'Career Roadmap Builder', icon: <Map size={14}/>, path: passport?.experiences[0]?.title ? `/roadmap?job=${encodeURIComponent(passport.experiences[0].title)}` : '/roadmap', note: passport?.experiences[0]?.title ? `${passport.experiences[0].title} → your next move` : 'Choose a destination' },
               { label: 'Career Transition Planner', icon: <ArrowLeftRight size={14}/>, path: '/career-transition', note: 'Plan a change' },
               { label: 'Mood Match', icon: <Zap size={14}/>, path: '/mood', note: 'Explore by energy' },
               { label: 'Side-by-Side Compare', icon: <Scale size={14}/>, path: '/compare', note: 'Compare two roles' },
               { label: 'Career Quiz', icon: <Brain size={14}/>, path: '/quiz', note: 'Find a starting point' },
-            ].map(tool => <button key={tool.label} type="button" onClick={() => navigate(tool.path)} className="min-h-20 border border-black/12 bg-[var(--paper)] p-3 text-left transition-colors hover:border-black/35 hover:bg-black/[.025]">
-              <span className="mb-2 flex text-black/55">{tool.icon}</span><span className="block font-[Inter] text-xs text-black/75">{tool.label}</span><span className="mt-1 block font-[Inter] text-[.65rem] text-black/38">{tool.note}</span>
+            ].map(tool => <button key={tool.label} type="button" onClick={() => navigate(tool.path)} className="min-h-[76px] min-w-[116px] flex-1 border border-black/12 bg-[var(--paper)] p-2.5 text-left transition-colors hover:border-[var(--accent-news)] hover:bg-black/[.025] focus-visible:border-[var(--accent-news)]">
+              <span className="mb-1.5 flex text-[var(--accent-news)]">{tool.icon}</span><span className="block font-[Inter] text-[.7rem] leading-tight text-black/75">{tool.label}</span><span className="mt-1 block font-[Inter] text-[.6rem] leading-tight text-black/38">{tool.note}</span>
             </button>)}
           </div>
         </div>

@@ -42,7 +42,7 @@ export function WordCloudMasthead({ passport, showLanding, onNavigate }: WordClo
           <div className="relative mb-6 flex justify-center">
             <StickFigure pose="searching" size={96} />
 
-            {/* Left annotation — experience */}
+            {/* Four-point annotation field: west, north-west, north-east, east. */}
             <motion.span
               className="absolute right-[6.5rem] top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1.5 font-[JetBrains_Mono] text-[0.65rem] italic text-[var(--ink-soft)]"
               initial={{ opacity: 0, x: 6 }}
@@ -56,23 +56,15 @@ export function WordCloudMasthead({ passport, showLanding, onNavigate }: WordClo
               </svg>
             </motion.span>
 
-            {/* Right annotations — aptitude / aspiration / ability */}
-            <div className="absolute left-[6.5rem] top-1 hidden space-y-4 sm:flex sm:flex-col">
-              {rightLabels.map((label, i) => (
-                <motion.span
-                  key={label}
-                  className="flex items-center gap-1.5 font-[JetBrains_Mono] text-[0.65rem] italic text-[var(--ink-soft)]"
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.6 + i * 0.12 }}
-                >
-                  <svg width="22" height="8" viewBox="0 0 24 8" aria-hidden="true">
-                    <path d="M1 6C8 1 14 7 23 2" fill="none" stroke="currentColor" strokeWidth="1.5" />
-                  </svg>
-                  {label}
-                </motion.span>
-              ))}
-            </div>
+            <motion.span className="absolute right-[5.75rem] -top-1 hidden items-center gap-1.5 whitespace-nowrap font-[JetBrains_Mono] text-[0.65rem] italic text-[var(--ink-soft)] sm:flex" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+              {rightLabels[2]}<svg width="22" height="8" viewBox="0 0 24 8" aria-hidden="true"><path d="M23 6C16 1 10 7 1 2" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
+            </motion.span>
+            <motion.span className="absolute left-[5.75rem] -top-1 hidden items-center gap-1.5 whitespace-nowrap font-[JetBrains_Mono] text-[0.65rem] italic text-[var(--ink-soft)] sm:flex" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.72 }}>
+              <svg width="22" height="8" viewBox="0 0 24 8" aria-hidden="true"><path d="M1 6C8 1 14 7 23 2" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>{rightLabels[0]}
+            </motion.span>
+            <motion.span className="absolute left-[6.5rem] top-1/2 hidden -translate-y-1/2 items-center gap-1.5 whitespace-nowrap font-[JetBrains_Mono] text-[0.65rem] italic text-[var(--ink-soft)] sm:flex" initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.84 }}>
+              <svg width="22" height="8" viewBox="0 0 24 8" aria-hidden="true"><path d="M1 6C8 1 14 7 23 2" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>{rightLabels[1]}
+            </motion.span>
           </div>
 
           {/* Kicker */}
