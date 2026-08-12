@@ -188,7 +188,7 @@ export function JobOverviewPage() {
             ) : (
               <>
                 <Check size={18} />
-                Yes, this is the role I’m looking for                <span className="inline-flex items-center gap-0.5 text-white/60 text-xs ml-1"><Zap size={10} className="fill-current" />3</span>              </>
+                  Yes, this is the role I’m looking for              </>
             )}
           </motion.button>
 

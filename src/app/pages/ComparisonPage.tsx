@@ -420,7 +420,7 @@ export function ComparisonPage() {
                 </div>
               </div>
 
-              {/* Compare button — charges ⚡2 */}
+              {/* Compare button */}
               {jobA && jobB && (
                 <div className="flex justify-center">
                 <motion.button
@@ -433,11 +433,6 @@ export function ComparisonPage() {
                 >
                   {compareLoading ? <Loader2 size={14} className="animate-spin" /> : <Scale size={14} />}
                   {compareLoading ? 'Comparing…' : 'Compare Careers'}
-                  {!compareLoading && (
-                    <span className="inline-flex items-center gap-0.5 text-white/55 text-xs ml-0.5">
-                      <Zap size={10} className="fill-current" />2
-                    </span>
-                  )}
                 </motion.button>
                 </div>
               )}

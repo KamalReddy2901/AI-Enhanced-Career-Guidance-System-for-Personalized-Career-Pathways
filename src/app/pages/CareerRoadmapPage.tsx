@@ -253,7 +253,6 @@ export function CareerRoadmapPage() {
             >
               {loading ? <Loader2 size={15} className="animate-spin" /> : <Map size={15} />}
               {loading ? 'Building…' : 'Build Roadmap'}
-              {!loading && <span className="inline-flex items-center gap-0.5 text-white/60 text-xs ml-0.5"><Zap size={10} className="fill-current" />2</span>}
             </motion.button>
             {descLoading && !loading && (
               <span className="font-[Inter] text-black/30 text-xs">Generating context…</span>

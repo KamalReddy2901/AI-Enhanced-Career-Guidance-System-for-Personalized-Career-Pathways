@@ -357,7 +357,6 @@ export function CareerTransitionPage() {
                 <>
                   <ArrowRight size={16} />
                   Map My Transition
-                  <span className="inline-flex items-center gap-0.5 text-white/60 text-xs"><Zap size={10} className="fill-current" />2</span>
                 </>
               )}
             </motion.button>

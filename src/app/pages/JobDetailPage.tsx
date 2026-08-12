@@ -492,7 +492,6 @@ export function JobDetailPage() {
                   >
                     {isRegenerating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
                     {isRegenerating ? 'Regenerating...' : 'Regenerate'}
-                    {!isRegenerating && <span className="inline-flex items-center gap-0.5 ml-1 opacity-50"><Zap size={9} className="fill-current" />3</span>}
                   </motion.button>
                 <motion.button
                   onClick={handlePrint}
@@ -1102,7 +1101,6 @@ export function JobDetailPage() {
           >
             <Play size={20} className="group-hover:translate-x-0.5 transition-transform" />
             Start Day-in-the-Life Simulation
-            <span className="inline-flex items-center gap-0.5 text-white/55 text-xs ml-1"><Zap size={11} className="fill-current" />5</span>
           </motion.button>
 
           <motion.button
@@ -1126,7 +1124,7 @@ export function JobDetailPage() {
           >
             <MessageCircle size={18} />
             Ask Questions
-            {hasUnlimitedAskai ? <Sparkles size={12} className="text-black/30" /> : <span className="font-[Inter] text-black/25 text-xs">1⚡</span>}
+            <Sparkles size={12} className="text-black/30" />
           </motion.button>
         </motion.div>
 

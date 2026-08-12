@@ -131,7 +131,6 @@ export function InterviewPrepPage() {
                 >
                   <RefreshCw size={12} />
                   Regenerate All
-                  <span className="inline-flex items-center gap-0.5 ml-0.5 opacity-50"><Zap size={9} className="fill-current" />1</span>
                 </motion.button>
               </div>
             )}
