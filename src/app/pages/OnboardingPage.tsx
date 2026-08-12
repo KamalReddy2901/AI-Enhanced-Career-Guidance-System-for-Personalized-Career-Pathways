@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
+import { toast } from 'sonner';
 import { StickFigure, type StickFigurePose } from '../components/StickFigure';
 import { logConsent } from '../services/guidanceDb';
 import { useGuidance } from '../context/GuidanceContext';
