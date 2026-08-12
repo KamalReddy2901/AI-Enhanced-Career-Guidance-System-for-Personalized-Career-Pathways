@@ -17,12 +17,14 @@ import { useT } from "../i18n";
 import { riasecItemText } from "../i18n/assessmentItems";
 import { sounds } from "../utils/sounds";
 import { speak } from "../utils/voice";
+import { useVoiceStatus } from "../hooks/useVoiceStatus";
 
 export function AssessRiasecPage() {
   const navigate = useNavigate();
   const { updatePassport } = useGuidance();
   const { user } = useAuth();
   const { lang, locale } = useT();
+  const voiceStatus = useVoiceStatus();
   const resultCopy = lang === "hi" ? {title:"रुचि सूची पूरी हुई",top:"शीर्ष कोड",back:"आकलन डेस्क पर वापस जाएँ",why:"क्यों?",activity:"कार्य गतिविधि",hint:"आपकी खोज प्रश्नोत्तरी एक शुरुआती झुकाव सुझाती है। इसे स्कोर न मानें—पूरी सूची पूरी करें।"} : lang === "te" ? {title:"ఆసక్తి జాబితా పూర్తైంది",top:"ప్రధాన కోడ్",back:"అంచనా విభాగానికి తిరిగి వెళ్ళండి",why:"ఎందుకు?",activity:"పని కార్యకలాపం",hint:"మీ అన్వేషణ క్విజ్ ఒక ప్రారంభ మొగ్గును సూచిస్తుంది. దీన్ని స్కోరుగా భావించకుండా పూర్తి జాబితాను పూర్తి చేయండి."} : {title:"Interest inventory complete",top:"TOP CODE",back:"Back to assessment desk",why:"Why?",activity:"work activity",hint:"Your exploration quiz suggests an initial leaning. Treat it as a prompt—not a score—and complete this full inventory."};
   const interpretation = (dimension: keyof ReturnType<typeof scoreRiasec>) => lang === "hi" ? ({R:"आप व्यावहारिक, हाथों से किए जाने वाले और ठोस परिणाम वाले काम की ओर आकर्षित होते हैं।",I:"आप जाँच, विश्लेषण और जटिल समस्याएँ सुलझाने वाले काम की ओर आकर्षित होते हैं।",A:"आप रचनात्मक अभिव्यक्ति और नए विचारों वाले काम की ओर आकर्षित होते हैं।",S:"आप लोगों की सहायता, शिक्षा और सहयोग वाले काम की ओर आकर्षित होते हैं।",E:"आप नेतृत्व, प्रभाव और पहल वाले काम की ओर आकर्षित होते हैं।",C:"आप व्यवस्थित, सटीक और संरचित काम की ओर आकर्षित होते हैं।"})[dimension] : lang === "te" ? ({R:"మీరు ఆచరణాత్మకంగా చేతులతో చేసే, స్పష్టమైన ఫలితాలున్న పనివైపు ఆకర్షితులవుతారు.",I:"మీరు పరిశోధన, విశ్లేషణ, క్లిష్ట సమస్యల పరిష్కార పనివైపు ఆకర్షితులవుతారు.",A:"మీరు సృజనాత్మక వ్యక్తీకరణ, కొత్త ఆలోచనల పనివైపు ఆకర్షితులవుతారు.",S:"మీరు ఇతరులకు సహాయం, బోధన, సహకార పనివైపు ఆకర్షితులవుతారు.",E:"మీరు నాయకత్వం, ప్రభావం, చొరవ ఉన్న పనివైపు ఆకర్షితులవుతారు.",C:"మీరు క్రమబద్ధమైన, ఖచ్చితమైన, నిర్మిత పనివైపు ఆకర్షితులవుతారు."})[dimension] : interpretTopDimension(dimension);
   const [index, setIndex] = useState(0);
@@ -115,6 +117,7 @@ export function AssessRiasecPage() {
             🔊
           </button>
         </div>
+        {voiceStatus.message && <p className="-mt-5 mb-5 font-[Inter] text-xs text-black/55" role="status" aria-live="polite">{voiceStatus.message}</p>}
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-5">
           {responseLabels.map(
             (label, n) => (

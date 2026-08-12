@@ -11,6 +11,7 @@ import { useT } from "../i18n";
 import { aptitudeItemText } from "../i18n/aptitudeItems";
 import { WhyPanel, type ScoreEvidence } from "../components/guidance/WhyPanel";
 import { speak } from "../utils/voice";
+import { useVoiceStatus } from "../hooks/useVoiceStatus";
 
 const TOTAL_SECONDS = 300;
 const FORM_STORAGE_KEY = "cc_guidance_aptitude_form";
@@ -20,6 +21,7 @@ export function AssessAptitudePage() {
   const { updatePassport } = useGuidance();
   const { user } = useAuth();
   const { lang, locale } = useT();
+  const voiceStatus = useVoiceStatus();
   const explainLabel = lang === "hi" ? "यह स्कोर क्यों?" : lang === "te" ? "ఈ స్కోరు ఎందుకు?" : "Why this score?";
   const [form] = useState<0 | 1>(() =>
     localStorage.getItem(FORM_STORAGE_KEY) === "1" ? 1 : 0,
@@ -153,6 +155,7 @@ export function AssessAptitudePage() {
           </div>
           {question.dimension === "spatial" && <SpatialSketch id={question.id} />}
           <div className="mb-6 flex items-start gap-3"><h2 className="flex-1 text-2xl font-[Playfair_Display]">{localized.prompt}</h2><button onClick={()=>speak(`${localized.prompt}. ${localized.options.join(". ")}`,locale)} className="min-h-11 min-w-11 border border-black/20" aria-label="Read question aloud">🔊</button></div>
+          {voiceStatus.message && <p className="-mt-4 mb-4 font-[Inter] text-xs text-black/55" role="status" aria-live="polite">{voiceStatus.message}</p>}
           <div className="space-y-3">
             {localized.options.map((option, optionIndex) => (
               <button

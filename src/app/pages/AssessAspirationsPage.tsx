@@ -10,6 +10,7 @@ import { calculateCompleteness } from "../engine/skillProfile";
 import { useT } from "../i18n";
 import { sounds } from "../utils/sounds";
 import { listen, speak } from "../utils/voice";
+import { useVoiceStatus } from "../hooks/useVoiceStatus";
 
 const questions = {
   en: [
@@ -40,6 +41,7 @@ export function AssessAspirationsPage() {
   const { updatePassport } = useGuidance();
   const { user } = useAuth();
   const { lang, locale } = useT();
+  const voiceStatus = useVoiceStatus();
   const c = lang === "hi" ? { interview:"आकांक्षा संवाद", title:"आप किस दिशा में जाना चाहते हैं—उस पर एक छोटी बातचीत", finish:"चिंतन पूरा करें", send:"उत्तर भेजें", dictate:"बोलकर लिखें", unavailable:"संवाद सेवा उपलब्ध नहीं है। यही चिंतन AI के बिना स्थानीय रूप से सहेजें।", voice:"इस ब्राउज़र में वॉइस इनपुट उपलब्ध नहीं है।", save:"स्थानीय रूप से सहेजें", note:"एक बार में एक प्रश्न, अधिकतम पाँच। परिणाम को आप बाद में पासपोर्ट में बदल सकते हैं।" } : lang === "te" ? { interview:"ఆకాంక్షల సంభాషణ", title:"మీరు ఏ దిశలో వెళ్లాలనుకుంటున్నారో తెలిపే చిన్న సంభాషణ", finish:"ఆలోచన పూర్తి చేయండి", send:"సమాధానం పంపండి", dictate:"మాట్లాడి నమోదు చేయండి", unavailable:"సంభాషణ సేవ అందుబాటులో లేదు. ఇదే ఆలోచనను AI లేకుండా స్థానికంగా భద్రపరచండి.", voice:"ఈ బ్రౌజర్‌లో వాయిస్ ఇన్‌పుట్‌కు మద్దతు లేదు.", save:"స్థానికంగా భద్రపరచండి", note:"ఒక్కసారి ఒక ప్రశ్న, గరిష్ఠంగా ఐదు. ఫలితాన్ని తరువాత పాస్‌పోర్ట్‌లో మార్చవచ్చు." } : { interview:"aspiration interview", title:"A short conversation about where you want to head", finish:"Finish reflection", send:"Send answer", dictate:"Dictate", unavailable:"The conversation service is unavailable. Save the same reflection locally without AI.", voice:"Voice input is not supported on this browser.", save:"Save locally", note:"One question at a time, never more than five. You can edit the result later in your Passport." };
   const [index, setIndex] = useState(0);
   const [draft, setDraft] = useState("");
@@ -165,15 +167,14 @@ export function AssessAspirationsPage() {
                 onClick={() =>
                   void listen(locale)
                     .then(setDraft)
-                    .catch(() =>
-                      setError(c.voice),
-                    )
+                    .catch((voiceError) => setError(voiceError instanceof Error ? voiceError.message : c.voice))
                 }
                 className="min-h-11 border border-black/20 px-4 py-3 font-[Inter]"
               >
                 🎙 {c.dictate}
               </button>
             </div>
+            {voiceStatus.message && <p className="mt-2 font-[Inter] text-xs text-black/55" role="status" aria-live="polite">{voiceStatus.message}</p>}
           </div>
           {error && (
             <div className="mt-4 bg-amber-50 p-3 font-[Inter] text-sm text-amber-900">

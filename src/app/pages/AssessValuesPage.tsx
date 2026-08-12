@@ -11,11 +11,13 @@ import { useT } from "../i18n";
 import { valueItemText } from "../i18n/assessmentItems";
 import { speak } from "../utils/voice";
 import { WhyPanel, type ScoreEvidence } from "../components/guidance/WhyPanel";
+import { useVoiceStatus } from "../hooks/useVoiceStatus";
 export function AssessValuesPage() {
   const navigate = useNavigate();
   const { passport, updatePassport } = useGuidance();
   const { user } = useAuth();
   const { lang, locale } = useT();
+  const voiceStatus = useVoiceStatus();
   const c = lang === "hi" ? { desk:"कार्य-मूल्य डेस्क", result:"आपके कार्य-मूल्य", question:"आपके लिए क्या अधिक महत्त्वपूर्ण है?", note:"काम में आपकी प्राथमिकताओं की विकल्प-आधारित झलक। संदर्भ के साथ प्राथमिकताएँ बदल सकती हैं।", back:"आकलन डेस्क पर वापस जाएँ", choose:"एक चुनें", read:"सुनें" } : lang === "te" ? { desk:"పని విలువల విభాగం", result:"మీ పని విలువలు", question:"మీకు ఏది ఎక్కువ ముఖ్యం?", note:"పనిలో మీరు విలువిచ్చే అంశాల ఎంపిక-ఆధారిత చిత్రం. సందర్భంతో ప్రాధాన్యతలు మారవచ్చు.", back:"అంచనా విభాగానికి తిరిగి వెళ్ళండి", choose:"ఒకటి ఎంచుకోండి", read:"వినండి" } : { desk:"values desk", result:"Your work values", question:"Which matters more to you?", note:"A forced-choice snapshot of what you value at work. Your priorities can change with context.", back:"Back to assessment desk", choose:"choose one", read:"Read" };
   const [i, setI] = useState(0);
   const [answers, setAnswers] = useState<Record<string, "left" | "right">>({});
@@ -57,6 +59,7 @@ export function AssessValuesPage() {
             </h1>
           </div>
         </div>
+        {voiceStatus.message && <p className="mb-3 font-[Inter] text-xs text-black/55" role="status" aria-live="polite">{voiceStatus.message}</p>}
         {result ? (
           <div className="max-w-xl mx-auto">
             <div className="space-y-3">

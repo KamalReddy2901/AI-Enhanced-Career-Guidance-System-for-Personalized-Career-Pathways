@@ -143,9 +143,7 @@ export function CounselorPage() {
               onClick={() =>
                 void listen(locale)
                   .then(setInput)
-                  .catch(() =>
-                    setAnswer("Voice input is not supported on this browser."),
-                  )
+                  .catch((voiceError) => setAnswer(voiceError instanceof Error ? voiceError.message : "Voice input is not supported on this browser."))
               }
               className="min-h-11 border border-black/20 px-4 py-3 font-[Inter]"
             >
