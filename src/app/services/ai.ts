@@ -585,6 +585,76 @@ Rewrite the description to fully incorporate this context. Make it feel like it 
   });
 }
 
+// ─── Resume Extraction (Phase 3) ──────────────────────────────────────
+
+export interface ResumeExtraction {
+  skills: Array<{
+    name: string;
+    proficiency: 1 | 2 | 3 | 4;
+    evidence: string;
+  }>;
+  experiences: Array<{
+    title: string;
+    years: number;
+    description: string;
+  }>;
+  education?: {
+    level: 'below_10' | 'class_10' | 'class_12' | 'iti_diploma' | 'undergraduate' | 'postgraduate';
+    field?: string;
+  };
+}
+
+export async function extractProfileFromResume(resumeText: string): Promise<ResumeExtraction> {
+  const systemPrompt = `You are a resume parser specialized in extracting structured career data from Indian resumes. Extract skills, experiences, and education. Return ONLY valid JSON.
+
+IMPORTANT:
+- Skill proficiency levels: 1=beginner, 2=intermediate, 3=advanced, 4=expert
+- For each skill, extract a specific quoted phrase from the resume as evidence
+- For experiences, infer years from dates (e.g., "Jan 2020 - Present" in 2026 = 6 years)
+- Be conservative with proficiency estimates based on years of experience and context
+- Extract ACTUAL skills mentioned, not inferred ones`;
+
+  const userPrompt = `Parse this resume and extract structured data:
+
+${resumeText}
+
+Return this exact JSON:
+{
+  "skills": [
+    {"name": "Exact skill name from resume", "proficiency": 1-4, "evidence": "Quoted phrase from resume mentioning this skill"},
+    ...
+  ],
+  "experiences": [
+    {"title": "Job title", "years": estimated years in decimal (e.g., 2.5), "description": "Brief 1-2 sentence summary"},
+    ...
+  ],
+  "education": {
+    "level": "one of: below_10, class_10, class_12, iti_diploma, undergraduate, postgraduate",
+    "field": "field of study if mentioned"
+  }
+}`;
+
+  const raw = await callGroq(systemPrompt, userPrompt, {
+    temperature: 0.3,
+    maxTokens: 2000,
+    jsonMode: true,
+    usageType: 'resume_extract',
+  });
+
+  // Defensive parse with fallbacks
+  try {
+    const parsed = JSON.parse(raw.replace(/```json\n?/g, '').replace(/```\n?/g, ''));
+    return {
+      skills: Array.isArray(parsed.skills) ? parsed.skills : [],
+      experiences: Array.isArray(parsed.experiences) ? parsed.experiences : [],
+      education: parsed.education || undefined,
+    };
+  } catch (err) {
+    console.error('Resume extraction parse error:', err);
+    throw new Error('Failed to parse resume. Please try again or check the format.');
+  }
+}
+
 // ─── Generate Simulation (Cached + Retry) ─────────────────────
 
 export interface AISimScenario {
