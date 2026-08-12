@@ -40,7 +40,6 @@ export function WordCloudMasthead({ passport, showLanding, onNavigate }: WordClo
           {/* Stick figure + annotations */}
           <div className="relative mb-6 flex justify-center">
             <StickFigure pose="searching" size={96} />
-            {/* Annotations floating beside figure */}
             <div className="absolute left-[6.5rem] top-1 hidden space-y-4 sm:flex sm:flex-col">
               {labels.map((label, i) => (
                 <motion.span
@@ -77,19 +76,18 @@ export function WordCloudMasthead({ passport, showLanding, onNavigate }: WordClo
                 <br />
                 <span className="relative inline-block">
                   <span className="relative z-10">your</span>
-                  {/* hand-drawn underline */}
                   <svg
                     aria-hidden="true"
-                    viewBox="0 0 60 6"
+                    viewBox="0 0 100 6"
                     preserveAspectRatio="none"
                     className="absolute left-0 w-full pointer-events-none"
-                    style={{ bottom: '-0.12em', height: '0.18em' }}
+                    style={{ bottom: '-0.14em', height: '0.14em' }}
                   >
                     <path
-                      d="M1 4 Q15 1 30 3.5 Q45 6 59 2.5"
+                      d="M0 3 Q50 1.5 100 3"
                       fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
+                      stroke="#dc2626"
+                      strokeWidth="3"
                       strokeLinecap="round"
                     />
                   </svg>
@@ -110,9 +108,7 @@ export function WordCloudMasthead({ passport, showLanding, onNavigate }: WordClo
           />
 
           {/* Subhead */}
-          <p
-            className="max-w-xl text-base leading-relaxed text-[var(--ink-soft)] md:text-lg"
-          >
+          <p className="max-w-xl text-base leading-relaxed text-[var(--ink-soft)] md:text-lg">
             {t('homeSubhead')}
           </p>
 
