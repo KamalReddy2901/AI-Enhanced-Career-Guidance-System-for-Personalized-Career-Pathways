@@ -3,6 +3,7 @@ import { RouterProvider } from 'react-router';
 import { router } from './routes';
 import { AppProvider } from './context/AppContext';
 import { AuthProvider } from './context/AuthContext';
+import { GuidanceProvider } from './context/GuidanceContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 function PageFallback() {
@@ -25,11 +26,13 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <AppProvider>
-          <Suspense fallback={<PageFallback />}>
-            <RouterProvider router={router} />
-          </Suspense>
-        </AppProvider>
+        <GuidanceProvider>
+          <AppProvider>
+            <Suspense fallback={<PageFallback />}>
+              <RouterProvider router={router} />
+            </Suspense>
+          </AppProvider>
+        </GuidanceProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

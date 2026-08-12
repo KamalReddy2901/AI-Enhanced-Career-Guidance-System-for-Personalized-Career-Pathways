@@ -19,6 +19,17 @@ const CareerTransitionPage = lazy(() => import('./pages/CareerTransitionPage').t
 const CareerRoadmapPage = lazy(() => import('./pages/CareerRoadmapPage').then(m => ({ default: m.CareerRoadmapPage })));
 const PricingPage = lazy(() => import('./pages/PricingPage').then(m => ({ default: m.PricingPage })));
 
+// ── Phase 1: Guidance system pages ───────────────────────────────────────
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage').then(m => ({ default: m.OnboardingPage })));
+const AssessmentHubPage = lazy(() => import('./pages/AssessmentHubPage').then(m => ({ default: m.AssessmentHubPage })));
+const AssessRiasecPage = lazy(() => import('./pages/AssessRiasecPage').then(m => ({ default: m.AssessRiasecPage })));
+const AssessAptitudePage = lazy(() => import('./pages/AssessAptitudePage').then(m => ({ default: m.AssessAptitudePage })));
+const AssessValuesPage = lazy(() => import('./pages/AssessValuesPage').then(m => ({ default: m.AssessValuesPage })));
+const AssessAspirationsPage = lazy(() => import('./pages/AssessAspirationsPage').then(m => ({ default: m.AssessAspirationsPage })));
+const PassportPage = lazy(() => import('./pages/PassportPage').then(m => ({ default: m.PassportPage })));
+const RecommendationsPage = lazy(() => import('./pages/RecommendationsPage').then(m => ({ default: m.RecommendationsPage })));
+const PathwayPage = lazy(() => import('./pages/PathwayPage').then(m => ({ default: m.PathwayPage })));
+
 export const router = createBrowserRouter([
   { path: '/', Component: RootLayout, children: [
     { index: true, Component: HomePage },
@@ -36,6 +47,16 @@ export const router = createBrowserRouter([
     { path: 'career-transition', Component: CareerTransitionPage },
     { path: 'roadmap', Component: CareerRoadmapPage },
     { path: 'pricing', Component: PricingPage },
+    // ── Phase 1: Guidance system routes ───────────────────────────────────
+    { path: 'onboarding', Component: OnboardingPage },
+    { path: 'assess', Component: AssessmentHubPage },
+    { path: 'assess/interests', Component: AssessRiasecPage },
+    { path: 'assess/aptitude', Component: AssessAptitudePage },
+    { path: 'assess/values', Component: AssessValuesPage },
+    { path: 'assess/aspirations', Component: AssessAspirationsPage },
+    { path: 'passport', Component: PassportPage },
+    { path: 'recommendations', Component: RecommendationsPage },
+    { path: 'pathway/:occupationId', Component: PathwayPage },
     { path: '*', Component: NotFoundPage },
   ]},
 ]);

@@ -26,4 +26,11 @@ export const USAGE_MODEL_TIER: Record<string, ModelTier> = {
   quiz: 'standard',
   mood: 'standard',
   refine: 'standard',
+  // ── Phase 1: New guidance system usage types ──
+  aspiration: 'premium',      // conversational aspiration elicitation
+  resume_extract: 'premium',  // resume → structured skills/experience
+  narrate: 'standard',        // recommendation narration polish
+  counselor: 'premium',       // grounded counselor chat
+  translate: 'standard',      // i18n content translation
+  gap_advice: 'standard',     // skill-gap learning tips
 };
