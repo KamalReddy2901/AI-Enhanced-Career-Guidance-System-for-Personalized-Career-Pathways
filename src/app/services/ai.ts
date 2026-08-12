@@ -684,6 +684,12 @@ export async function extractAspiration(statement: string, horizonYears: number,
   }
 }
 
+export async function* streamCounselorChat(messages: { role: 'user' | 'assistant'; text: string }[], groundingContext: string): AsyncGenerator<string> {
+  const system = 'You are an experienced, honest Indian career counselor. Use only the supplied context. Never invent salary, demand, requirements or course facts. Use calibrated language such as strong option to explore and plausible route. Preserve agency and recommend a human counselor for distress, family conflict or high-cost decisions. CONTEXT:\n' + groundingContext;
+  const raw = await callGroqStreaming(system, messages.map(m => m.role + ': ' + m.text).join('\n'), { usageType: 'counselor', maxTokens: 700 });
+  yield raw;
+}
+
 // ─── Generate Simulation (Cached + Retry) ─────────────────────
 
 export interface AISimScenario {

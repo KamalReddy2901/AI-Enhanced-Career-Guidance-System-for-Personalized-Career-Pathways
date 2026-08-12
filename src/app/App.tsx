@@ -5,6 +5,7 @@ import { AppProvider } from './context/AppContext';
 import { AuthProvider } from './context/AuthContext';
 import { GuidanceProvider } from './context/GuidanceContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { LanguageProvider } from './i18n';
 
 function PageFallback() {
   return (
@@ -27,11 +28,13 @@ export default function App() {
     <ErrorBoundary>
       <AuthProvider>
         <GuidanceProvider>
+          <LanguageProvider>
           <AppProvider>
             <Suspense fallback={<PageFallback />}>
               <RouterProvider router={router} />
             </Suspense>
           </AppProvider>
+          </LanguageProvider>
         </GuidanceProvider>
       </AuthProvider>
     </ErrorBoundary>
