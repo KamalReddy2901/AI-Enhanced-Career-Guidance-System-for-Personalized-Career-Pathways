@@ -36,10 +36,14 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        onlyExplicitManualChunks: true,
         manualChunks(id) {
+          // Keep the entire React runtime — react, react-dom, and its
+          // scheduler dependency — together in ONE chunk. Splitting
+          // scheduler out from react-dom breaks initialization order in
+          // production ("Cannot set properties of undefined (setting
+          // 'unstable_now')") and prevents React from mounting at all.
+          if (id.includes('/react-dom/') || id.includes('/react/') || id.includes('/scheduler/')) return 'react-vendor';
           if (id.includes('@radix-ui') || id.includes('cmdk') || id.includes('vaul')) return 'ui-vendor';
-          if (id.includes('react-dom') || id.includes('react/')) return 'react-vendor';
           if (id.includes('react-router')) return 'router-vendor';
           if (id.includes('/motion/') || id.includes('framer-motion')) return 'motion-vendor';
         },
