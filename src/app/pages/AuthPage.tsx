@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight, Sparkles } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
+import { BrandMark } from '../components/BrandMark';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { TextReveal } from '../motion/TextReveal';
@@ -74,10 +75,7 @@ export function AuthPage() {
           onClick={() => navigate('/')}
           className="flex items-center gap-2 group"
         >
-          <StickFigure pose="standing" size={22} animate={false} />
-          <span className="font-[Playfair_Display] text-black tracking-tight group-hover:opacity-70 transition-opacity" style={{ fontSize: '1rem' }}>
-            Career<span className="opacity-35">Case</span>
-          </span>
+          <BrandMark compact className="transition-opacity group-hover:opacity-70" />
         </button>
         <span className="font-[JetBrains_Mono] text-black/20 hidden sm:block" style={{ fontSize: '0.6rem' }}>
           AI career exploration

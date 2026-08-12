@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, FlaskConical, Scale, ChevronDown, FileText, Brain, Swords, Zap, BarChart2, MessageSquare, ArrowRight, ExternalLink, TrendingUp, TrendingDown, Rocket, Loader2, Map, ArrowLeftRight } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
+import { BrandMark } from '../components/BrandMark';
 import { WordCloudMasthead } from '../components/hero/WordCloudMasthead';
 import type { CareerRecommendation } from '../engine/types';
 
@@ -592,8 +593,7 @@ export function HomePage() {
       <footer className="border-t border-black/8 py-8 px-6">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <StickFigure pose="standing" size={28} animate={false} />
-            <span className="font-[Playfair_Display] text-black/60" style={{ fontSize: '0.92rem' }}>CareerCase</span>
+            <BrandMark compact />
           </div>
           <div className="flex items-center gap-4 font-[Inter] text-[var(--ink-soft)]" style={{ fontSize: '0.72rem' }}>
             <button onClick={() => document.getElementById('how-to-use')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-black transition-colors">How to use</button>

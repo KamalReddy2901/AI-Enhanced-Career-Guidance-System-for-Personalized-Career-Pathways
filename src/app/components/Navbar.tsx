@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { sounds } from '../utils/sounds';
 import { LanguageSwitcher, useT } from '../i18n';
+import { BrandMark } from './BrandMark';
 
 export function Navbar() {
   const { t } = useT();
@@ -70,8 +71,8 @@ export function Navbar() {
               }
             }}
           >
-            <span className="flex flex-col">
-              <span className="font-display text-lg italic tracking-tight text-[var(--ink)] transition-opacity group-hover:opacity-70">CareerCase</span>
+            <span className="flex flex-col leading-none">
+              <BrandMark compact className="transition-opacity group-hover:opacity-70" />
               <span className="font-mono-ui text-[8px] tracking-[.14em] text-[var(--ink-soft)]">EST. 2025 — VOL. II</span>
             </span>
           </Link>
