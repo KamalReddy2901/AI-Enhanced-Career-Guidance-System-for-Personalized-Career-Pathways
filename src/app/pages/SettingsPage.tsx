@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { clearAllCache } from '../services/ai';
 import { toast } from 'sonner';
 import { sounds, enableSound, isSoundOn } from '../utils/sounds';
+import { useGuidance } from '../context/GuidanceContext';
 import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
   AlertDialogTitle, AlertDialogDescription, AlertDialogFooter,
@@ -20,6 +21,7 @@ export function SettingsPage() {
   const { preferences, setPreferences, resetPreferences } = usePreferences();
   const { clearHistory, clearAICache } = useApp();
   const { user, signOut, isSupabaseConfigured } = useAuth();
+  const { passport, recommendations } = useGuidance();
 
   const handleSoundToggle = () => {
     const newValue = !preferences.soundEffects;
@@ -180,6 +182,8 @@ export function SettingsPage() {
         {/* Data Management */}
         <Section title="Data Management">
           <div className="space-y-3">
+            <ActionButton label="Export guidance data" description="Download your Career Passport and recommendation snapshot as JSON" icon={<Download size={16} />} onClick={() => { const blob = new Blob([JSON.stringify({ passport, recommendations }, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'careercase-guidance-data.json'; a.click(); URL.revokeObjectURL(url); toast.success('Guidance data exported'); }} />
+            <ActionButton label="Delete guidance data" description="Remove the local passport and recommendation snapshot; your account remains" icon={<Trash2 size={16} />} danger onClick={() => { if (window.confirm('Delete your guidance data from this device?')) { localStorage.removeItem('cc_guidance_passport'); localStorage.removeItem('cc_guidance_recommendations'); window.location.reload(); } }} />
             <ActionButton
               label="Clear AI Cache"
               description="Remove cached AI responses (fresh data on next search)"
