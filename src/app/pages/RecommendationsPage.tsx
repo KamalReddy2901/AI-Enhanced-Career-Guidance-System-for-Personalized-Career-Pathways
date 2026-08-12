@@ -12,6 +12,8 @@ import type {
 import { useT } from "../i18n";
 import { sounds } from "../utils/sounds";
 import { speak } from "../utils/voice";
+import { occupationName } from "../i18n/occupationNames";
+import { localizedConfidence, localizedReason, localizedTrend } from "../i18n/guidanceFormatting";
 
 const order: RecommendationGroup[] = [
   "best_fit",
@@ -31,7 +33,7 @@ export function RecommendationsPage() {
     recompute,
   } = useGuidance();
   const { t, locale, lang } = useT();
-  const c = lang === "hi" ? { start:"आपका करियर परिदृश्य पासपोर्ट से शुरू होता है", onboarding:"ऑनबोर्डिंग शुरू करें", preparing:"आपका नियम-आधारित परिदृश्य तैयार हो रहा है…", title:"खोजने योग्य मज़बूत विकल्प", intro:"आपकी मौजूदा प्रोफ़ाइल पर आधारित। स्कोर प्रमाण-आधारित संकेत हैं, अंतिम निर्णय नहीं।", ask:"क्यों पूछें · अगर ऐसा हो तो पूछें", confidence:"विश्वसनीयता", demand:"माँग", why:"यह क्यों?", build:"मार्ग बनाएँ", dossier:"पूरा विवरण पढ़ें" } : lang === "te" ? { start:"మీ కెరీర్ దృశ్యం పాస్‌పోర్ట్‌తో మొదలవుతుంది", onboarding:"ఆన్‌బోర్డింగ్ ప్రారంభించండి", preparing:"మీ నియమ-ఆధారిత దృశ్యం సిద్ధమవుతోంది…", title:"అన్వేషించదగిన బలమైన ఎంపికలు", intro:"మీ ప్రస్తుత ప్రొఫైల్ ఆధారంగా. స్కోర్లు ఆధారాలతో కూడిన సంకేతాలు మాత్రమే, తీర్పు కాదు.", ask:"ఎందుకో అడగండి · పరిస్థితి మారితే అడగండి", confidence:"నమ్మకం", demand:"డిమాండ్", why:"ఇది ఎందుకు?", build:"మార్గం నిర్మించండి", dossier:"పూర్తి వివరాలు చదవండి" } : { start:"Your career landscape starts with a passport", onboarding:"Start onboarding", preparing:"Preparing your deterministic landscape…", title:"Strong options to explore", intro:"Based on your current profile. Scores are evidence-led signals, never a verdict.", ask:"Ask why · Ask what-if", confidence:"confidence", demand:"Demand", why:"Why this?", build:"Build pathway", dossier:"Read the full dossier" };
+  const c = lang === "hi" ? { start:"आपका करियर परिदृश्य पासपोर्ट से शुरू होता है", onboarding:"ऑनबोर्डिंग शुरू करें", preparing:"आपका नियम-आधारित परिदृश्य तैयार हो रहा है…", header:"करियर परिदृश्य", title:"खोजने योग्य मज़बूत विकल्प", intro:"आपकी मौजूदा प्रोफ़ाइल पर आधारित। स्कोर प्रमाण-आधारित संकेत हैं, अंतिम निर्णय नहीं।", ask:"क्यों पूछें · अगर ऐसा हो तो पूछें", confidence:"विश्वसनीयता", demand:"माँग", why:"यह क्यों?", build:"मार्ग बनाएँ", dossier:"पूरा विवरण पढ़ें", footer:"संस्करणित ज्ञान-आधार पर नियम-आधारित स्कोरिंग · अंकों के लिए LLM का उपयोग नहीं" } : lang === "te" ? { start:"మీ కెరీర్ దృశ్యం పాస్‌పోర్ట్‌తో మొదలవుతుంది", onboarding:"ఆన్‌బోర్డింగ్ ప్రారంభించండి", preparing:"మీ నియమ-ఆధారిత దృశ్యం సిద్ధమవుతోంది…", header:"కెరీర్ దృశ్యం", title:"అన్వేషించదగిన బలమైన ఎంపికలు", intro:"మీ ప్రస్తుత ప్రొఫైల్ ఆధారంగా. స్కోర్లు ఆధారాలతో కూడిన సంకేతాలు మాత్రమే, తీర్పు కాదు.", ask:"ఎందుకో అడగండి · పరిస్థితి మారితే అడగండి", confidence:"నమ్మకం", demand:"డిమాండ్", why:"ఇది ఎందుకు?", build:"మార్గం నిర్మించండి", dossier:"పూర్తి వివరాలు చదవండి", footer:"వెర్షన్ చేసిన జ్ఞాన భాండాగారంపై నియమ-ఆధారిత స్కోరింగ్ · స్కోర్లకు LLM ఉపయోగించలేదు" } : { start:"Your career landscape starts with a passport", onboarding:"Start onboarding", preparing:"Preparing your deterministic landscape…", header:"The Career Landscape", title:"Strong options to explore", intro:"Based on your current profile. Scores are evidence-led signals, never a verdict.", ask:"Ask why · Ask what-if", confidence:"confidence", demand:"Demand", why:"Why this?", build:"Build pathway", dossier:"Read the full dossier", footer:"Deterministic scoring over the versioned knowledge base · LLM not used for scores" };
   const [explanation, setExplanation] = useState<CareerRecommendation | null>(
     null,
   );
@@ -81,7 +83,7 @@ export function RecommendationsPage() {
           <StickFigure pose="mapping" size={88} />
           <div>
             <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">
-              The Career Landscape ·{" "}
+              {c.header} ·{" "}
               {new Date(recommendations.generatedAt).toLocaleDateString(locale)}{" "}
               · profile v{passport.version} · {recommendations.kbVersion}
             </div>
@@ -109,6 +111,7 @@ export function RecommendationsPage() {
                   key={recommendation.occupationId}
                   recommendation={recommendation}
                   locale={locale}
+                  lang={lang}
                   copy={c}
                   onExplain={() => setExplanation(recommendation)}
                 />
@@ -117,8 +120,7 @@ export function RecommendationsPage() {
           </section>
         ))}
         <p className="font-[JetBrains_Mono] text-[10px] uppercase tracking-wide text-black/45">
-          Deterministic scoring over KB {recommendations.kbVersion} · profile v
-          {passport.version} · LLM used for wording only.
+          {c.footer} · KB {recommendations.kbVersion} · profile v{passport.version}
         </p>
         <Link
           to="/counselor"
@@ -141,11 +143,13 @@ export function RecommendationsPage() {
 function RecommendationCard({
   recommendation,
   locale,
+  lang,
   copy,
   onExplain,
 }: {
   recommendation: CareerRecommendation;
   locale: string;
+  lang: "en" | "hi" | "te";
   copy: { confidence:string; demand:string; why:string; build:string; dossier:string };
   onExplain: () => void;
 }) {
@@ -158,12 +162,12 @@ function RecommendationCard({
       </div>
       <div className="flex items-start justify-between gap-2">
         <h3 className="mt-2 text-2xl font-[Playfair_Display]">
-          {occupation.title}
+          {occupationName(occupation.id, occupation.title, lang)}
         </h3>
         <button
           onClick={() =>
             speak(
-              `${occupation.title}. ${recommendation.topReasons.slice(0, 2).join(". ")}`,
+              `${occupationName(occupation.id, occupation.title, lang, false)}. ${recommendation.topReasons.slice(0, 2).map(reason=>localizedReason(reason,lang)).join(". ")}`,
               locale,
             )
           }
@@ -178,7 +182,7 @@ function RecommendationCard({
           {recommendation.totalScore}
         </div>
         <div className="font-[JetBrains_Mono] text-[10px] uppercase">
-          {copy.confidence} · {recommendation.confidence}
+          {copy.confidence} · {localizedConfidence(recommendation.confidence, lang)}
         </div>
       </div>
       <div className="mt-2 h-2 bg-black/10">
@@ -190,7 +194,7 @@ function RecommendationCard({
       <ul className="mt-4 space-y-2">
         {recommendation.topReasons.slice(0, 2).map((reason) => (
           <li key={reason} className="font-[Inter] text-sm text-black/70">
-            → {reason}
+            → {localizedReason(reason, lang)}
           </li>
         ))}
       </ul>
@@ -206,7 +210,7 @@ function RecommendationCard({
       </div>
       {market && (
         <p className="mt-4 font-[JetBrains_Mono] text-[9px] uppercase text-black/50">
-          {copy.demand} {market.demandIndex} · {market.growthTrend} ·{" "}
+          {copy.demand} {market.demandIndex} · {localizedTrend(market.growthTrend, lang)} ·{" "}
           {market.observedPeriod} · {market.regions.join(", ")}
         </p>
       )}

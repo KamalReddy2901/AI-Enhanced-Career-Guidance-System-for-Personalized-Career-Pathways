@@ -20,6 +20,7 @@ export function AssessAptitudePage() {
   const { updatePassport } = useGuidance();
   const { user } = useAuth();
   const { lang, locale } = useT();
+  const explainLabel = lang === "hi" ? "यह स्कोर क्यों?" : lang === "te" ? "ఈ స్కోరు ఎందుకు?" : "Why this score?";
   const [form] = useState<0 | 1>(() =>
     localStorage.getItem(FORM_STORAGE_KEY) === "1" ? 1 : 0,
   );
@@ -110,7 +111,7 @@ export function AssessAptitudePage() {
                     style={{ width: `${score}%` }}
                   />
                 </div>
-                <div className="mt-1 font-[Inter] text-[10px] underline">Why this score?</div>
+                <div className="mt-1 font-[Inter] text-[10px] underline">{explainLabel}</div>
               </button>
             ))}
             <p className="border-t border-black/10 pt-4 mt-6 text-sm font-[Inter] text-black/60">

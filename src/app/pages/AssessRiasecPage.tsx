@@ -23,6 +23,8 @@ export function AssessRiasecPage() {
   const { updatePassport } = useGuidance();
   const { user } = useAuth();
   const { lang, locale } = useT();
+  const resultCopy = lang === "hi" ? {title:"रुचि सूची पूरी हुई",top:"शीर्ष कोड",back:"आकलन डेस्क पर वापस जाएँ",why:"क्यों?",activity:"कार्य गतिविधि",hint:"आपकी खोज प्रश्नोत्तरी एक शुरुआती झुकाव सुझाती है। इसे स्कोर न मानें—पूरी सूची पूरी करें।"} : lang === "te" ? {title:"ఆసక్తి జాబితా పూర్తైంది",top:"ప్రధాన కోడ్",back:"అంచనా విభాగానికి తిరిగి వెళ్ళండి",why:"ఎందుకు?",activity:"పని కార్యకలాపం",hint:"మీ అన్వేషణ క్విజ్ ఒక ప్రారంభ మొగ్గును సూచిస్తుంది. దీన్ని స్కోరుగా భావించకుండా పూర్తి జాబితాను పూర్తి చేయండి."} : {title:"Interest inventory complete",top:"TOP CODE",back:"Back to assessment desk",why:"Why?",activity:"work activity",hint:"Your exploration quiz suggests an initial leaning. Treat it as a prompt—not a score—and complete this full inventory."};
+  const interpretation = (dimension: keyof ReturnType<typeof scoreRiasec>) => lang === "hi" ? ({R:"आप व्यावहारिक, हाथों से किए जाने वाले और ठोस परिणाम वाले काम की ओर आकर्षित होते हैं।",I:"आप जाँच, विश्लेषण और जटिल समस्याएँ सुलझाने वाले काम की ओर आकर्षित होते हैं।",A:"आप रचनात्मक अभिव्यक्ति और नए विचारों वाले काम की ओर आकर्षित होते हैं।",S:"आप लोगों की सहायता, शिक्षा और सहयोग वाले काम की ओर आकर्षित होते हैं।",E:"आप नेतृत्व, प्रभाव और पहल वाले काम की ओर आकर्षित होते हैं।",C:"आप व्यवस्थित, सटीक और संरचित काम की ओर आकर्षित होते हैं।"})[dimension] : lang === "te" ? ({R:"మీరు ఆచరణాత్మకంగా చేతులతో చేసే, స్పష్టమైన ఫలితాలున్న పనివైపు ఆకర్షితులవుతారు.",I:"మీరు పరిశోధన, విశ్లేషణ, క్లిష్ట సమస్యల పరిష్కార పనివైపు ఆకర్షితులవుతారు.",A:"మీరు సృజనాత్మక వ్యక్తీకరణ, కొత్త ఆలోచనల పనివైపు ఆకర్షితులవుతారు.",S:"మీరు ఇతరులకు సహాయం, బోధన, సహకార పనివైపు ఆకర్షితులవుతారు.",E:"మీరు నాయకత్వం, ప్రభావం, చొరవ ఉన్న పనివైపు ఆకర్షితులవుతారు.",C:"మీరు క్రమబద్ధమైన, ఖచ్చితమైన, నిర్మిత పనివైపు ఆకర్షితులవుతారు."})[dimension] : interpretTopDimension(dimension);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [result, setResult] = useState<ReturnType<typeof scoreRiasec> | null>(
@@ -49,7 +51,7 @@ export function AssessRiasecPage() {
   };
   if (result)
     return (
-      <AssessmentShell title="Interest inventory complete" pose="celebrating">
+      <AssessmentShell title={resultCopy.title} pose="celebrating">
         <div className="mx-auto max-w-xl">
           <RiasecHexagon scores={result} />
           <div className="mb-6 grid grid-cols-3 gap-2">
@@ -57,15 +59,15 @@ export function AssessRiasecPage() {
               <button key={key} onClick={()=>{const dimensionItems=RIASEC_ITEMS.filter(item=>item.dimension===key);setWhy({title:`Why ${key} is ${value}`,eyebrow:"Interest evidence desk",summary:"This score reflects only your six responses in this RIASEC work-activity family.",method:"Each response is recorded from 1 to 5. The six-item total is shifted from the minimum and normalized to 0–100: (sum − 6) ÷ 24 × 100.",items:dimensionItems.map((item,itemIndex)=>({label:`Response ${itemIndex+1} · ${answers[item.id]??0}/5`,value:((answers[item.id]??1)-1)*25,detail:item.text})),source:"36-item RIASEC work-activity inventory"})}} className="min-h-11 border border-black/10 p-3 text-center hover:border-black" aria-label={`Explain ${key} score ${value}`}>
                 <div className="font-[JetBrains_Mono] text-xs">{key}</div>
                 <div className="text-2xl font-[Playfair_Display]">{value}</div>
-                <div className="font-[Inter] text-[10px] underline">Why?</div>
+                <div className="font-[Inter] text-[10px] underline">{resultCopy.why}</div>
               </button>
             ))}
           </div>
           <p className="mb-2 font-[JetBrains_Mono] text-sm">
-            TOP CODE · {getTopCode(result)}
+            {resultCopy.top} · {getTopCode(result)}
           </p>
           <p className="font-[Inter] text-black/70">
-            {interpretTopDimension(
+            {interpretation(
               getTopCode(result)[0] as Parameters<
                 typeof interpretTopDimension
               >[0],
@@ -75,7 +77,7 @@ export function AssessRiasecPage() {
             onClick={() => navigate("/assess")}
             className="mt-6 min-h-11 w-full bg-black p-3 font-[Inter] text-white"
           >
-            Back to assessment desk
+            {resultCopy.back}
           </button>
           {why && <WhyPanel evidence={why} onClose={()=>setWhy(null)}/>}
         </div>
@@ -86,14 +88,14 @@ export function AssessRiasecPage() {
       <div className="mx-auto max-w-xl">
         {localStorage.getItem("cc_guidance_quiz_interest_hint") && (
           <div className="mb-5 border-l-4 border-black bg-white p-4 font-[Inter] text-sm">
-            Your exploration quiz suggests a <strong>{localStorage.getItem("cc_guidance_quiz_interest_hint")}</strong> leaning. Treat it as a prompt—not a score—and complete this full inventory.
+            {resultCopy.hint}
           </div>
         )}
         <div className="mb-3 flex justify-between font-[JetBrains_Mono] text-xs uppercase tracking-wide">
           <span>
             {index + 1} / {RIASEC_ITEMS.length}
           </span>
-          <span>{item.dimension} · work activity</span>
+          <span>{item.dimension} · {resultCopy.activity}</span>
         </div>
         <div className="mb-8 h-1 bg-black/10">
           <div
