@@ -1,7 +1,7 @@
 {
-  "name": "CareerCase",
-  "short_name": "CareerCase",
-  "description": "Experience any career before you commit — AI-powered career exploration",
+  "name": "CareerCase — AI Career Pathways",
+  "short_name": "CareerCase Pathways",
+  "description": "AI-enhanced, explainable career pathways for the MSDE/NCVET SIH problem statement",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

@@ -219,13 +219,13 @@ export function HomePage() {
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             <motion.button
-              onClick={() => navigate('/auth?mode=signup')}
+              onClick={() => navigate('/onboarding')}
               className="flex items-center gap-3 bg-black text-white py-4 px-10 font-[Inter] hover:bg-black/85 transition-colors"
               style={{ fontSize: '1rem' }}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
             >
-              Get Started for Free
+              Chart my pathway
               <ArrowRight size={18} />
             </motion.button>
             <button
