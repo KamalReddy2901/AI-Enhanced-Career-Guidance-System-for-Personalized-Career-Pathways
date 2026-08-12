@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, FlaskConical, Scale, ChevronDown, FileText, Brain, Swords, Zap, BarChart2, MessageSquare, ArrowRight, ExternalLink, TrendingUp, TrendingDown, Rocket, Loader2, Map, ArrowLeftRight } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
-import { StaticMasthead } from '../components/hero/StaticMasthead';
+import { WordCloudMasthead } from '../components/hero/WordCloudMasthead';
 import type { CareerRecommendation } from '../engine/types';
 
 import { useApp } from '../context/AppContext';
@@ -13,14 +13,8 @@ import type { TrendingCareers } from '../services/ai';
 import { toast } from 'sonner';
 import { useT } from '../i18n';
 
-const ShowpieceHero = lazy(() => import('../components/hero/ShowpieceHero').then(module => ({ default: module.ShowpieceHero })));
 const EditorialHomeHero = lazy(() => import('../components/home/EditorialHomeHero').then(module => ({ default: module.EditorialHomeHero })));
 const WhyPanel = lazy(() => import('../components/guidance/WhyPanel').then(module => ({ default: module.WhyPanel })));
-
-function showpieceCapable() {
-  const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
-  return window.innerWidth >= 1024 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches && (navigator.hardwareConcurrency ?? 4) > 4 && (memory === undefined || memory >= 4);
-}
 
 function ScrollSectionNav({ sections }: { sections: Array<{ id: string; label: string }> }) {
   const [activeId, setActiveId] = useState(sections[0]?.id ?? '');
@@ -89,7 +83,6 @@ export function HomePage() {
   const [compareQueue, setCompareQueue] = useState<string[]>([]);
   const [homeExplanation, setHomeExplanation] = useState<CareerRecommendation | null>(null);
   const [comparingTitles, setComparingTitles] = useState(false);
-  const [useShowpiece, setUseShowpiece] = useState(showpieceCapable);
   const trendingRef = useRef<HTMLElement | null>(null);
   const trendingFetched = useRef(false);
 
@@ -185,7 +178,7 @@ export function HomePage() {
 
   return (
     <div className="relative bg-background">
-      {useShowpiece ? <Suspense fallback={<StaticMasthead passport={passport} showLanding={showLanding} onNavigate={navigate}/>}><ShowpieceHero hasPassport={Boolean(passport)} showLanding={showLanding} onNavigate={navigate} onFallback={()=>setUseShowpiece(false)} /></Suspense> : <StaticMasthead passport={passport} showLanding={showLanding} onNavigate={navigate}/>} 
+      <WordCloudMasthead passport={passport} showLanding={showLanding} onNavigate={navigate} />
       <Suspense fallback={null}><EditorialHomeHero
         passport={passport}
         recommendations={recommendations}
