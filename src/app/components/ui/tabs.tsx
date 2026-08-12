@@ -2,19 +2,39 @@
 
 import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
+import { motion, useReducedMotion } from "motion/react";
 
 import { cn } from "./utils";
 
+const TabsValueContext = React.createContext<string | undefined>(undefined);
+
 function Tabs({
   className,
+  value,
+  defaultValue,
+  onValueChange,
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.Root>) {
+  const [activeValue, setActiveValue] = React.useState(value ?? defaultValue);
+
+  React.useEffect(() => {
+    if (value !== undefined) setActiveValue(value);
+  }, [value]);
+
   return (
-    <TabsPrimitive.Root
-      data-slot="tabs"
-      className={cn("flex flex-col gap-2", className)}
-      {...props}
-    />
+    <TabsValueContext.Provider value={activeValue}>
+      <TabsPrimitive.Root
+        data-slot="tabs"
+        className={cn("flex flex-col gap-6", className)}
+        value={value}
+        defaultValue={defaultValue}
+        onValueChange={(nextValue) => {
+          setActiveValue(nextValue);
+          onValueChange?.(nextValue);
+        }}
+        {...props}
+      />
+    </TabsValueContext.Provider>
   );
 }
 
@@ -26,7 +46,7 @@ function TabsList({
     <TabsPrimitive.List
       data-slot="tabs-list"
       className={cn(
-        "bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-xl p-[3px] flex",
+        "inline-flex h-auto w-fit items-end justify-start border-b border-[var(--ink)] bg-transparent text-[var(--ink-soft)]",
         className,
       )}
       {...props}
@@ -36,17 +56,33 @@ function TabsList({
 
 function TabsTrigger({
   className,
+  value,
+  children,
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
+  const activeValue = React.useContext(TabsValueContext);
+  const reducedMotion = useReducedMotion();
+  const isActive = activeValue === value;
+
   return (
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "data-[state=active]:bg-card focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring text-foreground inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-xl border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "label-caps relative inline-flex h-auto flex-1 items-center justify-center gap-1.5 whitespace-nowrap px-4 py-3 text-[var(--ink-soft)] transition-colors data-[state=active]:text-[var(--ink)] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
+      value={value}
       {...props}
-    />
+    >
+      {children}
+      {isActive && (
+        <motion.span
+          layoutId="editorial-tab-underline"
+          className="absolute inset-x-0 -bottom-px h-1 bg-[var(--accent-news)]"
+          transition={reducedMotion ? { duration: 0 } : { duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        />
+      )}
+    </TabsPrimitive.Trigger>
   );
 }
 

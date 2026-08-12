@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { MotionConfig, motion, useReducedMotion } from 'motion/react';
 
 export type StickFigurePose =
   | 'waking' | 'walking' | 'sitting' | 'presenting' | 'thinking'
@@ -13,11 +13,16 @@ interface StickFigureProps {
   size?: number;
   className?: string;
   animate?: boolean;
+  animated?: boolean;
 }
 
-export function StickFigure({ pose, size = 120, className = '', animate = true }: StickFigureProps) {
+export function StickFigure({ pose, size = 120, className = '', animate = true, animated }: StickFigureProps) {
+  const reducedMotion = useReducedMotion();
+  const shouldAnimate = (animated ?? animate) && !reducedMotion;
+
   return (
-    <motion.svg
+    <MotionConfig reducedMotion={shouldAnimate ? 'never' : 'always'}>
+      <motion.svg
       width={size}
       height={size}
       viewBox="0 0 120 120"
@@ -25,12 +30,13 @@ export function StickFigure({ pose, size = 120, className = '', animate = true }
       overflow="hidden"
       className={`block shrink-0 ${className}`}
       style={{ overflow: 'hidden' }}
-      initial={animate ? { opacity: 0, y: 10 } : {}}
-      animate={animate ? { opacity: 1, y: 0 } : {}}
+      initial={shouldAnimate ? { opacity: 0, y: 10 } : false}
+      animate={shouldAnimate ? { opacity: 1, y: 0 } : undefined}
       transition={{ duration: 0.5 }}
     >
       {renderPose(pose)}
-    </motion.svg>
+      </motion.svg>
+    </MotionConfig>
   );
 }
 

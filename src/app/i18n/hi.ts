@@ -15,6 +15,8 @@ export const hi: Record<keyof typeof en, string> = {
   home: "होम",
   explore: "करियर खोजें",
   pathways: "मार्ग",
+  archive: "अभिलेख",
+  more: "और",
   best_fit: "अभी के सबसे अच्छे मेल",
   growth: "विकास के अवसर",
   easiest_transition: "सबसे सहज बदलाव",

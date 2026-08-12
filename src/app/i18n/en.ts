@@ -14,6 +14,8 @@ export const en = {
   home: "Home",
   explore: "Explore",
   pathways: "Pathways",
+  archive: "Archive",
+  more: "More",
   best_fit: "Best current fit",
   growth: "Growth bets",
   easiest_transition: "Easiest transitions",

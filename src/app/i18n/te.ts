@@ -15,6 +15,8 @@ export const te: Record<keyof typeof en, string> = {
   home: "హోమ్",
   explore: "కెరీర్ అన్వేషణ",
   pathways: "మార్గాలు",
+  archive: "ఆర్కైవ్",
+  more: "మరిన్ని",
   best_fit: "ప్రస్తుతం బలమైన సరిపోలికలు",
   growth: "వృద్ధి అవకాశాలు",
   easiest_transition: "సులభమైన మార్పులు",

@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Clock, Home, Compass, Settings, Menu, X, Map, MessageCircle } from 'lucide-react';
+import { Clock, Home, Compass, Settings, Menu, X, Map, MessageCircle, MoreHorizontal } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../hooks/useFavorites';
-import { StickFigure } from './StickFigure';
 import { sounds } from '../utils/sounds';
-import { useT } from '../i18n';
+import { LanguageSwitcher, useT } from '../i18n';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 
 export function Navbar() {
   const { t } = useT();
@@ -36,17 +36,19 @@ export function Navbar() {
       {
         to: '/history',
         icon: <Clock size={14} />,
-        label: historyCount > 0 ? `Archive (${historyCount})` : 'Archive',
+        label: historyCount > 0 ? `${t('archive')} (${historyCount})` : t('archive'),
         active: location.pathname === '/history' || location.pathname === '/favorites',
       },
       { to: '/settings', icon: <Settings size={14} />, label: t('settings'), active: location.pathname === '/settings' },
     ] : [{ to: '/settings', icon: <Settings size={14} />, label: t('settings'), active: location.pathname === '/settings' }],
   ];
+  const primaryLinks = navLinks.slice(0, 4);
+  const overflowLinks = navLinks.slice(4);
 
   return (
     <>
       <motion.nav
-        className="fixed top-0 left-0 right-0 z-50 bg-[#f9f8f7]/92 backdrop-blur-md border-b border-black/8"
+        className="sticky top-0 left-0 right-0 z-50 border-b border-[var(--ink)] bg-[var(--paper)]/90 backdrop-blur-md"
         initial={{ y: -60 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
@@ -66,21 +68,37 @@ export function Navbar() {
               }
             }}
           >
-            <StickFigure pose="standing" size={26} animate={false} />
-            <span
-              className="font-[Playfair_Display] tracking-tight text-black group-hover:opacity-70 transition-opacity"
-              style={{ fontSize: '1.05rem' }}
-            >
-              Career<span className="opacity-35">Case</span>
+            <span className="flex flex-col">
+              <span className="font-display text-lg italic tracking-tight text-[var(--ink)] transition-opacity group-hover:opacity-70">CareerCase</span>
+              <span className="font-mono-ui text-[8px] tracking-[.14em] text-[var(--ink-soft)]">EST. 2025 — VOL. II</span>
             </span>
           </Link>
 
           {/* Desktop nav links */}
           <div className="hidden md:flex items-center gap-0.5 sm:gap-1">
-            {navLinks.map(link => (
+            {primaryLinks.map(link => (
               <NavLink key={link.to} {...link} />
             ))}
-
+            <LanguageSwitcher compact />
+            {overflowLinks.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button type="button" className="label-caps flex items-center gap-1 px-3 py-2" aria-label={t('more')} data-testid="navbar-more-menu">
+                    <MoreHorizontal size={16} strokeWidth={1.5} />
+                    <span className="hidden lg:inline">{t('more')}</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="card-sketch bg-[var(--paper-raised)] p-1">
+                  {overflowLinks.map((link) => (
+                    <DropdownMenuItem key={link.to} asChild>
+                      <Link to={link.to} className="font-mono-ui flex min-h-11 items-center gap-2 px-3 text-xs uppercase tracking-wide">
+                        {link.icon}{link.label}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
 
           {/* Mobile hamburger */}
@@ -120,7 +138,7 @@ export function Navbar() {
                   key={link.to}
                   to={link.to}
                   onClick={() => sounds.navigate()}
-                  className={`flex items-center gap-3 px-4 py-3 font-[Inter] transition-all ${
+                  className={`font-mono-ui flex items-center gap-3 px-4 py-3 text-xs uppercase tracking-wide transition-[background-color,color] ${
                     link.active
                       ? 'bg-black text-white'
                       : 'text-black/60 hover:bg-black/5 hover:text-black'
@@ -154,7 +172,7 @@ function NavLink({
     <Link
       to={to}
       onClick={() => sounds.navigate()}
-      className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 transition-all font-[Inter] ${
+      className={`label-caps group relative flex items-center gap-1.5 px-2.5 py-2 transition-colors sm:px-3 ${
         active
           ? 'bg-black text-white'
           : 'text-black/55 hover:text-black hover:bg-black/5'
@@ -163,6 +181,7 @@ function NavLink({
     >
       {icon}
       <span className="hidden lg:inline">{label}</span>
+      <span className="absolute inset-x-2 bottom-0 h-px origin-left scale-x-0 bg-[var(--ink)] transition-transform duration-200 group-hover:scale-x-100" />
     </Link>
   );
 }
