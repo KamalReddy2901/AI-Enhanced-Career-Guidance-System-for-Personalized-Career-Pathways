@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { motion } from 'motion/react';
+import { animate, motion, useReducedMotion } from 'motion/react';
 import { Link } from "react-router";
 import { StickFigure } from "../components/StickFigure";
 import { WhyPanel } from "../components/guidance/WhyPanel";
@@ -25,7 +25,14 @@ import { Volume2 } from 'lucide-react';
 type LandscapeFilter = 'all' | 'safe' | 'stretch' | 'frontier';
 const landscapeGroup = (group: RecommendationGroup): Exclude<LandscapeFilter, 'all'> =>
   group === 'best_fit' || group === 'easiest_transition' ? 'safe' :
-    group === 'growth' || group === 'aspiration' ? 'stretch' : 'frontier';
+    group === 'growth' ? 'stretch' : 'frontier';
+
+function CountUp({value}:{value:number}) {
+  const reduced=useReducedMotion();
+  const [display,setDisplay]=useState(reduced?Math.round(value):0);
+  useEffect(()=>{if(reduced){setDisplay(Math.round(value));return;}return animate(0,value,{duration:.9,ease:[.22,1,.36,1],onUpdate:latest=>setDisplay(Math.round(latest))}).stop;},[value,reduced]);
+  return <>{display}</>;
+}
 
 export function RecommendationsPage() {
   const {
@@ -163,7 +170,7 @@ function RecommendationCard({
       </div>
       <div className="mt-4 flex items-end justify-between">
         <div className="font-mono-ui text-5xl">
-          {recommendation.totalScore}
+          <CountUp value={recommendation.totalScore}/>
         </div>
         <div className="font-[JetBrains_Mono] text-[10px] uppercase">
           {copy.confidence} · {localizedConfidence(recommendation.confidence, lang)}

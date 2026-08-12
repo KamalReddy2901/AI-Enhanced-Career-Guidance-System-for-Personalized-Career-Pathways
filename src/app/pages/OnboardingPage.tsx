@@ -9,20 +9,20 @@ import { hapticLight, hapticSuccess } from '../utils/haptic';
 import { calculateCompleteness } from '../engine/skillProfile';
 import type { Segment, CareerPassport, Education, Constraints, Experience } from '../engine/types';
 import { OCCUPATIONS } from '../data/knowledge';
-import { LanguageSwitcher, useT } from '../i18n';
+import { LanguageSwitcher, useT, type Language } from '../i18n';
 import { AnimatePresence, motion } from 'motion/react';
 
-const STEPS = ['segment', 'goals', 'background', 'constraints', 'consent', 'finish'] as const;
+const STEPS = ['language', 'segment', 'goals', 'background', 'constraints', 'consent', 'finish'] as const;
 type Step = typeof STEPS[number];
 
 export function OnboardingPage() {
   const navigate = useNavigate();
   const { updatePassport, passport } = useGuidance();
   const { user } = useAuth();
-  const { lang } = useT();
-  const nav = lang === 'hi' ? { steps:['स्थिति','लक्ष्य','पृष्ठभूमि','सीमाएँ','सहमति','पूर्ण'], back:'वापस', next:'आगे बढ़ें', finish:'मेरी यात्रा शुरू करें' } : lang === 'te' ? { steps:['స్థితి','లక్ష్యాలు','నేపథ్యం','పరిమితులు','సమ్మతి','పూర్తి'], back:'వెనుకకు', next:'కొనసాగించండి', finish:'నా ప్రయాణం ప్రారంభించండి' } : { steps:['segment','goals','background','constraints','consent','finish'], back:'Back', next:'Continue', finish:'Start My Journey' };
+  const { lang, setLang } = useT();
+  const nav = lang === 'hi' ? { steps:['भाषा','स्थिति','लक्ष्य','पृष्ठभूमि','सीमाएँ','सहमति','पूर्ण'], back:'वापस', next:'आगे बढ़ें', finish:'मेरी यात्रा शुरू करें' } : lang === 'te' ? { steps:['భాష','స్థితి','లక్ష్యాలు','నేపథ్యం','పరిమితులు','సమ్మతి','పూర్తి'], back:'వెనుకకు', next:'కొనసాగించండి', finish:'నా ప్రయాణం ప్రారంభించండి' } : { steps:['language','segment','goals','background','constraints','consent','finish'], back:'Back', next:'Continue', finish:'Start My Journey' };
   
-  const [currentStep, setCurrentStep] = useState<Step>('segment');
+  const [currentStep, setCurrentStep] = useState<Step>('language');
   const [segment, setSegment] = useState<Segment | null>(null);
   const [goals, setGoals] = useState<string[]>([]);
   const [education, setEducation] = useState<Education>({ level: 'class_12' });
@@ -130,6 +130,7 @@ export function OnboardingPage() {
 
   const canProceed = () => {
     switch (currentStep) {
+      case 'language': return true;
       case 'segment': return segment !== null;
       case 'goals': return true; // optional
       case 'background': return education.level !== 'below_10' || experiences.length === 0;
@@ -163,7 +164,7 @@ export function OnboardingPage() {
         </div>
         <div className="flex justify-between mt-2">
           {STEPS.map((step, idx) => (
-            <div key={step} className={`w-1/6 text-center text-[8px] sm:text-xs font-[JetBrains_Mono] uppercase sm:tracking-wide ${
+            <div key={step} className={`flex-1 text-center text-[8px] sm:text-xs font-[JetBrains_Mono] uppercase sm:tracking-wide ${
               idx <= stepIndex ? 'text-black' : 'text-black/30'
             }`}>
               {nav.steps[idx]}
@@ -174,6 +175,7 @@ export function OnboardingPage() {
 
       {/* Content */}
       <AnimatePresence mode="wait"><motion.div key={currentStep} initial={{opacity:0,x:32}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-32}} transition={{duration:.28}} className={`max-w-2xl mx-auto bg-white border border-black/10 p-8 ${currentStep === 'consent' ? 'consent-contract' : ''}`}>
+        {currentStep === 'language' && <LanguageStep lang={lang} setLang={setLang} />}
         {currentStep === 'segment' && <SegmentStep segment={segment} setSegment={setSegment} />}
         {currentStep === 'goals' && <GoalsStep goals={goals} setGoals={setGoals} />}
         {currentStep === 'background' && <BackgroundStep education={education} setEducation={setEducation} experiences={experiences} setExperiences={setExperiences} />}
@@ -183,7 +185,7 @@ export function OnboardingPage() {
 
         {/* Navigation */}
         <div className="mt-8 flex justify-between">
-          {currentStep !== 'segment' && (
+          {currentStep !== 'language' && (
             <button
               onClick={handleBack}
               className="px-6 py-2 border border-black/20 hover:bg-black/5 font-[Inter] text-sm transition-colors"
@@ -214,6 +216,17 @@ export function OnboardingPage() {
 }
 
 // ─── Step Components ──────────────────────────────────────────────────────────
+
+function LanguageStep({ lang, setLang }: { lang: Language; setLang: (language: Language) => void }) {
+  const heading=lang==='hi'?'अपना संस्करण चुनें':lang==='te'?'మీ సంచికను ఎంచుకోండి':'Choose your edition';
+  const desk=lang==='hi'?'भाषा डेस्क':lang==='te'?'భాషా విభాగం':'Language desk';
+  const choices: Array<{value:Language;code:string;sample:string;label:string}> = [
+    {value:'en',code:'EN',sample:'Shape a future that fits.',label:'English'},
+    {value:'hi',code:'हि',sample:'अपना सही भविष्य चुनें।',label:'हिन्दी'},
+    {value:'te',code:'తె',sample:'మీకు సరిపోయే భవిష్యత్తు.',label:'తెలుగు'},
+  ];
+  return <div><div className="label-caps">{desk}</div><h2 className="font-display mt-2 text-4xl">{heading}</h2><div className="mt-8 grid gap-4 sm:grid-cols-3">{choices.map(choice=><motion.button key={choice.value} type="button" data-testid={`onboarding-language-${choice.value}`} aria-label={`Use ${choice.label}`} onClick={()=>setLang(choice.value)} whileHover={{y:-3}} className={`card-sketch relative min-h-48 p-5 text-left ${lang===choice.value?'!border-[var(--accent-news)]':''}`}><span className="font-mono-ui text-xs">{choice.code} · {choice.label}</span><span className="font-display mt-7 block text-2xl leading-[1.3]">{choice.sample}</span>{lang===choice.value&&<motion.svg initial={{pathLength:0}} animate={{pathLength:1}} className="absolute right-3 top-3 h-7 w-7 text-[var(--accent-news)]" viewBox="0 0 24 24" fill="none"><motion.path d="M4 12l5 5L20 6" stroke="currentColor" strokeWidth="2" initial={{pathLength:0}} animate={{pathLength:1}}/></motion.svg>}</motion.button>)}</div></div>;
+}
 
 function SegmentStep({ segment, setSegment }: { segment: Segment | null; setSegment: (s: Segment) => void }) {
   const { lang } = useT();
@@ -597,6 +610,7 @@ function ConsentStep({ isMinor, setIsMinor, guardianName, setGuardianName, guard
               {t('dataProcessing')}
             </label>
           </div>
+          {dataConsentGiven && <motion.svg data-testid="consent-signature" viewBox="0 0 180 45" className="mt-4 h-12 w-44 text-[var(--accent-news)]" aria-label="Consent signature recorded"><motion.path d="M5 31c20-27 16 16 34-9s10 24 30 1c9-10 3 19 20 4 10-9 18 7 29 0 15-9 26-8 55 2" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" initial={{pathLength:0}} animate={{pathLength:1}} transition={{duration:.6}}/></motion.svg>}
           <div className="flex items-start gap-2 mt-3">
             <input type="checkbox" id="cloud-history-consent" checked={cloudHistoryConsent} onChange={(event) => setCloudHistoryConsent(event.target.checked)} className="w-4 h-4 mt-1" />
             <label htmlFor="cloud-history-consent" className="font-[Inter] text-sm">{t('cloudHistory')}</label>

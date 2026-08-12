@@ -8,6 +8,7 @@ import { generateInterviewQuestions, type InterviewQuestion } from '../services/
 import { downloadInterviewPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
+import { TextReveal } from '../motion/TextReveal';
 
 export function InterviewPrepPage() {
   const navigate = useNavigate();
@@ -94,9 +95,7 @@ export function InterviewPrepPage() {
             <div className="flex items-center gap-4">
               <StickFigure pose="presenting" size={64} />
               <div>
-                <h1 className="font-[Playfair_Display] text-black" style={{ fontSize: '2rem' }}>
-                  Interview Preparation
-                </h1>
+                <h1 className="font-display text-5xl leading-[1.25] text-black"><TextReveal text="Interview Preparation" /></h1>
                 <p className="font-[Inter] text-black/40 flex items-center gap-1.5" style={{ fontSize: '0.82rem' }}>
                   <Sparkles size={12} />
                   for {currentJob.title}

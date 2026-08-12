@@ -7,6 +7,7 @@ import { MagnifierSearch } from '../components/MagnifierSearch';
 import { StickFigure } from '../components/StickFigure';
 import { WhyPanel } from '../components/guidance/WhyPanel';
 import { EditorialHomeHero } from '../components/home/EditorialHomeHero';
+import { StaticMasthead } from '../components/hero/StaticMasthead';
 import type { CareerRecommendation } from '../engine/types';
 
 import { useApp } from '../context/AppContext';
@@ -90,7 +91,6 @@ export function HomePage() {
   const [homeExplanation, setHomeExplanation] = useState<CareerRecommendation | null>(null);
   const [comparingTitles, setComparingTitles] = useState(false);
   const [useShowpiece, setUseShowpiece] = useState(showpieceCapable);
-  const [showpieceReady, setShowpieceReady] = useState(false);
   const trendingRef = useRef<HTMLElement | null>(null);
   const trendingFetched = useRef(false);
 
@@ -185,13 +185,12 @@ export function HomePage() {
   }, [searchingCareer, searchJob, searchJobAI, setCurrentJob, addToHistory, navigate, setRefinementCount, isSupabaseConfigured, user]);
 
   return (
-    <div className={`relative bg-background ${showpieceReady ? '[&>#hero]:hidden' : ''}`}>
-      {useShowpiece && <Suspense fallback={null}><ShowpieceHero hasPassport={Boolean(passport)} showLanding={showLanding} onNavigate={navigate} onReady={()=>setShowpieceReady(true)} onFallback={()=>{setShowpieceReady(false);setUseShowpiece(false)}} /></Suspense>}
+    <div className="relative bg-background">
+      {useShowpiece ? <Suspense fallback={<StaticMasthead passport={passport} showLanding={showLanding} onNavigate={navigate}/>}><ShowpieceHero hasPassport={Boolean(passport)} showLanding={showLanding} onNavigate={navigate} onFallback={()=>setUseShowpiece(false)} /></Suspense> : <StaticMasthead passport={passport} showLanding={showLanding} onNavigate={navigate}/>} 
       <EditorialHomeHero
         passport={passport}
         recommendations={recommendations}
         recommendationChanges={recommendationChanges}
-        showLanding={showLanding}
         onNavigate={navigate}
         onExplain={setHomeExplanation}
         onDismissChanges={dismissRecommendationChanges}

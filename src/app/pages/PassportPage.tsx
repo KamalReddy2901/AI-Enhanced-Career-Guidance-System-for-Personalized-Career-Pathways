@@ -16,11 +16,15 @@ import type { SkillClaim } from '../engine/types';
 import { logProgress } from '../services/guidanceDb';
 import { WhyPanel, type ScoreEvidence } from '../components/guidance/WhyPanel';
 import { motion } from 'motion/react';
+import { TextReveal } from '../motion/TextReveal';
+import { useT } from '../i18n';
 
 export function PassportPage() {
   const navigate = useNavigate();
   const { passport, updatePassport } = useGuidance();
   const { user } = useAuth();
+  const { lang } = useT();
+  const pc = lang==='hi'?{title:'करियर पासपोर्ट',republic:'करियरकेस गणराज्य — करियर पासपोर्ट',print:'पासपोर्ट प्रिंट करें',share:'शेयर लिंक कॉपी करें',name:'नाम',code:'RIASEC कोड',match:'शीर्ष मिलान',explorer:'करियर खोजकर्ता',assessed:'मूल्यांकित'}:lang==='te'?{title:'కెరీర్ పాస్‌పోర్ట్',republic:'కెరీర్‌కేస్ గణతంత్రం — కెరీర్ పాస్‌పోర్ట్',print:'పాస్‌పోర్ట్ ముద్రించండి',share:'షేర్ లింక్ కాపీ చేయండి',name:'పేరు',code:'RIASEC కోడ్',match:'అగ్ర సరిపోలిక',explorer:'కెరీర్ అన్వేషి',assessed:'అంచనా'}:{title:'Career Passport',republic:'Republic of CareerCase — Career Passport',print:'Print passport',share:'Copy share link',name:'Name',code:'RIASEC code',match:'Top match',explorer:'Career explorer',assessed:'Assessed'};
   
   const [resumeText, setResumeText] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
@@ -103,23 +107,23 @@ export function PassportPage() {
     <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8 pb-24">
       <GuidanceEntrance className="max-w-4xl mx-auto">
         <div className="passport-toolbar mb-4 flex justify-end gap-2 print:hidden">
-          <button onClick={() => window.print()} data-testid="passport-print-btn" className="min-h-11 border-2 border-black px-4 font-[JetBrains_Mono] text-xs uppercase">Print passport</button>
-          <button onClick={() => void navigator.clipboard?.writeText(window.location.href)} data-testid="passport-share-btn" className="min-h-11 bg-black px-4 font-[JetBrains_Mono] text-xs uppercase text-white">Copy share link</button>
+          <button onClick={() => window.print()} data-testid="passport-print-btn" aria-label={pc.print} className="min-h-11 border-2 border-black px-4 font-[JetBrains_Mono] text-xs uppercase">{pc.print}</button>
+          <button onClick={() => void navigator.clipboard?.writeText(window.location.href)} data-testid="passport-share-btn" aria-label={pc.share} className="min-h-11 bg-black px-4 font-[JetBrains_Mono] text-xs uppercase text-white">{pc.share}</button>
         </div>
         {/* Header "Identity Card" */}
         <div className="career-passport-document relative bg-white p-6 mb-6 md:p-10">
-          <div className="label-caps mb-6 border-b border-black pb-3">Republic of CareerCase — Career Passport</div>
+          <div className="label-caps mb-6 border-b border-black pb-3">{pc.republic}</div>
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-4xl font-[Playfair_Display] text-black mb-1">Career Passport</h1>
+              <h1 className="font-display text-5xl leading-[1.25] text-black mb-1"><TextReveal text={pc.title} /></h1>
               <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-4 font-[JetBrains_Mono] text-xs uppercase tracking-wide md:grid-cols-4">
-                <span><b className="block text-[9px] text-black/45">Name</b>{user?.email?.split('@')[0] ?? 'Career explorer'}</span>
-                <span><b className="block text-[9px] text-black/45">RIASEC code</b>{riasecCode}</span>
-                <span><b className="block text-[9px] text-black/45">Top match</b>{passport.aspiration?.themes[0] ?? passport.segment.replace('_', ' ')}</span>
+                <span><b className="block text-[9px] text-black/45">{pc.name}</b>{user?.email?.split('@')[0] ?? pc.explorer}</span>
+                <span><b className="block text-[9px] text-black/45">{pc.code}</b>{riasecCode}</span>
+                <span><b className="block text-[9px] text-black/45">{pc.match}</b>{passport.aspiration?.themes[0] ?? passport.segment.replace('_', ' ')}</span>
                 <span><b className="block text-[9px] text-black/45">NSQF</b>~{nsqfLevel}</span>
               </div>
             </div>
-            <motion.div initial={{scale:.5,rotate:-18,opacity:0}} animate={{scale:1,rotate:-8,opacity:1}} transition={{type:'spring',bounce:.55,duration:.8}} className="passport-stamp hidden h-24 w-24 shrink-0 items-center justify-center rounded-full border-[3px] border-[var(--accent-news)] text-center font-[JetBrains_Mono] text-[10px] font-bold uppercase text-[var(--accent-news)] md:flex">Assessed<br/>✓ 2026<br/>{passport.completeness}%</motion.div>
+            <motion.svg initial={{scale:.5,rotate:-18,opacity:0}} animate={{scale:1,rotate:-8,opacity:1}} transition={{type:'spring',bounce:.55,duration:.8}} className="passport-stamp hidden h-24 w-24 shrink-0 text-[var(--accent-news)] md:block" viewBox="0 0 100 100" role="img" aria-label={`${pc.assessed} 2026`}><circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="3"/><circle cx="50" cy="50" r="38" fill="none" stroke="currentColor"/><text x="50" y="38" textAnchor="middle" fill="currentColor" fontFamily="monospace" fontSize="9">{pc.assessed.toUpperCase()}</text><text x="50" y="57" textAnchor="middle" fill="currentColor" fontFamily="monospace" fontSize="17">✓ 2026</text><text x="50" y="72" textAnchor="middle" fill="currentColor" fontFamily="monospace" fontSize="9">{passport.completeness}%</text></motion.svg>
           </div>
           <div className="mt-8 overflow-hidden border-t-2 border-black pt-3 whitespace-nowrap font-[JetBrains_Mono] text-[10px] tracking-[.2em]">P&lt;CAREERCASE&lt;&lt;{riasecCode}&lt;&lt;NSQF{nsqfLevel}&lt;&lt;V{passport.version}&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</div>
         </div>

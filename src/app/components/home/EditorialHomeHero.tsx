@@ -1,25 +1,17 @@
-import { lazy, Suspense } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import type { CareerPassport, CareerRecommendation, RecommendationSet } from '../../engine/types';
 import type { RecommendationChange } from '../../context/GuidanceContext';
 import { occupationById } from '../../data/knowledge';
 import { useT } from '../../i18n';
-import { Magnetic } from '../../motion/Magnetic';
-import { TextReveal } from '../../motion/TextReveal';
 import { useReveal } from '../../motion/useReveal';
 import { Button } from '../ui/button';
-import { StickFigure } from '../StickFigure';
 import { StopPress } from '../guidance/StopPress';
-import { useRichVisuals } from '../../hooks/useRichVisuals';
-
-const FloatingNewsprintScene = lazy(() => import('../three/FloatingNewsprintScene').then(module => ({ default: module.FloatingNewsprintScene })));
 
 interface EditorialHomeHeroProps {
   passport: CareerPassport | null;
   recommendations: RecommendationSet | null;
   recommendationChanges: RecommendationChange[];
-  showLanding: boolean;
   onNavigate: (path: string) => void;
   onExplain: (recommendation: CareerRecommendation) => void;
   onDismissChanges: () => void;
@@ -31,7 +23,6 @@ export function EditorialHomeHero({
   passport,
   recommendations,
   recommendationChanges,
-  showLanding,
   onNavigate,
   onExplain,
   onDismissChanges,
@@ -40,7 +31,6 @@ export function EditorialHomeHero({
   const picks = recommendations?.recommendations.slice(0, 3) ?? [];
   const progress = passport?.completeness ?? 0;
   const reveal = useReveal<HTMLDivElement>();
-  const richVisuals = useRichVisuals();
 
   const tools = [
     { number: '01', label: t('homeQuiz'), path: '/quiz' },
@@ -51,38 +41,6 @@ export function EditorialHomeHero({
 
   return (
     <>
-      <section id="hero" className="px-6 pb-12 pt-16 md:pb-16 md:pt-24">
-        <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center">
-          <div>
-            <p className="label-caps mb-5">{t('homeKicker')}</p>
-            <h1 className="font-display max-w-4xl text-5xl leading-[1.05] tracking-tighter text-[var(--ink)] md:text-6xl">
-              <TextReveal text={t('homeHeadline')} />
-            </h1>
-            <p className="mt-6 max-w-[65ch] text-base leading-relaxed text-[var(--ink-soft)] md:text-lg">
-              {t('homeSubhead')}
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-4">
-              <Magnetic>
-                <Button
-                  type="button"
-                  onClick={() => onNavigate(showLanding ? '/onboarding' : passport ? '/assess' : '/onboarding')}
-                  data-testid="home-primary-cta"
-                  aria-label={passport ? t('homeContinue') : t('homePrimary')}
-                >
-                  {passport ? t('homeContinue') : t('homePrimary')} <ArrowRight aria-hidden="true" />
-                </Button>
-              </Magnetic>
-              <Button type="button" variant="ghost" onClick={() => onNavigate('/job')} data-testid="home-explore-cta" aria-label={t('homeExplore')}>
-                {t('homeExplore')}
-              </Button>
-            </div>
-          </div>
-          <div className="hidden h-[360px] w-[420px] justify-self-end lg:block" aria-hidden="true">
-            {richVisuals ? <Suspense fallback={<StickFigure pose="mapping" size={320} animated />}><FloatingNewsprintScene /></Suspense> : <StickFigure pose="mapping" size={320} animated />}
-          </div>
-        </div>
-      </section>
-
       <StopPress changes={recommendationChanges} onDismiss={onDismissChanges} onExplain={(occupationId) => {
         const recommendation = recommendations?.recommendations.find((item) => item.occupationId === occupationId);
         if (recommendation) onExplain(recommendation);

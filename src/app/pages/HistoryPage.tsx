@@ -7,6 +7,7 @@ import { useApp } from '../context/AppContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
+import { TextReveal } from '../motion/TextReveal';
 
 type Tab = 'history' | 'saved';
 
@@ -97,9 +98,7 @@ export function HistoryPage() {
             <div className="flex items-center gap-4">
               <StickFigure pose="reading" size={60} />
               <div>
-                <h1 className="font-[Playfair_Display] text-black" style={{ fontSize: '2rem' }}>
-                  {activeTab === 'history' ? 'Case Archive' : 'Pinned Cases'}
-                </h1>
+                <h1 className="font-display text-5xl leading-[1.25] text-black"><TextReveal text={activeTab === 'history' ? 'Case Archive' : 'Pinned Cases'} /></h1>
                 <p className="font-[Inter] text-black/40" style={{ fontSize: '0.82rem' }}>
                   {activeTab === 'history'
                     ? `${history.length} case${history.length !== 1 ? 's' : ''} in archive`

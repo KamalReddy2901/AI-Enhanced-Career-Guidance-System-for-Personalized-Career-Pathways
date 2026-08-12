@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { ArrowRight, KeyRound, ShieldCheck, Sparkles, Workflow, Orbit } from 'lucide-react';
 import { Link } from 'react-router';
+import { TextReveal } from '../motion/TextReveal';
 
 const HIGHLIGHTS = [
   {
@@ -42,9 +43,7 @@ export function PricingPage() {
               Access
             </span>
           </div>
-          <h1 className="font-[Playfair_Display] text-black leading-tight mb-4" style={{ fontSize: 'clamp(2.4rem, 6vw, 4rem)' }}>
-            Everything is included.
-          </h1>
+          <h1 className="font-display text-black leading-[1.25] mb-4 text-5xl md:text-6xl"><TextReveal text="Everything is included." /></h1>
           <p className="font-[Inter] text-black/50 max-w-2xl mx-auto" style={{ fontSize: '0.98rem', lineHeight: 1.7 }}>
             CareerCase no longer uses credits, subscriptions, or purchase packs. The app simply routes AI work through a resilient worker that rotates API keys behind the scenes.
           </p>

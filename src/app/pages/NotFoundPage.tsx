@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { ArrowRight, Home } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
+import { TextReveal } from '../motion/TextReveal';
 
 export function NotFoundPage() {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ export function NotFoundPage() {
       >
         <StickFigure pose="searching" size={120} className="mx-auto mb-6" />
 
-        <h1 className="font-[Playfair_Display] text-black mb-3 text-5xl">404 — Page not filed</h1>
+        <h1 className="font-display text-black mb-3 text-5xl"><TextReveal text="404 — Page not filed" /></h1>
 
         <div className="flex items-center gap-3 justify-center mb-4">
           <div className="h-px w-8 bg-black/20" />

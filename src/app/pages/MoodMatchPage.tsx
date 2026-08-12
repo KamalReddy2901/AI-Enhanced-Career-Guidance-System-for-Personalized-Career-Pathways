@@ -7,6 +7,7 @@ import { useApp } from '../context/AppContext';
 import { getMoodMatches, type MoodMatch } from '../services/ai';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
+import { TextReveal } from '../motion/TextReveal';
 
 export function MoodMatchPage() {
   const navigate = useNavigate();
@@ -74,9 +75,7 @@ export function MoodMatchPage() {
         {/* Header */}
         <motion.div className="text-center mb-10" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <StickFigure pose="thinking" size={72} className="mx-auto mb-5" />
-          <h1 className="font-[Playfair_Display] text-black mb-2" style={{ fontSize: '2rem' }}>
-            Career Mood Match
-          </h1>
+          <h1 className="font-display text-black mb-2 text-5xl"><TextReveal text="Career Mood Match" /></h1>
           <p className="font-[Inter] text-black/40 leading-relaxed" style={{ fontSize: '0.88rem' }}>
             Describe how you're feeling right now. We'll find careers that vibe with your energy.
           </p>

@@ -3,6 +3,7 @@ import { ScoreBar } from "./ScoreBar";
 import { useT } from '../../i18n';
 import { localizedConfidence, localizedDimension, localizedNote } from '../../i18n/guidanceFormatting';
 import { motion, useReducedMotion } from 'motion/react';
+import { useEffect, useRef } from 'react';
 
 export interface ScoreEvidence {
   title: string;
@@ -30,11 +31,25 @@ export function WhyPanel(props: RecommendationProps | EvidenceProps) {
   const { onClose } = props;
   const { lang } = useT();
   const reducedMotion = useReducedMotion();
+  const panelRef = useRef<HTMLElement>(null);
+  useEffect(()=>{
+    const panel=panelRef.current;
+    panel?.querySelector<HTMLElement>('button,[href],[tabindex]:not([tabindex="-1"])')?.focus();
+    const handle=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){onClose();return;}
+      if(event.key!=='Tab'||!panel)return;
+      const items=[...panel.querySelectorAll<HTMLElement>('button,[href],[tabindex]:not([tabindex="-1"])')].filter(item=>!item.hasAttribute('disabled'));
+      if(!items.length)return;
+      if(event.shiftKey&&document.activeElement===items[0]){event.preventDefault();items.at(-1)?.focus();}
+      else if(!event.shiftKey&&document.activeElement===items.at(-1)){event.preventDefault();items[0].focus();}
+    };
+    document.addEventListener('keydown',handle);return()=>document.removeEventListener('keydown',handle);
+  },[onClose]);
   const c = lang === 'hi' ? {desk:'यह स्कोर क्यों — प्रमाण',why:'यह विकल्प क्यों?',method:'नियम-आधारित विधि',source:'स्रोत',noLlm:'इस स्कोर के लिए LLM का उपयोग नहीं हुआ।',ranked:'इस उपयोगकर्ता प्रकार के भारों से क्रम दिया गया है',rerank:'करियर पासपोर्ट में प्रकार बदलकर क्रम दोबारा बनाएँ।',weight:'भार',neutral:'यह संकेत उपलब्ध न होने के कारण तटस्थ स्कोर उपयोग हुआ।',higher:'स्कोर अधिक क्यों नहीं?'} : lang === 'te' ? {desk:'ఈ స్కోరు ఎందుకు — ఆధారం',why:'ఈ ఎంపిక ఎందుకు?',method:'నియమ-ఆధారిత పద్ధతి',source:'మూలం',noLlm:'ఈ స్కోరుకు LLM ఉపయోగించలేదు.',ranked:'ఈ వినియోగదారు రకం బరువులతో ర్యాంక్ చేయబడింది',rerank:'కెరీర్ పాస్‌పోర్ట్‌లో రకాన్ని మార్చి మళ్లీ ర్యాంక్ చేయండి.',weight:'బరువు',neutral:'ఈ సంకేతం అందుబాటులో లేనందున తటస్థ స్కోరు ఉపయోగించబడింది.',higher:'స్కోరు ఇంకా ఎక్కువగా ఎందుకు లేదు?'} : {desk:'Why this score — evidence',why:'Why this option?',method:'Deterministic method',source:'Source',noLlm:'LLM not used for this score.',ranked:'Ranked with the',rerank:'lens. Change your segment in the Career Passport to re-rank.',weight:'weight',neutral:'Neutral score used because this signal is missing.',higher:'Why not higher?'};
   const generic = "evidence" in props && props.evidence;
   return <motion.div className="fixed inset-0 z-[70] bg-[var(--ink)]/40 p-4 backdrop-blur-[2px]" role="dialog" aria-modal="true" aria-label={generic ? generic.title : c.why} initial={reducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }}>
     <button className="absolute inset-0" aria-label="Close explanation" onClick={onClose}/>
-    <motion.section className="card-sketch relative ml-auto h-full max-w-xl overflow-y-auto p-5 md:p-8" initial={reducedMotion ? false : { x: 24, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: reducedMotion ? 0 : 0.4, ease: [0.16, 1, 0.3, 1] }}>
+    <motion.section ref={panelRef} className="card-sketch relative ml-auto h-full max-w-xl overflow-y-auto p-5 md:p-8" initial={reducedMotion ? false : { x: 24, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: reducedMotion ? 0 : 0.4, ease: [0.16, 1, 0.3, 1] }}>
       <div className="flex justify-between gap-4 border-b-2 border-[var(--ink)] pb-4"><div><div className="label-caps">{generic ? `${c.desk} · ${generic.eyebrow}` : `${c.desk} · ${localizedConfidence(props.recommendation.confidence,lang)}`}</div><h2 className="font-display text-3xl">{generic ? generic.title : c.why}</h2></div><button onClick={onClose} className="min-h-11 min-w-11 border border-[var(--ink)]" data-testid="why-panel-close">×</button></div>
       {generic ? <>
         <p className="my-5 font-[Inter] text-sm text-black/65">{generic.summary}</p>

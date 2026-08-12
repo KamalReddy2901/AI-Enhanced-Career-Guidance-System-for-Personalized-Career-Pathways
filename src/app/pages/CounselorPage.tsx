@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { StickFigure } from "../components/StickFigure";
 import { useGuidance } from "../context/GuidanceContext";
 import {
@@ -9,8 +9,9 @@ import {
 import { streamCounselorChat } from "../services/ai";
 import { useT } from "../i18n";
 import { listen, speak } from "../utils/voice";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { Mic, Send, Volume2 } from "lucide-react";
+import { TextReveal } from '../motion/TextReveal';
 
 const escalationPattern =
   /suicid|self.?harm|hopeless|depress|panic|abuse|forced|family conflict|cannot cope|खुदकुशी|आत्महत्या|निराश|जबरदस्ती|కృంగి|ఆత్మహత్య|బలవంత/i;
@@ -22,20 +23,20 @@ export function CounselorPage() {
   const [answer, setAnswer] = useState("");
   const [busy, setBusy] = useState(false);
   const [escalate, setEscalate] = useState(false);
-  const [lastQuestion, setLastQuestion] = useState("");
-  const history = useMemo(
-    () => [] as { role: "user" | "assistant"; text: string }[],
-    [],
-  );
+  const [history, setHistory] = useState<Array<{ role: "user" | "assistant"; text: string }>>([]);
+  const reducedMotion = useReducedMotion();
   const ask = async () => {
     const question = input.trim();
     if (!question) return;
-    setLastQuestion(question);
+    const priorHistory = history;
+    setHistory(previous => [...previous, { role: "user", text: question }]);
+    setInput("");
     if (escalationPattern.test(question)) {
       setEscalate(true);
       setAnswer(
         "Your safety and wellbeing matter more than a career decision. Please speak with a trusted person or qualified human counselor now.",
       );
+      setHistory(previous => [...previous, { role: "assistant", text: "Your safety and wellbeing matter more than a career decision. Please speak with a trusted person or qualified human counselor now." }]);
       return;
     }
     setBusy(true);
@@ -93,18 +94,20 @@ export function CounselorPage() {
       },
     });
     try {
-      history.push({ role: "user", text: question });
       let response = "";
       for await (const chunk of streamCounselorChat(
-        history,
+        [...priorHistory, { role: "user", text: question }],
         context,
         lang === "hi" ? "Hindi" : lang === "te" ? "Telugu" : "English",
       )) { response = chunk; setAnswer(chunk); }
-      history.push({ role: "assistant", text: response });
+      setHistory(previous => [...previous, { role: "assistant", text: response }]);
+      setAnswer("");
     } catch {
       setAnswer(
         "The counselor service is unavailable right now. Your deterministic assessments, recommendations and pathways still work without it.",
       );
+      setHistory(previous => [...previous, { role: "assistant", text: "The counselor service is unavailable right now. Your deterministic assessments, recommendations and pathways still work without it." }]);
+      setAnswer("");
     } finally {
       setBusy(false);
     }
@@ -118,22 +121,21 @@ export function CounselorPage() {
             <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">
               CareerCase · grounded counselor desk
             </div>
-            <h1 className="text-4xl font-[Playfair_Display]">
-              Ask why. Ask what-if.
-            </h1>
+            <h1 className="font-display text-5xl leading-[1.25]"><TextReveal text="Ask why. Ask what-if." /></h1>
             <p className="mt-2 font-[Inter] text-sm text-black/55">
               Answers are grounded in your passport, scored landscape, pathways
               and retrieved KB entries.
             </p>
           </div>
         </header>
-        <div className="counselor-strip border border-black/10 bg-white p-6">
-          {lastQuestion && <motion.div initial={{y:12,opacity:0}} animate={{y:0,opacity:1}} className="mb-4 ml-auto max-w-[82%] rounded-2xl rounded-br-sm bg-black p-4 font-[Inter] text-sm text-white">{lastQuestion}</motion.div>}
-          {(answer || busy) && <div className="mb-5 flex items-end gap-2"><StickFigure pose="standing" size={28}/><motion.div initial={{y:12,opacity:0}} animate={{y:0,opacity:1}} className="card-sketch counselor-answer relative max-w-[86%] p-4 font-[Inter] text-sm whitespace-pre-wrap">{answer}{busy && <span className="typing-dots ml-2" aria-label="Counselor is typing"><i/><i/><i/></span>}</motion.div></div>}
+        <div className="counselor-strip border border-black/10 bg-white p-4 pb-0 md:p-6 md:pb-0">
+          <div className="space-y-5" aria-live="polite">{history.map((message,index)=>message.role==='user'?<motion.div key={`${message.role}-${index}`} initial={reducedMotion?false:{y:12,opacity:0}} animate={{y:0,opacity:1}} transition={{duration:reducedMotion?0:.25}} className="ml-auto max-w-[82%] rounded-2xl rounded-br-sm bg-black p-4 font-[Inter] text-sm text-white">{message.text}</motion.div>:<div key={`${message.role}-${index}`} className="flex items-end gap-2"><StickFigure pose="standing" size={28}/><motion.div initial={reducedMotion?false:{y:12,opacity:0}} animate={{y:0,opacity:1}} transition={{duration:reducedMotion?0:.25}} className="card-sketch counselor-answer relative max-w-[86%] whitespace-pre-wrap p-4 font-[Inter] text-sm">{message.text}</motion.div></div>)}</div>
+          {(answer || busy) && <div className="mt-5 flex items-end gap-2"><StickFigure pose="standing" size={28}/><motion.div initial={reducedMotion?false:{y:12,opacity:0}} animate={{y:0,opacity:1}} className="card-sketch counselor-answer relative max-w-[86%] p-4 font-[Inter] text-sm whitespace-pre-wrap">{answer}{busy && <><span className="typewriter-caret ml-0.5" aria-hidden="true">|</span><span className="typing-dots ml-2" aria-label="Counselor is typing"><i/><i/><i/></span></>}</motion.div></div>}
+          <div className="sticky bottom-0 z-10 -mx-4 mt-6 border-t-2 border-black bg-[var(--paper)] p-4 md:-mx-6 md:p-6">
           <textarea
             value={input}
             onChange={(event) => setInput(event.target.value)}
-            rows={4}
+            rows={2}
             placeholder="What would you like to understand about your options?"
             className="w-full border border-black/20 p-3 font-[Inter]"
           />
@@ -165,6 +167,7 @@ export function CounselorPage() {
             >
               <Volume2 size={15}/> Read
             </button>
+          </div>
           </div>
           {escalate && (
             <aside className="mt-5 border-2 border-black bg-[#fff8dc] p-5">

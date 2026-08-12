@@ -13,6 +13,7 @@ import { useGuidance } from '../context/GuidanceContext';
 import { LanguageSwitcher } from '../i18n';
 import { deleteAllGuidanceData, fetchAssessments, fetchConsents, fetchProgress, fetchRecommendations } from '../services/guidanceDb';
 import type { DbConsent } from '../services/guidanceDb';
+import { TextReveal } from '../motion/TextReveal';
 import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
   AlertDialogTitle, AlertDialogDescription, AlertDialogFooter,
@@ -103,9 +104,7 @@ export function SettingsPage() {
           <div className="flex items-center gap-4 mb-6">
             <StickFigure pose="thinking" size={64} />
             <div>
-              <h1 className="font-[Playfair_Display] text-black" style={{ fontSize: '2rem' }}>
-                Settings
-              </h1>
+              <h1 className="font-display text-5xl leading-[1.25] text-black"><TextReveal text="Settings" /></h1>
               <p className="font-[Inter] text-black/40" style={{ fontSize: '0.82rem' }}>
                 Customize your experience
               </p>

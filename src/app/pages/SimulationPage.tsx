@@ -10,6 +10,7 @@ import { downloadAssessmentPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
 import { hapticLight, hapticWarn, hapticSuccess } from '../utils/haptic';
+import { TextReveal } from '../motion/TextReveal';
 
 // Black confetti particles that fall on simulation completion
 function BlackConfetti({ active }: { active: boolean }) {
@@ -332,9 +333,7 @@ export function SimulationPage() {
               className="text-center py-12"
             >
               <StickFigure pose="waving" size={100} className="mx-auto mb-6" />
-              <h1 className="font-[Playfair_Display] text-black mb-4" style={{ fontSize: '2.2rem' }}>
-                A Day in the Life
-              </h1>
+              <h1 className="font-display text-5xl leading-[1.25] text-black mb-4"><TextReveal text="A Day in the Life" /></h1>
               <div className="flex items-center gap-3 justify-center mb-6">
                 <div className="h-px w-8 bg-black/20" />
                 <span className="font-[Inter] text-black/40 uppercase tracking-[0.15em] flex items-center gap-1.5" style={{ fontSize: '0.7rem' }}>
@@ -540,9 +539,7 @@ export function SimulationPage() {
               >
               <StickFigure pose="celebrating" size={120} className="mx-auto mb-8" />
 
-              <h1 className="font-[Playfair_Display] text-black mb-3" style={{ fontSize: '2.2rem' }}>
-                Simulation Complete
-              </h1>
+              <h1 className="font-display text-5xl leading-[1.25] text-black mb-3"><TextReveal text="Simulation Complete" /></h1>
               <p className="font-[Inter] text-black/50 mb-8 max-w-md mx-auto" style={{ fontSize: '0.92rem' }}>
                 You've experienced a full day in the life of a {currentJob.title}.
               </p>

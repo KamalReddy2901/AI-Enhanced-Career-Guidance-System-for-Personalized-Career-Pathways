@@ -5,6 +5,7 @@ import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight, Sparkles } from 'lucide-r
 import { StickFigure } from '../components/StickFigure';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
+import { TextReveal } from '../motion/TextReveal';
 
 export function AuthPage() {
   const navigate = useNavigate();
@@ -91,9 +92,7 @@ export function AuthPage() {
                 className="text-center"
               >
                 <StickFigure pose="celebrating" size={100} className="mx-auto mb-6" />
-                <h1 className="font-[Playfair_Display] text-black mb-3" style={{ fontSize: '1.8rem' }}>
-                  Check your email
-                </h1>
+                <h1 className="font-display text-5xl leading-[1.25] text-black mb-3"><TextReveal text="Check your email" /></h1>
                 <p className="font-[Inter] text-black/50 leading-relaxed" style={{ fontSize: '0.9rem' }}>
                   We've sent a confirmation link to <strong className="text-black">{email}</strong>.
                   Click it to verify your account, then sign in.
@@ -121,9 +120,7 @@ export function AuthPage() {
                     size={72}
                     className="mx-auto mb-5"
                   />
-                  <h1 className="font-[Playfair_Display] text-black mb-2" style={{ fontSize: '2rem' }}>
-                    {mode === 'signup' ? 'Get Started for Free' : 'Welcome Back'}
-                  </h1>
+                  <h1 className="font-display text-5xl leading-[1.25] text-black mb-2"><TextReveal text={mode === 'signup' ? 'Get Started for Free' : 'Welcome Back'} /></h1>
                   <p className="font-[Inter] text-black/40 leading-relaxed" style={{ fontSize: '0.875rem' }}>
                     {mode === 'signup'
                       ? 'Create an account to save your career history across devices.'

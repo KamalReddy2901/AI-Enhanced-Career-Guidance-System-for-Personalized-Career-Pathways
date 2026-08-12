@@ -30,6 +30,8 @@ import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 import { gsap } from '../motion/gsap';
 import { TextReveal } from '../motion/TextReveal';
 import { useRichVisuals } from '../hooks/useRichVisuals';
+import { motion, useReducedMotion } from 'motion/react';
+import { toast } from 'sonner';
 
 const PathwayLineScene = lazy(() => import('../components/three/PathwayLineScene').then(module => ({ default: module.PathwayLineScene })));
 
@@ -73,6 +75,7 @@ export function PathwayPage() {
   const [why, setWhy] = useState<ScoreEvidence | null>(null);
   const timelineRef = useRef<HTMLElement>(null);
   const richVisuals = useRichVisuals();
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => setPlan(initial), [initial]);
   useEffect(() => {
@@ -106,6 +109,7 @@ export function PathwayPage() {
   const route =
     plan.routes.find((item) => item.kind === chosenKind) ?? plan.routes[0];
   const routeComplete = route.steps.every((step) => step.done);
+  const timelineCopy=lang==='hi'?{filed:'चरण दर्ज',step:'चरण',fine:'विस्तृत विवरण'}:lang==='te'?{filed:'దశలు నమోదు',step:'దశ',fine:'వివరాలు'}:{filed:'steps filed',step:'Step',fine:'The fine print'};
 
   const chooseRoute = (kind: typeof route.kind) => {
     const next = { ...plan, chosenRoute: kind };
@@ -190,6 +194,7 @@ export function PathwayPage() {
           : "milestone_done",
         { occupationId, route: route.kind, stepIndex: index, step },
       );
+    toast.success(lang === 'hi' ? (step.done ? 'चरण दर्ज किया गया' : 'चरण फिर खोला गया') : lang === 'te' ? (step.done ? 'దశ నమోదు చేయబడింది' : 'దశ మళ్లీ తెరవబడింది') : (step.done ? 'Step filed in your pathway' : 'Step reopened'));
   };
 
   return (
@@ -216,17 +221,12 @@ export function PathwayPage() {
             <div className="font-[JetBrains_Mono] text-xs uppercase tracking-wide">
               {c.gaps}
             </div>
-            <div className="mt-4 space-y-4">
-              {plan.gapReport.gaps.slice(0, 8).map((gap) => (
-                <button key={gap.skillId} className="block min-h-11 w-full text-left" onClick={()=>setWhy({title:`Why the ${skillName(gap.skillId)} gap is ${gap.severity}`,eyebrow:"Skill-gap evidence desk",summary:`This gap compares your current proficiency ${gap.current}/4 with the role requirement ${gap.required}/4, then adjusts for requirement importance and evidence confidence.`,method:"severity = (required − current) ÷ 4 × importance × (2 − claim confidence), normalized over the occupation requirement set.",items:[{label:"Current proficiency",value:gap.current*25,detail:`Current Career Passport level: ${gap.current}/4.`},{label:"Required proficiency",value:gap.required*25,detail:`Curated requirement for ${occupation.title}: ${gap.required}/4.`},{label:"Requirement importance",value:gap.importance*100,detail:"Importance comes from the versioned occupation knowledge base."},{label:"Evidence confidence",value:gap.confidence*100,detail:"Accumulated from the evidence ledger; weaker evidence increases uncertainty."}],source:`KB kb-2026.06.1 · ${occupation.ncoCode}`})} aria-label={`Explain ${skillName(gap.skillId)} gap score ${gap.severity}`}>
-                  <ScoreBar
-                    label={`${skillName(gap.skillId)} · current ${gap.current} → required ${gap.required}`}
-                    value={gap.severity}
-                  />
-                  <p className="mt-1 font-[Inter] text-xs text-black/50">
-                    {c.evidence} {Math.round(gap.confidence * 100)}%
-                  </p>
-                  <div className="mt-1 font-[Inter] text-[10px] underline">{c.whyGap}</div>
+            <div className="mt-4 divide-y divide-black/15 border-y border-black/15">
+              {[...plan.gapReport.gaps].sort((a,b)=>b.severity-a.severity).slice(0, 8).map((gap) => (
+                <button key={gap.skillId} data-testid={`pathway-gap-${gap.skillId}`} className="block min-h-11 w-full py-5 text-left" onClick={()=>setWhy({title:`Why the ${skillName(gap.skillId)} gap is ${gap.severity}`,eyebrow:"Skill-gap evidence desk",summary:`This gap compares your current proficiency ${gap.current}/4 with the role requirement ${gap.required}/4, then adjusts for requirement importance and evidence confidence.`,method:"severity = (required − current) ÷ 4 × importance × (2 − claim confidence), normalized over the occupation requirement set.",items:[{label:"Current proficiency",value:gap.current*25,detail:`Current Career Passport level: ${gap.current}/4.`},{label:"Required proficiency",value:gap.required*25,detail:`Curated requirement for ${occupation.title}: ${gap.required}/4.`},{label:"Requirement importance",value:gap.importance*100,detail:"Importance comes from the versioned occupation knowledge base."},{label:"Evidence confidence",value:gap.confidence*100,detail:"Accumulated from the evidence ledger; weaker evidence increases uncertainty."}],source:`KB kb-2026.06.1 · ${occupation.ncoCode}`})} aria-label={`Explain ${skillName(gap.skillId)} gap score ${gap.severity}`}>
+                  <div className="flex items-baseline justify-between gap-4"><span className="font-display text-lg">{skillName(gap.skillId)}</span><span className="font-mono-ui text-sm text-[var(--accent-news)]">−{Math.max(0,gap.required-gap.current)}</span></div>
+                  <div className="mt-3 grid gap-2 font-mono-ui text-[10px] uppercase"><div className="grid grid-cols-[5rem_1fr_auto] items-center gap-2"><span>Required</span><div className="h-2 border border-black"><div className="h-full border-r border-black" style={{width:`${gap.required*25}%`}}/></div><span>{gap.required}/4</span></div><div className="grid grid-cols-[5rem_1fr_auto] items-center gap-2"><span>Current</span><div className="h-2 border border-black"><motion.div className="h-full origin-left bg-black" initial={{scaleX:reducedMotion?1:0}} whileInView={{scaleX:1}} viewport={{once:true}} style={{width:`${gap.current*25}%`}}/></div><span>{gap.current}/4</span></div></div>
+                  <p className="mt-2 font-[Inter] text-xs text-black/50">{c.evidence} {Math.round(gap.confidence * 100)}% · <span className="underline">{c.whyGap}</span></p>
                 </button>
               ))}
             </div>
@@ -319,23 +319,28 @@ export function PathwayPage() {
           <PathwayGraph route={route} lang={lang} />
         </section>
         <section ref={timelineRef} className="relative py-8">
+          <div className="sticky top-14 z-20 mb-8 flex items-center gap-4 border-y border-black bg-[var(--paper)]/95 px-3 py-3 backdrop-blur"><span className="font-mono-ui text-xs uppercase">{route.steps.filter(step=>step.done).length}/{route.steps.length} {timelineCopy.filed}</span><div className="h-1 flex-1 overflow-hidden bg-black/15"><motion.div className="h-full origin-left bg-black" animate={{scaleX:route.steps.filter(step=>step.done).length/Math.max(1,route.steps.length)}}/></div></div>
           <div className="absolute bottom-8 left-5 top-24 w-0.5 bg-[var(--ink)]/15 md:left-1/2"><div className="pathway-spine-fill h-full origin-top bg-[var(--ink)]" /></div>
           <div className="flex items-center justify-between gap-3"><h2 className="text-2xl font-[Playfair_Display]">{c.labels[route.kind]} {c.checklist}</h2><span className="font-[JetBrains_Mono] text-[10px] uppercase">{c.streak} · {streak.currentStreak} {c.day}</span></div>
           <div className="relative mt-8 space-y-8">
             {route.steps.map((step, index) => (
-              <div
+              <motion.div
                 key={`${step.kind}-${index}`}
                 className={`card-sketch relative ml-12 flex gap-4 p-6 md:w-[calc(50%-2rem)] ${index%2===0?'md:mr-auto':'md:ml-auto'}`}
+                initial={reducedMotion?false:{opacity:0,y:28}}
+                whileInView={{opacity:1,y:0}}
+                viewport={{once:true,amount:.35}}
               >
                 <button
                   onClick={() => toggleStep(index)}
-                  className={`absolute -left-[43px] top-6 z-10 grid min-h-11 min-w-11 place-items-center rounded-full border-2 md:-left-[55px] ${index%2===1?'md:-left-[55px]':''} ${step.done ? "bg-black text-white border-black" : "border-black bg-[var(--paper)]"}`}
+                  className={`absolute -left-[43px] top-6 z-10 grid min-h-11 min-w-11 place-items-center rounded-full border-2 md:-left-[55px] ${step.done ? "bg-black text-white border-black" : route.steps.findIndex(item=>!item.done)===index ? "animate-pulse border-[var(--accent-news)] bg-[var(--accent-news)] text-white" : "border-black bg-[var(--paper)]"}`}
                   data-testid={`pathway-step-${index+1}-complete-btn`}
                   aria-label={`Mark ${step.label} ${step.done ? "not done" : "done"}`}
                 >
-                  {step.done ? "✓" : "○"}
+                  <motion.span animate={step.done&& !reducedMotion?{scale:[1,1.28,1]}:{scale:1}}>{step.done ? "✓" : "○"}</motion.span>
                 </button>
                 <div>
+                  <div className="label-caps">{timelineCopy.step} {String(index+1).padStart(2,'0')} — {step.estMonths} {c.months}</div>
                   <div className="font-[Inter] text-sm font-semibold">
                     {localizedStep(step, lang)}
                   </div>
@@ -352,8 +357,10 @@ export function PathwayPage() {
                       {c.find} {qualificationById.get(step.refId)!.providerHint}
                     </a>
                   )}
+                  <details className="mt-3 border-t border-black/15 pt-2 font-[Inter] text-xs text-black/60"><summary data-testid={`pathway-step-${index+1}-details`} className="min-h-11 cursor-pointer py-3 font-mono-ui uppercase" aria-label={`${timelineCopy.fine}: ${localizedStep(step,lang)}`}>{timelineCopy.fine}</summary><p>{localizedStepKind(step.kind,lang)} · {localizedTradeoff(route,lang)} · {localizedConfidence(route.confidence,lang)} {c.confidence}</p></details>
                 </div>
-              </div>
+                {(index+1)%3===0 && <StickFigure pose="walking" size={44} className="absolute -bottom-6 right-4"/>}
+              </motion.div>
             ))}
           </div>
         </section>

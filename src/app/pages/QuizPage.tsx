@@ -7,6 +7,7 @@ import { useApp } from '../context/AppContext';
 import { getQuizResults, getQuizFromScratch, type QuizResult } from '../services/ai';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
+import { TextReveal } from '../motion/TextReveal';
 
 const QUESTIONS = [
   {
@@ -183,9 +184,7 @@ export function QuizPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <StickFigure pose="thinking" size={80} className="mx-auto mb-4" />
-          <h1 className="font-[Playfair_Display] text-black mb-2" style={{ fontSize: '2rem' }}>
-            Career Match Quiz
-          </h1>
+          <h1 className="font-display text-black mb-2 text-5xl"><TextReveal text="Career Match Quiz" /></h1>
           <p className="font-[Inter] text-black/40" style={{ fontSize: '0.85rem' }}>
             Answer {QUESTIONS.length} questions and AI will suggest careers that match your personality
           </p>
