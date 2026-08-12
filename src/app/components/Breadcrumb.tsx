@@ -1,18 +1,19 @@
 import { useLocation, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
+import { useT, type TranslationKey } from '../i18n';
 
-const ROUTE_LABELS: Record<string, string> = {
-  '/': 'Home',
-  '/job': 'Overview',
-  '/job/detail': 'Dossier',
-  '/simulation': 'Simulation',
-  '/compare': 'Compare',
-  '/quiz': 'Quiz',
-  '/history': 'History',
-  '/favorites': 'Favorites',
-  '/settings': 'Settings',
-  '/interview': 'Interview Prep',
+const ROUTE_LABELS: Record<string, TranslationKey> = {
+  '/': 'home',
+  '/job': 'breadcrumbJob',
+  '/job/detail': 'breadcrumbJobDetail',
+  '/simulation': 'breadcrumbSimulation',
+  '/compare': 'breadcrumbCompare',
+  '/quiz': 'breadcrumbQuiz',
+  '/history': 'breadcrumbHistory',
+  '/favorites': 'breadcrumbFavorites',
+  '/settings': 'settings',
+  '/interview': 'breadcrumbInterview',
 };
 
 // Parent path for each route
@@ -42,6 +43,7 @@ export function Breadcrumb() {
   const location = useLocation();
   const navigate = useNavigate();
   const { currentJob } = useApp();
+  const { t } = useT();
   const pathname = location.pathname;
 
   // Don't show on home
@@ -51,7 +53,8 @@ export function Breadcrumb() {
 
   // Inject job title into dossier/overview/simulation breadcrumbs
   const getLabel = (path: string, index: number, total: number) => {
-    const base = ROUTE_LABELS[path] ?? path.replace('/', '');
+    const translationKey = ROUTE_LABELS[path];
+    const base = translationKey ? t(translationKey) : path.replace('/', '');
     if (currentJob && path === '/job') return currentJob.title.length > 22 ? currentJob.title.slice(0, 22) + '…' : currentJob.title;
     return base;
   };

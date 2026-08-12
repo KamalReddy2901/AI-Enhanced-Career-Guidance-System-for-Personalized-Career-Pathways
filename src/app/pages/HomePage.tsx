@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { useGuidance } from '../context/GuidanceContext';
 import type { TrendingCareers } from '../services/ai';
 import { toast } from 'sonner';
+import { useT } from '../i18n';
 
 const ShowpieceHero = lazy(() => import('../components/hero/ShowpieceHero').then(module => ({ default: module.ShowpieceHero })));
 const EditorialHomeHero = lazy(() => import('../components/home/EditorialHomeHero').then(module => ({ default: module.EditorialHomeHero })));
@@ -77,6 +78,7 @@ function ScrollSectionNav({ sections }: { sections: Array<{ id: string; label: s
 
 export function HomePage() {
   const navigate = useNavigate();
+  const { t } = useT();
   const { searchJob, searchJobAI, searchJobPreliminary, setCurrentJob, addToHistory, isSearchAnimating, setIsSearchAnimating, setRefinementCount, setComparisonJob } = useApp();
   const { user, isSupabaseConfigured } = useAuth();
   const { passport, recommendations, recommendationChanges, pathways, dismissRecommendationChanges } = useGuidance();
@@ -201,8 +203,8 @@ export function HomePage() {
       <section
         id="trending"
         ref={trendingRef as React.RefObject<HTMLElement>}
-        className="py-24 px-6 border-t border-black/8"
-        aria-label="What's trending in careers"
+        className="border-t border-[var(--ink-faint)] px-6 py-24"
+        aria-label={t('homeTrendingAria')}
       >
         <div className="max-w-4xl mx-auto">
           <motion.div
@@ -211,11 +213,11 @@ export function HomePage() {
             viewport={{ once: true }}
             className="mb-10"
           >
-            <p className="font-[Inter] uppercase tracking-[0.2em] text-black/30 mb-2" style={{ fontSize: '0.65rem' }}>
-              AI Career Intelligence
+            <p className="label-caps mb-2 text-[var(--ink-faint)]">
+              {t('homeTrendingKicker')}
             </p>
-            <h2 className="font-[Playfair_Display] text-black" style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)' }}>
-              What's Trending in Careers
+            <h2 className="font-display text-[var(--ink)]" style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)' }}>
+              {t('homeTrendingTitle')}
             </h2>
 
           </motion.div>
@@ -224,8 +226,8 @@ export function HomePage() {
 
           {trendingLoading && (
             <div className="flex items-center justify-center gap-3 py-12">
-              <Loader2 size={18} className="animate-spin text-black/30" />
-              <span className="font-[Inter] text-black/35" style={{ fontSize: '0.85rem' }}>Pulling latest career data…</span>
+              <Loader2 size={18} className="animate-spin text-[var(--ink-faint)]" />
+              <span className="text-[var(--ink-soft)]" style={{ fontSize: '0.85rem' }}>{t('homeTrendingLoading')}</span>
             </div>
           )}
 
@@ -239,9 +241,9 @@ export function HomePage() {
               >
                 {/* Rising */}
                 <div>
-                  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-emerald-200">
-                    <TrendingUp size={15} className="text-emerald-600" />
-                    <span className="font-[Inter] text-emerald-700 font-medium" style={{ fontSize: '0.78rem', letterSpacing: '0.08em' }}>RISING</span>
+                  <div className="mb-4 flex items-center gap-2 border-b border-[var(--ink)] pb-2">
+                    <TrendingUp size={15} className="text-[var(--ink)]" />
+                    <span className="label-caps text-[var(--ink)]">{t('homeRising')}</span>
                   </div>
                   <ul className="space-y-3">
                     {trending.rising.map((item, i) => (
@@ -252,17 +254,17 @@ export function HomePage() {
                           disabled={searchingCareer !== null}
                           className="text-left group flex-1 w-full disabled:opacity-60"
                         >
-                          <p className="font-[Playfair_Display] text-black group-hover:underline flex items-center gap-1.5" style={{ fontSize: '0.92rem' }}>
+                          <p className="font-display flex items-center gap-1.5 text-[var(--ink)] group-hover:underline" style={{ fontSize: '0.92rem' }}>
                             {searchingCareer === item.title && <Loader2 size={11} className="animate-spin shrink-0" />}
                             {item.title}
                           </p>
-                          <p className="font-[Inter] text-black/40 mt-0.5" style={{ fontSize: '0.72rem', lineHeight: 1.5 }}>{item.reason}</p>
+                          <p className="mt-0.5 text-[var(--ink-soft)]" style={{ fontSize: '0.72rem', lineHeight: 1.5 }}>{item.reason}</p>
                         </button>
                         <button
                           onClick={() => handleQuickCompare(item.title)}
-                          title="Add to compare"
+                          title={t('homeAddCompare')}
                           className={`mt-0.5 shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity p-0.5 ${
-                            compareQueue.includes(item.title) ? 'text-black opacity-100' : 'text-black/25 hover:text-black/60'
+                            compareQueue.includes(item.title) ? 'text-[var(--ink)] opacity-100' : 'text-[var(--ink-faint)] hover:text-[var(--ink-soft)]'
                           }`}
                         >
                           <Scale size={13} />
@@ -275,9 +277,9 @@ export function HomePage() {
 
                 {/* Emerging */}
                 <div>
-                  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-violet-200">
-                    <Rocket size={15} className="text-violet-600" />
-                    <span className="font-[Inter] text-violet-700 font-medium" style={{ fontSize: '0.78rem', letterSpacing: '0.08em' }}>EMERGING</span>
+                  <div className="mb-4 flex items-center gap-2 border-b border-[var(--accent-news)] pb-2">
+                    <Rocket size={15} className="text-[var(--accent-news)]" />
+                    <span className="label-caps text-[var(--accent-news)]">{t('homeEmerging')}</span>
                   </div>
                   <ul className="space-y-3">
                     {trending.emerging.map((item, i) => (
@@ -288,17 +290,17 @@ export function HomePage() {
                           disabled={searchingCareer !== null}
                           className="text-left group flex-1 w-full disabled:opacity-60"
                         >
-                          <p className="font-[Playfair_Display] text-black group-hover:underline flex items-center gap-1.5" style={{ fontSize: '0.92rem' }}>
+                          <p className="font-display flex items-center gap-1.5 text-[var(--ink)] group-hover:underline" style={{ fontSize: '0.92rem' }}>
                             {searchingCareer === item.title && <Loader2 size={11} className="animate-spin shrink-0" />}
                             {item.title}
                           </p>
-                          <p className="font-[Inter] text-black/40 mt-0.5" style={{ fontSize: '0.72rem', lineHeight: 1.5 }}>{item.reason}</p>
+                          <p className="mt-0.5 text-[var(--ink-soft)]" style={{ fontSize: '0.72rem', lineHeight: 1.5 }}>{item.reason}</p>
                         </button>
                         <button
                           onClick={() => handleQuickCompare(item.title)}
-                          title="Add to compare"
+                          title={t('homeAddCompare')}
                           className={`mt-0.5 shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity p-0.5 ${
-                            compareQueue.includes(item.title) ? 'text-black opacity-100' : 'text-black/25 hover:text-black/60'
+                            compareQueue.includes(item.title) ? 'text-[var(--accent-news)] opacity-100' : 'text-[var(--ink-faint)] hover:text-[var(--accent-news)]'
                           }`}
                         >
                           <Scale size={13} />
@@ -311,9 +313,9 @@ export function HomePage() {
 
                 {/* Declining */}
                 <div>
-                  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-rose-200">
-                    <TrendingDown size={15} className="text-rose-500" />
-                    <span className="font-[Inter] text-rose-600 font-medium" style={{ fontSize: '0.78rem', letterSpacing: '0.08em' }}>DECLINING</span>
+                  <div className="mb-4 flex items-center gap-2 border-b border-[var(--ink-faint)] pb-2">
+                    <TrendingDown size={15} className="text-[var(--ink-soft)]" />
+                    <span className="label-caps text-[var(--ink-soft)]">{t('homeDeclining')}</span>
                   </div>
                   <ul className="space-y-3">
                     {trending.declining.map((item, i) => (
@@ -324,17 +326,17 @@ export function HomePage() {
                           disabled={searchingCareer !== null}
                           className="text-left group flex-1 w-full disabled:opacity-60"
                         >
-                          <p className="font-[Playfair_Display] text-black/55 group-hover:underline flex items-center gap-1.5" style={{ fontSize: '0.92rem' }}>
+                          <p className="font-display flex items-center gap-1.5 text-[var(--ink-soft)] group-hover:underline" style={{ fontSize: '0.92rem' }}>
                             {searchingCareer === item.title && <Loader2 size={11} className="animate-spin shrink-0" />}
                             {item.title}
                           </p>
-                          <p className="font-[Inter] text-black/35 mt-0.5" style={{ fontSize: '0.72rem', lineHeight: 1.5 }}>{item.reason}</p>
+                          <p className="mt-0.5 text-[var(--ink-faint)]" style={{ fontSize: '0.72rem', lineHeight: 1.5 }}>{item.reason}</p>
                         </button>
                         <button
                           onClick={() => handleQuickCompare(item.title)}
-                          title="Add to compare"
+                          title={t('homeAddCompare')}
                           className={`mt-0.5 shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity p-0.5 ${
-                            compareQueue.includes(item.title) ? 'text-black opacity-100' : 'text-black/25 hover:text-black/60'
+                            compareQueue.includes(item.title) ? 'text-[var(--ink)] opacity-100' : 'text-[var(--ink-faint)] hover:text-[var(--ink-soft)]'
                           }`}
                         >
                           <Scale size={13} />
@@ -350,13 +352,13 @@ export function HomePage() {
 
           {trending && (
             <motion.div
-              className="mt-8 pt-6 border-t border-black/8 text-center"
+              className="mt-8 border-t border-[var(--ink-faint)] pt-6 text-center"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
             >
-              <p className="font-[Inter] text-black/30" style={{ fontSize: '0.78rem' }}>
-                {searchingCareer ? `Building dossier for "${searchingCareer}"…` : 'Click any career to open its full dossier'}
+              <p className="text-[var(--ink-faint)]" style={{ fontSize: '0.78rem' }}>
+                {searchingCareer ? `${t('homeBuildingDossier')} “${searchingCareer}”…` : t('homeOpenDossier')}
               </p>
             </motion.div>
           )}

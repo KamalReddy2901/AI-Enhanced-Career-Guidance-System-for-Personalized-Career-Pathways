@@ -80,10 +80,10 @@ function ScrollRow({
           return (
             <span
               key={`${item.text}-${j}`}
-              className={`inline-block px-4 py-1 font-[Playfair_Display] whitespace-nowrap select-none transition-[color,background-color,border-color,opacity,transform,box-shadow] duration-500 ${
+              className={`font-display inline-block select-none whitespace-nowrap px-4 py-1 transition-[color,background-color,border-color,opacity,transform,box-shadow] duration-500 ${
                 isHighlighted
-                  ? 'text-black opacity-100 bg-amber-200/80 rounded px-3 py-0.5 scale-110'
-                  : 'text-black/80'
+                  ? 'scale-110 rounded bg-[var(--accent-soft)] px-3 py-0.5 text-[var(--ink)] opacity-100'
+                  : 'text-[var(--ink)] opacity-80'
               }`}
               style={{ fontSize: `${item.size}rem` }}
             >
