@@ -20,30 +20,29 @@ export function Navbar() {
 
   const historyCount = history.length + favorites.length;
 
-  // Close mobile menu on route change
   useEffect(() => setMenuOpen(false), [location.pathname]);
 
-  // Don't show nav items on auth page
   if (isAuthPage) return null;
 
   const navLinks = [
-    { to: '/', icon: <Home size={14} />, label: t('home'), active: isHome },
-    { to: '/job', icon: <Compass size={14} />, label: t('explore'), active: ['/job','/quiz','/mood','/compare','/career-transition','/roadmap'].some(path => location.pathname.startsWith(path)) },
-    { to: '/assess', icon: <ClipboardCheck size={14} />, label: t('assess'), active: location.pathname.startsWith('/assess') },
-    { to: '/recommendations', icon: <Map size={14} />, label: t('recommendations'), active: location.pathname === '/recommendations' },
-    { to: '/pathways', icon: <Route size={14} />, label: t('pathways'), active: location.pathname.startsWith('/pathway') || location.pathname === '/pathways' },
-    { to: '/passport', icon: <UserRound size={14} />, label: t('passport'), active: location.pathname === '/passport' },
-    { to: '/counselor', icon: <MessageCircle size={14} />, label: t('counselor'), active: location.pathname === '/counselor' },
+    { to: '/', icon: <Home size={12} />, label: t('home'), active: isHome },
+    { to: '/job', icon: <Compass size={12} />, label: t('explore'), active: ['/job','/quiz','/mood','/compare','/career-transition','/roadmap'].some(path => location.pathname.startsWith(path)) },
+    { to: '/assess', icon: <ClipboardCheck size={12} />, label: t('assess'), active: location.pathname.startsWith('/assess') },
+    { to: '/recommendations', icon: <Map size={12} />, label: t('recommendations'), active: location.pathname === '/recommendations' },
+    { to: '/pathways', icon: <Route size={12} />, label: t('pathways'), active: location.pathname.startsWith('/pathway') || location.pathname === '/pathways' },
+    { to: '/passport', icon: <UserRound size={12} />, label: t('passport'), active: location.pathname === '/passport' },
+    { to: '/counselor', icon: <MessageCircle size={12} />, label: t('counselor'), active: location.pathname === '/counselor' },
     ...user ? [
       {
         to: '/history',
-        icon: <Clock size={14} />,
+        icon: <Clock size={12} />,
         label: historyCount > 0 ? `${t('archive')} (${historyCount})` : t('archive'),
         active: location.pathname === '/history' || location.pathname === '/favorites',
       },
-      { to: '/settings', icon: <Settings size={14} />, label: t('settings'), active: location.pathname === '/settings' },
-    ] : [{ to: '/settings', icon: <Settings size={14} />, label: t('settings'), active: location.pathname === '/settings' }],
+      { to: '/settings', icon: <Settings size={12} />, label: t('settings'), active: location.pathname === '/settings' },
+    ] : [{ to: '/settings', icon: <Settings size={12} />, label: t('settings'), active: location.pathname === '/settings' }],
   ];
+
   return (
     <>
       <motion.nav
@@ -54,7 +53,7 @@ export function Navbar() {
         role="navigation"
         aria-label="Main navigation"
       >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-2">
           {/* Logo */}
           <Link
             to="/"
@@ -74,7 +73,7 @@ export function Navbar() {
           </Link>
 
           {/* Desktop nav links */}
-          <div className="hidden md:flex min-w-0 items-center gap-0.5 overflow-x-auto">
+          <div className="hidden md:flex min-w-0 flex-1 items-center justify-end gap-0">
             {navLinks.map(link => (
               <NavLink key={link.to} {...link} />
             ))}
@@ -154,16 +153,16 @@ function NavLink({
       to={to}
       aria-label={label}
       onClick={() => sounds.navigate()}
-      className={`label-caps group relative flex shrink-0 items-center gap-1.5 px-2.5 py-2 transition-colors sm:px-3 ${
+      className={`label-caps group relative flex shrink-0 items-center gap-1 px-2 py-2 transition-colors ${
         active
           ? 'bg-black text-white'
           : 'text-black/55 hover:text-black hover:bg-black/5'
       }`}
-      style={{ fontSize: '0.78rem' }}
+      style={{ fontSize: '0.62rem' }}
     >
       {icon}
       <span>{label}</span>
-      <span className="absolute inset-x-2 bottom-0 h-px origin-left scale-x-0 bg-[var(--ink)] transition-transform duration-200 group-hover:scale-x-100" />
+      <span className="absolute inset-x-1 bottom-0 h-px origin-left scale-x-0 bg-[var(--ink)] transition-transform duration-200 group-hover:scale-x-100" />
     </Link>
   );
 }
