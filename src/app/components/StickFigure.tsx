@@ -1,14 +1,15 @@
 import { motion } from 'motion/react';
 
-type Pose =
+export type StickFigurePose =
   | 'waking' | 'walking' | 'sitting' | 'presenting' | 'thinking'
   | 'working' | 'talking' | 'eating' | 'celebrating' | 'tired'
   | 'running' | 'reading' | 'standing' | 'searching' | 'waving'
   | 'coding' | 'coffee' | 'highfive'
-  | 'typing' | 'jumping' | 'interviewing' | 'confused';
+  | 'typing' | 'jumping' | 'interviewing' | 'confused'
+  | 'climbing' | 'mapping' | 'graduating' | 'pointing';
 
 interface StickFigureProps {
-  pose: Pose;
+  pose: StickFigurePose;
   size?: number;
   className?: string;
   animate?: boolean;
@@ -65,11 +66,23 @@ function BreathingTorso({
   );
 }
 
-function renderPose(pose: Pose) {
+function renderPose(pose: StickFigurePose) {
   const sw = 2.5;
   const s = 'currentColor';
 
   switch (pose) {
+
+    case 'pointing':
+      return <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><GroundShadow/><circle cx="52" cy="23" r="10"/><BreathingTorso x1={52} y1={33} x2={52} y2={70} stroke={s} strokeWidth={sw}/><line x1="52" y1="46" x2="31" y2="62"/><motion.line x1="52" y1="45" x2="92" y2="36" animate={{x2:[90,94,90]}} transition={{repeat:Infinity,duration:2}}/><line x1="52" y1="70" x2="40" y2="101"/><line x1="52" y1="70" x2="67" y2="101"/><path d="M92 36l-7-4m7 4-5 7"/></g>;
+
+    case 'climbing':
+      return <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M78 105V25M104 105V25M78 40h26M78 58h26M78 76h26M78 94h26" opacity=".45"/><circle cx="54" cy="33" r="9"/><line x1="54" y1="42" x2="61" y2="70"/><motion.line x1="59" y1="50" x2="82" y2="42" animate={{y2:[42,39,42]}} transition={{repeat:Infinity,duration:2}}/><line x1="58" y1="51" x2="40" y2="60"/><motion.line x1="61" y1="70" x2="82" y2="78" animate={{y2:[78,74,78]}} transition={{repeat:Infinity,duration:2}}/><line x1="61" y1="70" x2="46" y2="96"/></g>;
+
+    case 'mapping':
+      return <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><GroundShadow/><circle cx="60" cy="22" r="10"/><line x1="60" y1="32" x2="60" y2="65"/><line x1="60" y1="65" x2="48" y2="99"/><line x1="60" y1="65" x2="73" y2="99"/><motion.path d="M22 50l24-7 27 7 25-8v28l-25 8-27-7-24 7zM46 43v28M73 50v28" fill="#f9f8f7" animate={{rotate:[-1,1,-1]}} transition={{repeat:Infinity,duration:3}}/><line x1="60" y1="45" x2="44" y2="54"/><line x1="60" y1="45" x2="76" y2="55"/></g>;
+
+    case 'graduating':
+      return <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><GroundShadow/><circle cx="60" cy="30" r="10"/><path d="M43 19l17-8 18 8-18 8zM74 21v12"/><line x1="60" y1="40" x2="60" y2="72"/><motion.line x1="60" y1="49" x2="36" y2="34" animate={{y2:[34,29,34]}} transition={{repeat:Infinity,duration:2}}/><motion.line x1="60" y1="49" x2="84" y2="34" animate={{y2:[34,29,34]}} transition={{repeat:Infinity,duration:2}}/><line x1="60" y1="72" x2="47" y2="102"/><line x1="60" y1="72" x2="74" y2="102"/><motion.path d="M91 21l9-7 7 7-9 7z" animate={{y:[0,-6,0],rotate:[0,12,0]}} transition={{repeat:Infinity,duration:2}}/></g>;
 
     case 'standing':
       return (

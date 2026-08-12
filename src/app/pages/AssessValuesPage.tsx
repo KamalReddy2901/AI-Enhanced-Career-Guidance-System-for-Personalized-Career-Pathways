@@ -1,3 +1,116 @@
-import { useState } from 'react'; import { useNavigate } from 'react-router'; import { StickFigure } from '../components/StickFigure'; import { VALUE_CHOICES, scoreValues } from '../engine/values'; import { calculateCompleteness } from '../engine/skillProfile'; import { useGuidance } from '../context/GuidanceContext'; import { useAuth } from '../context/AuthContext'; import { saveAssessment } from '../services/guidanceDb'; import { sounds } from '../utils/sounds';
-export function AssessValuesPage() { const navigate=useNavigate(); const {passport,updatePassport}=useGuidance(); const {user}=useAuth(); const [i,setI]=useState(0); const [answers,setAnswers]=useState<Record<string,'left'|'right'>>({}); const [result,setResult]=useState<ReturnType<typeof scoreValues>|null>(null); const choice=VALUE_CHOICES[i]; const choose=(side:'left'|'right')=>{const next={...answers,[choice.id]:side}; sounds.pop(); if(i===VALUE_CHOICES.length-1){const scored=scoreValues(next); setResult(scored); updatePassport(prev=>{if(!prev)throw new Error('Complete onboarding first');const p={...prev,values:scored};p.completeness=calculateCompleteness(p);return p}); if(user?.id)void saveAssessment(user.id,'values',scored); sounds.success();}else{setAnswers(next);setI(i+1)}}; return <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8"><div className="max-w-3xl mx-auto"><div className="flex items-center gap-4 border-b-2 border-black pb-5 mb-8"><StickFigure pose={result?'celebrating':'thinking'} size={76}/><div><div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">CareerCase · values desk</div><h1 className="text-3xl md:text-4xl font-[Playfair_Display]">{result?'Your work values':'Which matters more to you?'}</h1></div></div>{result?<div className="max-w-xl mx-auto"><div className="space-y-3">{Object.entries(result).sort(([,a],[,b])=>b-a).map(([key,value])=><div key={key}><div className="flex justify-between font-[JetBrains_Mono] text-xs uppercase"><span>{key}</span><span>{value}</span></div><div className="h-2 bg-black/10"><div className="h-2 bg-black" style={{width:`${value}%`}}/></div></div>)}</div><p className="mt-6 text-sm font-[Inter] text-black/60">A forced-choice snapshot of what you value at work. Your priorities can change with context.</p><button onClick={()=>navigate('/assess')} className="mt-6 w-full bg-black text-white p-3 font-[Inter]">Back to assessment desk</button></div>:<div className="max-w-xl mx-auto"><div className="font-[JetBrains_Mono] text-xs mb-4">{i+1} / {VALUE_CHOICES.length} · choose one</div><div className="grid md:grid-cols-2 gap-4">{(['left','right'] as const).map(side=><button key={side} onClick={()=>choose(side)} className="min-h-36 border-2 border-black/15 bg-white p-6 text-left hover:border-black transition-colors"><span className="font-[JetBrains_Mono] text-xs uppercase text-black/40">{side}</span><div className="mt-4 text-xl font-[Playfair_Display]">{choice[side].label}</div></button>)}</div></div>}</div></div> }
+import { useState } from "react";
+import { useNavigate } from "react-router";
+import { StickFigure } from "../components/StickFigure";
+import { VALUE_CHOICES, scoreValues } from "../engine/values";
+import { calculateCompleteness } from "../engine/skillProfile";
+import { useGuidance } from "../context/GuidanceContext";
+import { useAuth } from "../context/AuthContext";
+import { saveAssessment } from "../services/guidanceDb";
+import { sounds } from "../utils/sounds";
+import { useT } from "../i18n";
+import { valueItemText } from "../i18n/assessmentItems";
+import { speak } from "../utils/voice";
+export function AssessValuesPage() {
+  const navigate = useNavigate();
+  const { passport, updatePassport } = useGuidance();
+  const { user } = useAuth();
+  const { lang, locale } = useT();
+  const [i, setI] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, "left" | "right">>({});
+  const [result, setResult] = useState<ReturnType<typeof scoreValues> | null>(
+    null,
+  );
+  const choice = VALUE_CHOICES[i];
+  const choose = (side: "left" | "right") => {
+    const next = { ...answers, [choice.id]: side };
+    sounds.pop();
+    if (i === VALUE_CHOICES.length - 1) {
+      const scored = scoreValues(next);
+      setResult(scored);
+      updatePassport((prev) => {
+        if (!prev) throw new Error("Complete onboarding first");
+        const p = { ...prev, values: scored };
+        p.completeness = calculateCompleteness(p);
+        return p;
+      });
+      if (user?.id) void saveAssessment(user.id, "values", scored);
+      sounds.success();
+    } else {
+      setAnswers(next);
+      setI(i + 1);
+    }
+  };
+  return (
+    <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8">
+      <div className="max-w-3xl mx-auto">
+        <div className="flex items-center gap-4 border-b-2 border-black pb-5 mb-8">
+          <StickFigure pose={result ? "celebrating" : "thinking"} size={76} />
+          <div>
+            <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">
+              CareerCase · values desk
+            </div>
+            <h1 className="text-3xl md:text-4xl font-[Playfair_Display]">
+              {result ? "Your work values" : "Which matters more to you?"}
+            </h1>
+          </div>
+        </div>
+        {result ? (
+          <div className="max-w-xl mx-auto">
+            <div className="space-y-3">
+              {Object.entries(result)
+                .sort(([, a], [, b]) => b - a)
+                .map(([key, value]) => (
+                  <div key={key}>
+                    <div className="flex justify-between font-[JetBrains_Mono] text-xs uppercase">
+                      <span>{key}</span>
+                      <span>{value}</span>
+                    </div>
+                    <div className="h-2 bg-black/10">
+                      <div
+                        className="h-2 bg-black"
+                        style={{ width: `${value}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+            </div>
+            <p className="mt-6 text-sm font-[Inter] text-black/60">
+              A forced-choice snapshot of what you value at work. Your
+              priorities can change with context.
+            </p>
+            <button
+              onClick={() => navigate("/assess")}
+              className="mt-6 w-full bg-black text-white p-3 font-[Inter]"
+            >
+              Back to assessment desk
+            </button>
+          </div>
+        ) : (
+          <div className="max-w-xl mx-auto">
+            <div className="font-[JetBrains_Mono] text-xs mb-4">
+              {i + 1} / {VALUE_CHOICES.length} · choose one
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              {(["left", "right"] as const).map((side) => (
+                <button
+                  key={side}
+                  onClick={() => choose(side)}
+                  className="min-h-36 border-2 border-black/15 bg-white p-6 text-left hover:border-black transition-colors"
+                >
+                  <span className="font-[JetBrains_Mono] text-xs uppercase text-black/40">
+                    {side}
+                  </span>
+                  <div className="mt-4 text-xl font-[Playfair_Display]">
+                  {valueItemText(lang, i, side, choice[side].label)}
+                  </div>
+                <span onClick={(event)=>{event.stopPropagation();speak(valueItemText(lang,i,side,choice[side].label),locale)}} className="mt-3 inline-block min-h-11 py-3 text-sm" role="button" aria-label="Read choice aloud">🔊 Read</span>
+              </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 export default AssessValuesPage;

@@ -70,6 +70,7 @@ interface DbAssessment {
   result: unknown;
   taken_at: string;
 }
+export type { DbAssessment };
 
 export async function saveAssessment(
   userId: string,
@@ -118,6 +119,7 @@ interface DbRecommendation {
   result: unknown;
   created_at: string;
 }
+export type { DbRecommendation };
 
 export async function saveRecommendationSet(
   userId: string,
@@ -168,6 +170,7 @@ interface DbPathway {
   created_at: string;
   updated_at: string;
 }
+export type { DbPathway };
 
 export async function savePathway(
   userId: string,
@@ -245,6 +248,7 @@ interface DbProgress {
   payload: unknown;
   created_at: string;
 }
+export type { DbProgress };
 
 export async function logProgress(
   userId: string,
@@ -294,10 +298,11 @@ interface DbConsent {
   detail: unknown;
   created_at: string;
 }
+export type { DbConsent };
 
 export async function logConsent(
   userId: string,
-  consentType: 'terms' | 'data_processing' | 'guardian',
+  consentType: 'terms' | 'data_processing' | 'guardian' | 'cloud_history',
   granted: boolean,
   detail: Record<string, unknown> = {}
 ): Promise<void> {
@@ -332,4 +337,13 @@ export async function fetchConsents(userId: string): Promise<DbConsent[]> {
   }
   
   return (data ?? []) as DbConsent[];
+}
+
+export async function deleteAllGuidanceData(userId: string): Promise<void> {
+  if (!supabase) return;
+  const tables = ['guidance_progress', 'guidance_pathways', 'guidance_recommendations', 'guidance_assessments', 'guidance_consents', 'guidance_profiles'];
+  for (const table of tables) {
+    const { error } = await supabase.from(table).delete().eq('user_id', userId);
+    if (error) throw error;
+  }
 }

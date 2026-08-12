@@ -60,14 +60,13 @@ export function selectAptitudeForm(form: 0 | 1 = 0): AptitudeQuestion[] {
   return (['numerical','verbal','logical','spatial'] as AptitudeDimension[]).flatMap(d => APTITUDE_QUESTIONS.filter(q => q.dimension === d).slice(form * 6, form * 6 + 6));
 }
 
-export function scoreAptitude(answers: Record<string, number>, elapsedSeconds: number, totalSeconds = 300): AptitudeScores {
+export function scoreAptitude(answers: Record<string, number>, elapsedSeconds: number, totalSeconds = 300, form: 0 | 1 = 0): AptitudeScores {
   const result: AptitudeScores = { numerical: 0, verbal: 0, logical: 0, spatial: 0 };
   for (const dimension of Object.keys(result) as AptitudeDimension[]) {
-    const questions = APTITUDE_QUESTIONS.filter(q => q.dimension === dimension).slice(0, 6);
+    const questions = APTITUDE_QUESTIONS.filter(q => q.dimension === dimension).slice(form * 6, form * 6 + 6);
     const correct = questions.filter(q => answers[q.id] === q.answer).length;
     const speedBonus = Math.min(10, Math.max(0, Math.round(10 * Math.max(0, totalSeconds - elapsedSeconds) / totalSeconds)));
     result[dimension] = Math.min(100, Math.round(100 * correct / 6) + speedBonus);
   }
   return result;
 }
-

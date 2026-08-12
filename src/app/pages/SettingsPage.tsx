@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { ChevronLeft, Volume2, VolumeX, Trash2, Check, LogOut, User, LogIn, Download, Smartphone } from 'lucide-react';
@@ -10,6 +10,9 @@ import { clearAllCache } from '../services/ai';
 import { toast } from 'sonner';
 import { sounds, enableSound, isSoundOn } from '../utils/sounds';
 import { useGuidance } from '../context/GuidanceContext';
+import { LanguageSwitcher } from '../i18n';
+import { deleteAllGuidanceData, fetchAssessments, fetchConsents, fetchProgress, fetchRecommendations } from '../services/guidanceDb';
+import type { DbConsent } from '../services/guidanceDb';
 import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
   AlertDialogTitle, AlertDialogDescription, AlertDialogFooter,
@@ -21,7 +24,25 @@ export function SettingsPage() {
   const { preferences, setPreferences, resetPreferences } = usePreferences();
   const { clearHistory, clearAICache } = useApp();
   const { user, signOut, isSupabaseConfigured } = useAuth();
-  const { passport, recommendations } = useGuidance();
+  const { passport, recommendations, pathways, resetGuidance } = useGuidance();
+  const [consents, setConsents] = useState<DbConsent[]>([]);
+  const [showRawPassport, setShowRawPassport] = useState(false);
+  const [voiceAssistance, setVoiceAssistance] = useState(() => localStorage.getItem('cc_guidance_voice') !== 'off');
+  useEffect(() => { if (user?.id) void fetchConsents(user.id).then(setConsents); }, [user?.id]);
+
+  const exportGuidance = async () => {
+    const cloud = user?.id ? await Promise.all([fetchAssessments(user.id), fetchRecommendations(user.id), fetchProgress(user.id), fetchConsents(user.id)]) : [[], [], [], []];
+    const localConsents = JSON.parse(localStorage.getItem('cc_guidance_consents') ?? '[]') as unknown[];
+    const payload = { exportedAt: new Date().toISOString(), passport, pathways, currentRecommendations: recommendations, assessments: cloud[0], recommendationHistory: cloud[1], progress: cloud[2], consents: cloud[3].length ? cloud[3] : localConsents };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'careercase-guidance-data.json'; anchor.click(); URL.revokeObjectURL(url); toast.success('Complete guidance data exported');
+  };
+
+  const deleteGuidance = async () => {
+    if (!window.confirm('Delete all guidance data from this device and cloud? Your account will remain.')) return;
+    if (user?.id) await deleteAllGuidanceData(user.id);
+    resetGuidance(); setConsents([]); toast.success('Guidance data deleted'); navigate('/onboarding');
+  };
 
   const handleSoundToggle = () => {
     const newValue = !preferences.soundEffects;
@@ -62,7 +83,7 @@ export function SettingsPage() {
         {/* Back */}
         <motion.button
           onClick={() => navigate('/')}
-          className="flex items-center gap-1.5 text-black/40 hover:text-black transition-colors mb-8 font-[Inter]"
+          className="flex min-h-11 items-center gap-1.5 text-black/40 hover:text-black transition-colors mb-8 font-[Inter]"
           style={{ fontSize: '0.82rem' }}
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
@@ -93,6 +114,8 @@ export function SettingsPage() {
         {/* Preferences Section */}
         <Section title="Preferences">
           <div className="space-y-3">
+            <div className="border border-black/10 p-4"><div className="mb-2 font-[Inter] text-sm font-medium">Guidance language</div><LanguageSwitcher /></div>
+            <ToggleSetting label="Voice assistance" description="Show and use read-aloud and dictation controls" enabled={voiceAssistance} onToggle={() => { const next = !voiceAssistance; setVoiceAssistance(next); localStorage.setItem('cc_guidance_voice', next ? 'on' : 'off'); }} icon={<Volume2 size={16}/>} />
             <ToggleSetting
               label="Sound Effects"
               description="Play subtle audio feedback for interactions"
@@ -182,8 +205,11 @@ export function SettingsPage() {
         {/* Data Management */}
         <Section title="Data Management">
           <div className="space-y-3">
-            <ActionButton label="Export guidance data" description="Download your Career Passport and recommendation snapshot as JSON" icon={<Download size={16} />} onClick={() => { const blob = new Blob([JSON.stringify({ passport, recommendations }, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'careercase-guidance-data.json'; a.click(); URL.revokeObjectURL(url); toast.success('Guidance data exported'); }} />
-            <ActionButton label="Delete guidance data" description="Remove the local passport and recommendation snapshot; your account remains" icon={<Trash2 size={16} />} danger onClick={() => { if (window.confirm('Delete your guidance data from this device?')) { localStorage.removeItem('cc_guidance_passport'); localStorage.removeItem('cc_guidance_recommendations'); window.location.reload(); } }} />
+            <ActionButton label="View raw Career Passport" description="Inspect the exact profile object used by the deterministic engine" icon={<User size={16}/>} onClick={() => setShowRawPassport(value => !value)} />
+            {showRawPassport && <pre className="max-h-96 overflow-auto border border-black/10 bg-white p-4 font-[JetBrains_Mono] text-[10px]">{JSON.stringify(passport, null, 2)}</pre>}
+            <ActionButton label="Export my guidance data" description="Download passport, assessments, pathways, recommendation history, progress and consents" icon={<Download size={16} />} onClick={() => void exportGuidance()} />
+            <ActionButton label="Delete guidance data" description="Delete all six guidance-table records and local guidance data; keep the account" icon={<Trash2 size={16} />} danger onClick={() => void deleteGuidance()} />
+            <div className="border border-black/10 p-4"><div className="font-[JetBrains_Mono] text-xs uppercase tracking-wide">Consent history</div>{consents.length ? <ul className="mt-3 space-y-2">{consents.map(item => <li key={item.id} className="font-[Inter] text-xs">{item.consent_type} · {item.granted ? 'granted' : 'not granted'} · {new Date(item.created_at).toLocaleString()}</li>)}</ul> : <p className="mt-2 font-[Inter] text-xs text-black/45">No cloud consent entries on this account. Local consent remains on this device.</p>}</div>
             <ActionButton
               label="Clear AI Cache"
               description="Remove cached AI responses (fresh data on next search)"
@@ -345,15 +371,17 @@ export function SettingsPage() {
               <StickFigure pose="waving" size={48} animate={false} />
               <div>
                 <h3 className="font-[Playfair_Display] text-black mb-2" style={{ fontSize: '1.05rem' }}>
-                  Career Simulation
+                  CareerCase — AI Career Pathways
                 </h3>
                 <p className="font-[Inter] text-black/50 mb-3" style={{ fontSize: '0.82rem' }}>
-                  Experience any career before you commit. AI-powered career exploration with realistic simulations, interview prep, and personalized insights.
+                  Transparent NCO/NSQF-grounded guidance plus the original career exploration, simulations and interview preparation experience.
                 </p>
                 <div className="flex flex-wrap gap-4 font-[Inter] text-black/40" style={{ fontSize: '0.72rem' }}>
                   <span>Version 1.0.0</span>
                   <span>&bull;</span>
                   <span>AI-powered career exploration</span>
+                  <span>&bull;</span>
+                  <button onClick={()=>navigate('/how-it-works')} className="underline hover:text-black/60">How guidance works</button>
                   <span>&bull;</span>
                   <a href="https://github.com/KamalReddy2901/career-sim" target="_blank" rel="noopener noreferrer" className="underline hover:text-black/60">GitHub</a>
                 </div>

@@ -24,6 +24,11 @@ export function scoreValues(choices: Record<string, 'left' | 'right'>): WorkValu
   const tally: Record<ValueDimension, number> = { stability:0, growth:0, autonomy:0, impact:0, balance:0, compensation:0 };
   for (const choice of VALUE_CHOICES) tally[choice[choices[choice.id] ?? 'left'].dimension] += 1;
   const total = VALUE_CHOICES.length;
-  return Object.fromEntries(Object.entries(tally).map(([key, value]) => [key, Math.round(value / total * 100)])) as WorkValues;
+  const dimensions = Object.keys(tally) as ValueDimension[];
+  const exact = dimensions.map(dimension => ({ dimension, value: tally[dimension] / total * 100 }));
+  const normalized = Object.fromEntries(exact.map(item => [item.dimension, Math.floor(item.value)])) as Record<ValueDimension, number>;
+  let remainder = 100 - Object.values(normalized).reduce((sum, value) => sum + value, 0);
+  exact.sort((a, b) => (b.value - Math.floor(b.value)) - (a.value - Math.floor(a.value)) || a.dimension.localeCompare(b.dimension));
+  for (let index = 0; index < remainder; index += 1) normalized[exact[index].dimension] += 1;
+  return normalized;
 }
-

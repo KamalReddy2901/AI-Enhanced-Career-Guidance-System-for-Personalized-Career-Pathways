@@ -1,7 +1,192 @@
-import { useState } from 'react';
-import { StickFigure } from '../components/StickFigure';
-import { useGuidance } from '../context/GuidanceContext';
-import { streamCounselorChat } from '../services/ai';
-import { speak, listen } from '../utils/voice';
-export function CounselorPage(){const {passport,recommendations}=useGuidance();const [input,setInput]=useState('');const [answer,setAnswer]=useState('');const [busy,setBusy]=useState(false);const ask=async()=>{if(!input.trim())return;setBusy(true);setAnswer('');try{const context=JSON.stringify({passport,recommendations:recommendations?.recommendations.slice(0,8)});for await(const chunk of streamCounselorChat([{role:'user',text:input}],context))setAnswer(chunk)}catch{setAnswer('The counselor service is unavailable right now. Your deterministic assessments, recommendations and pathways still work without it.')}finally{setBusy(false)}};return <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8"><div className="max-w-3xl mx-auto"><header className="flex items-center gap-4 border-b-2 border-black pb-6 mb-8"><StickFigure pose="pointing" size={84}/><div><div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">CareerCase · counselor desk</div><h1 className="text-4xl font-[Playfair_Display]">Ask why. Ask what-if.</h1></div></header><div className="bg-white border border-black/10 p-6"><textarea value={input} onChange={e=>setInput(e.target.value)} rows={4} placeholder="What would you like to understand about your options?" className="w-full border border-black/20 p-3 font-[Inter]"/><div className="flex gap-2 mt-3"><button onClick={()=>void ask()} disabled={busy} className="bg-black text-white px-5 py-3 font-[Inter]">{busy?'Thinking…':'Ask counselor'}</button><button onClick={()=>void listen().then(setInput).catch(()=>setAnswer('Voice input is not supported on this browser.'))} className="border border-black/20 px-4 py-3 font-[Inter]">🎙 Speak</button><button onClick={()=>speak(answer)} className="border border-black/20 px-4 py-3 font-[Inter]">🔊 Read</button></div>{answer&&<div className="mt-6 border-t border-black/10 pt-5 font-[Inter] whitespace-pre-wrap">{answer}</div>}</div></div></div>}
+import { useMemo, useState } from "react";
+import { StickFigure } from "../components/StickFigure";
+import { useGuidance } from "../context/GuidanceContext";
+import {
+  occupationById,
+  qualificationById,
+  skillById,
+} from "../data/knowledge";
+import { streamCounselorChat } from "../services/ai";
+import { useT } from "../i18n";
+import { listen, speak } from "../utils/voice";
+
+const escalationPattern =
+  /suicid|self.?harm|hopeless|depress|panic|abuse|forced|family conflict|cannot cope|खुदकुशी|आत्महत्या|निराश|जबरदस्ती|కృంగి|ఆత్మహత్య|బలవంత/i;
+
+export function CounselorPage() {
+  const { passport, recommendations, pathways } = useGuidance();
+  const { lang, locale } = useT();
+  const [input, setInput] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [escalate, setEscalate] = useState(false);
+  const history = useMemo(
+    () => [] as { role: "user" | "assistant"; text: string }[],
+    [],
+  );
+  const ask = async () => {
+    const question = input.trim();
+    if (!question) return;
+    if (escalationPattern.test(question)) {
+      setEscalate(true);
+      setAnswer(
+        "Your safety and wellbeing matter more than a career decision. Please speak with a trusted person or qualified human counselor now.",
+      );
+      return;
+    }
+    setBusy(true);
+    setAnswer("");
+    setEscalate(false);
+    const mentioned = [...occupationById.values()]
+      .filter((occupation) =>
+        question.toLowerCase().includes(occupation.title.toLowerCase()),
+      )
+      .slice(0, 4);
+    const relevantSkills = new Set(
+      mentioned.flatMap((occupation) =>
+        occupation.skills.map((item) => item.skillId),
+      ),
+    );
+    const qualifications = [...qualificationById.values()]
+      .filter((item) =>
+        item.preparesForOccupationIds.some((id) =>
+          mentioned.some((occupation) => occupation.id === id),
+        ),
+      )
+      .slice(0, 5);
+    const context = JSON.stringify({
+      passport: passport && {
+        segment: passport.segment,
+        education: passport.education,
+        experience: passport.experiences,
+        skills: passport.skills.map((claim) => ({
+          name: skillById.get(claim.skillId)?.name,
+          proficiency: claim.proficiency,
+          confidence: claim.confidence,
+        })),
+        assessments: {
+          riasec: passport.riasec,
+          aptitude: passport.aptitude,
+          values: passport.values,
+        },
+        aspiration: passport.aspiration,
+        constraints: passport.constraints,
+      },
+      recommendations: recommendations?.recommendations.slice(0, 8),
+      activePathways: pathways
+        .filter((plan) => plan.chosenRoute)
+        .map((plan) => ({
+          target: occupationById.get(plan.occupationId)?.title,
+          readiness: plan.gapReport.readiness,
+          gaps: plan.gapReport.gaps.slice(0, 5),
+        })),
+      retrievedKnowledge: {
+        occupations: mentioned,
+        qualifications,
+        skills: [...relevantSkills]
+          .map((id) => skillById.get(id))
+          .filter(Boolean),
+      },
+    });
+    try {
+      history.push({ role: "user", text: question });
+      let response = "";
+      for await (const chunk of streamCounselorChat(
+        history,
+        context,
+        lang === "hi" ? "Hindi" : lang === "te" ? "Telugu" : "English",
+      )) { response = chunk; setAnswer(chunk); }
+      history.push({ role: "assistant", text: response });
+    } catch {
+      setAnswer(
+        "The counselor service is unavailable right now. Your deterministic assessments, recommendations and pathways still work without it.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8">
+      <div className="mx-auto max-w-3xl">
+        <header className="mb-8 flex items-center gap-4 border-b-2 border-black pb-6">
+          <StickFigure pose="pointing" size={84} />
+          <div>
+            <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">
+              CareerCase · grounded counselor desk
+            </div>
+            <h1 className="text-4xl font-[Playfair_Display]">
+              Ask why. Ask what-if.
+            </h1>
+            <p className="mt-2 font-[Inter] text-sm text-black/55">
+              Answers are grounded in your passport, scored landscape, pathways
+              and retrieved KB entries.
+            </p>
+          </div>
+        </header>
+        <div className="border border-black/10 bg-white p-6">
+          <textarea
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            rows={4}
+            placeholder="What would you like to understand about your options?"
+            className="w-full border border-black/20 p-3 font-[Inter]"
+          />
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              onClick={() => void ask()}
+              disabled={busy}
+              className="min-h-11 bg-black px-5 py-3 font-[Inter] text-white disabled:opacity-40"
+            >
+              {busy ? "Thinking…" : "Ask counselor"}
+            </button>
+            <button
+              onClick={() =>
+                void listen(locale)
+                  .then(setInput)
+                  .catch(() =>
+                    setAnswer("Voice input is not supported on this browser."),
+                  )
+              }
+              className="min-h-11 border border-black/20 px-4 py-3 font-[Inter]"
+            >
+              🎙 Speak
+            </button>
+            <button
+              disabled={!answer}
+              onClick={() => speak(answer, locale)}
+              className="min-h-11 border border-black/20 px-4 py-3 font-[Inter] disabled:opacity-30"
+            >
+              🔊 Read
+            </button>
+          </div>
+          {answer && (
+            <div className="mt-6 whitespace-pre-wrap border-t border-black/10 pt-5 font-[Inter]">
+              {answer}
+            </div>
+          )}
+          {escalate && (
+            <aside className="mt-5 border-2 border-black bg-[#fff8dc] p-5">
+              <div className="font-[JetBrains_Mono] text-xs uppercase tracking-wide">
+                Human support recommended
+              </div>
+              <p className="mt-2 font-[Inter]">
+                This looks like a decision worth discussing with a human
+                counselor. NCS runs free career centres; for immediate danger,
+                contact local emergency support.
+              </p>
+              <a
+                className="mt-3 inline-block min-h-11 py-3 font-[Inter] underline"
+                href="https://www.ncs.gov.in/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open National Career Service
+              </a>
+            </aside>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 export default CounselorPage;

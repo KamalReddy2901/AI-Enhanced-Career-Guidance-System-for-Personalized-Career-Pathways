@@ -6,24 +6,10 @@ import { OnboardingTour } from '../components/OnboardingTour';
 import { Breadcrumb } from '../components/Breadcrumb';
 import { BottomNav } from '../components/BottomNav';
 import { InstallPrompt } from '../components/InstallPrompt';
-import { useAuth } from '../context/AuthContext';
-
-// Routes that are always public (no login required)
-const PUBLIC_ROUTES = ['/', '/auth', '/quiz', '/mood', '/career-transition', '/roadmap', '/compare', '/pricing'];
 
 export function RootLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, loading, isSupabaseConfigured } = useAuth();
-
-  // Protect routes behind auth when Supabase is configured
-  useEffect(() => {
-    if (!isSupabaseConfigured || loading) return;
-    const isPublic = PUBLIC_ROUTES.some(r => location.pathname === r || location.pathname.startsWith('/auth'));
-    if (!user && !isPublic) {
-      navigate(`/auth?redirect=${encodeURIComponent(location.pathname)}`, { replace: true });
-    }
-  }, [user, loading, location.pathname, isSupabaseConfigured, navigate]);
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -119,4 +105,3 @@ export function RootLayout() {
     </div>
   );
 }
-

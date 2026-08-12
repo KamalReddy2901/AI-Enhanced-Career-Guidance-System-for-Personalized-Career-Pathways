@@ -663,9 +663,9 @@ export interface AspirationExtraction {
   entrepreneurialIntent: 'none' | 'curious' | 'strong';
 }
 
-export async function extractAspiration(statement: string, horizonYears: number, themes: string[], entrepreneurialIntent: AspirationExtraction['entrepreneurialIntent']): Promise<AspirationExtraction> {
+export async function extractAspiration(statement: string, horizonYears: number, themes: string[], entrepreneurialIntent: AspirationExtraction['entrepreneurialIntent'], language = 'English'): Promise<AspirationExtraction> {
   const raw = await callGroq(
-    'You are a warm career interviewer. Return only JSON. Never promise a perfect career; preserve user agency.',
+    `You are a warm career interviewer. Return only JSON written in ${language}. Never promise a perfect career; preserve user agency. Extract only what the user supports.`,
     'Turn this user reflection into a compact aspiration object. Do not invent facts or occupation codes. Return {"statement":"...","horizonYears":' + horizonYears + ',"themes":[...],"dreamOccupationIds":[plain role titles],"entrepreneurialIntent":"' + entrepreneurialIntent + '"}. Reflection: ' + statement + '. Themes: ' + themes.join(', '),
     { temperature: 0.3, maxTokens: 500, jsonMode: true, usageType: 'aspiration' },
   );
@@ -684,8 +684,8 @@ export async function extractAspiration(statement: string, horizonYears: number,
   }
 }
 
-export async function* streamCounselorChat(messages: { role: 'user' | 'assistant'; text: string }[], groundingContext: string): AsyncGenerator<string> {
-  const system = 'You are an experienced, honest Indian career counselor. Use only the supplied context. Never invent salary, demand, requirements or course facts. Use calibrated language such as strong option to explore and plausible route. Preserve agency and recommend a human counselor for distress, family conflict or high-cost decisions. CONTEXT:\n' + groundingContext;
+export async function* streamCounselorChat(messages: { role: 'user' | 'assistant'; text: string }[], groundingContext: string, language = 'English'): AsyncGenerator<string> {
+  const system = `You are an experienced, honest Indian career counselor. Respond in ${language} and stay under 180 words unless asked. Use only the supplied CONTEXT. Cite the specific profile facts or component scores driving each answer. If a requested fact is absent, say exactly what is missing. Never invent salary figures, demand statistics, occupation requirements, course names, or institutions. Distinguish fact, inference, and preference. Use calibrated language such as “strong option to explore” and “plausible route”; never promise success. Preserve agency and offer alternatives. Recommend a human counselor for distress, family conflict, high-cost decisions, or repeated rejection of all options. CONTEXT:\n${groundingContext}`;
   const raw = await callGroqStreaming(system, messages.map(m => m.role + ': ' + m.text).join('\n'), { usageType: 'counselor', maxTokens: 700 });
   yield raw;
 }
@@ -1011,11 +1011,10 @@ Each array should have exactly 5 items. Be specific and accurate.`,
 
     // Persist to Supabase — upsert so concurrent first-visitors don't cause duplicate errors
     if (supabase) {
-      supabase
+      void supabase
         .from('trending_cache')
         .upsert({ cache_date: today, data: result }, { onConflict: 'cache_date' })
-        .then(() => null)
-        .catch(() => null); // fire-and-forget; not critical
+        .then(() => null, () => null); // fire-and-forget; not critical
     }
 
     return result;

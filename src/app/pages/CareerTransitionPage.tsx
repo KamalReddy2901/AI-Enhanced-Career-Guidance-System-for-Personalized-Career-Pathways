@@ -160,6 +160,7 @@ export function CareerTransitionPage() {
   return (
     <div className="min-h-screen bg-background pt-20 pb-16">
       <div className="max-w-3xl mx-auto px-4 sm:px-6">
+        <div className="mb-6 border-l-4 border-black bg-white p-4 font-[Inter] text-sm">Want this grounded in your evidence, constraints and segment lens? <Link to="/recommendations" className="font-semibold underline">Open your Career Landscape</Link> and build a deterministic Pathway plan.</div>
 
         {/* Header */}
         <motion.div
@@ -788,8 +789,8 @@ export function CareerTransitionPage() {
 
       {plan && (
         <AskAIPanel
-          contextTitle={`${plan.from} → ${plan.to} Transition`}
-          contextBody={`Career transition from ${plan.from} to ${plan.to}.\n\nFeasibility: ${plan.feasibility}\nTimeline: ${plan.estimatedTimeline}\nSummary: ${plan.summary}\nTransferable skills: ${plan.transferableSkills?.join(', ')}\nSkill gaps: ${plan.skillGaps?.join(', ')}`}
+          contextTitle={`${plan.fromTitle} → ${plan.toTitle} Transition`}
+          contextBody={`Career transition from ${plan.fromTitle} to ${plan.toTitle}.\n\nDifficulty: ${plan.difficulty}\nTimeline: ${plan.timeframe}\nSummary: ${plan.overview}\nTransferable skills: ${plan.transferableSkills?.join(', ')}\nSkill gaps: ${plan.skillGaps?.join(', ')}`}
         />
       )}
 

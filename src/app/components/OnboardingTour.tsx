@@ -168,17 +168,24 @@ const STEPS: TourStep[] = [
   {
     tag: 'WELCOME',
     icon: <Sparkles size={22} />,
-    headline: 'Your career compass, powered by AI.',
-    body: "CareerCase lets you explore 250+ professions in depth — before you commit to a single one. Here's a quick tour of everything you can do.",
+    headline: 'Your living career map.',
+    body: "CareerCase combines a transparent Career Passport and 100 NCO-coded pathways with the exploration tools you already know. Here is the full system.",
     preview: (
       <div className="flex items-center justify-center w-full py-2">
         <div className="text-center">
           <Sparkles size={28} className="text-black/15 mx-auto mb-2" />
           <p className="font-[Playfair_Display] text-black/30" style={{ fontSize: '0.9rem' }}>CareerCase</p>
-          <p className="font-[Inter] text-black/20 mt-1" style={{ fontSize: '0.6rem' }}>9 tools · 250+ careers · AI-powered</p>
+          <p className="font-[Inter] text-black/20 mt-1" style={{ fontSize: '0.6rem' }}>Assess · Match · Pathway · Grow</p>
         </div>
       </div>
     ),
+  },
+  {
+    tag: 'PATHWAYS',
+    icon: <Map size={22} />,
+    headline: 'Assess, match, build a route, then replan.',
+    body: 'Four short assessments and your evidence-led Passport create a diverse landscape. Pick a target, compare three grounded routes, and watch readiness update as you complete evidence.',
+    preview: <RoadmapPreview />,
   },
   {
     tag: 'SEARCH',

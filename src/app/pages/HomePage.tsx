@@ -8,6 +8,8 @@ import { StickFigure } from '../components/StickFigure';
 
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
+import { useGuidance } from '../context/GuidanceContext';
+import { occupationById } from '../data/knowledge';
 import { getTrendingCareers, type TrendingCareers } from '../services/ai';
 import { toast } from 'sonner';
 
@@ -69,6 +71,7 @@ export function HomePage() {
   const navigate = useNavigate();
   const { searchJob, searchJobAI, searchJobPreliminary, setCurrentJob, addToHistory, isSearchAnimating, setIsSearchAnimating, setRefinementCount, setComparisonJob } = useApp();
   const { user, isSupabaseConfigured } = useAuth();
+  const { passport, recommendations, pathways } = useGuidance();
 
   const [trending, setTrending] = useState<TrendingCareers | null>(null);
   const [trendingLoading, setTrendingLoading] = useState(false);
@@ -243,6 +246,10 @@ export function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
+            <div className="mb-6 border-y-4 border-double border-black bg-[#f9f8f7]/95 p-4 text-left">
+              <div className="font-[JetBrains_Mono] text-[10px] uppercase tracking-widest">{passport ? 'Your living career map' : 'Start with guidance'}</div>
+              {passport && recommendations ? <><div className="mt-3 grid grid-cols-3 gap-2">{recommendations.recommendations.slice(0,3).map(item=><div key={item.occupationId} className="border border-black/10 bg-white p-2"><div className="font-[Playfair_Display] text-sm leading-tight">{occupationById.get(item.occupationId)?.title}</div><div className="mt-1 font-[JetBrains_Mono] text-lg">{item.totalScore}</div></div>)}</div>{pathways[0]&&<p className="mt-3 font-[Inter] text-xs">Active pathway readiness · <strong>{pathways[0].gapReport.readiness}</strong></p>}<button onClick={()=>navigate('/recommendations')} className="mt-3 min-h-11 w-full bg-black px-4 py-3 font-[Inter] text-sm text-white">Open my career landscape →</button></>:<><p className="mt-2 font-[Inter] text-sm text-black/60">Assess your signals, compare transparent matches, and chart three grounded routes.</p><button onClick={()=>navigate('/onboarding')} className="mt-3 min-h-11 w-full bg-black px-4 py-3 font-[Inter] text-sm text-white">Chart my pathway →</button></>}
+            </div>
             <MagnifierSearch
               onSearchComplete={handleSearchComplete}
               isAnimating={isSearchAnimating}
@@ -521,27 +528,27 @@ export function HomePage() {
             {[
               {
                 step: '01',
-                pose: 'searching' as const,
-                title: 'Search Any Career',
-                body: 'Type any job title - from Software Engineer to Forensic Pathologist. CareerCase knows 250+ professions in depth.',
+                pose: 'reading' as const,
+                title: 'Assess',
+                body: 'Build a Career Passport from interests, aptitude, work values, aspirations, experience and evidence.',
               },
               {
                 step: '02',
-                pose: 'reading' as const,
-                title: 'Get Your Dossier',
-                body: 'AI generates a detailed career file: salary ranges, daily routine, education path, skills, and a week-in-the-life overview.',
+                pose: 'mapping' as const,
+                title: 'Match',
+                body: 'Explore a diverse landscape scored transparently over 100 NCO-coded occupations with your segment lens.',
               },
               {
                 step: '03',
-                pose: 'working' as const,
-                title: 'Live the Day',
-                body: 'Step into the role through interactive simulations, interview prep drills, and a quiz that matches careers to your personality.',
+                pose: 'climbing' as const,
+                title: 'Pathway',
+                body: 'Compare fastest, lower-risk and credential routes with proficiency-weighted gaps and interactive steps.',
               },
               {
                 step: '04',
-                pose: 'celebrating' as const,
-                title: 'Track & Decide',
-                body: 'Save favourites, compare careers side-by-side, plan a transition, and build a roadmap — all in one place.',
+                pose: 'graduating' as const,
+                title: 'Grow',
+                body: 'Complete learning and RPL evidence; readiness and recommendations update as your Passport grows.',
               },
             ].map((item, i) => (
               <motion.div
@@ -840,6 +847,7 @@ export function HomePage() {
             Built by Kamal Reddy &middot; v1.0.0
           </p>
           <div className="flex items-center gap-4 font-[Inter] text-black/30" style={{ fontSize: '0.72rem' }}>
+            <button onClick={() => navigate('/how-it-works')} className="hover:text-black/50 transition-colors">How guidance works</button>
             <button onClick={() => navigate('/settings')} className="hover:text-black/50 transition-colors">Settings</button>
             <button onClick={() => navigate('/history')} className="hover:text-black/50 transition-colors">History</button>
           </div>

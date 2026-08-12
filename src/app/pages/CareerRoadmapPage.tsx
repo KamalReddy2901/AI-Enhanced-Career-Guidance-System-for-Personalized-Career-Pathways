@@ -48,7 +48,7 @@ export function CareerRoadmapPage() {
   const [inputFocused, setInputFocused] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [fetchingSuggestions, setFetchingSuggestions] = useState(false);
-  const suggestDebounce = useRef<ReturnType<typeof setTimeout>>(null);
+  const suggestDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Roadmap history
   const [roadmapHistory, setRoadmapHistory] = useState<{ title: string; date: string }[]>(() => {
@@ -141,6 +141,7 @@ export function CareerRoadmapPage() {
   return (
     <div className="min-h-screen bg-background pt-20 pb-16">
       <div className="max-w-2xl mx-auto px-4 sm:px-6">
+        <div className="mb-6 border-l-4 border-black bg-white p-4 font-[Inter] text-sm">Want this grounded in your evidence, constraints and segment lens? <Link to="/recommendations" className="font-semibold underline">Open your Career Landscape</Link> and build a deterministic Pathway plan.</div>
         {/* Header */}
         <motion.div
           className="mb-10"
@@ -546,7 +547,7 @@ export function CareerRoadmapPage() {
       {roadmap && (
         <AskAIPanel
           contextTitle={`${roadmap.title} Roadmap`}
-          contextBody={`Career roadmap for ${roadmap.title}.\n\nSummary: ${roadmap.summary}\nStages: ${roadmap.stages?.map((s: any) => s.title).join(' → ')}`}
+          contextBody={`Career roadmap for ${roadmap.title}.\n\nOutlook: ${roadmap.industryOutlook}\nStages: ${roadmap.stages?.map(stage => stage.stage).join(' → ')}`}
         />
       )}
 

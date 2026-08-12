@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Clock, Home, FlaskConical, Scale, Settings, Brain, Menu, X, Map, ArrowLeftRight } from 'lucide-react';
+import { Clock, Home, Compass, Settings, Menu, X, Map, MessageCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../hooks/useFavorites';
@@ -27,11 +27,9 @@ export function Navbar() {
 
   const navLinks = [
     { to: '/', icon: <Home size={14} />, label: 'Home', active: isHome },
-    { to: '/quiz', icon: <FlaskConical size={14} />, label: 'Quiz', active: location.pathname === '/quiz' },
-    { to: '/mood', icon: <Brain size={14} />, label: 'Mood', active: location.pathname === '/mood' },
-    { to: '/career-transition', icon: <ArrowLeftRight size={14} />, label: 'Transition', active: location.pathname === '/career-transition' },
-    { to: '/roadmap', icon: <Map size={14} />, label: 'Roadmap', active: location.pathname === '/roadmap' },
-    { to: '/compare', icon: <Scale size={14} />, label: 'Compare', active: location.pathname === '/compare' },
+    { to: '/job', icon: <Compass size={14} />, label: 'Explore', active: ['/job','/quiz','/mood','/compare','/career-transition','/roadmap'].some(path => location.pathname.startsWith(path)) },
+    { to: '/passport', icon: <Map size={14} />, label: 'Pathways', active: ['/passport','/assess','/recommendations','/pathway'].some(path => location.pathname.startsWith(path)) },
+    { to: '/counselor', icon: <MessageCircle size={14} />, label: 'Counselor', active: location.pathname === '/counselor' },
     ...user ? [
       {
         to: '/history',
@@ -40,7 +38,7 @@ export function Navbar() {
         active: location.pathname === '/history' || location.pathname === '/favorites',
       },
       { to: '/settings', icon: <Settings size={14} />, label: 'Settings', active: location.pathname === '/settings' },
-    ] : [],
+    ] : [{ to: '/settings', icon: <Settings size={14} />, label: 'Settings', active: location.pathname === '/settings' }],
   ];
 
   return (
@@ -87,7 +85,7 @@ export function Navbar() {
           <div className="flex md:hidden items-center gap-1">
             <button
               onClick={() => { sounds.toggle(); setMenuOpen(prev => !prev); }}
-              className="p-2 text-black/60 hover:text-black transition-colors"
+              className="h-11 w-11 p-2 text-black/60 hover:text-black transition-colors"
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={menuOpen}
             >

@@ -7,6 +7,8 @@ import {
   deleteRemoteFavorite,
   clearRemoteFavorites,
 } from '../services/supabase';
+import { useGuidance } from '../context/GuidanceContext';
+import { occupationById } from '../data/knowledge';
 
 const FAVORITES_KEY = 'careersim_favorites';
 
@@ -20,6 +22,7 @@ export interface Favorite {
 
 export function useFavorites() {
   const { user } = useAuth();
+  const { passport, updatePassport } = useGuidance();
   const [favorites, setFavorites] = useState<Favorite[]>([]);
 
   // Load from localStorage first, then merge with remote
@@ -77,10 +80,19 @@ export function useFavorites() {
     const filtered = favorites.filter(f => f.jobTitle.toLowerCase() !== jobData.title.toLowerCase());
     const updated = [newFav, ...filtered].slice(0, 50);
     saveFavorites(updated);
+    if (passport) {
+      const title = jobData.title.toLowerCase();
+      const occupation = [...occupationById.values()].find(item => item.title.toLowerCase() === title || item.title.toLowerCase().includes(title) || title.includes(item.title.toLowerCase()));
+      updatePassport(previous => {
+        if (!previous) throw new Error('Passport unavailable');
+        const current = previous.aspiration ?? { statement: `Explore ${jobData.title}`, horizonYears: 3, themes: [], dreamOccupationIds: [], entrepreneurialIntent: 'none' as const, capturedVia: 'form' as const };
+        return { ...previous, aspiration: { ...current, themes: [...new Set([...current.themes, jobData.title.toLowerCase()])].slice(0, 12), dreamOccupationIds: occupation ? [...new Set([...current.dreamOccupationIds, occupation.id])].slice(0, 5) : current.dreamOccupationIds } };
+      });
+    }
     if (user) {
       saveFavoriteRemote(user.id, jobData.title, jobData, newFav.timestamp).catch(() => {});
     }
-  }, [favorites, saveFavorites, user]);
+  }, [favorites, saveFavorites, user, passport, updatePassport]);
 
   const removeFavorite = useCallback((jobTitle: string) => {
     saveFavorites(favorites.filter(f => f.jobTitle.toLowerCase() !== jobTitle.toLowerCase()));

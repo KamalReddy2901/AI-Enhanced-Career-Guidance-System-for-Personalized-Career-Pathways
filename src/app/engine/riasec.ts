@@ -85,13 +85,12 @@ export function scoreRiasec(responses: Record<string, number>): RiasecScores {
   });
 
   // Normalize to 0-100 scale (1-5 sum of 6 items = 6-30 range)
+  const normalize = (dimension: RiasecDimension) => counts[dimension] > 0
+    ? Math.round((sums[dimension] - counts[dimension]) / (counts[dimension] * 4) * 100)
+    : 0;
   const scores: RiasecScores = {
-    R: counts.R > 0 ? Math.round(((sums.R - 6) / 24) * 100) : 0,
-    I: counts.I > 0 ? Math.round(((sums.I - 6) / 24) * 100) : 0,
-    A: counts.A > 0 ? Math.round(((sums.A - 6) / 24) * 100) : 0,
-    S: counts.S > 0 ? Math.round(((sums.S - 6) / 24) * 100) : 0,
-    E: counts.E > 0 ? Math.round(((sums.E - 6) / 24) * 100) : 0,
-    C: counts.C > 0 ? Math.round(((sums.C - 6) / 24) * 100) : 0,
+    R: normalize('R'), I: normalize('I'), A: normalize('A'),
+    S: normalize('S'), E: normalize('E'), C: normalize('C'),
   };
 
   return scores;

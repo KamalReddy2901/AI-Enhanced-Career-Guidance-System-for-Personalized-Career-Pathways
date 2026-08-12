@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { StickFigure } from '../components/StickFigure';
+import { StickFigure, type StickFigurePose } from '../components/StickFigure';
+import { logConsent } from '../services/guidanceDb';
 import { useGuidance } from '../context/GuidanceContext';
 import { useAuth } from '../context/AuthContext';
 import { sounds } from '../utils/sounds';
-import { haptic } from '../utils/haptic';
+import { hapticLight, hapticSuccess } from '../utils/haptic';
 import { calculateCompleteness } from '../engine/skillProfile';
 import type { Segment, CareerPassport, Education, Constraints, Experience } from '../engine/types';
+import { OCCUPATIONS } from '../data/knowledge';
+import { LanguageSwitcher, useT } from '../i18n';
 
 const STEPS = ['segment', 'goals', 'background', 'constraints', 'consent', 'finish'] as const;
 type Step = typeof STEPS[number];
@@ -34,6 +37,8 @@ export function OnboardingPage() {
   const [guardianEmail, setGuardianEmail] = useState('');
   const [guardianConfirmed, setGuardianConfirmed] = useState(false);
   const [dataConsentGiven, setDataConsentGiven] = useState(false);
+  const [cloudHistoryConsent, setCloudHistoryConsent] = useState(false);
+  const [guardianPendingLogged, setGuardianPendingLogged] = useState(false);
 
   // Redirect if already onboarded
   useEffect(() => {
@@ -44,7 +49,7 @@ export function OnboardingPage() {
 
   const handleNext = () => {
     sounds.click();
-    haptic.light();
+    hapticLight();
     const idx = STEPS.indexOf(currentStep);
     if (idx < STEPS.length - 1) {
       setCurrentStep(STEPS[idx + 1]);
@@ -89,11 +94,21 @@ export function OnboardingPage() {
     newPassport.completeness = calculateCompleteness(newPassport);
     
     updatePassport(() => newPassport);
+
+    const localConsentEntries = [
+      { consent_type: 'data_processing', granted: dataConsentGiven, detail: {}, created_at: new Date().toISOString() },
+      { consent_type: 'cloud_history', granted: cloudHistoryConsent, detail: { optional: true }, created_at: new Date().toISOString() },
+      ...(isMinor ? [{ consent_type: 'guardian', granted: guardianConfirmed, detail: { method: 'email_ack_demo', guardianName }, created_at: new Date().toISOString() }] : []),
+    ];
+    localStorage.setItem('cc_guidance_consents', JSON.stringify(localConsentEntries));
+    localStorage.setItem('cc_guidance_minor', isMinor ? 'true' : 'false');
+    if (isMinor) (window as unknown as { posthog?: { opt_out_capturing: () => void } }).posthog?.opt_out_capturing();
     
     // Log consents if user is signed in
     if (user?.id) {
       import('../services/guidanceDb').then(({ logConsent }) => {
         logConsent(user.id, 'data_processing', dataConsentGiven);
+        logConsent(user.id, 'cloud_history', cloudHistoryConsent, { purpose: 'optional_cloud_history' });
         if (isMinor && guardianConfirmed) {
           logConsent(user.id, 'guardian', true, {
             guardianName,
@@ -105,7 +120,7 @@ export function OnboardingPage() {
     }
     
     sounds.success();
-    haptic.medium();
+    hapticSuccess();
     
     navigate('/assess');
   };
@@ -128,6 +143,7 @@ export function OnboardingPage() {
     <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8">
       {/* Progress rail */}
       <div className="max-w-2xl mx-auto mb-8">
+        <div className="mb-4 flex justify-end"><LanguageSwitcher /></div>
         <div className="flex items-center justify-between">
           {STEPS.map((step, idx) => (
             <div key={step} className="flex items-center">
@@ -137,14 +153,14 @@ export function OnboardingPage() {
                 {idx + 1}
               </div>
               {idx < STEPS.length - 1 && (
-                <div className={`w-12 h-0.5 mx-1 ${idx < stepIndex ? 'bg-black' : 'bg-black/20'}`} />
+                <div className={`h-0.5 w-4 sm:w-12 mx-1 ${idx < stepIndex ? 'bg-black' : 'bg-black/20'}`} />
               )}
             </div>
           ))}
         </div>
         <div className="flex justify-between mt-2">
           {STEPS.map((step, idx) => (
-            <div key={step} className={`text-xs font-[JetBrains_Mono] uppercase tracking-wide ${
+            <div key={step} className={`w-1/6 text-center text-[8px] sm:text-xs font-[JetBrains_Mono] uppercase sm:tracking-wide ${
               idx <= stepIndex ? 'text-black' : 'text-black/30'
             }`}>
               {step}
@@ -159,7 +175,7 @@ export function OnboardingPage() {
         {currentStep === 'goals' && <GoalsStep goals={goals} setGoals={setGoals} />}
         {currentStep === 'background' && <BackgroundStep education={education} setEducation={setEducation} experiences={experiences} setExperiences={setExperiences} />}
         {currentStep === 'constraints' && <ConstraintsStep constraints={constraints} setConstraints={setConstraints} segment={segment} />}
-        {currentStep === 'consent' && <ConsentStep isMinor={isMinor} setIsMinor={setIsMinor} guardianName={guardianName} setGuardianName={setGuardianName} guardianEmail={guardianEmail} setGuardianEmail={setGuardianEmail} guardianConfirmed={guardianConfirmed} setGuardianConfirmed={setGuardianConfirmed} dataConsentGiven={dataConsentGiven} setDataConsentGiven={setDataConsentGiven} userId={user?.id} />}
+        {currentStep === 'consent' && <ConsentStep isMinor={isMinor} setIsMinor={setIsMinor} guardianName={guardianName} setGuardianName={setGuardianName} guardianEmail={guardianEmail} setGuardianEmail={setGuardianEmail} guardianConfirmed={guardianConfirmed} setGuardianConfirmed={setGuardianConfirmed} dataConsentGiven={dataConsentGiven} setDataConsentGiven={setDataConsentGiven} cloudHistoryConsent={cloudHistoryConsent} setCloudHistoryConsent={setCloudHistoryConsent} userId={user?.id} guardianPendingLogged={guardianPendingLogged} setGuardianPendingLogged={setGuardianPendingLogged} />}
         {currentStep === 'finish' && <FinishStep />}
 
         {/* Navigation */}
@@ -197,7 +213,7 @@ export function OnboardingPage() {
 // ─── Step Components ──────────────────────────────────────────────────────────
 
 function SegmentStep({ segment, setSegment }: { segment: Segment | null; setSegment: (s: Segment) => void }) {
-  const segments: Array<{ value: Segment; label: string; pose: any; description: string }> = [
+  const segments: Array<{ value: Segment; label: string; pose: StickFigurePose; description: string }> = [
     { value: 'school_student', label: 'School Student', pose: 'reading', description: 'Class 10-12, exploring career options' },
     { value: 'college_student', label: 'College Student', pose: 'thinking', description: 'Undergraduate/postgraduate, planning next steps' },
     { value: 'job_seeker', label: 'Job Seeker', pose: 'pointing', description: 'Looking for my first job or re-entering workforce' },
@@ -285,9 +301,15 @@ function BackgroundStep({ education, setEducation, experiences, setExperiences }
     sounds.click();
   };
 
-  const updateExperience = (idx: number, field: keyof Experience, value: any) => {
+  const updateExperience = <K extends keyof Experience>(idx: number, field: K, value: Experience[K]) => {
     const updated = [...experiences];
     updated[idx] = { ...updated[idx], [field]: value };
+    if (field === 'title' && typeof value === 'string') {
+      const normalized = value.toLowerCase().trim();
+      const match = OCCUPATIONS.find(occupation => occupation.title.toLowerCase() === normalized)
+        ?? OCCUPATIONS.find(occupation => occupation.title.toLowerCase().includes(normalized) || normalized.includes(occupation.title.toLowerCase()));
+      updated[idx].occupationId = match?.id;
+    }
     setExperiences(updated);
   };
 
@@ -305,7 +327,7 @@ function BackgroundStep({ education, setEducation, experiences, setExperiences }
         <label className="block font-[Inter] text-sm font-semibold mb-2">Highest Education Level</label>
         <select
           value={education.level}
-          onChange={(e) => setEducation({ ...education, level: e.target.value as any })}
+          onChange={(e) => setEducation({ ...education, level: e.target.value as Education['level'] })}
           className="w-full p-3 border border-black/20 rounded-sm font-[Inter] text-sm"
         >
           <option value="below_10">Below Class 10</option>
@@ -340,7 +362,9 @@ function BackgroundStep({ education, setEducation, experiences, setExperiences }
               onChange={(e) => updateExperience(idx, 'title', e.target.value)}
               placeholder="Job title"
               className="w-full p-2 border border-black/20 rounded-sm font-[Inter] text-sm mb-2"
+              list="occupation-title-options"
             />
+            <datalist id="occupation-title-options">{OCCUPATIONS.map(occupation => <option key={occupation.id} value={occupation.title} />)}</datalist>
             <input
               type="number"
               value={exp.years || ''}
@@ -417,13 +441,18 @@ function ConstraintsStep({ constraints, setConstraints, segment }: {
           <label className="block font-[Inter] text-sm font-semibold mb-2">Learning Budget</label>
           <select
             value={constraints.budgetLevel}
-            onChange={(e) => setConstraints({ ...constraints, budgetLevel: e.target.value as any })}
+            onChange={(e) => setConstraints({ ...constraints, budgetLevel: e.target.value as Constraints['budgetLevel'] })}
             className="w-full p-3 border border-black/20 rounded-sm font-[Inter] text-sm"
           >
             <option value="low">Low (primarily free resources)</option>
             <option value="medium">Medium (some paid courses)</option>
             <option value="high">High (formal programs, certifications)</option>
           </select>
+        </div>
+
+        <div>
+          <label className="block font-[Inter] text-sm font-semibold mb-2">Languages</label>
+          <input value={constraints.languages.join(', ')} onChange={(event) => setConstraints({ ...constraints, languages: event.target.value.split(',').map(value => value.trim()).filter(Boolean) })} placeholder="English, Hindi, Telugu" className="w-full p-3 border border-black/20 rounded-sm font-[Inter] text-sm" />
         </div>
 
         {(segment === 'career_switcher' || segment === 'professional') && (
@@ -443,11 +472,28 @@ function ConstraintsStep({ constraints, setConstraints, segment }: {
   );
 }
 
-function ConsentStep({ isMinor, setIsMinor, guardianName, setGuardianName, guardianEmail, setGuardianEmail, guardianConfirmed, setGuardianConfirmed, dataConsentGiven, setDataConsentGiven, userId }: any) {
+interface ConsentStepProps {
+  isMinor: boolean | null; setIsMinor: (value: boolean) => void;
+  guardianName: string; setGuardianName: (value: string) => void;
+  guardianEmail: string; setGuardianEmail: (value: string) => void;
+  guardianConfirmed: boolean; setGuardianConfirmed: (value: boolean) => void;
+  dataConsentGiven: boolean; setDataConsentGiven: (value: boolean) => void;
+  cloudHistoryConsent: boolean; setCloudHistoryConsent: (value: boolean) => void;
+  userId?: string; guardianPendingLogged: boolean; setGuardianPendingLogged: (value: boolean) => void;
+}
+
+function ConsentStep({ isMinor, setIsMinor, guardianName, setGuardianName, guardianEmail, setGuardianEmail, guardianConfirmed, setGuardianConfirmed, dataConsentGiven, setDataConsentGiven, cloudHistoryConsent, setCloudHistoryConsent, userId, guardianPendingLogged, setGuardianPendingLogged }: ConsentStepProps) {
+  const { t } = useT();
+  const requestGuardianConsent = () => {
+    if (!guardianName.trim() || !guardianEmail.trim()) return;
+    setGuardianPendingLogged(true);
+    if (userId) void logConsent(userId, 'guardian', false, { method: 'email_ack_pending', guardian_name: guardianName });
+    sounds.notification();
+  };
   return (
     <div>
       <h2 className="text-3xl font-[Playfair_Display] text-black mb-2">Consent & Privacy</h2>
-      <p className="text-black/60 font-[Inter] mb-6">Your data, your control</p>
+      <p className="text-black/60 font-[Inter] mb-6">{t('consent')}</p>
       
       <div className="space-y-6">
         <div>
@@ -471,7 +517,7 @@ function ConsentStep({ isMinor, setIsMinor, guardianName, setGuardianName, guard
         {isMinor === true && (
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-sm">
             <p className="font-[Inter] text-sm mb-3">
-              Under DPDP Act 2023 §9, we require guardian consent for users under 18.
+              {t('guardianNotice')}
             </p>
             <div className="space-y-2">
               <input
@@ -488,18 +534,29 @@ function ConsentStep({ isMinor, setIsMinor, guardianName, setGuardianName, guard
                 placeholder="Guardian email"
                 className="w-full p-2 border border-black/20 rounded-sm font-[Inter] text-sm"
               />
+              {!guardianPendingLogged ? (
+                <button type="button" onClick={requestGuardianConsent} disabled={!guardianName.trim() || !guardianEmail.trim()} className="min-h-11 w-full border border-black/20 bg-white px-3 py-2 font-[Inter] text-sm disabled:opacity-40">
+                  Generate guardian confirmation request
+                </button>
+              ) : (
+                <p className="border-l-4 border-amber-500 bg-white p-3 font-[Inter] text-sm">Guardian consent pending — a confirmation request has been generated.</p>
+              )}
               <div className="flex items-center gap-2 mt-3">
                 <input
                   type="checkbox"
                   id="guardian-confirm"
                   checked={guardianConfirmed}
-                  onChange={(e) => setGuardianConfirmed(e.target.checked)}
+                  onChange={(e) => {
+                    setGuardianConfirmed(e.target.checked);
+                    if (e.target.checked && userId) void logConsent(userId, 'guardian', true, { method: 'email_ack_demo_confirmed', guardian_name: guardianName });
+                  }}
                   className="w-4 h-4"
                 />
                 <label htmlFor="guardian-confirm" className="font-[Inter] text-sm">
                   Mark as confirmed (demonstration flow — guardian has approved)
                 </label>
               </div>
+              <p className="font-[JetBrains_Mono] text-[10px] uppercase tracking-wide text-black/50">Demonstration flow — production uses DigiLocker-verified guardian consent.</p>
             </div>
           </div>
         )}
@@ -536,8 +593,12 @@ function ConsentStep({ isMinor, setIsMinor, guardianName, setGuardianName, guard
               className="w-4 h-4 mt-1"
             />
             <label htmlFor="data-consent" className="font-[Inter] text-sm">
-              I consent to data processing as described above (required)
+              {t('dataProcessing')}
             </label>
+          </div>
+          <div className="flex items-start gap-2 mt-3">
+            <input type="checkbox" id="cloud-history-consent" checked={cloudHistoryConsent} onChange={(event) => setCloudHistoryConsent(event.target.checked)} className="w-4 h-4 mt-1" />
+            <label htmlFor="cloud-history-consent" className="font-[Inter] text-sm">{t('cloudHistory')}</label>
           </div>
         </div>
       </div>

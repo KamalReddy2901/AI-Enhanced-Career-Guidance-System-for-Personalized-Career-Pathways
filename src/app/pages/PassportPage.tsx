@@ -4,10 +4,15 @@ import { StickFigure } from '../components/StickFigure';
 import { useGuidance } from '../context/GuidanceContext';
 import { useAuth } from '../context/AuthContext';
 import { sounds } from '../utils/sounds';
-import { haptic } from '../utils/haptic';
+import { hapticSuccess } from '../utils/haptic';
 import { extractProfileFromResume, type ResumeExtraction } from '../services/ai';
 import { matchSkillsToKB, mergeSkillClaims, groupSkillsByCategory, estimateNSQFLevel } from '../engine/skillProfile';
 import { skillById } from '../data/knowledge';
+import { SkillValidationDialog } from '../components/guidance/SkillValidationDialog';
+import { RiasecHexagon } from '../components/guidance/RiasecHexagon';
+import { addSkillEvidence, calculateCompleteness } from '../engine/skillProfile';
+import type { SkillClaim } from '../engine/types';
+import { logProgress } from '../services/guidanceDb';
 
 export function PassportPage() {
   const navigate = useNavigate();
@@ -18,6 +23,9 @@ export function PassportPage() {
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractError, setExtractError] = useState('');
   const [unmatchedSkills, setUnmatchedSkills] = useState<string[]>([]);
+  const [expandedEvidence, setExpandedEvidence] = useState<string | null>(null);
+  const [validating, setValidating] = useState<SkillClaim | null>(null);
+  const [editingConstraints, setEditingConstraints] = useState(false);
 
   if (!passport) {
     return (
@@ -67,10 +75,10 @@ export function PassportPage() {
       }));
       
       sounds.success();
-      haptic.medium();
+      hapticSuccess();
       setResumeText('');
-    } catch (err: any) {
-      setExtractError(err.message || 'Failed to parse resume');
+    } catch (err: unknown) {
+      setExtractError(err instanceof Error ? err.message : 'Failed to parse resume');
     } finally {
       setIsExtracting(false);
     }
@@ -175,7 +183,8 @@ export function PassportPage() {
                       if (!skill) return null;
                       
                       return (
-                        <div key={claim.skillId} className="flex items-start justify-between p-3 border border-black/5 rounded-sm hover:border-black/20 transition-colors">
+                        <div key={claim.skillId} className="p-3 border border-black/5 rounded-sm hover:border-black/20 transition-colors">
+                          <div className="flex items-start justify-between">
                           <div>
                             <div className="font-[Inter] text-sm font-semibold text-black">{skill.name}</div>
                             <div className="flex items-center gap-2 mt-1">
@@ -194,15 +203,9 @@ export function PassportPage() {
                               </span>
                             </div>
                           </div>
-                          <button
-                            onClick={() => {
-                              sounds.click();
-                              // TODO: Open evidence popover
-                            }}
-                            className="text-xs font-[Inter] text-black/50 hover:text-black underline"
-                          >
-                            {claim.evidence.length} evidence
-                          </button>
+                          <div className="flex gap-3"><button onClick={() => {sounds.click();setExpandedEvidence(expandedEvidence===claim.skillId?null:claim.skillId)}} className="min-h-11 text-xs font-[Inter] text-black/50 hover:text-black underline">{claim.evidence.length} evidence</button><button onClick={()=>setValidating(claim)} className="min-h-11 border border-black/15 px-3 font-[Inter] text-xs">Validate</button></div>
+                          </div>
+                          {expandedEvidence === claim.skillId && <div className="mt-3 border-t border-black/10 pt-3 space-y-2">{claim.evidence.map((evidence,index)=><div key={`${evidence.observedAt}-${index}`} className="font-[Inter] text-xs"><span className="font-[JetBrains_Mono] uppercase text-black/50">{evidence.type} · {Math.round(evidence.confidence*100)}%</span><p className="text-black/70">{evidence.description}</p></div>)}</div>}
                         </div>
                       );
                     })}
@@ -242,6 +245,7 @@ export function PassportPage() {
             {passport.riasec ? (
               <div className="p-4 border border-black/5 rounded-sm">
                 <div className="font-[Inter] text-sm font-semibold mb-2">RIASEC Interest Profile</div>
+                <RiasecHexagon scores={passport.riasec} compact />
                 <div className="grid grid-cols-2 gap-2 text-xs font-[JetBrains_Mono]">
                   {Object.entries(passport.riasec).map(([key, val]) => (
                     <div key={key} className="flex justify-between">
@@ -332,8 +336,8 @@ export function PassportPage() {
 
         {/* Constraints */}
         <div className="bg-white border border-black/10 p-6">
-          <h2 className="text-2xl font-[Playfair_Display] text-black mb-4">Constraints</h2>
-          <div className="grid grid-cols-2 gap-4 text-sm font-[Inter]">
+          <div className="mb-4 flex items-center justify-between"><h2 className="text-2xl font-[Playfair_Display] text-black">Constraints</h2><button onClick={()=>setEditingConstraints(value=>!value)} className="min-h-11 border border-black/20 px-4 py-2 font-[Inter] text-sm">{editingConstraints?'Done':'Edit'}</button></div>
+          {editingConstraints ? <div className="grid gap-4 font-[Inter] text-sm sm:grid-cols-2"><label>Location<input value={passport.constraints.location} onChange={event=>updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');return {...previous,constraints:{...previous.constraints,location:event.target.value}}})} className="mt-1 min-h-11 w-full border border-black/20 p-2"/></label><label>Learning hours/week<input type="number" min="1" max="40" value={passport.constraints.weeklyLearningHours} onChange={event=>updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');return {...previous,constraints:{...previous.constraints,weeklyLearningHours:Number(event.target.value)}}})} className="mt-1 min-h-11 w-full border border-black/20 p-2"/></label><label>Budget<select value={passport.constraints.budgetLevel} onChange={event=>updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');return {...previous,constraints:{...previous.constraints,budgetLevel:event.target.value as 'low'|'medium'|'high'}}})} className="mt-1 min-h-11 w-full border border-black/20 p-2"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label><label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={passport.constraints.canRelocate} onChange={event=>updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');return {...previous,constraints:{...previous.constraints,canRelocate:event.target.checked}}})}/>Can relocate</label></div> : <div className="grid grid-cols-2 gap-4 text-sm font-[Inter]">
             <div>
               <span className="text-black/60">Location:</span>{' '}
               <span className="text-black">{passport.constraints.location}</span>
@@ -350,9 +354,10 @@ export function PassportPage() {
               <span className="text-black/60">Budget:</span>{' '}
               <span className="text-black">{passport.constraints.budgetLevel}</span>
             </div>
-          </div>
+          </div>}
         </div>
       </div>
+      {validating && <SkillValidationDialog claim={validating} onClose={()=>setValidating(null)} onValidate={evidence=>{updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');const skills=previous.skills.map(claim=>claim.skillId===validating.skillId?addSkillEvidence(claim,evidence):claim);const next={...previous,skills};next.completeness=calculateCompleteness(next);return next});if(user?.id)void logProgress(user.id,'skill_validated',{skillId:validating.skillId,evidence});sounds.success();setValidating(null)}}/>}
     </div>
   );
 }

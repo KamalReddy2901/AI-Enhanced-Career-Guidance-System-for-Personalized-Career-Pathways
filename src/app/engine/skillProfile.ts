@@ -19,6 +19,10 @@ export interface SkillMatchResult {
   unmatched: string[];
 }
 
+export function combineEvidenceConfidence(evidence: SkillEvidence[]): number {
+  return Math.min(.97, 1 - evidence.reduce((product, item) => product * (1 - item.confidence), 1));
+}
+
 /**
  * Match extracted skill names → canonical skillIds
  * Uses case-insensitive name/alias matching
@@ -106,11 +110,7 @@ export function mergeSkillClaims(
       if (newClaim.proficiency > existing.proficiency) {
         existing.proficiency = newClaim.proficiency;
       }
-      // Recalculate confidence as max of all evidence
-      existing.confidence = Math.max(
-        existing.confidence,
-        ...existing.evidence.map(e => e.confidence)
-      );
+      existing.confidence = combineEvidenceConfidence(existing.evidence);
     } else {
       skillMap.set(newClaim.skillId, newClaim);
     }
@@ -129,7 +129,7 @@ export function addSkillEvidence(
   return {
     ...claim,
     evidence: [...claim.evidence, evidence],
-    confidence: Math.max(claim.confidence, evidence.confidence),
+    confidence: combineEvidenceConfidence([...claim.evidence, evidence]),
   };
 }
 

@@ -161,7 +161,7 @@ export function validateKB(): string[] {
 }
 
 // ═══ AUTO-VALIDATE IN DEV MODE ═════════════════════════════════════════════════
-if (import.meta.env.DEV) {
+if (import.meta.env?.DEV) {
   const violations = validateKB();
   if (violations.length > 0) {
     console.warn(`⚠️  KB Validation Violations (${violations.length}):`);
@@ -169,4 +169,18 @@ if (import.meta.env.DEV) {
   } else {
     console.log('✅ Knowledge Base validated: zero violations');
   }
+}
+
+if (typeof process !== 'undefined' && process.argv[1]?.endsWith('validate.ts')) {
+  const violations = validateKB();
+  console.log(JSON.stringify({
+    skills: SKILLS.length,
+    occupations: OCCUPATIONS.length,
+    transitions: TRANSITIONS.length,
+    qualifications: QUALIFICATIONS.length,
+    marketSignals: MARKET_SIGNALS.length,
+    vocationalEntryRoles: OCCUPATIONS.filter(o => o.isVocational || o.nsqfEntryLevel <= 5).length,
+    violations,
+  }, null, 2));
+  if (violations.length) process.exitCode = 1;
 }

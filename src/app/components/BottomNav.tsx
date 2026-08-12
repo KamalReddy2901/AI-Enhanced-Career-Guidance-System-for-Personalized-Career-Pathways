@@ -1,15 +1,15 @@
 import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Home, Brain, Clock, Settings, FlaskConical } from 'lucide-react';
+import { Home, Compass, Map, Settings, MessageCircle } from 'lucide-react';
 import { hapticTap } from '../utils/haptic';
 import { sounds } from '../utils/sounds';
 
 const NAV_ITEMS = [
   { path: '/', icon: Home, label: 'Home' },
-  { path: '/quiz', icon: Brain, label: 'Quiz' },
-  { path: '/history', icon: Clock, label: 'History' },
-  { path: '/compare', icon: FlaskConical, label: 'Compare' },
+  { path: '/job', icon: Compass, label: 'Explore' },
+  { path: '/passport', icon: Map, label: 'Pathways' },
+  { path: '/counselor', icon: MessageCircle, label: 'Counselor' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 

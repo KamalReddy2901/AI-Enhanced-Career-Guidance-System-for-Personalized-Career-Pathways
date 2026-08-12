@@ -27,3 +27,5 @@ CareerCase is a free, mobile-first PWA for exploring careers with AI dossiers, s
 ## Guidance architecture
 
 CareerCase now includes an evidence-led Career Passport, deterministic RIASEC/aptitude/values scoring, segment-aware matching over the NCO/NSQF knowledge base, proficiency-weighted gaps, three pathway routes, grounded counselor chat, Hindi/Telugu language state, voice fallbacks, and local export/delete controls. The core assessments, matching and pathways remain usable without the LLM.
+
+The release boundary is validated at 100 occupations, 164 skills, 300 directed transitions, 105 learning routes and 100 market snapshots. Strict TypeScript is enforced before every build. `scripts/guidance-qa.ts` covers all occupations, route construction, segment weights, diversity and six fairness fixtures. Progress evidence drives a debounced Passport → recommendation → pathway recompute loop and a STOP PRESS rank/score diff.

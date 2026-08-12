@@ -17,18 +17,22 @@ create table if not exists public.guidance_profiles (
 
 alter table public.guidance_profiles enable row level security;
 
+drop policy if exists "Users can view own guidance profile" on public.guidance_profiles;
 create policy "Users can view own guidance profile"
   on public.guidance_profiles for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert own guidance profile" on public.guidance_profiles;
 create policy "Users can insert own guidance profile"
   on public.guidance_profiles for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can update own guidance profile" on public.guidance_profiles;
 create policy "Users can update own guidance profile"
   on public.guidance_profiles for update
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can delete own guidance profile" on public.guidance_profiles;
 create policy "Users can delete own guidance profile"
   on public.guidance_profiles for delete
   using (auth.uid() = user_id);
@@ -45,14 +49,17 @@ create table if not exists public.guidance_assessments (
 
 alter table public.guidance_assessments enable row level security;
 
+drop policy if exists "Users can view own assessments" on public.guidance_assessments;
 create policy "Users can view own assessments"
   on public.guidance_assessments for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert own assessments" on public.guidance_assessments;
 create policy "Users can insert own assessments"
   on public.guidance_assessments for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can delete own assessments" on public.guidance_assessments;
 create policy "Users can delete own assessments"
   on public.guidance_assessments for delete
   using (auth.uid() = user_id);
@@ -70,14 +77,17 @@ create table if not exists public.guidance_recommendations (
 
 alter table public.guidance_recommendations enable row level security;
 
+drop policy if exists "Users can view own recommendations" on public.guidance_recommendations;
 create policy "Users can view own recommendations"
   on public.guidance_recommendations for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert own recommendations" on public.guidance_recommendations;
 create policy "Users can insert own recommendations"
   on public.guidance_recommendations for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can delete own recommendations" on public.guidance_recommendations;
 create policy "Users can delete own recommendations"
   on public.guidance_recommendations for delete
   using (auth.uid() = user_id);
@@ -96,18 +106,22 @@ create table if not exists public.guidance_pathways (
 
 alter table public.guidance_pathways enable row level security;
 
+drop policy if exists "Users can view own pathways" on public.guidance_pathways;
 create policy "Users can view own pathways"
   on public.guidance_pathways for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert own pathways" on public.guidance_pathways;
 create policy "Users can insert own pathways"
   on public.guidance_pathways for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can update own pathways" on public.guidance_pathways;
 create policy "Users can update own pathways"
   on public.guidance_pathways for update
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can delete own pathways" on public.guidance_pathways;
 create policy "Users can delete own pathways"
   on public.guidance_pathways for delete
   using (auth.uid() = user_id);
@@ -124,14 +138,17 @@ create table if not exists public.guidance_progress (
 
 alter table public.guidance_progress enable row level security;
 
+drop policy if exists "Users can view own progress" on public.guidance_progress;
 create policy "Users can view own progress"
   on public.guidance_progress for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert own progress" on public.guidance_progress;
 create policy "Users can insert own progress"
   on public.guidance_progress for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can delete own progress" on public.guidance_progress;
 create policy "Users can delete own progress"
   on public.guidance_progress for delete
   using (auth.uid() = user_id);
@@ -150,10 +167,12 @@ create table if not exists public.guidance_consents (
 alter table public.guidance_consents enable row level security;
 
 -- Consent ledger: select + insert only (append-only, no update/delete)
+drop policy if exists "Users can view own consents" on public.guidance_consents;
 create policy "Users can view own consents"
   on public.guidance_consents for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can log own consents" on public.guidance_consents;
 create policy "Users can log own consents"
   on public.guidance_consents for insert
   with check (auth.uid() = user_id);

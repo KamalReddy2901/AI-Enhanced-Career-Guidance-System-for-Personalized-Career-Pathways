@@ -22,7 +22,7 @@ export function ScrollingTitles({ highlightedJob, paused = false, dimmed = false
           size: 0.85 + ((start + j) % 7) * 0.06,
         });
       }
-      return { titles: [...titles, ...titles], direction: i % 2 === 0 ? 'left' : 'right' as const, speed: 20 + (i % 4) * 8 };
+      return { titles: [...titles, ...titles], direction: (i % 2 === 0 ? 'left' : 'right') as 'left' | 'right', speed: 20 + (i % 4) * 8 };
     });
   }, []);
 

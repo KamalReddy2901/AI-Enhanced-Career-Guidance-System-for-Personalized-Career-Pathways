@@ -112,6 +112,9 @@ export function QuizPage() {
 
   const submitQuiz = async (finalAnswers: Record<string, string>) => {
     setIsLoading(true);
+    const joined = Object.values(finalAnswers).join(' ').toLowerCase();
+    const hint = joined.includes('data') || joined.includes('logic') || joined.includes('research') || joined.includes('puzzles') ? 'Investigative' : joined.includes('people') || joined.includes('helping') || joined.includes('mentor') ? 'Social' : joined.includes('creative') || joined.includes('creating') ? 'Artistic' : joined.includes('lead') || joined.includes('strategy') ? 'Enterprising' : joined.includes('hands-on') || joined.includes('outdoors') ? 'Realistic' : 'Conventional';
+    localStorage.setItem('cc_guidance_quiz_interest_hint', hint);
     try {
       const quizResult = await getQuizResults(finalAnswers);
       setResult(quizResult);
