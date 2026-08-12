@@ -44,6 +44,21 @@ function rotateKey(usedKey: string): void {
   exhaustedKeys.set(usedKey, Date.now());
 }
 
+// Groq (like OpenAI) rejects response_format: json_object with HTTP 400
+// unless at least one message contains the word "json". Prose callers such
+// as the grounded counselor set json_object without a JSON instruction, so
+// we defensively drop it here to keep those requests valid. JSON-producing
+// callers instruct JSON in their prompts and are therefore untouched.
+function sanitizeResponseFormat(payload: Record<string, unknown>): void {
+  const rf = payload['response_format'] as { type?: string } | undefined;
+  if (!rf || rf.type !== 'json_object') return;
+  const messages = Array.isArray(payload['messages']) ? (payload['messages'] as Array<{ content?: unknown }>) : [];
+  const mentionsJson = messages.some(
+    (m) => typeof m?.content === 'string' && m.content.toLowerCase().includes('json'),
+  );
+  if (!mentionsJson) delete payload['response_format'];
+}
+
 async function proxyToGroq(
   body: unknown,
   modelTier: 'premium' | 'standard',
@@ -53,6 +68,7 @@ async function proxyToGroq(
 ): Promise<Response> {
   const payload = body as Record<string, unknown>;
   payload['model'] = MODELS[modelTier];
+  sanitizeResponseFormat(payload);
 
   for (let attempt = 0; attempt < keys.length; attempt++) {
     const key = getActiveKey(keys);
