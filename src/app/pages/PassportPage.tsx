@@ -4,7 +4,8 @@ import { StickFigure } from '../components/StickFigure';
 import { useGuidance } from '../context/GuidanceContext';
 import { useAuth } from '../context/AuthContext';
 import { sounds } from '../utils/sounds';
-import { hapticSuccess } from '../utils/haptic';
+import { hapticLight, hapticSuccess } from '../utils/haptic';
+import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 import { extractProfileFromResume, type ResumeExtraction } from '../services/ai';
 import { matchSkillsToKB, mergeSkillClaims, groupSkillsByCategory, estimateNSQFLevel, extractLiteralResumeSkills } from '../engine/skillProfile';
 import { skillById } from '../data/knowledge';
@@ -96,7 +97,7 @@ export function PassportPage() {
 
   return (
     <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8 pb-24">
-      <div className="max-w-4xl mx-auto">
+      <GuidanceEntrance className="max-w-4xl mx-auto">
         {/* Header "Identity Card" */}
         <div className="bg-white border-2 border-black/10 p-6 mb-6">
           <div className="flex items-start justify-between">
@@ -211,7 +212,7 @@ export function PassportPage() {
                               </span>
                             </div>
                           </div>
-                          <div className="flex gap-3"><button onClick={() => {sounds.click();setExpandedEvidence(expandedEvidence===claim.skillId?null:claim.skillId)}} className="min-h-11 text-xs font-[Inter] text-black/50 hover:text-black underline">{claim.evidence.length} evidence</button><button onClick={()=>setValidating(claim)} className="min-h-11 border border-black/15 px-3 font-[Inter] text-xs">Validate</button></div>
+                          <div className="flex gap-3"><button onClick={() => {sounds.click();hapticLight();setExpandedEvidence(expandedEvidence===claim.skillId?null:claim.skillId)}} className="min-h-11 text-xs font-[Inter] text-black/50 hover:text-black underline">{claim.evidence.length} evidence</button><button onClick={()=>{sounds.modalOpen();hapticLight();setValidating(claim)}} className="min-h-11 border border-black/15 px-3 font-[Inter] text-xs">Validate</button></div>
                           </div>
                           {expandedEvidence === claim.skillId && <div className="mt-3 border-t border-black/10 pt-3 space-y-2">{claim.evidence.map((evidence,index)=><div key={`${evidence.observedAt}-${index}`} className="font-[Inter] text-xs"><span className="font-[JetBrains_Mono] uppercase text-black/50">{evidence.type} · {Math.round(evidence.confidence*100)}%</span><p className="text-black/70">{evidence.description}</p></div>)}</div>}
                         </div>
@@ -364,8 +365,8 @@ export function PassportPage() {
             </div>
           </div>}
         </div>
-      </div>
-      {validating && <SkillValidationDialog claim={validating} onClose={()=>setValidating(null)} onValidate={evidence=>{updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');const skills=previous.skills.map(claim=>claim.skillId===validating.skillId?addSkillEvidence(claim,evidence):claim);const next={...previous,skills};next.completeness=calculateCompleteness(next);return next});void logProgress(user?.id ?? null,'skill_validated',{skillId:validating.skillId,evidence});sounds.success();setValidating(null)}}/>}
+      </GuidanceEntrance>
+      {validating && <SkillValidationDialog claim={validating} onClose={()=>{sounds.modalClose();setValidating(null)}} onValidate={evidence=>{updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');const skills=previous.skills.map(claim=>claim.skillId===validating.skillId?addSkillEvidence(claim,evidence):claim);const next={...previous,skills};next.completeness=calculateCompleteness(next);return next});void logProgress(user?.id ?? null,'skill_validated',{skillId:validating.skillId,evidence});sounds.success();hapticSuccess();setValidating(null)}}/>}
       {scoreEvidence && <WhyPanel evidence={scoreEvidence} onClose={()=>setScoreEvidence(null)}/>}
     </div>
   );

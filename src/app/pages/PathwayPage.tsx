@@ -24,6 +24,8 @@ import { useStreak } from "../hooks/useStreak";
 import { useT } from "../i18n";
 import { occupationName } from "../i18n/occupationNames";
 import { localizedConfidence, localizedStep, localizedStepKind, localizedTradeoff, localizedTrend } from "../i18n/guidanceFormatting";
+import { hapticLight, hapticSuccess } from '../utils/haptic';
+import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 
 export function PathwayPage() {
   const { occupationId = "" } = useParams();
@@ -98,6 +100,7 @@ export function PathwayPage() {
     replacePathwayPlan(next);
     if (user?.id) void savePathway(user.id, next);
     sounds.pathUnlock();
+    hapticLight();
   };
   const toggleStep = (index: number) => {
     const routes = plan.routes.map((candidate) =>
@@ -115,6 +118,7 @@ export function PathwayPage() {
     replacePathwayPlan(next);
     if (user?.id) void savePathway(user.id, next);
     sounds.success();
+    hapticSuccess();
     const step = routes.find((candidate) => candidate.kind === route.kind)!
       .steps[index];
     if (step.done && step.refId) {
@@ -176,7 +180,7 @@ export function PathwayPage() {
 
   return (
     <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8 pb-28">
-      <div className="max-w-6xl mx-auto">
+      <GuidanceEntrance className="max-w-6xl mx-auto">
         <header className="flex items-center gap-4 border-y-4 border-double border-black py-6 mb-8">
           <StickFigure pose="climbing" size={92} />
           <div>
@@ -349,7 +353,7 @@ export function PathwayPage() {
           {c.ask}
         </Link>
         {why && <WhyPanel evidence={why} onClose={()=>setWhy(null)}/>}
-      </div>
+      </GuidanceEntrance>
     </div>
   );
 }

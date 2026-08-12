@@ -12,6 +12,8 @@ import { valueItemText } from "../i18n/assessmentItems";
 import { speak } from "../utils/voice";
 import { WhyPanel, type ScoreEvidence } from "../components/guidance/WhyPanel";
 import { useVoiceStatus } from "../hooks/useVoiceStatus";
+import { hapticLight, hapticSuccess } from '../utils/haptic';
+import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 export function AssessValuesPage() {
   const navigate = useNavigate();
   const { passport, updatePassport } = useGuidance();
@@ -29,6 +31,7 @@ export function AssessValuesPage() {
   const choose = (side: "left" | "right") => {
     const next = { ...answers, [choice.id]: side };
     sounds.pop();
+    hapticLight();
     if (i === VALUE_CHOICES.length - 1) {
       const scored = scoreValues(next);
       setResult(scored);
@@ -40,6 +43,7 @@ export function AssessValuesPage() {
       });
       void saveAssessment(user?.id ?? null, "values", scored);
       sounds.success();
+      hapticSuccess();
     } else {
       setAnswers(next);
       setI(i + 1);
@@ -47,7 +51,7 @@ export function AssessValuesPage() {
   };
   return (
     <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8">
-      <div className="max-w-3xl mx-auto">
+      <GuidanceEntrance className="max-w-3xl mx-auto">
         <div className="flex items-center gap-4 border-b-2 border-black pb-5 mb-8">
           <StickFigure pose={result ? "celebrating" : "thinking"} size={76} />
           <div>
@@ -116,7 +120,7 @@ export function AssessValuesPage() {
             </div>
           </div>
         )}
-      </div>
+      </GuidanceEntrance>
     </div>
   );
 }

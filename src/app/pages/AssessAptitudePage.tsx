@@ -12,6 +12,8 @@ import { aptitudeItemText } from "../i18n/aptitudeItems";
 import { WhyPanel, type ScoreEvidence } from "../components/guidance/WhyPanel";
 import { speak } from "../utils/voice";
 import { useVoiceStatus } from "../hooks/useVoiceStatus";
+import { hapticLight, hapticSuccess } from '../utils/haptic';
+import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 
 const TOTAL_SECONDS = 300;
 const FORM_STORAGE_KEY = "cc_guidance_aptitude_form";
@@ -64,6 +66,7 @@ export function AssessAptitudePage() {
         elapsedSeconds: TOTAL_SECONDS - remainingSeconds,
       });
     sounds.assessComplete();
+    hapticSuccess();
   };
 
   useEffect(() => {
@@ -88,6 +91,7 @@ export function AssessAptitudePage() {
     const question = questions[index];
     const next = { ...answers, [question.id]: option };
     sounds.quizAnswer();
+    hapticLight();
     if (index === questions.length - 1) complete(next, seconds);
     else {
       setAnswers(next);
@@ -137,7 +141,7 @@ export function AssessAptitudePage() {
     <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8">
       <div className="max-w-3xl mx-auto">
         <Header lang={lang} />
-        <div className="max-w-xl mx-auto">
+        <GuidanceEntrance className="max-w-xl mx-auto">
           <div className="flex justify-between font-[JetBrains_Mono] text-xs mb-3">
             <span>
               {lang === "hi" ? "प्रपत्र" : lang === "te" ? "ఫారం" : "FORM"} {form + 1} · {index + 1}/{questions.length} ·{" "}
@@ -167,7 +171,7 @@ export function AssessAptitudePage() {
               </button>
             ))}
           </div>
-        </div>
+        </GuidanceEntrance>
       </div>
     </div>
   );

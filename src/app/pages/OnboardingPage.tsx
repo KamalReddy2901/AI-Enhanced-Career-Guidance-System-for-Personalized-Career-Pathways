@@ -10,6 +10,7 @@ import { calculateCompleteness } from '../engine/skillProfile';
 import type { Segment, CareerPassport, Education, Constraints, Experience } from '../engine/types';
 import { OCCUPATIONS } from '../data/knowledge';
 import { LanguageSwitcher, useT } from '../i18n';
+import { AnimatePresence, motion } from 'motion/react';
 
 const STEPS = ['segment', 'goals', 'background', 'constraints', 'consent', 'finish'] as const;
 type Step = typeof STEPS[number];
@@ -172,7 +173,7 @@ export function OnboardingPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-2xl mx-auto bg-white border border-black/10 p-8 rounded-sm">
+      <AnimatePresence mode="wait"><motion.div key={currentStep} initial={{opacity:0,x:12}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-12}} transition={{duration:.2}} className="max-w-2xl mx-auto bg-white border border-black/10 p-8 rounded-sm">
         {currentStep === 'segment' && <SegmentStep segment={segment} setSegment={setSegment} />}
         {currentStep === 'goals' && <GoalsStep goals={goals} setGoals={setGoals} />}
         {currentStep === 'background' && <BackgroundStep education={education} setEducation={setEducation} experiences={experiences} setExperiences={setExperiences} />}
@@ -207,7 +208,7 @@ export function OnboardingPage() {
             </button>
           )}
         </div>
-      </div>
+      </motion.div></AnimatePresence>
     </div>
   );
 }

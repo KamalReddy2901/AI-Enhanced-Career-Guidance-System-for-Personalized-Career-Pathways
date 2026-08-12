@@ -14,6 +14,8 @@ import { sounds } from "../utils/sounds";
 import { speak } from "../utils/voice";
 import { occupationName } from "../i18n/occupationNames";
 import { localizedConfidence, localizedReason, localizedTrend } from "../i18n/guidanceFormatting";
+import { hapticTap } from '../utils/haptic';
+import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 
 const order: RecommendationGroup[] = [
   "best_fit",
@@ -78,7 +80,7 @@ export function RecommendationsPage() {
     );
   return (
     <div className="min-h-screen bg-[#f9f8f7] p-4 pb-24 md:p-8">
-      <div className="mx-auto max-w-6xl">
+      <GuidanceEntrance className="mx-auto max-w-6xl">
         <header className="mb-8 flex items-center gap-4 border-y-4 border-double border-black py-6">
           <StickFigure pose="mapping" size={88} />
           <div>
@@ -128,7 +130,7 @@ export function RecommendationsPage() {
         >
           {c.ask}
         </Link>
-      </div>
+      </GuidanceEntrance>
       {explanation && (
         <WhyPanel
           recommendation={explanation}
@@ -218,6 +220,7 @@ function RecommendationCard({
         <button
           onClick={() => {
             sounds.expand();
+            hapticTap();
             onExplain();
           }}
           className="min-h-11 border border-black/20 font-[Inter] text-sm"

@@ -11,6 +11,8 @@ import { useT } from "../i18n";
 import { sounds } from "../utils/sounds";
 import { listen, speak } from "../utils/voice";
 import { useVoiceStatus } from "../hooks/useVoiceStatus";
+import { hapticLight, hapticSuccess } from '../utils/haptic';
+import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 
 const questions = {
   en: [
@@ -95,6 +97,7 @@ export function AssessAspirationsPage() {
       });
       void saveAssessment(user?.id ?? null, "aspiration", aspiration);
       sounds.assessComplete();
+      hapticSuccess();
       navigate("/assess");
     } catch {
       setError(c.unavailable);
@@ -108,12 +111,13 @@ export function AssessAspirationsPage() {
     setAnswers(next);
     setDraft("");
     sounds.click();
+    hapticLight();
     if (index === 4) void finish(next);
     else setIndex(index + 1);
   };
   return (
     <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8">
-      <div className="mx-auto max-w-3xl">
+      <GuidanceEntrance className="mx-auto max-w-3xl">
         <header className="mb-8 flex items-center gap-4 border-b-2 border-black pb-5">
           <StickFigure pose="talking" size={80} />
           <div>
@@ -199,7 +203,7 @@ export function AssessAspirationsPage() {
             {c.note}
           </p>
         </div>
-      </div>
+      </GuidanceEntrance>
     </div>
   );
 }

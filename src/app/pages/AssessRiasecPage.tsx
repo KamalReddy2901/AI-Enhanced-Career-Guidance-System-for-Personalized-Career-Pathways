@@ -18,6 +18,8 @@ import { riasecItemText } from "../i18n/assessmentItems";
 import { sounds } from "../utils/sounds";
 import { speak } from "../utils/voice";
 import { useVoiceStatus } from "../hooks/useVoiceStatus";
+import { hapticLight, hapticSuccess } from '../utils/haptic';
+import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 
 export function AssessRiasecPage() {
   const navigate = useNavigate();
@@ -50,6 +52,7 @@ export function AssessRiasecPage() {
         topCode: getTopCode(scores),
       });
     sounds.assessComplete();
+    hapticSuccess();
   };
   if (result)
     return (
@@ -87,7 +90,7 @@ export function AssessRiasecPage() {
     );
   return (
     <AssessmentShell title={lang === "hi" ? "किस तरह का काम आपको आकर्षित करता है?" : lang === "te" ? "ఎలాంటి పని మిమ్మల్ని ఆకర్షిస్తుంది?" : "What kind of work draws you in?"} pose="thinking">
-      <div className="mx-auto max-w-xl">
+      <GuidanceEntrance className="mx-auto max-w-xl">
         {localStorage.getItem("cc_guidance_quiz_interest_hint") && (
           <div className="mb-5 border-l-4 border-black bg-white p-4 font-[Inter] text-sm">
             {resultCopy.hint}
@@ -127,6 +130,7 @@ export function AssessRiasecPage() {
                   const next = { ...answers, [item.id]: n + 1 };
                   setAnswers(next);
                   sounds.quizAnswer();
+                  hapticLight();
                   if (index === RIASEC_ITEMS.length - 1) finish(next);
                   else setIndex(index + 1);
                 }}
@@ -137,7 +141,7 @@ export function AssessRiasecPage() {
             ),
           )}
         </div>
-      </div>
+      </GuidanceEntrance>
     </AssessmentShell>
   );
 }
