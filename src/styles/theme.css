@@ -39,6 +39,22 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* ─── CareerCase editorial tokens (Phase 1 — additive, newsprint identity) ───
+   * These sit ALONGSIDE the existing shadcn tokens above. The red accent is
+   * deliberately named --accent-news so it never overrides the neutral
+   * shadcn --accent used across existing components. */
+  --ink: #0a0a0a;            /* never pure #000 for large fills */
+  --paper: #f9f8f6;          /* app background surface */
+  --paper-raised: #ffffff;   /* cards */
+  --ink-soft: #4a4a4a;       /* secondary text */
+  --ink-faint: #9a9a94;      /* metadata, captions */
+  --rule: #0a0a0a;           /* hairline borders */
+  --accent-news: #e63946;    /* the ONE red accent — breaking-news red */
+  --accent-soft: #ffd166;    /* rare highlight (marks, highlighter strokes) */
+  --shadow-hard: 4px 4px 0px var(--ink);
+  --shadow-hard-sm: 2px 2px 0px var(--ink);
+  --radius-sketch: 255px 15px 225px 15px / 15px 225px 15px 255px;
 }
 
 @theme inline {
@@ -82,6 +98,15 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Expose editorial tokens as Tailwind colors too (bg-ink, text-paper, etc.) */
+  --color-ink: var(--ink);
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-accent-news: var(--accent-news);
+  --color-accent-soft: var(--accent-soft);
 }
 
 @layer base {
@@ -214,6 +239,49 @@ nav a, nav button {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * CareerCase editorial utility layer (Phase 1 — additive, opt-in)
+ * Plain CSS classes (not Tailwind-generated) so nothing is purged. Nothing
+ * in the app imports these yet; components adopt them page-by-page in later
+ * phases. Purely presentational — no behavior, no i18n, no data coupling.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+/* Font-family helpers (fonts already wired in fonts.css) */
+.font-display { font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; }
+.font-mono-ui { font-family: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace; }
+
+/* Sketch card recipe — border + hard shadow, nothing else (de-clutter law #4) */
+.card-sketch {
+  background: var(--paper-raised);
+  border: 2px solid var(--ink);
+  box-shadow: var(--shadow-hard);
+  border-radius: 2px;
+}
+/* Use SPARINGLY — max one wobble card per viewport (hero/featured only) */
+.card-sketch--wobble { border-radius: var(--radius-sketch); }
+
+/* Newspaper column rules */
+.rule-top    { border-top: 1px solid var(--ink); }
+.rule-bottom { border-bottom: 1px solid var(--ink); }
+
+/* Editorial kicker / caps label */
+.label-caps {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* Custom text selection — the one red accent */
+::selection { background: var(--accent-news); color: var(--paper); }
+
+/* Accent focus ring (overrides the black ring above; later in the cascade) */
+:focus-visible {
+  outline: 2px solid var(--accent-news);
+  outline-offset: 3px;
 }
 
 /* ─── Newspaper-style print overrides ──────────────────────────────── */
