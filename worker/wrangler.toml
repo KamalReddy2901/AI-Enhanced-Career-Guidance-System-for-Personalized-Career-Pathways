@@ -6,5 +6,3 @@ compatibility_date = "2024-11-01"
 ENVIRONMENT = "production"
 
 # Set secrets via: wrangler secret put GROQ_API_KEYS
-# Set secrets via: wrangler secret put SUPABASE_URL
-# Set secrets via: wrangler secret put SUPABASE_SERVICE_KEY

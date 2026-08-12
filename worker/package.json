@@ -5,11 +5,11 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "secrets:set": "wrangler secret put GROQ_API_KEYS && wrangler secret put SUPABASE_URL && wrangler secret put SUPABASE_SERVICE_KEY"
+    "secrets:set": "wrangler secret put GROQ_API_KEYS"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20241230.0",
+    "@cloudflare/workers-types": "^5.20260812.1",
     "typescript": "^5.7.2",
-    "wrangler": "^3.101.0"
+    "wrangler": "^4.121.0"
   }
 }

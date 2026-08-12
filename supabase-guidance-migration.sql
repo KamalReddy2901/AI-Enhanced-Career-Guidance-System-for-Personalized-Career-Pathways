@@ -166,7 +166,8 @@ create table if not exists public.guidance_consents (
 
 alter table public.guidance_consents enable row level security;
 
--- Consent ledger: select + insert only (append-only, no update/delete)
+-- Consent ledger: append-only during normal use. A user-scoped delete policy is
+-- retained solely for DPDP account erasure through "Delete guidance data".
 drop policy if exists "Users can view own consents" on public.guidance_consents;
 create policy "Users can view own consents"
   on public.guidance_consents for select
@@ -176,3 +177,8 @@ drop policy if exists "Users can log own consents" on public.guidance_consents;
 create policy "Users can log own consents"
   on public.guidance_consents for insert
   with check (auth.uid() = user_id);
+
+drop policy if exists "Users can delete own consents" on public.guidance_consents;
+create policy "Users can delete own consents"
+  on public.guidance_consents for delete
+  using (auth.uid() = user_id);
