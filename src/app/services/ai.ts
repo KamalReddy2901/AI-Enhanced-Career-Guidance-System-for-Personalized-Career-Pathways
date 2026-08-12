@@ -256,7 +256,10 @@ export async function callGroqStreaming(
     try { if (supabase) { const { data } = await supabase.auth.getSession(); jwt = data.session?.access_token ?? ''; } } catch { /* ignore */ }
     const headers: Record<string, string> = { 'Content-Type': 'application/json', 'X-Usage-Type': usageType, 'X-Stream': '1' };
     if (jwt) headers['Authorization'] = `Bearer ${jwt}`;
-    const body = { messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], temperature, max_tokens: maxTokens, stream: true, response_format: { type: 'json_object' } };
+    // Streaming callers include conversational features such as Counselor.
+    // Do not request JSON here: a prose response combined with json_object is
+    // rejected by Groq and made Counselor fall back to its canned answer.
+    const body = { messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], temperature, max_tokens: maxTokens, stream: true };
     const response = await fetch(`${AI_PROXY_URL}/ai`, { method: 'POST', signal, headers, body: JSON.stringify(body) });
     if (!response.ok) { const err = await response.json().catch(() => ({})) as { error?: string }; throw new Error(err?.error ?? `AI error: ${response.status}`); }
     return readStream(response);
@@ -688,6 +691,21 @@ export async function* streamCounselorChat(messages: { role: 'user' | 'assistant
   const system = `You are an experienced, honest Indian career counselor. Respond in ${language} and stay under 180 words unless asked. Use only the supplied CONTEXT. Cite the specific profile facts or component scores driving each answer. If a requested fact is absent, say exactly what is missing. Never invent salary figures, demand statistics, occupation requirements, course names, or institutions. Distinguish fact, inference, and preference. Use calibrated language such as “strong option to explore” and “plausible route”; never promise success. Preserve agency and offer alternatives. Recommend a human counselor for distress, family conflict, high-cost decisions, or repeated rejection of all options. CONTEXT:\n${groundingContext}`;
   const raw = await callGroqStreaming(system, messages.map(m => m.role + ': ' + m.text).join('\n'), { usageType: 'counselor', maxTokens: 700 });
   yield raw;
+}
+
+export interface CareerCompatibilityInput {
+  title: string;
+  dossier: string;
+  passport: unknown;
+  simulation?: { score: number; summary?: string; completedScenarios: number };
+}
+
+export async function assessCareerCompatibility(input: CareerCompatibilityInput): Promise<string> {
+  return callGroq(
+    `You are a careful career counselor. Assess compatibility using only the supplied career dossier, Career Passport, and optional simulation result. Do not invent facts or give a fabricated percentage. Be concise, specific, and honest. Use exactly these headings: "What fits", "What to test", and "A practical next step". Explain that this is an exploratory compatibility check, not a verdict.`,
+    JSON.stringify(input),
+    { temperature: 0.35, maxTokens: 650, usageType: 'compatibility' },
+  );
 }
 
 // ─── Generate Simulation (Cached + Retry) ─────────────────────

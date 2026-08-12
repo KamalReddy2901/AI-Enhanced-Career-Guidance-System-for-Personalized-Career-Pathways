@@ -51,6 +51,7 @@ import {
   getLearnMoreResources,
   getWorkLifeBalance,
   getGoodBadUgly,
+  assessCareerCompatibility,
   type RelatedCareer,
   type LearnMoreResources,
   type WorkLifeBalance,
@@ -176,6 +177,8 @@ export function JobDetailPage() {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [activeSection, setActiveSection] = useState("");
   const [showDossierNav, setShowDossierNav] = useState(false);
+  const [compatibility, setCompatibility] = useState('');
+  const [checkingCompatibility, setCheckingCompatibility] = useState(false);
 
   // Section refs for scroll tracking
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -286,7 +289,7 @@ export function JobDetailPage() {
   }, [currentJob?.title]);
 
   if (!currentJob) {
-    navigate("/");
+    navigate("/job");
     return null;
   }
 
@@ -392,6 +395,21 @@ export function JobDetailPage() {
     setComparisonJob(0, currentJob);
     navigate("/compare");
     toast.info("Career A set - pick Career B to compare");
+  };
+
+  const handleCompatibilityCheck = async () => {
+    if (!passport) { toast.info('Complete your Career Passport first so this check can be personal to you.'); navigate('/onboarding'); return; }
+    setCheckingCompatibility(true);
+    setCompatibility('');
+    try {
+      const result = await assessCareerCompatibility({
+        title: currentJob.title,
+        dossier: `${currentJob.shortDescription}\nSkills: ${currentJob.skills.join(', ')}\nWork environment: ${currentJob.workEnvironment}\nCareer path: ${currentJob.careerPath}`,
+        passport: { education: passport.education, experiences: passport.experiences, skills: passport.skills, riasec: passport.riasec, aptitude: passport.aptitude, values: passport.values, aspiration: passport.aspiration, constraints: passport.constraints },
+      });
+      setCompatibility(result);
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Could not check compatibility. Please try again.'); }
+    finally { setCheckingCompatibility(false); }
   };
 
   const handleAskQuestion = async () => {
@@ -1644,6 +1662,17 @@ export function JobDetailPage() {
           </motion.button>
 
           <motion.button
+            onClick={() => void handleCompatibilityCheck()}
+            disabled={checkingCompatibility}
+            className="flex items-center justify-center gap-2 border-2 border-black/20 py-4 px-6 font-[Inter] text-black/60 hover:border-black/40 hover:text-black disabled:opacity-40"
+            style={{ fontSize: "0.88rem" }}
+            whileHover={checkingCompatibility ? {} : { scale: 1.01 }} whileTap={checkingCompatibility ? {} : { scale: 0.99 }}
+          >
+            {checkingCompatibility ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
+            Does it fit me?
+          </motion.button>
+
+          <motion.button
             onClick={() => navigate("/interview-prep")}
             className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-4 px-6 hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
             style={{ fontSize: "0.88rem" }}
@@ -1670,6 +1699,11 @@ export function JobDetailPage() {
             <Sparkles size={12} className="text-black/30" />
           </motion.button>
         </motion.div>
+
+        {(compatibility || checkingCompatibility) && <div className="mb-8 border-2 border-black/15 bg-black/[.015] p-6 print:hidden">
+          <p className="mb-3 flex items-center gap-2 font-mono-ui text-[.65rem] uppercase tracking-[.12em] text-black/45"><Sparkles size={13}/> Personal compatibility check</p>
+          {checkingCompatibility ? <div className="flex items-center gap-2 text-sm text-black/50"><Loader2 size={15} className="animate-spin"/> Reading your Passport and this dossier…</div> : <div className="whitespace-pre-wrap font-[Inter] text-sm leading-relaxed text-black/75">{compatibility}</div>}
+        </div>}
 
         {/* Roadmap + Transition CTAs */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-20 sm:mb-10 print:hidden">

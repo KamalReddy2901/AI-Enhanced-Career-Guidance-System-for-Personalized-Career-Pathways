@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Check, RefreshCw, ArrowRight, ChevronLeft, Sparkles, Loader2, Zap, Compass } from 'lucide-react';
+import { Check, RefreshCw, ArrowRight, ChevronLeft, Sparkles, Loader2, Zap, Compass, Map, ArrowLeftRight, Brain, Scale } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { MagnifierSearch } from '../components/MagnifierSearch';
 import { useApp } from '../context/AppContext';
@@ -9,9 +9,12 @@ import { refineJobDescription } from '../services/ai';
 import { toast } from 'sonner';
 import { TextReveal } from '../motion/TextReveal';
 import { ScrollingTitles } from '../components/ScrollingTitles';
+import { useGuidance } from '../context/GuidanceContext';
 
 function JobSearchEmptyState() {
   const { searchJobPreliminary, setCurrentJob, setIsSearchAnimating, isSearchAnimating } = useApp();
+  const { passport } = useGuidance();
+  const navigate = useNavigate();
 
   const handleSearchComplete = useCallback(async (title: string) => {
     const job = await searchJobPreliminary(title);
@@ -37,6 +40,20 @@ function JobSearchEmptyState() {
           isAnimating={isSearchAnimating}
           setIsAnimating={setIsSearchAnimating}
         />
+        <div className="mt-8 border-t border-black/10 pt-5 text-left">
+          <p className="mb-3 text-center font-mono-ui text-[0.62rem] uppercase tracking-[.14em] text-black/35">Explore tools</p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {[
+              { label: passport?.experiences[0]?.title ? 'Build from my current job' : 'Career Roadmap Builder', icon: <Map size={14}/>, path: passport?.experiences[0]?.title ? `/roadmap?job=${encodeURIComponent(passport.experiences[0].title)}` : '/roadmap', note: passport?.experiences[0]?.title ? `${passport.experiences[0].title} → your next move` : 'Choose a destination' },
+              { label: 'Career Transition Planner', icon: <ArrowLeftRight size={14}/>, path: '/career-transition', note: 'Plan a change' },
+              { label: 'Mood Match', icon: <Zap size={14}/>, path: '/mood', note: 'Explore by energy' },
+              { label: 'Side-by-Side Compare', icon: <Scale size={14}/>, path: '/compare', note: 'Compare two roles' },
+              { label: 'Career Quiz', icon: <Brain size={14}/>, path: '/quiz', note: 'Find a starting point' },
+            ].map(tool => <button key={tool.label} type="button" onClick={() => navigate(tool.path)} className="min-h-20 border border-black/12 bg-[var(--paper)] p-3 text-left transition-colors hover:border-black/35 hover:bg-black/[.025]">
+              <span className="mb-2 flex text-black/55">{tool.icon}</span><span className="block font-[Inter] text-xs text-black/75">{tool.label}</span><span className="mt-1 block font-[Inter] text-[.65rem] text-black/38">{tool.note}</span>
+            </button>)}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -119,7 +136,7 @@ export function JobOverviewPage() {
       <div className="relative z-10 max-w-3xl mx-auto px-6">
         {/* Back button */}
         <motion.button
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/job')}
           className="flex items-center gap-1.5 text-black/40 hover:text-black transition-colors mb-8 font-[Inter]"
           style={{ fontSize: '0.82rem' }}
           initial={{ opacity: 0, x: -10 }}

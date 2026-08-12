@@ -5,12 +5,13 @@ import { ChevronLeft, Clock, ArrowRight, RotateCcw, CheckCircle2, XCircle, Spark
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import { generateSimulation, type SimulationScenario } from '../data/simulations';
-import { generateSimulationAI, generateSimulationSummary } from '../services/ai';
+import { assessCareerCompatibility, generateSimulationAI, generateSimulationSummary } from '../services/ai';
 import { downloadAssessmentPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
 import { hapticLight, hapticWarn, hapticSuccess } from '../utils/haptic';
 import { TextReveal } from '../motion/TextReveal';
+import { useGuidance } from '../context/GuidanceContext';
 
 // Black confetti particles that fall on simulation completion
 function BlackConfetti({ active }: { active: boolean }) {
@@ -51,6 +52,7 @@ type StickFigurePose = 'waking' | 'walking' | 'sitting' | 'presenting' | 'thinki
 export function SimulationPage() {
   const navigate = useNavigate();
   const { currentJob } = useApp();
+  const { passport } = useGuidance();
   const [scenarios, setScenarios] = useState<SimulationScenario[]>([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [selectedChoice, setSelectedChoice] = useState<number | null>(null);
@@ -61,6 +63,8 @@ export function SimulationPage() {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [aiSummary, setAiSummary] = useState('');
   const [loadingSummary, setLoadingSummary] = useState(false);
+  const [compatibility, setCompatibility] = useState('');
+  const [checkingCompatibility, setCheckingCompatibility] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const simResultKey = (title: string) => `sim_result_${title.toLowerCase().replace(/\s+/g, '_')}`;
@@ -227,6 +231,24 @@ export function SimulationPage() {
     }
     await loadScenarios(true);
     toast.success('Fresh simulation generated!');
+  };
+
+  const handleCompatibilityCheck = async () => {
+    if (!currentJob) return;
+    if (!passport) { toast.info('Complete your Career Passport first so this check can be personal to you.'); navigate('/onboarding'); return; }
+    setCheckingCompatibility(true);
+    setCompatibility('');
+    try {
+      const score = scenarios.length ? Math.round((completedScenarios.filter(item => item.wasCorrect).length / scenarios.length) * 100) : 0;
+      const result = await assessCareerCompatibility({
+        title: currentJob.title,
+        dossier: `${currentJob.shortDescription}\nSkills: ${currentJob.skills.join(', ')}\nWork environment: ${currentJob.workEnvironment}`,
+        passport: { education: passport.education, experiences: passport.experiences, skills: passport.skills, riasec: passport.riasec, aptitude: passport.aptitude, values: passport.values, aspiration: passport.aspiration, constraints: passport.constraints },
+        simulation: { score, summary: aiSummary || undefined, completedScenarios: completedScenarios.length },
+      });
+      setCompatibility(result);
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Could not check compatibility. Please try again.'); }
+    finally { setCheckingCompatibility(false); }
   };
 
   const handleRedo = () => {
@@ -677,6 +699,11 @@ export function SimulationPage() {
                 </div>
               )}
 
+              {(compatibility || checkingCompatibility) && <div className="mx-auto mb-8 max-w-3xl border-2 border-black/15 bg-black/[.015] p-6 text-left">
+                <p className="mb-3 flex items-center gap-2 font-[Inter] text-black/45 uppercase tracking-[0.1em]" style={{ fontSize: '0.65rem' }}><Sparkles size={12}/> Personal compatibility check</p>
+                {checkingCompatibility ? <div className="flex items-center gap-2 text-sm text-black/50"><Loader2 size={15} className="animate-spin"/> Connecting your Passport, dossier, and simulation choices…</div> : <div className="whitespace-pre-wrap font-[Inter] text-sm leading-relaxed text-black/75">{compatibility}</div>}
+              </div>}
+
               {/* Actions */}
               <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center">
                 {(aiSummary || !loadingSummary) && (
@@ -691,6 +718,15 @@ export function SimulationPage() {
                     Download PDF
                   </motion.button>
                 )}
+                <motion.button
+                  onClick={() => void handleCompatibilityCheck()}
+                  disabled={checkingCompatibility}
+                  className="flex items-center justify-center gap-2 border-2 border-black/20 py-3 px-6 font-[Inter] text-black/60 hover:border-black/40 hover:text-black disabled:opacity-40 whitespace-nowrap"
+                  style={{ fontSize: '0.85rem' }}
+                  whileHover={checkingCompatibility ? {} : { scale: 1.02 }} whileTap={checkingCompatibility ? {} : { scale: 0.98 }}
+                >
+                  {checkingCompatibility ? <Loader2 size={16} className="animate-spin"/> : <Sparkles size={16}/>} Does it fit me?
+                </motion.button>
                 <motion.button
                   onClick={handleRestart}
                   className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-6 hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter] whitespace-nowrap"
@@ -714,7 +750,7 @@ export function SimulationPage() {
                   </motion.button>
                 )}
                 <motion.button
-                  onClick={() => navigate('/')}
+                  onClick={() => navigate('/job')}
                   className="flex items-center justify-center gap-2 bg-black text-white py-3 px-6 hover:bg-black/85 transition-colors font-[Inter] whitespace-nowrap"
                   style={{ fontSize: '0.85rem' }}
                   whileHover={{ scale: 1.02 }}

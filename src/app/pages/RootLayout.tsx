@@ -22,8 +22,8 @@ export function RootLayout() {
       // Ctrl/Cmd + K: Focus search
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        if (location.pathname !== '/') {
-          navigate('/');
+        if (location.pathname !== '/job') {
+          navigate('/job');
         }
         setTimeout(() => {
           const input = document.querySelector('input[placeholder*="job title"]') as HTMLInputElement;

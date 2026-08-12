@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Home, Compass, Map, Settings, MessageCircle } from 'lucide-react';
+import { Home, Compass, UserRound, Settings, MessageCircle } from 'lucide-react';
 import { hapticTap } from '../utils/haptic';
 import { sounds } from '../utils/sounds';
 import { useT } from '../i18n';
@@ -12,7 +12,7 @@ export function BottomNav() {
   const navItems = [
     { path: '/', icon: Home, label: t('home') },
     { path: '/job', icon: Compass, label: t('explore') },
-    { path: '/pathways', icon: Map, label: t('pathways') },
+    { path: '/passport', icon: UserRound, label: 'Personal' },
     { path: '/counselor', icon: MessageCircle, label: t('counselor') },
     { path: '/settings', icon: Settings, label: t('settings') },
   ];
@@ -59,6 +59,7 @@ export function BottomNav() {
             {navItems.map(({ path, icon: Icon, label }) => {
               const isActive = location.pathname === path ||
                 (path === '/' && location.pathname === '/') ||
+                (path === '/passport' && ['/passport', '/assess', '/recommendations', '/pathways'].some(personalPath => location.pathname.startsWith(personalPath))) ||
                 (path !== '/' && location.pathname.startsWith(path));
 
               return (

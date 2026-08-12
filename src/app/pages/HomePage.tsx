@@ -133,7 +133,6 @@ export function HomePage() {
     ? [
         { id: 'hero', label: 'Home' },
         { id: 'how-to-use', label: 'How to use' },
-        { id: 'how-it-works', label: 'How It Works' },
         { id: 'use-cases', label: 'Use Cases' },
         { id: 'features', label: 'Features' },
       ]
@@ -141,7 +140,6 @@ export function HomePage() {
         { id: 'hero', label: 'Home' },
         { id: 'how-to-use', label: 'How to use' },
         { id: 'trending', label: 'Trending' },
-        { id: 'how-it-works', label: 'How It Works' },
         { id: 'features', label: 'Features' },
       ], [showLanding]);
 
@@ -418,75 +416,6 @@ export function HomePage() {
       </section>
       )}
 
-      {/* ── HOW IT WORKS ───────────────────────────────────── */}
-      <section id="how-it-works" className="py-24 px-6 border-t border-black/8 bg-black/[0.018]">
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            className="text-center mb-16"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            <p className="font-[Inter] uppercase tracking-[0.2em] text-black/30 mb-3" style={{ fontSize: '0.65rem' }}>
-              The Process
-            </p>
-            <h2 className="font-[Playfair_Display] text-black" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)' }}>
-              How CareerCase Works
-            </h2>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-0 border border-black/10">
-            {[
-              {
-                step: '01',
-                pose: 'reading' as const,
-                title: 'Assess',
-                body: 'Build a Career Passport from interests, aptitude, work values, aspirations, experience and evidence.',
-              },
-              {
-                step: '02',
-                pose: 'mapping' as const,
-                title: 'Match',
-                body: 'Explore a diverse landscape scored transparently over 100 NCO-coded occupations with your segment lens.',
-              },
-              {
-                step: '03',
-                pose: 'climbing' as const,
-                title: 'Pathway',
-                body: 'Compare fastest, lower-risk and credential routes with proficiency-weighted gaps and interactive steps.',
-              },
-              {
-                step: '04',
-                pose: 'graduating' as const,
-                title: 'Grow',
-                body: 'Complete learning and RPL evidence; readiness and recommendations update as your Passport grows.',
-              },
-            ].map((item, i) => (
-              <motion.div
-                key={item.step}
-                className={`p-8 min-h-[240px] flex flex-col border-black/10 ${i < 3 ? 'md:border-r' : ''} ${i > 0 ? 'border-t md:border-t-0' : ''}`}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <div className="flex items-center gap-3 mb-6">
-                  <span className="font-[JetBrains_Mono] text-black/15" style={{ fontSize: '2rem' }}>{item.step}</span>
-                  <StickFigure pose={item.pose} size={48} />
-                </div>
-                <h3 className="font-[Playfair_Display] text-black mb-3" style={{ fontSize: '1.2rem' }}>
-                  {item.title}
-                </h3>
-                <p className="font-[Inter] text-black/50 leading-relaxed" style={{ fontSize: '0.88rem' }}>
-                  {item.body}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ── USE CASES ──────────────────────────────────────── */}
       {showLanding && (
         <section id="use-cases" className="py-24 px-6 border-t border-black/8">
@@ -564,10 +493,10 @@ export function HomePage() {
               Features
             </p>
             <h2 className="font-[Playfair_Display] text-black" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)' }}>
-              Everything You Need to Decide
+              Explore, reflect, and choose with confidence
             </h2>
             <p className="font-[Inter] text-black/40 mt-3 max-w-xl mx-auto" style={{ fontSize: '0.9rem', lineHeight: 1.7 }}>
-              Nine tools, one app — from your first search to your final career decision.
+              Start with a career dossier, then use simulations, comparisons, and your Personal workspace to make the next move clearer.
             </p>
           </motion.div>
 
@@ -575,14 +504,14 @@ export function HomePage() {
             {[
               {
                 icon: <FileText size={20} />,
-                title: 'Full AI Dossier',
-                body: 'Salary ranges, education path, daily routine, work culture - real data powered by Llama 3.3.',
+                title: 'Career Dossiers',
+                body: 'Explore any role through its responsibilities, entry routes, work rhythm, trade-offs, and questions that matter.',
                 tag: 'Core',
               },
               {
                 icon: <Swords size={20} />,
-                title: 'Day Simulation',
-                body: 'Make decisions a professional makes from 8am to 8pm. See how you think under pressure.',
+                title: 'Try a Day in the Role',
+                body: 'Work through realistic decisions, then see how that experience connects with your own career profile.',
                 tag: 'Immersive',
               },
               {
@@ -623,8 +552,8 @@ export function HomePage() {
               },
               {
                 icon: <Sparkles size={20} />,
-                title: 'History & Favourites',
-                body: 'Every career you explore is saved. Revisit, compare, or pick up where you left off anytime.',
+                title: 'Personal Workspace',
+                body: 'Your Passport, assessment desk, landscape and pathways stay together and improve as you add evidence.',
                 tag: 'Tracking',
               },
             ].map((feat, i) => (

@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
 import { JOB_TITLES } from '../data/jobs';
 import { TextReveal } from '../motion/TextReveal';
+import { useGuidance } from '../context/GuidanceContext';
 
 const STAGE_COLORS: Record<string, { dot: string; bg: string; border: string }> = {
   blue:   { dot: 'bg-violet-500',  bg: 'bg-violet-50',  border: 'border-violet-200' },
@@ -22,6 +23,7 @@ const STAGE_COLORS: Record<string, { dot: string; bg: string; border: string }> 
 
 export function CareerRoadmapPage() {
   const [searchParams] = useSearchParams();
+  const { passport } = useGuidance();
 
   const [jobTitle, setJobTitle] = useState(() => searchParams.get('job') || '');
   const [description, setDescription] = useState('');
@@ -152,6 +154,11 @@ export function CareerRoadmapPage() {
           <label className="block font-[Inter] text-black/40 mb-2 uppercase tracking-[0.1em]" style={{ fontSize: '0.62rem' }}>
             Career / Job Title
           </label>
+          {passport?.experiences[0]?.title && (
+            <button type="button" onClick={() => { setJobTitle(passport.experiences[0].title); setDescription(''); void fetchDescription(passport.experiences[0].title); }} className="mb-3 inline-flex items-center gap-2 border border-black/15 px-3 py-2 font-[Inter] text-xs text-black/65 hover:border-black/40 hover:text-black">
+              <Map size={13} /> Build from my current job: {passport.experiences[0].title}
+            </button>
+          )}
           <div className="relative">
             <input
               value={jobTitle}
