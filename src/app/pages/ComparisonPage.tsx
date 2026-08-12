@@ -14,6 +14,7 @@ import {
 import { downloadComparisonPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
+import { TextReveal } from '../motion/TextReveal';
 
 function CareerSlot({
   slot,
@@ -261,17 +262,17 @@ export function ComparisonPage() {
   };
 
   const CompareRow = ({ label, valueA, valueB }: { label: string; valueA: React.ReactNode; valueB: React.ReactNode }) => (
-    <div className="grid grid-cols-[1fr_120px_1fr] gap-0 border-b border-black/8 last:border-b-0">
-      <div className="p-4 font-[Inter] text-black/65" style={{ fontSize: '0.85rem' }}>{valueA}</div>
-      <div className="p-4 flex items-center justify-center bg-black/3">
-        <span className="font-[Inter] text-black/30 uppercase tracking-[0.1em]" style={{ fontSize: '0.6rem' }}>{label}</span>
+    <div className="grid grid-cols-[1fr_100px_1fr] gap-0 border-b border-[var(--ink)]/20 last:border-b-0">
+      <div className="font-mono-ui p-4 text-sm text-[var(--ink-soft)]">{valueA}</div>
+      <div className="flex items-center justify-center border-x border-[var(--ink)]/20 p-4">
+        <span className="label-caps text-center">{label}</span>
       </div>
-      <div className="p-4 font-[Inter] text-black/65" style={{ fontSize: '0.85rem' }}>{valueB}</div>
+      <div className="font-mono-ui p-4 text-sm text-[var(--ink-soft)]">{valueB}</div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-background pt-20 pb-16">
+    <div className="min-h-screen bg-[var(--paper)] pb-16 pt-20">
       <div className="max-w-5xl mx-auto px-6">
         {/* Back */}
         <motion.button
@@ -296,9 +297,7 @@ export function ComparisonPage() {
             <Scale size={28} className="text-black/30" />
             <StickFigure pose="thinking" size={56} animate={false} />
           </div>
-          <h1 className="font-[Playfair_Display] text-black mb-2" style={{ fontSize: '2rem' }}>
-            Career Comparison
-          </h1>
+          <h1 className="font-display mb-2 text-5xl leading-[1.05] tracking-tighter text-[var(--ink)] md:text-6xl"><TextReveal text="Career Comparison" /></h1>
           <p className="font-[Inter] text-black/40" style={{ fontSize: '0.85rem' }}>
             Compare two careers side by side
           </p>

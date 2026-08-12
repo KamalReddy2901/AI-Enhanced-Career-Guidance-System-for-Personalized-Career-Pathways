@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { motion } from 'motion/react';
 import { Link } from "react-router";
 import { StickFigure } from "../components/StickFigure";
 import { WhyPanel } from "../components/guidance/WhyPanel";
@@ -16,15 +17,14 @@ import { occupationName } from "../i18n/occupationNames";
 import { localizedConfidence, localizedReason, localizedTrend } from "../i18n/guidanceFormatting";
 import { hapticTap } from '../utils/haptic';
 import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
+import { TextReveal } from '../motion/TextReveal';
+import { useReveal } from '../motion/useReveal';
+import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
 
-const order: RecommendationGroup[] = [
-  "best_fit",
-  "growth",
-  "easiest_transition",
-  "aspiration",
-  "exploration",
-  "vocational_entrepreneurial",
-];
+type LandscapeFilter = 'all' | 'safe' | 'stretch' | 'frontier';
+const landscapeGroup = (group: RecommendationGroup): Exclude<LandscapeFilter, 'all'> =>
+  group === 'best_fit' || group === 'easiest_transition' ? 'safe' :
+    group === 'growth' || group === 'aspiration' ? 'stretch' : 'frontier';
 
 export function RecommendationsPage() {
   const {
@@ -34,29 +34,17 @@ export function RecommendationsPage() {
     dismissRecommendationChanges,
     recompute,
   } = useGuidance();
-  const { t, locale, lang } = useT();
+  const { locale, lang } = useT();
   const c = lang === "hi" ? { start:"आपका करियर परिदृश्य पासपोर्ट से शुरू होता है", onboarding:"ऑनबोर्डिंग शुरू करें", preparing:"आपका नियम-आधारित परिदृश्य तैयार हो रहा है…", header:"करियर परिदृश्य", title:"खोजने योग्य मज़बूत विकल्प", intro:"आपकी मौजूदा प्रोफ़ाइल पर आधारित। स्कोर प्रमाण-आधारित संकेत हैं, अंतिम निर्णय नहीं।", ask:"क्यों पूछें · अगर ऐसा हो तो पूछें", confidence:"विश्वसनीयता", demand:"माँग", why:"यह क्यों?", build:"मार्ग बनाएँ", dossier:"पूरा विवरण पढ़ें", footer:"संस्करणित ज्ञान-आधार पर नियम-आधारित स्कोरिंग · अंकों के लिए LLM का उपयोग नहीं" } : lang === "te" ? { start:"మీ కెరీర్ దృశ్యం పాస్‌పోర్ట్‌తో మొదలవుతుంది", onboarding:"ఆన్‌బోర్డింగ్ ప్రారంభించండి", preparing:"మీ నియమ-ఆధారిత దృశ్యం సిద్ధమవుతోంది…", header:"కెరీర్ దృశ్యం", title:"అన్వేషించదగిన బలమైన ఎంపికలు", intro:"మీ ప్రస్తుత ప్రొఫైల్ ఆధారంగా. స్కోర్లు ఆధారాలతో కూడిన సంకేతాలు మాత్రమే, తీర్పు కాదు.", ask:"ఎందుకో అడగండి · పరిస్థితి మారితే అడగండి", confidence:"నమ్మకం", demand:"డిమాండ్", why:"ఇది ఎందుకు?", build:"మార్గం నిర్మించండి", dossier:"పూర్తి వివరాలు చదవండి", footer:"వెర్షన్ చేసిన జ్ఞాన భాండాగారంపై నియమ-ఆధారిత స్కోరింగ్ · స్కోర్లకు LLM ఉపయోగించలేదు" } : { start:"Your career landscape starts with a passport", onboarding:"Start onboarding", preparing:"Preparing your deterministic landscape…", header:"The Career Landscape", title:"Strong options to explore", intro:"Based on your current profile. Scores are evidence-led signals, never a verdict.", ask:"Ask why · Ask what-if", confidence:"confidence", demand:"Demand", why:"Why this?", build:"Build pathway", dossier:"Read the full dossier", footer:"Deterministic scoring over the versioned knowledge base · LLM not used for scores" };
   const [explanation, setExplanation] = useState<CareerRecommendation | null>(
     null,
   );
+  const [filter, setFilter] = useState<LandscapeFilter>('all');
+  const reveal = useReveal<HTMLDivElement>();
   useEffect(() => {
     if (passport && !recommendations) recompute();
   }, [passport, recommendations, recompute]);
-  const groups = useMemo(
-    () =>
-      order
-        .map(
-          (group) =>
-            [
-              group,
-              recommendations?.recommendations.filter(
-                (item) => item.group === group,
-              ) ?? [],
-            ] as const,
-        )
-        .filter(([, items]) => items.length),
-    [recommendations],
-  );
+  const visibleRecommendations = useMemo(() => recommendations?.recommendations.filter((item) => filter === 'all' || landscapeGroup(item.group) === filter) ?? [], [filter, recommendations]);
   if (!passport)
     return (
       <div className="min-h-screen p-8 text-center">
@@ -79,19 +67,17 @@ export function RecommendationsPage() {
       </div>
     );
   return (
-    <div className="min-h-screen bg-[#f9f8f7] p-4 pb-24 md:p-8">
+    <div className="min-h-screen bg-[var(--paper)] px-6 py-16 pb-24 md:py-24">
       <GuidanceEntrance className="mx-auto max-w-6xl">
-        <header className="mb-8 flex items-center gap-4 border-y-4 border-double border-black py-6">
-          <StickFigure pose="mapping" size={88} />
+        <header className="mb-10 grid gap-6 border-b-2 border-[var(--ink)] pb-8 md:grid-cols-[1fr_auto]">
+          <StickFigure pose="mapping" size={112} />
           <div>
             <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">
               {c.header} ·{" "}
               {new Date(recommendations.generatedAt).toLocaleDateString(locale)}{" "}
               · profile v{passport.version} · {recommendations.kbVersion}
             </div>
-            <h1 className="text-4xl font-[Playfair_Display] md:text-5xl">
-              {c.title}
-            </h1>
+            <h1 className="font-display mt-3 text-5xl leading-[1.05] tracking-tighter md:text-6xl"><TextReveal text={c.title} /></h1>
             <p className="mt-2 font-[Inter] text-black/60">
               {c.intro}
             </p>
@@ -102,25 +88,19 @@ export function RecommendationsPage() {
           onDismiss={dismissRecommendationChanges}
           onExplain={(occupationId)=>{const item=recommendations.recommendations.find(recommendation=>recommendation.occupationId===occupationId);if(item)setExplanation(item)}}
         />
-        {groups.map(([group, items]) => (
-          <section key={group} className="mb-10">
-            <h2 className="mb-4 border-b border-black/20 pb-2 font-[JetBrains_Mono] text-xs uppercase tracking-[.2em]">
-              {t(group)}
-            </h2>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {items.map((recommendation) => (
-                <RecommendationCard
-                  key={recommendation.occupationId}
-                  recommendation={recommendation}
-                  locale={locale}
-                  lang={lang}
-                  copy={c}
-                  onExplain={() => setExplanation(recommendation)}
-                />
-              ))}
-            </div>
-          </section>
-        ))}
+        <Tabs value={filter} onValueChange={(value)=>setFilter(value as LandscapeFilter)} className="mb-8">
+          <TabsList aria-label="Career landscape filters">
+            {(['all','safe','stretch','frontier'] as const).map(value=><TabsTrigger key={value} value={value} data-testid={`recommendations-filter-${value}`}>{value}</TabsTrigger>)}
+          </TabsList>
+        </Tabs>
+        <p className="font-display mb-8 italic text-[var(--ink-soft)]">Every landscape keeps grounded, ambitious and exploratory routes in view.</p>
+        <motion.div ref={reveal.ref} variants={reveal.containerVariants} initial="hidden" animate={reveal.animate} className="mb-12 grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
+          {visibleRecommendations.map((recommendation) => (
+            <motion.div key={recommendation.occupationId} variants={reveal.itemVariants} layout>
+              <RecommendationCard recommendation={recommendation} locale={locale} lang={lang} copy={c} onExplain={() => setExplanation(recommendation)} />
+            </motion.div>
+          ))}
+        </motion.div>
         <p className="font-[JetBrains_Mono] text-[10px] uppercase tracking-wide text-black/45">
           {c.footer} · KB {recommendations.kbVersion} · profile v{passport.version}
         </p>
@@ -158,7 +138,8 @@ function RecommendationCard({
   const occupation = occupationById.get(recommendation.occupationId)!;
   const market = marketFor(occupation.id);
   return (
-    <article className="bg-white p-5 shadow-[3px_3px_0_rgba(0,0,0,.05)] border border-black/10">
+    <article className="card-sketch group h-full p-6 transition-[transform,box-shadow] hover:-translate-y-[3px] hover:shadow-[6px_6px_0_var(--ink)] md:p-8">
+      <div className={`label-caps mb-3 ${landscapeGroup(recommendation.group)==='frontier'?'!text-[var(--accent-news)]':''}`}>{landscapeGroup(recommendation.group)}</div>
       <div className="font-[JetBrains_Mono] text-[10px] uppercase text-black/50">
         NCO {occupation.ncoCode} · NSQF {occupation.nsqfEntryLevel}
       </div>
@@ -180,7 +161,7 @@ function RecommendationCard({
         </button>
       </div>
       <div className="mt-4 flex items-end justify-between">
-        <div className="text-5xl font-[Playfair_Display]">
+        <div className="font-mono-ui text-5xl">
           {recommendation.totalScore}
         </div>
         <div className="font-[JetBrains_Mono] text-[10px] uppercase">
@@ -188,10 +169,7 @@ function RecommendationCard({
         </div>
       </div>
       <div className="mt-2 h-2 bg-black/10">
-        <div
-          className="h-2 bg-black"
-          style={{ width: `${recommendation.totalScore}%` }}
-        />
+        <div className="h-2 origin-left bg-black transition-transform duration-700" style={{ transform: `scaleX(${recommendation.totalScore/100})` }} />
       </div>
       <ul className="mt-4 space-y-2">
         {recommendation.topReasons.slice(0, 2).map((reason) => (
@@ -200,11 +178,11 @@ function RecommendationCard({
           </li>
         ))}
       </ul>
-      <div className="mt-4 flex flex-wrap gap-1">
+      <div className="rule-top mt-4 pt-3">
         {recommendation.skillGapPreview.map((gap) => (
           <span
             key={gap.skillId}
-            className="border border-black/10 px-2 py-1 font-[JetBrains_Mono] text-[9px]"
+            className="mr-3 inline-block font-mono-ui text-[9px] uppercase"
           >
             {skillById.get(gap.skillId)?.name ?? gap.skillId} · {gap.severity}
           </span>
