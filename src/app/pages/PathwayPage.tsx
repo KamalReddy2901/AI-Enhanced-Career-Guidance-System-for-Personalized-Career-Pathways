@@ -131,7 +131,7 @@ export function PathwayPage() {
     setPlan(next);
     replacePathwayPlan(next);
     if (user?.id) void savePathway(user.id, next);
-    sounds.success();
+    sounds.stamp();
     hapticSuccess();
     const step = routes.find((candidate) => candidate.kind === route.kind)!
       .steps[index];

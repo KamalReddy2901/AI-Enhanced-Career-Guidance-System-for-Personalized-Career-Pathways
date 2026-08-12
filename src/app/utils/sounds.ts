@@ -225,7 +225,8 @@ export const sounds = {
     notes.forEach((f, i) => playTone(f, 0.1, 'sine', 0.06, i * 0.06));
   },
   assessComplete: () => {
-    [523.25, 659.25, 783.99].forEach((frequency, index) => playTone(frequency, 0.16, 'triangle', 0.07, index * 0.11));
+    playFreqSweep(420, 1180, 0.16, 'triangle', 0.06);
+    playTone(720, 0.05, 'triangle', 0.04, 0.08);
   },
   pathUnlock: () => {
     playFreqSweep(320, 980, 0.28, 'sine', 0.06);
