@@ -17,7 +17,7 @@ export const en = {
   archive: "Archive",
   more: "More",
   homeKicker: "The CareerCase Daily — Personalized Edition",
-  homeHeadline: "Find the work that fits your whole story.",
+  homeHeadline: "Find the work that fits your story.",
   homeSubhead: "Turn your aptitude, aspirations, abilities and experience into clear, evidence-led career pathways.",
   homePrimary: "Start your assessment",
   homeContinue: "Continue your assessment",
