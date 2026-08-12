@@ -1157,7 +1157,7 @@ export async function getGrowthOutlook(jobTitle: string, signal?: AbortSignal): 
   });
 }
 
-// ─── Comparison insight — charges 'compare' credits ─────────────
+// ─── Comparison insight ────────────────────────────────────────
 
 export async function getComparisonInsight(
   titleA: string, descA: string,
