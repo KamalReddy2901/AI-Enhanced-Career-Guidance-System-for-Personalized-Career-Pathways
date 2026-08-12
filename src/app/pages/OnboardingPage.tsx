@@ -43,10 +43,48 @@ export function OnboardingPage() {
   const [cloudHistoryConsent, setCloudHistoryConsent] = useState(false);
   const [guardianPendingLogged, setGuardianPendingLogged] = useState(false);
 
+  const handleSkip = () => {
+    if (!segment) {
+      toast.error(lang === 'hi' ? 'कृपया अपनी स्थिति चुनें' : lang === 'te' ? 'దయచేసి మీ స్థితిని ఎంచుకోండి' : 'Please select your segment first');
+      return;
+    }
+    
+    // Create minimal passport
+    const minimalPassport: CareerPassport = {
+      segment,
+      education: { level: 'class_12' },
+      experiences: [],
+      skills: [],
+      constraints: {
+        location: '',
+        canRelocate: true,
+        weeklyLearningHours: 5,
+        budgetLevel: 'medium',
+        languages: ['English'],
+        needsIncomeContinuity: false,
+      },
+      completeness: 0,
+      version: 1,
+      updatedAt: new Date().toISOString(),
+    };
+    
+    minimalPassport.completeness = calculateCompleteness(minimalPassport);
+    updatePassport(() => minimalPassport);
+    
+    // Log minimal consent
+    const consentEntries = [
+      { consent_type: 'data_processing', granted: true, detail: { skipped: true }, created_at: new Date().toISOString() },
+    ];
+    localStorage.setItem('cc_guidance_consents', JSON.stringify(consentEntries));
+    
+    sounds.click();
+    navigate('/');
+  };
+
   // Redirect if already onboarded
   useEffect(() => {
     if (passport && passport.segment) {
-      navigate('/assess');
+      navigate('/');
     }
   }, [passport, navigate]);
 
@@ -125,7 +163,7 @@ export function OnboardingPage() {
     sounds.success();
     hapticSuccess();
     
-    navigate('/assess');
+    navigate('/');
   };
 
   const canProceed = () => {
@@ -147,7 +185,17 @@ export function OnboardingPage() {
     <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8">
       {/* Progress rail */}
       <div className="max-w-2xl mx-auto mb-8">
-        <div className="mb-4 flex justify-end"><LanguageSwitcher /></div>
+        <div className="mb-4 flex justify-between items-center">
+          <LanguageSwitcher />
+          {currentStep !== 'language' && currentStep !== 'finish' && (
+            <button
+              onClick={handleSkip}
+              className="text-black/40 hover:text-black font-[Inter] text-sm underline transition-colors"
+            >
+              {lang === 'hi' ? 'छोड़ें और घर जाएँ' : lang === 'te' ? 'దాటవేసి హోమ్‌కి వెళ్ళండి' : 'Skip to home'}
+            </button>
+          )}
+        </div>
         <div className="flex items-center justify-between">
           {STEPS.map((step, idx) => (
             <div key={step} className="flex items-center">
