@@ -621,7 +621,7 @@ ${resumeText}
 Return this exact JSON:
 {
   "skills": [
-    {"name": "Exact skill name from resume", "proficiency": 1-4, "evidence": "Quoted phrase from resume mentioning this skill"},
+    {"name": "Exact skill name from resume (preserve framework, protocol, library, hardware, and security names; do not collapse them into generic categories)", "proficiency": 1-4, "evidence": "Quoted phrase from resume mentioning this skill"},
     ...
   ],
   "experiences": [

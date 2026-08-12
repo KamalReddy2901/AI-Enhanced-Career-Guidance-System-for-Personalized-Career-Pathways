@@ -49,31 +49,43 @@ export function combineEvidenceConfidence(evidence: SkillEvidence[]): number {
 export function matchSkillsToKB(extracted: ExtractedSkill[]): SkillMatchResult {
   const matched: SkillClaim[] = [];
   const unmatched: string[] = [];
+  const normalize = (value: string) => value
+    .toLowerCase()
+    .replace(/[^a-z0-9+#]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const makeClaim = (skillId: string, ex: ExtractedSkill, confidence: number): SkillClaim => ({
+    skillId,
+    proficiency: ex.proficiency,
+    confidence,
+    evidence: [{
+      type: 'inferred_from_resume',
+      description: ex.evidence,
+      confidence,
+      observedAt: new Date().toISOString(),
+    }],
+  });
 
   for (const ex of extracted) {
-    const normalized = ex.name.toLowerCase().trim();
-    const exact=[...skillById].find(([,skill])=>normalized===skill.name.toLowerCase()||skill.aliases.some(alias=>alias.toLowerCase()===normalized));
-    if(exact){const [skillId]=exact;matched.push({skillId,proficiency:ex.proficiency,confidence:.6,evidence:[{type:'inferred_from_resume',description:ex.evidence,confidence:.6,observedAt:new Date().toISOString()}]});continue;}
+    const normalized = normalize(ex.name);
+    if (!normalized) continue;
+    const exact = [...skillById].find(([, skill]) =>
+      [skill.name, ...skill.aliases].some(alias => normalize(alias) === normalized),
+    );
+    if (exact) {
+      matched.push(makeClaim(exact[0], ex, .72));
+      continue;
+    }
     let found = false;
 
     for (const [skillId, skill] of skillById) {
-      const nameLower = skill.name.toLowerCase();
-
-      // Simple token match (e.g., "react" in "react native")
+      const nameLower = normalize(skill.name);
       const tokens = normalized.split(/\s+/);
       const skillTokens = nameLower.split(/\s+/);
-      if (tokens.some(t => skillTokens.includes(t)) && tokens.length > 0) {
-        matched.push({
-          skillId,
-          proficiency: ex.proficiency,
-          confidence: 0.5, // Lower confidence for token match
-          evidence: [{
-            type: 'inferred_from_resume',
-            description: ex.evidence,
-            confidence: 0.5,
-            observedAt: new Date().toISOString(),
-          }],
-        });
+      // A partial match is only safe when it contains a meaningful token. This
+      // avoids mapping a one-letter language such as "C" to arbitrary skills.
+      if (tokens.some(token => token.length >= 4 && skillTokens.includes(token))) {
+        matched.push(makeClaim(skillId, ex, .5));
         found = true;
         break;
       }
@@ -84,7 +96,7 @@ export function matchSkillsToKB(extracted: ExtractedSkill[]): SkillMatchResult {
     }
   }
 
-  return { matched, unmatched };
+  return { matched, unmatched: [...new Set(unmatched)] };
 }
 
 /**

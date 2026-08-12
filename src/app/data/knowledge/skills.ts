@@ -9,6 +9,23 @@ export const SKILLS: Skill[] = [
   // ─── TECHNICAL (Programming, IT, Engineering) ─────────────────────────────
   { id: 'python-programming', name: 'Python Programming', category: 'technical', aliases: ['python', 'py'], descriptionKey: 'skill.python' },
   { id: 'javascript', name: 'JavaScript', category: 'technical', aliases: ['js', 'node', 'nodejs'], descriptionKey: 'skill.javascript' },
+  // Modern software, security, and embedded skills are kept as distinct claims
+  // so a resume can retain specific evidence instead of being reduced to a
+  // generic "web development" or "IoT" label.
+  { id: 'typescript', name: 'TypeScript', category: 'technical', aliases: ['typescript', 'ts'], descriptionKey: 'skill.typescript' },
+  { id: 'react', name: 'React', category: 'technical', aliases: ['react', 'react.js', 'reactjs'], descriptionKey: 'skill.react' },
+  { id: 'c-cpp', name: 'C/C++ Programming', category: 'technical', aliases: ['c', 'c++', 'c/c++', 'cpp', 'c programming', 'c++ programming'], descriptionKey: 'skill.c_cpp' },
+  { id: 'swift', name: 'Swift', category: 'technical', aliases: ['swift', 'swiftui'], descriptionKey: 'skill.swift' },
+  { id: 'vite', name: 'Vite', category: 'tool', aliases: ['vite', 'vitejs'], descriptionKey: 'skill.vite' },
+  { id: 'cloudflare-workers', name: 'Cloudflare Workers', category: 'tool', aliases: ['cloudflare workers', 'cloudflare worker', 'workers'], descriptionKey: 'skill.cloudflare_workers' },
+  { id: 'supabase', name: 'Supabase', category: 'tool', aliases: ['supabase', 'supabase postgres'], descriptionKey: 'skill.supabase' },
+  { id: 'groq-ai', name: 'Groq AI', category: 'tool', aliases: ['groq ai', 'groq', 'groq api'], descriptionKey: 'skill.groq_ai' },
+  { id: 'aes-gcm', name: 'AES-256-GCM', category: 'technical', aliases: ['aes-256-gcm', 'aes 256 gcm', 'aes-gcm', 'aes gcm'], descriptionKey: 'skill.aes_gcm' },
+  { id: 'reed-solomon', name: 'Reed-Solomon Error Correction', category: 'technical', aliases: ['reed-solomon error correction', 'reed solomon error correction', 'reed-solomon', 'reed solomon'], descriptionKey: 'skill.reed_solomon' },
+  { id: 'arduino-nano', name: 'Arduino Nano', category: 'tool', aliases: ['arduino nano', 'arduino'], descriptionKey: 'skill.arduino_nano' },
+  { id: 'nrf24l01', name: 'NRF24L01', category: 'tool', aliases: ['nrf24l01', 'nrf24'], descriptionKey: 'skill.nrf24l01' },
+  { id: 'esp32-s3', name: 'ESP32-S3', category: 'tool', aliases: ['esp32-s3', 'esp32 s3', 'esp32'], descriptionKey: 'skill.esp32_s3' },
+  { id: 'iot-protocols', name: 'IoT Protocols', category: 'technical', aliases: ['iot protocols', 'iot protocol', 'mqtt', 'coap'], descriptionKey: 'skill.iot_protocols' },
   { id: 'sql-querying', name: 'SQL Querying', category: 'technical', aliases: ['sql', 'database queries', 'postgresql', 'mysql'], descriptionKey: 'skill.sql' },
   { id: 'data-analysis', name: 'Data Analysis', category: 'technical', aliases: ['analytics', 'data analytics'], descriptionKey: 'skill.data_analysis' },
   { id: 'machine-learning', name: 'Machine Learning', category: 'technical', aliases: ['ml', 'ai', 'deep learning'], descriptionKey: 'skill.ml' },

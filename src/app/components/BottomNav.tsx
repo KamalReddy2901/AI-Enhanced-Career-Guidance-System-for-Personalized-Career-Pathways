@@ -5,6 +5,7 @@ import { Home, Compass, Map, Settings, MessageCircle } from 'lucide-react';
 import { hapticTap } from '../utils/haptic';
 import { sounds } from '../utils/sounds';
 import { useT } from '../i18n';
+import { useAuth } from '../context/AuthContext';
 
 export function BottomNav() {
   const { t } = useT();
@@ -17,6 +18,7 @@ export function BottomNav() {
   ];
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [visible, setVisible] = useState(true);
   const lastScrollY = useRef(0);
 
@@ -39,6 +41,8 @@ export function BottomNav() {
     sounds.navigate();
     navigate(path);
   };
+
+  if (!user || location.pathname === '/auth') return null;
 
   return (
     <AnimatePresence>

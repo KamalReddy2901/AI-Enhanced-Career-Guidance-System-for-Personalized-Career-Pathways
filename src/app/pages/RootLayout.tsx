@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router';
+import { Navigate, Outlet, useNavigate, useLocation } from 'react-router';
 import { Toaster } from 'sonner';
 import { Navbar } from '../components/Navbar';
 import { OnboardingTour } from '../components/OnboardingTour';
@@ -7,10 +7,12 @@ import { Breadcrumb } from '../components/Breadcrumb';
 import { BottomNav } from '../components/BottomNav';
 import { InstallPrompt } from '../components/InstallPrompt';
 import { PageTransition } from '../motion/PageTransition';
+import { useAuth } from '../context/AuthContext';
 
 export function RootLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, loading } = useAuth();
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -76,6 +78,15 @@ export function RootLayout() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [location.pathname]);
+
+  const isPublicRoute = location.pathname === '/' || location.pathname === '/auth';
+  if (loading) {
+    return <div className="min-h-screen bg-background flex items-center justify-center"><span className="font-mono-ui text-xs text-black/40">Loading your case file…</span></div>;
+  }
+  if (!user && !isPublicRoute) {
+    const redirect = `${location.pathname}${location.search}${location.hash}`;
+    return <Navigate to={`/auth?redirect=${encodeURIComponent(redirect)}`} replace />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
