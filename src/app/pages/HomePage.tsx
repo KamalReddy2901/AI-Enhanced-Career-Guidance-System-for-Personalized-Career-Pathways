@@ -123,14 +123,12 @@ export function HomePage() {
         { id: 'how-it-works', label: 'How It Works' },
         { id: 'use-cases', label: 'Use Cases' },
         { id: 'features', label: 'Features' },
-        { id: 'about', label: 'About' },
       ]
     : [
         { id: 'hero', label: 'Home' },
         { id: 'trending', label: 'Trending' },
         { id: 'how-it-works', label: 'How It Works' },
         { id: 'features', label: 'Features' },
-        { id: 'about', label: 'About' },
       ], [showLanding]);
 
   // Auto-load shared trending list when the section scrolls into view.
@@ -351,7 +349,7 @@ export function HomePage() {
               transition={{ delay: 0.5 }}
             >
               <p className="text-[var(--ink-faint)]" style={{ fontSize: '0.78rem' }}>
-                {searchingCareer ? `${t('homeBuildingDossier')} “${searchingCareer}”…` : t('homeOpenDossier')}
+                {searchingCareer ? `${t('homeBuildingDossier')} "${searchingCareer}"…` : t('homeOpenDossier')}
               </p>
             </motion.div>
           )}
@@ -593,104 +591,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── ABOUT ──────────────────────────────────────────── */}
-      <section id="about" className="py-24 px-6 border-t border-black/8 bg-black/[0.018]">
-        <div className="max-w-3xl mx-auto">
-          <motion.div
-            className="flex flex-col sm:flex-row items-start gap-10"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <div className="shrink-0">
-              <StickFigure pose="waving" size={80} />
-            </div>
-            <div className="flex-1 border-l-2 border-black/10 pl-10">
-              <p className="font-[Inter] uppercase tracking-[0.2em] text-black/30 mb-4" style={{ fontSize: '0.65rem' }}>
-                Why I Built This
-              </p>
-              <h2 className="font-[Playfair_Display] text-black mb-6" style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)' }}>
-                From Kamal Reddy
-              </h2>
-              <div className="space-y-4 font-[Inter] text-black/65 leading-relaxed" style={{ fontSize: '0.95rem' }}>
-                <p>
-                  I am Kamal Reddy. I always wondered what it'd be like to live as different careers out there - a forensic analyst, a marine biologist, an investment banker. Not in a "I want to be that" way, but in a "what does Tuesday actually look like for them?" way.
-                </p>
-                <p>
-                  There's no good answer to that question online. Job descriptions are sanitized. Salary sites are noisy. Reddit threads are biased. I wanted something that just let you <em>feel it</em> - even for five minutes.
-                </p>
-                <p>
-                  So I built CareerCase. It's the tool I wish existed when I was figuring things out. Pick a career, read the dossier, live a day, answer an interview question. Then do it again for a completely different career. Compare them. Decide.
-                </p>
-              </div>
-
-              {/* More from developer — merged inline */}
-              <div className="mt-10 pt-8 border-t border-black/8 flex flex-col sm:flex-row sm:items-center gap-5">
-                <div className="shrink-0">
-                  <StickFigure pose="coding" size={52} animate={false} />
-                </div>
-                <div className="flex-1">
-                  <p className="font-[Inter] uppercase tracking-[0.15em] text-black/30 mb-1" style={{ fontSize: '0.6rem' }}>
-                    More from the developer
-                  </p>
-                  <p className="font-[Inter] text-black/50 leading-relaxed mb-3" style={{ fontSize: '0.88rem' }}>
-                    More projects, experiments, and ideas. Design-led, minimal, useful.
-                  </p>
-                  <motion.a
-                    href="https://kamrede.page/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 border border-black/30 text-black/60 py-2 px-5 font-[Inter] hover:border-black hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow]"
-                    style={{ fontSize: '0.82rem' }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Visit kamrede.page
-                    <ExternalLink size={13} />
-                  </motion.a>
-                </div>
-              </div>
-
-              <div className="mt-8 flex items-center gap-4">
-                <div className="h-px flex-1 bg-black/10" />
-                <span className="font-[JetBrains_Mono] text-black/30" style={{ fontSize: '0.72rem' }}>- Kamal Reddy</span>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── FEEDBACK ─────────────────────────────────────── */}
-      <section id="feedback" className="py-16 px-6 border-t border-black/6">
-        <div className="max-w-2xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <MessageSquare size={28} className="mx-auto text-black/20 mb-4" />
-            <h2 className="font-[Playfair_Display] text-black mb-2" style={{ fontSize: '1.4rem' }}>
-              We'd love your feedback
-            </h2>
-            <p className="font-[Inter] text-black/45 leading-relaxed mb-6" style={{ fontSize: '0.85rem' }}>
-              Found a bug? Have a feature idea? Just want to say hi? Drop me a line.
-            </p>
-            <motion.a
-              href="https://github.com/KamalReddy2901/AI-Enhanced-Career-Guidance-System-for-Personalized-Career-Pathways/issues/new"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 border-2 border-black text-black py-2.5 px-6 font-[Inter] hover:bg-black hover:text-white transition-[color,background-color,border-color,opacity,transform,box-shadow]"
-              style={{ fontSize: '0.85rem' }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              Send Feedback
-              <ArrowRight size={14} />
-            </motion.a>
-          </motion.div>
-        </div>
-      </section>
-
       {/* ── FOOTER ─────────────────────────────────────────── */}
       <footer className="border-t border-black/8 py-8 px-6">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -698,9 +598,6 @@ export function HomePage() {
             <StickFigure pose="standing" size={28} animate={false} />
             <span className="font-[Playfair_Display] text-black/60" style={{ fontSize: '0.92rem' }}>CareerCase</span>
           </div>
-          <p className="font-[Inter] text-[var(--ink-soft)]" style={{ fontSize: '0.72rem' }}>
-            Built by Kamal Reddy &middot; v1.0.0
-          </p>
           <div className="flex items-center gap-4 font-[Inter] text-[var(--ink-soft)]" style={{ fontSize: '0.72rem' }}>
             <button onClick={() => navigate('/how-it-works')} className="hover:text-black transition-colors">How guidance works</button>
             <button onClick={() => navigate('/settings')} className="hover:text-black transition-colors">Settings</button>
@@ -708,8 +605,6 @@ export function HomePage() {
           </div>
         </div>
       </footer>
-
-
 
       {/* Scroll Section Nav */}
       <ScrollSectionNav sections={spySections} />
