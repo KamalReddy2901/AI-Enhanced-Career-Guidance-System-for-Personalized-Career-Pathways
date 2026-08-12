@@ -275,6 +275,46 @@ nav a, nav button {
   color: var(--ink-soft);
 }
 
+/* Phase 2 loading state: pencil hatching instead of a SaaS shimmer. */
+.editorial-skeleton {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0,
+    transparent 7px,
+    color-mix(in srgb, var(--ink) 10%, transparent) 7px,
+    color-mix(in srgb, var(--ink) 10%, transparent) 8px
+  );
+  background-size: 24px 24px;
+  animation: pencil-hatch 1.2s linear infinite;
+}
+
+@keyframes pencil-hatch {
+  to { background-position: 24px 0; }
+}
+
+.button-loading-dots {
+  display: inline-flex;
+  min-width: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.button-loading-dots i {
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 999px;
+  background: currentColor;
+  animation: typesetting-dot 0.9s ease-in-out infinite alternate;
+}
+
+.button-loading-dots i:nth-child(2) { animation-delay: 0.15s; }
+.button-loading-dots i:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes typesetting-dot {
+  to { transform: translateY(-3px); opacity: 0.45; }
+}
+
 /* Custom text selection — the one red accent */
 ::selection { background: var(--accent-news); color: var(--paper); }
 

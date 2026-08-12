@@ -88,14 +88,17 @@ export function RootLayout() {
         <Outlet />
       </main>
       <Toaster
-        position="bottom-right"
+        position="top-right"
         toastOptions={{
+          className: 'card-sketch font-mono-ui',
           style: {
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'JetBrains Mono, monospace',
             fontSize: '0.85rem',
-            border: '2px solid rgba(0,0,0,0.1)',
-            borderRadius: '0',
-            boxShadow: '3px 3px 0px 0px rgba(0,0,0,0.08)',
+            border: '2px solid var(--ink)',
+            borderRadius: '2px',
+            boxShadow: 'var(--shadow-hard)',
+            background: 'var(--paper-raised)',
+            color: 'var(--ink)',
           },
         }}
       />

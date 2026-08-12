@@ -97,7 +97,7 @@ function FormLabel({
     <Label
       data-slot="form-label"
       data-error={!!error}
-      className={cn("data-[error=true]:text-destructive", className)}
+      className={cn("data-[error=true]:text-[var(--accent-news)]", className)}
       htmlFor={formItemId}
       {...props}
     />
@@ -148,10 +148,13 @@ function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
     <p
       data-slot="form-message"
       id={formMessageId}
-      className={cn("text-destructive text-sm", className)}
+      className={cn("font-mono-ui text-sm text-[var(--accent-news)]", className)}
       {...props}
     >
-      {body}
+      <span>{body}</span>
+      <svg viewBox="0 0 120 6" className="mt-0.5 h-1.5 w-full max-w-32" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M1 4c10-5 18 4 29 0s18 4 29 0 18 4 30 0 19 4 30 0" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
     </p>
   );
 }

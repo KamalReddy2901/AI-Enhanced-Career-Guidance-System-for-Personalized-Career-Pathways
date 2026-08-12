@@ -44,7 +44,7 @@ export function BottomNav() {
     <AnimatePresence>
       {visible && (
         <motion.nav
-          className="fixed bottom-0 left-0 right-0 z-40 sm:hidden bg-background/95 backdrop-blur-md border-t border-black/10 print:hidden"
+          className="fixed bottom-0 left-0 right-0 z-40 border-t-2 border-[var(--ink)] bg-[var(--paper)] pb-[env(safe-area-inset-bottom)] sm:hidden print:hidden"
           initial={{ y: 60 }}
           animate={{ y: 0 }}
           exit={{ y: 60 }}
@@ -61,14 +61,21 @@ export function BottomNav() {
                 <button
                   key={path}
                   onClick={() => handleNav(path)}
-                  className={`flex flex-col items-center justify-center gap-0.5 w-full h-full transition-colors ${
-                    isActive ? 'text-black' : 'text-black/30'
+                  className={`font-mono-ui flex h-full w-full flex-col items-center justify-center gap-0.5 transition-colors ${
+                    isActive ? 'text-[var(--ink)]' : 'text-[var(--ink-faint)]'
                   }`}
                   aria-label={label}
                   aria-current={isActive ? 'page' : undefined}
+                  data-testid={`bottom-nav-${path === '/' ? 'home' : path.slice(1)}`}
                 >
-                  <Icon size={18} strokeWidth={isActive ? 2.2 : 1.5} />
-                  <span className="font-[Inter]" style={{ fontSize: '0.58rem' }}>{label}</span>
+                  <motion.span
+                    className={`grid size-7 place-items-center rounded-full ${isActive ? 'bg-[var(--ink)] text-[var(--paper)]' : ''}`}
+                    whileTap={{ scale: 0.9 }}
+                    transition={{ type: 'spring', stiffness: 450, damping: 20 }}
+                  >
+                    <Icon size={17} strokeWidth={1.5} />
+                  </motion.span>
+                  <span className="text-[9px] uppercase tracking-wide">{label}</span>
                 </button>
               );
             })}
