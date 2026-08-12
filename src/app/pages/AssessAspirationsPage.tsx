@@ -13,6 +13,7 @@ import { listen, speak } from "../utils/voice";
 import { useVoiceStatus } from "../hooks/useVoiceStatus";
 import { hapticLight, hapticSuccess } from '../utils/haptic';
 import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
+import { TextReveal } from '../motion/TextReveal';
 
 const questions = {
   en: [
@@ -44,7 +45,7 @@ export function AssessAspirationsPage() {
   const { user } = useAuth();
   const { lang, locale } = useT();
   const voiceStatus = useVoiceStatus();
-  const c = lang === "hi" ? { interview:"आकांक्षा संवाद", title:"आप किस दिशा में जाना चाहते हैं—उस पर एक छोटी बातचीत", finish:"चिंतन पूरा करें", send:"उत्तर भेजें", dictate:"बोलकर लिखें", unavailable:"संवाद सेवा उपलब्ध नहीं है। यही चिंतन AI के बिना स्थानीय रूप से सहेजें।", voice:"इस ब्राउज़र में वॉइस इनपुट उपलब्ध नहीं है।", save:"स्थानीय रूप से सहेजें", note:"एक बार में एक प्रश्न, अधिकतम पाँच। परिणाम को आप बाद में पासपोर्ट में बदल सकते हैं।" } : lang === "te" ? { interview:"ఆకాంక్షల సంభాషణ", title:"మీరు ఏ దిశలో వెళ్లాలనుకుంటున్నారో తెలిపే చిన్న సంభాషణ", finish:"ఆలోచన పూర్తి చేయండి", send:"సమాధానం పంపండి", dictate:"మాట్లాడి నమోదు చేయండి", unavailable:"సంభాషణ సేవ అందుబాటులో లేదు. ఇదే ఆలోచనను AI లేకుండా స్థానికంగా భద్రపరచండి.", voice:"ఈ బ్రౌజర్‌లో వాయిస్ ఇన్‌పుట్‌కు మద్దతు లేదు.", save:"స్థానికంగా భద్రపరచండి", note:"ఒక్కసారి ఒక ప్రశ్న, గరిష్ఠంగా ఐదు. ఫలితాన్ని తరువాత పాస్‌పోర్ట్‌లో మార్చవచ్చు." } : { interview:"aspiration interview", title:"A short conversation about where you want to head", finish:"Finish reflection", send:"Send answer", dictate:"Dictate", unavailable:"The conversation service is unavailable. Save the same reflection locally without AI.", voice:"Voice input is not supported on this browser.", save:"Save locally", note:"One question at a time, never more than five. You can edit the result later in your Passport." };
+  const c = lang === "hi" ? { interview:"आकांक्षा संवाद", title:"आप किस दिशा में जाना चाहते हैं—उस पर एक छोटी बातचीत", finish:"चिंतन पूरा करें", send:"उत्तर भेजें", dictate:"बोलकर लिखें", unavailable:"संवाद सेवा उपलब्ध नहीं है। यही चिंतन AI के बिना स्थानीय रूप से सहेजें।", voice:"इस ब्राउज़र में वॉइस इनपुट उपलब्ध नहीं है।", save:"स्थानीय रूप से सहेजें", typesetting:"संकलन जारी", note:"एक बार में एक प्रश्न, अधिकतम पाँच। परिणाम को आप बाद में पासपोर्ट में बदल सकते हैं।" } : lang === "te" ? { interview:"ఆకాంక్షల సంభాషణ", title:"మీరు ఏ దిశలో వెళ్లాలనుకుంటున్నారో తెలిపే చిన్న సంభాషణ", finish:"ఆలోచన పూర్తి చేయండి", send:"సమాధానం పంపండి", dictate:"మాట్లాడి నమోదు చేయండి", unavailable:"సంభాషణ సేవ అందుబాటులో లేదు. ఇదే ఆలోచనను AI లేకుండా స్థానికంగా భద్రపరచండి.", voice:"ఈ బ్రౌజర్‌లో వాయిస్ ఇన్‌పుట్‌కు మద్దతు లేదు.", save:"స్థానికంగా భద్రపరచండి", typesetting:"అక్షరరూపం సిద్ధమవుతోంది", note:"ఒక్కసారి ఒక ప్రశ్న, గరిష్ఠంగా ఐదు. ఫలితాన్ని తరువాత పాస్‌పోర్ట్‌లో మార్చవచ్చు." } : { interview:"aspiration interview", title:"A short conversation about where you want to head", finish:"Finish reflection", send:"Send answer", dictate:"Dictate", unavailable:"The conversation service is unavailable. Save the same reflection locally without AI.", voice:"Voice input is not supported on this browser.", save:"Save locally", typesetting:"Typesetting", note:"One question at a time, never more than five. You can edit the result later in your Passport." };
   const [index, setIndex] = useState(0);
   const [draft, setDraft] = useState("");
   const [answers, setAnswers] = useState<string[]>([]);
@@ -116,7 +117,7 @@ export function AssessAspirationsPage() {
     else setIndex(index + 1);
   };
   return (
-    <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8">
+    <div className="assessment-page min-h-screen p-4 md:p-8">
       <GuidanceEntrance className="mx-auto max-w-3xl">
         <header className="mb-8 flex items-center gap-4 border-b-2 border-black pb-5">
           <StickFigure pose="talking" size={80} />
@@ -124,9 +125,7 @@ export function AssessAspirationsPage() {
             <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">
               CareerCase · {c.interview} · {index + 1}/5
             </div>
-            <h1 className="text-3xl font-[Playfair_Display] md:text-4xl">
-              {c.title}
-            </h1>
+            <h1><TextReveal text={c.title} /></h1>
           </div>
         </header>
         <div className="mx-auto max-w-xl border border-black/10 bg-white p-6">
@@ -178,6 +177,7 @@ export function AssessAspirationsPage() {
                 🎙 {c.dictate}
               </button>
             </div>
+            {busy && <div className="rule-top mt-5 flex items-center gap-3 py-4" role="status" aria-live="polite"><StickFigure pose="working" size={44} /><span className="font-mono-ui text-xs uppercase tracking-widest">{c.typesetting}<span className="button-loading-dots ml-2" aria-hidden="true"><i/><i/><i/></span></span></div>}
             {voiceStatus.message && <p className="mt-2 font-[Inter] text-xs text-black/55" role="status" aria-live="polite">{voiceStatus.message}</p>}
           </div>
           {error && (

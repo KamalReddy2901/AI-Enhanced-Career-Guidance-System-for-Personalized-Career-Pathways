@@ -315,6 +315,38 @@ nav a, nav button {
   to { transform: translateY(-3px); opacity: 0.45; }
 }
 
+/* Phase 4 assessment casefile rhythm. */
+.assessment-page { background: var(--paper); }
+.assessment-page header { border-color: var(--ink); }
+.assessment-page header > div > div:first-child {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: 0.18em;
+  color: var(--ink-soft);
+}
+.assessment-page h1 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(2.5rem, 7vw, 3.75rem);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+}
+.assessment-page h2 {
+  font-family: 'Playfair Display', Georgia, serif;
+  line-height: 1.2;
+}
+.assessment-page textarea {
+  border: 0;
+  border-bottom: 2px solid var(--ink);
+  background: transparent;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  outline: none;
+}
+.assessment-page textarea:focus { border-color: var(--accent-news); }
+.assessment-page [aria-label*='question aloud'],
+.assessment-page [aria-label*='choice aloud'] {
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+}
+
 /* Custom text selection — the one red accent */
 ::selection { background: var(--accent-news); color: var(--paper); }
 

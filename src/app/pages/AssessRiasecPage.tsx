@@ -20,6 +20,7 @@ import { speak } from "../utils/voice";
 import { useVoiceStatus } from "../hooks/useVoiceStatus";
 import { hapticLight, hapticSuccess } from '../utils/haptic';
 import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
+import { TextReveal } from '../motion/TextReveal';
 
 export function AssessRiasecPage() {
   const navigate = useNavigate();
@@ -103,10 +104,7 @@ export function AssessRiasecPage() {
           <span>{item.dimension} · {resultCopy.activity}</span>
         </div>
         <div className="mb-8 h-1 bg-black/10">
-          <div
-            className="h-1 bg-black transition-all"
-            style={{ width: `${((index + 1) / RIASEC_ITEMS.length) * 100}%` }}
-          />
+          <div className="h-1 origin-left bg-black transition-transform duration-300" style={{ transform: `scaleX(${(index + 1) / RIASEC_ITEMS.length})` }} />
         </div>
         <div className="mb-8 flex items-start gap-3">
           <h2 className="flex-1 text-3xl font-[Playfair_Display]">
@@ -134,7 +132,7 @@ export function AssessRiasecPage() {
                   if (index === RIASEC_ITEMS.length - 1) finish(next);
                   else setIndex(index + 1);
                 }}
-                className="min-h-16 border border-black/20 p-2 font-[Inter] text-xs transition-colors hover:bg-black hover:text-white"
+                className="card-sketch min-h-16 p-3 font-mono-ui text-xs transition-[transform,background-color,color] hover:-translate-y-0.5 hover:bg-[var(--ink)] hover:text-[var(--paper)]"
               >
                 {label}
               </button>
@@ -155,7 +153,7 @@ function AssessmentShell({
   children: ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8">
+    <div className="assessment-page min-h-screen p-4 md:p-8">
       <div className="mx-auto max-w-3xl">
         <div className="mb-8 flex items-center gap-4 border-b-2 border-black pb-5">
           <StickFigure pose={pose} size={76} />
@@ -163,9 +161,7 @@ function AssessmentShell({
             <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">
               CareerCase · assessment desk
             </div>
-            <h1 className="text-3xl font-[Playfair_Display] md:text-4xl">
-              {title}
-            </h1>
+            <h1><TextReveal text={title} /></h1>
           </div>
         </div>
         {children}

@@ -14,6 +14,8 @@ import { speak } from "../utils/voice";
 import { useVoiceStatus } from "../hooks/useVoiceStatus";
 import { hapticLight, hapticSuccess } from '../utils/haptic';
 import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
+import { TextReveal } from '../motion/TextReveal';
+import { ScoreBar } from '../components/guidance/ScoreBar';
 
 const TOTAL_SECONDS = 300;
 const FORM_STORAGE_KEY = "cc_guidance_aptitude_form";
@@ -101,22 +103,13 @@ export function AssessAptitudePage() {
 
   if (result)
     return (
-      <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8">
+      <div className="assessment-page min-h-screen p-4 md:p-8">
         <div className="max-w-3xl mx-auto">
           <Header result lang={lang} />
           <div className="max-w-xl mx-auto">
             {Object.entries(result).map(([dimension, score]) => (
               <button key={dimension} className="mb-4 block min-h-11 w-full text-left" onClick={()=>{const dimensionQuestions=questions.filter(question=>question.dimension===dimension);const correct=dimensionQuestions.filter(question=>completedAnswers[question.id]===question.answer).length;const speedBonus=Math.min(10,Math.max(0,Math.round(10*Math.max(0,TOTAL_SECONDS-elapsed)/TOTAL_SECONDS)));setWhy({title:`Why ${dimension} is ${score}`,eyebrow:"Aptitude evidence desk",summary:`This result combines ${correct} correct answers out of 6 with the same capped timing bonus used across this form.`,method:"score = round(100 × correct ÷ 6) + speed bonus; speed bonus = min(10, round(10 × time remaining ÷ 300)); result capped at 100.",items:[{label:"Accuracy contribution",value:Math.round(100*correct/6),detail:`${correct} of 6 ${dimension} items answered correctly.`},{label:"Timing bonus",value:speedBonus*10,detail:`${elapsed} seconds used across the complete 24-item form; ${speedBonus} points added, capped at 10.`}],source:`Aptitude screener form ${form+1}`})}} aria-label={`Explain ${dimension} score ${score}`}>
-                <div className="flex justify-between font-[JetBrains_Mono] text-xs uppercase">
-                  <span>{dimension}</span>
-                  <span>{score}</span>
-                </div>
-                <div className="h-3 bg-black/10">
-                  <div
-                    className="h-3 bg-black"
-                    style={{ width: `${score}%` }}
-                  />
-                </div>
+                <ScoreBar label={dimension} value={score} />
                 <div className="mt-1 font-[Inter] text-[10px] underline">{explainLabel}</div>
               </button>
             ))}
@@ -138,7 +131,7 @@ export function AssessAptitudePage() {
   const question = questions[index];
   const localized = aptitudeItemText(lang, question);
   return (
-    <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8">
+    <div className="assessment-page min-h-screen p-4 md:p-8">
       <div className="max-w-3xl mx-auto">
         <Header lang={lang} />
         <GuidanceEntrance className="max-w-xl mx-auto">
@@ -152,10 +145,7 @@ export function AssessAptitudePage() {
             </span>
           </div>
           <div className="h-1 bg-black/10 mb-8">
-            <div
-              className="h-1 bg-black"
-              style={{ width: `${((index + 1) / questions.length) * 100}%` }}
-            />
+            <div className="h-1 origin-left bg-black transition-transform duration-300" style={{ transform: `scaleX(${(index + 1) / questions.length})` }} />
           </div>
           {question.dimension === "spatial" && <SpatialSketch id={question.id} />}
           <div className="mb-6 flex items-start gap-3"><h2 className="flex-1 text-2xl font-[Playfair_Display]">{localized.prompt}</h2><button onClick={()=>speak(`${localized.prompt}. ${localized.options.join(". ")}`,locale)} className="min-h-11 min-w-11 border border-black/20" aria-label="Read question aloud">🔊</button></div>
@@ -165,7 +155,7 @@ export function AssessAptitudePage() {
               <button
                 key={option}
                 onClick={() => answer(optionIndex)}
-                className="w-full min-h-12 border border-black/20 bg-white p-3 text-left font-[Inter] hover:bg-black hover:text-white transition-colors"
+                className="card-sketch min-h-14 w-full p-4 text-left transition-[transform,background-color,color] hover:-translate-y-0.5 hover:bg-[var(--ink)] hover:text-[var(--paper)]"
               >
                 {String.fromCharCode(65 + optionIndex)}. {option}
               </button>
@@ -185,9 +175,7 @@ function Header({ result = false, lang }: { result?: boolean; lang: "en" | "hi" 
         <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">
           CareerCase · {lang === "hi" ? "पाँच मिनट की जाँच" : lang === "te" ? "ఐదు నిమిషాల పరీక్ష" : "five-minute screener"}
         </div>
-        <h1 className="text-3xl md:text-4xl font-[Playfair_Display]">
-          {result ? (lang === "hi" ? "योग्यता की झलक" : lang === "te" ? "సామర్థ్య సంక్షిప్త చిత్రం" : "Aptitude snapshot") : (lang === "hi" ? "संकेतों पर काम करें" : lang === "te" ? "సంకేతాలను పూర్తి చేయండి" : "Work through the signal")}
-        </h1>
+        <h1><TextReveal text={result ? (lang === "hi" ? "योग्यता की झलक" : lang === "te" ? "సామర్థ్య సంక్షిప్త చిత్రం" : "Aptitude snapshot") : (lang === "hi" ? "संकेतों पर काम करें" : lang === "te" ? "సంకేతాలను పూర్తి చేయండి" : "Work through the signal")} /></h1>
       </div>
     </header>
   );

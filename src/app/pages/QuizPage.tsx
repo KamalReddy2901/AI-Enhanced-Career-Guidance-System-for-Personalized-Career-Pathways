@@ -162,7 +162,7 @@ export function QuizPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pt-20 pb-16">
+    <div className="assessment-page min-h-screen bg-[var(--paper)] pb-16 pt-20">
       <div className="max-w-2xl mx-auto px-6">
         {/* Back */}
         <motion.button

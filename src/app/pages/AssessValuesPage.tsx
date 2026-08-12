@@ -14,6 +14,8 @@ import { WhyPanel, type ScoreEvidence } from "../components/guidance/WhyPanel";
 import { useVoiceStatus } from "../hooks/useVoiceStatus";
 import { hapticLight, hapticSuccess } from '../utils/haptic';
 import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
+import { TextReveal } from '../motion/TextReveal';
+import { ScoreBar } from '../components/guidance/ScoreBar';
 export function AssessValuesPage() {
   const navigate = useNavigate();
   const { passport, updatePassport } = useGuidance();
@@ -50,7 +52,7 @@ export function AssessValuesPage() {
     }
   };
   return (
-    <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8">
+    <div className="assessment-page min-h-screen p-4 md:p-8">
       <GuidanceEntrance className="max-w-3xl mx-auto">
         <div className="flex items-center gap-4 border-b-2 border-black pb-5 mb-8">
           <StickFigure pose={result ? "celebrating" : "thinking"} size={76} />
@@ -58,9 +60,7 @@ export function AssessValuesPage() {
             <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">
               CareerCase · {c.desk}
             </div>
-            <h1 className="text-3xl md:text-4xl font-[Playfair_Display]">
-              {result ? c.result : c.question}
-            </h1>
+            <h1><TextReveal text={result ? c.result : c.question} /></h1>
           </div>
         </div>
         {voiceStatus.message && <p className="mb-3 font-[Inter] text-xs text-black/55" role="status" aria-live="polite">{voiceStatus.message}</p>}
@@ -71,16 +71,7 @@ export function AssessValuesPage() {
                 .sort(([, a], [, b]) => b - a)
                 .map(([key, value]) => (
                   <button key={key} className="block min-h-11 w-full text-left" onClick={()=>{const selected=VALUE_CHOICES.filter(choice=>choice[answers[choice.id]??"left"].dimension===key);setWhy({title:`Why ${key} is ${value}`,eyebrow:"Work-values evidence desk",summary:`You selected ${selected.length} choices associated with ${key} across 15 forced-choice pairs.`,method:"Each selected side adds one count to its value dimension. Counts are divided by all 15 choices and normalized so the six displayed dimensions sum to exactly 100.",items:selected.map((choice,index)=>({label:`Selected evidence ${index+1}`,detail:choice[answers[choice.id]??"left"].label})),source:"15-pair deterministic work-values sorter"})}} aria-label={`Explain ${key} score ${value}`}>
-                    <div className="flex justify-between font-[JetBrains_Mono] text-xs uppercase">
-                      <span>{key}</span>
-                      <span>{value}</span>
-                    </div>
-                    <div className="h-2 bg-black/10">
-                      <div
-                        className="h-2 bg-black"
-                        style={{ width: `${value}%` }}
-                      />
-                    </div>
+                    <ScoreBar label={key} value={value} />
                     <div className="mt-1 font-[Inter] text-[10px] underline">Why this score?</div>
                   </button>
                 ))}
@@ -101,12 +92,13 @@ export function AssessValuesPage() {
             <div className="font-[JetBrains_Mono] text-xs mb-4">
               {i + 1} / {VALUE_CHOICES.length} · {c.choose}
             </div>
+            <div className="mb-8 h-1 bg-[var(--ink)]/15"><div className="h-full origin-left bg-[var(--ink)] transition-transform duration-300" style={{transform:`scaleX(${(i+1)/VALUE_CHOICES.length})`}} /></div>
             <div className="grid md:grid-cols-2 gap-4">
               {(["left", "right"] as const).map((side) => (
                 <button
                   key={side}
                   onClick={() => choose(side)}
-                  className="min-h-36 border-2 border-black/15 bg-white p-6 text-left hover:border-black transition-colors"
+                  className="card-sketch min-h-36 p-6 text-left transition-[transform,background-color,color] hover:-translate-y-0.5 hover:bg-[var(--ink)] hover:text-[var(--paper)]"
                 >
                   <span className="font-[JetBrains_Mono] text-xs uppercase text-black/40">
                     {side}
