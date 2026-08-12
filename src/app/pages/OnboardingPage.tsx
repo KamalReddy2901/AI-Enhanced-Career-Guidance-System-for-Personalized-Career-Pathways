@@ -89,6 +89,21 @@ export function OnboardingPage() {
     newPassport.completeness = calculateCompleteness(newPassport);
     
     updatePassport(() => newPassport);
+    
+    // Log consents if user is signed in
+    if (user?.id) {
+      import('../services/guidanceDb').then(({ logConsent }) => {
+        logConsent(user.id, 'data_processing', dataConsentGiven);
+        if (isMinor && guardianConfirmed) {
+          logConsent(user.id, 'guardian', true, {
+            guardianName,
+            guardianEmail,
+            method: 'manual_confirmation',
+          });
+        }
+      });
+    }
+    
     sounds.success();
     haptic.medium();
     
