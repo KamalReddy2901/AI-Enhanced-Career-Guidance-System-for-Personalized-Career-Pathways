@@ -204,7 +204,7 @@ export function PathwayPage() {
           {richVisuals && <div className="pointer-events-auto absolute inset-x-0 top-0 z-0 h-[40%] opacity-60" aria-hidden="true"><Suspense fallback={null}><PathwayLineScene labels={route.steps.map(step => localizedStep(step, lang))}/></Suspense></div>}
           <StickFigure pose="climbing" size={92} />
           <div className="relative z-10">
-            <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">
+            <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-[var(--ink-soft)]">
               NCO {occupation.ncoCode} · NSQF {occupation.nsqfEntryLevel} ·{" "}
               {market?.observedPeriod}
             </div>
@@ -224,9 +224,9 @@ export function PathwayPage() {
             <div className="mt-4 divide-y divide-black/15 border-y border-black/15">
               {[...plan.gapReport.gaps].sort((a,b)=>b.severity-a.severity).slice(0, 8).map((gap) => (
                 <button key={gap.skillId} data-testid={`pathway-gap-${gap.skillId}`} className="block min-h-11 w-full py-5 text-left" onClick={()=>setWhy({title:`Why the ${skillName(gap.skillId)} gap is ${gap.severity}`,eyebrow:"Skill-gap evidence desk",summary:`This gap compares your current proficiency ${gap.current}/4 with the role requirement ${gap.required}/4, then adjusts for requirement importance and evidence confidence.`,method:"severity = (required − current) ÷ 4 × importance × (2 − claim confidence), normalized over the occupation requirement set.",items:[{label:"Current proficiency",value:gap.current*25,detail:`Current Career Passport level: ${gap.current}/4.`},{label:"Required proficiency",value:gap.required*25,detail:`Curated requirement for ${occupation.title}: ${gap.required}/4.`},{label:"Requirement importance",value:gap.importance*100,detail:"Importance comes from the versioned occupation knowledge base."},{label:"Evidence confidence",value:gap.confidence*100,detail:"Accumulated from the evidence ledger; weaker evidence increases uncertainty."}],source:`KB kb-2026.06.1 · ${occupation.ncoCode}`})} aria-label={`Explain ${skillName(gap.skillId)} gap score ${gap.severity}`}>
-                  <div className="flex items-baseline justify-between gap-4"><span className="font-display text-lg">{skillName(gap.skillId)}</span><span className="font-mono-ui text-sm text-[var(--accent-news)]">−{Math.max(0,gap.required-gap.current)}</span></div>
+                  <div className="flex items-baseline justify-between gap-4"><span className="font-display text-lg">{skillName(gap.skillId)}</span><span className="font-mono-ui text-xl font-bold text-[var(--accent-news)]">−{Math.max(0,gap.required-gap.current)}</span></div>
                   <div className="mt-3 grid gap-2 font-mono-ui text-[10px] uppercase"><div className="grid grid-cols-[5rem_1fr_auto] items-center gap-2"><span>Required</span><div className="h-2 border border-black"><div className="h-full border-r border-black" style={{width:`${gap.required*25}%`}}/></div><span>{gap.required}/4</span></div><div className="grid grid-cols-[5rem_1fr_auto] items-center gap-2"><span>Current</span><div className="h-2 border border-black"><motion.div className="h-full origin-left bg-black" initial={{scaleX:reducedMotion?1:0}} whileInView={{scaleX:1}} viewport={{once:true}} style={{width:`${gap.current*25}%`}}/></div><span>{gap.current}/4</span></div></div>
-                  <p className="mt-2 font-[Inter] text-xs text-black/50">{c.evidence} {Math.round(gap.confidence * 100)}% · <span className="underline">{c.whyGap}</span></p>
+                  <p className="mt-2 font-[Inter] text-xs text-[var(--ink-soft)]">{c.evidence} {Math.round(gap.confidence * 100)}% · <span className="underline">{c.whyGap}</span></p>
                 </button>
               ))}
             </div>
@@ -344,7 +344,7 @@ export function PathwayPage() {
                   <div className="font-[Inter] text-sm font-semibold">
                     {localizedStep(step, lang)}
                   </div>
-                  <div className="font-[JetBrains_Mono] text-[10px] uppercase text-black/50">
+                  <div className="font-[JetBrains_Mono] text-[10px] uppercase text-[var(--ink-soft)]">
                     {localizedStepKind(step.kind, lang)} · {step.estMonths} {c.months}
                   </div>
                   {step.refId && qualificationById.has(step.refId) && (
@@ -365,7 +365,7 @@ export function PathwayPage() {
           </div>
         </section>
         {routeComplete && <section className="mt-6 flex items-center gap-4 border-2 border-black bg-white p-5"><StickFigure pose="celebrating" size={72}/><div><h2 className="text-2xl font-[Playfair_Display]">{c.complete}</h2><p className="mt-1 font-[Inter] text-sm text-black/60">{c.completeNote}</p><Link to={`/interview-prep?job=${encodeURIComponent(occupation.title)}`} className="mt-3 inline-block min-h-11 bg-black px-4 py-3 font-[Inter] text-sm text-white">{c.interview} →</Link></div></section>}
-        <p className="mt-6 font-[JetBrains_Mono] text-[10px] uppercase text-black/45">
+        <p className="mt-6 font-[JetBrains_Mono] text-[10px] uppercase text-[var(--ink-soft)]">
           {c.footer} · KB kb-2026.06.1 · profile v{passport.version}
         </p>
         <Link

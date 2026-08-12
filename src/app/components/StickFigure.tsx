@@ -43,7 +43,7 @@ export function StickFigure({ pose, size = 120, className = '', animate = true, 
 // Shared ground shadow that pulses gently
 function GroundShadow({ cx = 60, cy = 110 }: { cx?: number; cy?: number }) {
   return (
-    <motion.ellipse
+    <motion.ellipse initial={false}
       cx={cx}
       cy={cy}
       rx={18}
@@ -61,7 +61,7 @@ function BreathingTorso({
   x1, y1, x2, y2, stroke, strokeWidth,
 }: { x1: number; y1: number; x2: number; y2: number; stroke: string; strokeWidth: number }) {
   return (
-    <motion.line
+    <motion.line initial={false}
       x1={x1} y1={y1} x2={x2} y2={y2}
       stroke={stroke}
       strokeWidth={strokeWidth}
@@ -79,22 +79,22 @@ function renderPose(pose: StickFigurePose) {
   switch (pose) {
 
     case 'pointing':
-      return <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><GroundShadow/><circle cx="52" cy="23" r="10"/><BreathingTorso x1={52} y1={33} x2={52} y2={70} stroke={s} strokeWidth={sw}/><line x1="52" y1="46" x2="31" y2="62"/><motion.line x1="52" y1="45" x2="92" y2="36" animate={{x2:[90,94,90]}} transition={{repeat:Infinity,duration:2}}/><line x1="52" y1="70" x2="40" y2="101"/><line x1="52" y1="70" x2="67" y2="101"/><path d="M92 36l-7-4m7 4-5 7"/></g>;
+      return <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><GroundShadow/><circle cx="52" cy="23" r="10"/><BreathingTorso x1={52} y1={33} x2={52} y2={70} stroke={s} strokeWidth={sw}/><line x1="52" y1="46" x2="31" y2="62"/><motion.line initial={false} x1="52" y1="45" x2="92" y2="36" animate={{x2:[90,94,90]}} transition={{repeat:Infinity,duration:2}}/><line x1="52" y1="70" x2="40" y2="101"/><line x1="52" y1="70" x2="67" y2="101"/><path d="M92 36l-7-4m7 4-5 7"/></g>;
 
     case 'climbing':
-      return <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M78 105V25M104 105V25M78 40h26M78 58h26M78 76h26M78 94h26" opacity=".45"/><circle cx="54" cy="33" r="9"/><line x1="54" y1="42" x2="61" y2="70"/><motion.line x1="59" y1="50" x2="82" y2="42" animate={{y2:[42,39,42]}} transition={{repeat:Infinity,duration:2}}/><line x1="58" y1="51" x2="40" y2="60"/><motion.line x1="61" y1="70" x2="82" y2="78" animate={{y2:[78,74,78]}} transition={{repeat:Infinity,duration:2}}/><line x1="61" y1="70" x2="46" y2="96"/></g>;
+      return <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M78 105V25M104 105V25M78 40h26M78 58h26M78 76h26M78 94h26" opacity=".45"/><circle cx="54" cy="33" r="9"/><line x1="54" y1="42" x2="61" y2="70"/><motion.line initial={false} x1="59" y1="50" x2="82" y2="42" animate={{y2:[42,39,42]}} transition={{repeat:Infinity,duration:2}}/><line x1="58" y1="51" x2="40" y2="60"/><motion.line initial={false} x1="61" y1="70" x2="82" y2="78" animate={{y2:[78,74,78]}} transition={{repeat:Infinity,duration:2}}/><line x1="61" y1="70" x2="46" y2="96"/></g>;
 
     case 'mapping':
       return <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><GroundShadow/><circle cx="60" cy="22" r="10"/><line x1="60" y1="32" x2="60" y2="65"/><line x1="60" y1="65" x2="48" y2="99"/><line x1="60" y1="65" x2="73" y2="99"/><motion.path d="M22 50l24-7 27 7 25-8v28l-25 8-27-7-24 7zM46 43v28M73 50v28" fill="#f9f8f7" animate={{rotate:[-1,1,-1]}} transition={{repeat:Infinity,duration:3}}/><line x1="60" y1="45" x2="44" y2="54"/><line x1="60" y1="45" x2="76" y2="55"/></g>;
 
     case 'graduating':
-      return <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><GroundShadow/><circle cx="60" cy="30" r="10"/><path d="M43 19l17-8 18 8-18 8zM74 21v12"/><line x1="60" y1="40" x2="60" y2="72"/><motion.line x1="60" y1="49" x2="36" y2="34" animate={{y2:[34,29,34]}} transition={{repeat:Infinity,duration:2}}/><motion.line x1="60" y1="49" x2="84" y2="34" animate={{y2:[34,29,34]}} transition={{repeat:Infinity,duration:2}}/><line x1="60" y1="72" x2="47" y2="102"/><line x1="60" y1="72" x2="74" y2="102"/><motion.path d="M91 21l9-7 7 7-9 7z" animate={{y:[0,-6,0],rotate:[0,12,0]}} transition={{repeat:Infinity,duration:2}}/></g>;
+      return <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><GroundShadow/><circle cx="60" cy="30" r="10"/><path d="M43 19l17-8 18 8-18 8zM74 21v12"/><line x1="60" y1="40" x2="60" y2="72"/><motion.line initial={false} x1="60" y1="49" x2="36" y2="34" animate={{y2:[34,29,34]}} transition={{repeat:Infinity,duration:2}}/><motion.line initial={false} x1="60" y1="49" x2="84" y2="34" animate={{y2:[34,29,34]}} transition={{repeat:Infinity,duration:2}}/><line x1="60" y1="72" x2="47" y2="102"/><line x1="60" y1="72" x2="74" y2="102"/><motion.path d="M91 21l9-7 7 7-9 7z" animate={{y:[0,-6,0],rotate:[0,12,0]}} transition={{repeat:Infinity,duration:2}}/></g>;
 
     case 'standing':
       return (
         <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
           <GroundShadow />
-          <motion.circle
+          <motion.circle initial={false}
             cx="60" cy="22" r="10"
             animate={{ cy: [22, 21.5, 22] }}
             transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
@@ -115,10 +115,10 @@ function renderPose(pose: StickFigurePose) {
           <line x1="105" y1="73" x2="105" y2="105" />
           <circle cx="45" cy="42" r="10" />
           <line x1="45" y1="52" x2="55" y2="65" />
-          <motion.line x1="45" y1="55" x2="28" y2="36"
+          <motion.line initial={false} x1="45" y1="55" x2="28" y2="36"
             animate={{ x2: [28, 23, 28], y2: [36, 31, 36] }}
             transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut' }} />
-          <motion.line x1="45" y1="55" x2="62" y2="36"
+          <motion.line initial={false} x1="45" y1="55" x2="62" y2="36"
             animate={{ x2: [62, 67, 62], y2: [36, 31, 36] }}
             transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut', delay: 0.1 }} />
           <line x1="55" y1="65" x2="75" y2="65" />
@@ -139,33 +139,33 @@ function renderPose(pose: StickFigurePose) {
       return (
         <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
           <GroundShadow />
-          <motion.circle cx="60" cy="22" r="10"
+          <motion.circle initial={false} cx="60" cy="22" r="10"
             animate={{ cx: [60, 60.5, 60] }}
             transition={{ repeat: Infinity, duration: 0.8 }} />
           <line x1="60" y1="32" x2="60" y2="70" />
-          <motion.line x1="60" y1="45" x2="42" y2="60"
+          <motion.line initial={false} x1="60" y1="45" x2="42" y2="60"
             animate={{ x2: [42, 50, 42], y2: [60, 52, 60] }}
             transition={{ repeat: Infinity, duration: 0.8 }} />
-          <motion.line x1="60" y1="45" x2="78" y2="52"
+          <motion.line initial={false} x1="60" y1="45" x2="78" y2="52"
             animate={{ x2: [78, 70, 78], y2: [52, 60, 52] }}
             transition={{ repeat: Infinity, duration: 0.8 }} />
-          <motion.line x1="60" y1="70" x2="42" y2="100"
+          <motion.line initial={false} x1="60" y1="70" x2="42" y2="100"
             animate={{ x2: [42, 52, 42] }}
             transition={{ repeat: Infinity, duration: 0.8 }} />
-          <motion.line x1="60" y1="70" x2="78" y2="100"
+          <motion.line initial={false} x1="60" y1="70" x2="78" y2="100"
             animate={{ x2: [78, 68, 78] }}
             transition={{ repeat: Infinity, duration: 0.8 }} />
           <rect x="78" y="50" width="12" height="10" rx="2" fill="none" />
           <line x1="82" y1="50" x2="82" y2="48" />
           <line x1="86" y1="50" x2="86" y2="48" />
           <line x1="82" y1="48" x2="86" y2="48" />
-          <motion.circle cx="22" cy="104" r="1.5" fill={s}
+          <motion.circle initial={false} cx="22" cy="104" r="1.5" fill={s}
             animate={{ opacity: [0.4, 0, 0.4] }}
             transition={{ repeat: Infinity, duration: 1.6, delay: 0 }} />
-          <motion.circle cx="30" cy="106" r="1.5" fill={s}
+          <motion.circle initial={false} cx="30" cy="106" r="1.5" fill={s}
             animate={{ opacity: [0, 0.4, 0] }}
             transition={{ repeat: Infinity, duration: 1.6, delay: 0.4 }} />
-          <motion.circle cx="38" cy="104" r="1.5" fill={s}
+          <motion.circle initial={false} cx="38" cy="104" r="1.5" fill={s}
             animate={{ opacity: [0.4, 0, 0.4] }}
             transition={{ repeat: Infinity, duration: 1.6, delay: 0.8 }} />
         </g>
@@ -193,11 +193,11 @@ function renderPose(pose: StickFigurePose) {
       return (
         <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
           <GroundShadow cx={35} cy={110} />
-          <motion.circle cx="35" cy="25" r="10"
+          <motion.circle initial={false} cx="35" cy="25" r="10"
             animate={{ cy: [25, 24.5, 25] }}
             transition={{ repeat: Infinity, duration: 3.5, ease: 'easeInOut' }} />
           <line x1="35" y1="35" x2="35" y2="70" />
-          <motion.line x1="35" y1="48" x2="55" y2="30"
+          <motion.line initial={false} x1="35" y1="48" x2="55" y2="30"
             animate={{ x2: [55, 59, 55], y2: [30, 27, 30] }}
             transition={{ repeat: Infinity, duration: 2 }} />
           <line x1="35" y1="48" x2="18" y2="57" />
@@ -208,7 +208,7 @@ function renderPose(pose: StickFigurePose) {
           <line x1="62" y1="30" x2="98" y2="30" strokeWidth={1.5} />
           <line x1="62" y1="38" x2="90" y2="38" strokeWidth={1.5} />
           <line x1="62" y1="46" x2="95" y2="46" strokeWidth={1.5} />
-          <motion.circle cx="62" cy="22" r="2" fill={s}
+          <motion.circle initial={false} cx="62" cy="22" r="2" fill={s}
             animate={{ cx: [62, 92, 62] }}
             transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }} />
           <circle cx="14" cy="95" r="3" fill="none" />
@@ -221,29 +221,29 @@ function renderPose(pose: StickFigurePose) {
       return (
         <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
           <GroundShadow />
-          <motion.circle cx="60" cy="28" r="10"
+          <motion.circle initial={false} cx="60" cy="28" r="10"
             animate={{ cy: [28, 27.5, 28] }}
             transition={{ repeat: Infinity, duration: 3.5, ease: 'easeInOut' }} />
           <BreathingTorso x1={60} y1={38} x2={60} y2={72} stroke={s} strokeWidth={sw} />
           <line x1="60" y1="50" x2="48" y2="62" />
-          <motion.line x1="60" y1="50" x2="68" y2="32"
+          <motion.line initial={false} x1="60" y1="50" x2="68" y2="32"
             animate={{ y2: [32, 29, 32] }}
             transition={{ repeat: Infinity, duration: 2.5 }} />
           <line x1="60" y1="72" x2="48" y2="100" />
           <line x1="60" y1="72" x2="72" y2="100" />
-          <motion.circle cx="78" cy="18" r="2" fill={s}
+          <motion.circle initial={false} cx="78" cy="18" r="2" fill={s}
             animate={{ cy: [18, 14, 18], opacity: [0.6, 0.2, 0.6] }}
             transition={{ repeat: Infinity, duration: 2.5 }} />
-          <motion.circle cx="84" cy="11" r="3" fill={s}
+          <motion.circle initial={false} cx="84" cy="11" r="3" fill={s}
             animate={{ cy: [11, 7, 11], opacity: [0.4, 0.8, 0.4] }}
             transition={{ repeat: Infinity, duration: 2.5, delay: 0.3 }} />
-          <motion.ellipse cx="97" cy="9" rx="14" ry="9" fill="none"
+          <motion.ellipse initial={false} cx="97" cy="9" rx="14" ry="9" fill="none"
             animate={{ y: [0, -3, 0], opacity: [0.7, 1, 0.7] }}
             transition={{ repeat: Infinity, duration: 2.5, delay: 0.6 }} />
           <motion.g animate={{ y: [0, -3, 0] }} transition={{ repeat: Infinity, duration: 2.5, delay: 0.6 }}>
             <text x="89" y="13" fontSize="9" fill={s} strokeWidth={0}>?</text>
           </motion.g>
-          <motion.circle cx="72" cy="14" r="1.5" fill={s}
+          <motion.circle initial={false} cx="72" cy="14" r="1.5" fill={s}
             animate={{ opacity: [0, 0.5, 0] }}
             transition={{ repeat: Infinity, duration: 3.5, delay: 1.2 }} />
         </g>
@@ -252,14 +252,14 @@ function renderPose(pose: StickFigurePose) {
     case 'working':
       return (
         <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
-          <motion.circle cx="50" cy="22" r="10"
+          <motion.circle initial={false} cx="50" cy="22" r="10"
             animate={{ cy: [22, 21.5, 22] }}
             transition={{ repeat: Infinity, duration: 3.5, ease: 'easeInOut' }} />
           <line x1="50" y1="32" x2="50" y2="62" />
-          <motion.line x1="50" y1="48" x2="35" y2="60"
+          <motion.line initial={false} x1="50" y1="48" x2="35" y2="60"
             animate={{ y2: [60, 57, 60] }}
             transition={{ repeat: Infinity, duration: 0.45 }} />
-          <motion.line x1="50" y1="48" x2="65" y2="60"
+          <motion.line initial={false} x1="50" y1="48" x2="65" y2="60"
             animate={{ y2: [57, 60, 57] }}
             transition={{ repeat: Infinity, duration: 0.45 }} />
           <line x1="50" y1="62" x2="38" y2="78" />
@@ -293,7 +293,7 @@ function renderPose(pose: StickFigurePose) {
           <GroundShadow cx={85} cy={108} />
           <circle cx="35" cy="25" r="10" />
           <line x1="35" y1="35" x2="35" y2="68" />
-          <motion.line x1="35" y1="48" x2="50" y2="40"
+          <motion.line initial={false} x1="35" y1="48" x2="50" y2="40"
             animate={{ y2: [40, 37, 40] }}
             transition={{ repeat: Infinity, duration: 1.5 }} />
           <line x1="35" y1="48" x2="20" y2="57" />
@@ -302,7 +302,7 @@ function renderPose(pose: StickFigurePose) {
           <circle cx="85" cy="25" r="10" />
           <line x1="85" y1="35" x2="85" y2="68" />
           <line x1="85" y1="48" x2="70" y2="42" />
-          <motion.line x1="85" y1="48" x2="100" y2="57"
+          <motion.line initial={false} x1="85" y1="48" x2="100" y2="57"
             animate={{ y2: [57, 54, 57] }}
             transition={{ repeat: Infinity, duration: 1.5 }} />
           <line x1="85" y1="68" x2="75" y2="100" />
@@ -320,7 +320,7 @@ function renderPose(pose: StickFigurePose) {
         <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
           <circle cx="50" cy="22" r="10" />
           <line x1="50" y1="32" x2="50" y2="62" />
-          <motion.line x1="50" y1="48" x2="58" y2="27"
+          <motion.line initial={false} x1="50" y1="48" x2="58" y2="27"
             animate={{ y2: [27, 30, 27] }}
             transition={{ repeat: Infinity, duration: 1.8 }} />
           <line x1="50" y1="48" x2="35" y2="57" />
@@ -349,14 +349,14 @@ function renderPose(pose: StickFigurePose) {
       return (
         <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
           <GroundShadow />
-          <motion.circle cx="60" cy="22" r="10"
+          <motion.circle initial={false} cx="60" cy="22" r="10"
             animate={{ cy: [22, 19, 22] }}
             transition={{ repeat: Infinity, duration: 0.8 }} />
           <line x1="60" y1="32" x2="60" y2="68" />
-          <motion.line x1="60" y1="45" x2="35" y2="18"
+          <motion.line initial={false} x1="60" y1="45" x2="35" y2="18"
             animate={{ x2: [35, 31, 35], y2: [18, 13, 18] }}
             transition={{ repeat: Infinity, duration: 0.8 }} />
-          <motion.line x1="60" y1="45" x2="85" y2="18"
+          <motion.line initial={false} x1="60" y1="45" x2="85" y2="18"
             animate={{ x2: [85, 89, 85], y2: [18, 13, 18] }}
             transition={{ repeat: Infinity, duration: 0.8, delay: 0.1 }} />
           <line x1="60" y1="68" x2="42" y2="100" />
@@ -370,7 +370,7 @@ function renderPose(pose: StickFigurePose) {
             { cx: 15, cy: 18, r: 1.5, delay: 0.3, dur: 1.6 },
             { cx: 105, cy: 16, r: 2, delay: 0.9, dur: 1.4 },
           ].map((c, i) => (
-            <motion.circle key={i} cx={c.cx} cy={c.cy} r={c.r} fill={s} opacity={0.6}
+            <motion.circle initial={false} key={i} cx={c.cx} cy={c.cy} r={c.r} fill={s} opacity={0.6}
               animate={{ y: [0, 10, 0], opacity: [0.6, 0.15, 0.6] }}
               transition={{ repeat: Infinity, duration: c.dur, delay: c.delay }} />
           ))}
@@ -414,20 +414,20 @@ function renderPose(pose: StickFigurePose) {
         <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
           <GroundShadow cx={60} cy={108} />
           <motion.g animate={{ x: [0, 2, 0] }} transition={{ repeat: Infinity, duration: 0.35 }}>
-            <motion.circle cx="55" cy="20" r="10"
+            <motion.circle initial={false} cx="55" cy="20" r="10"
               animate={{ cy: [20, 18, 20] }}
               transition={{ repeat: Infinity, duration: 0.35 }} />
             <line x1="55" y1="30" x2="60" y2="62" />
-            <motion.line x1="58" y1="42" x2="40" y2="30"
+            <motion.line initial={false} x1="58" y1="42" x2="40" y2="30"
               animate={{ x2: [40, 48, 40], y2: [30, 38, 30] }}
               transition={{ repeat: Infinity, duration: 0.35 }} />
-            <motion.line x1="58" y1="42" x2="77" y2="38"
+            <motion.line initial={false} x1="58" y1="42" x2="77" y2="38"
               animate={{ x2: [77, 68, 77], y2: [38, 30, 38] }}
               transition={{ repeat: Infinity, duration: 0.35 }} />
-            <motion.line x1="60" y1="62" x2="37" y2="92"
+            <motion.line initial={false} x1="60" y1="62" x2="37" y2="92"
               animate={{ x2: [37, 55, 37] }}
               transition={{ repeat: Infinity, duration: 0.35 }} />
-            <motion.line x1="60" y1="62" x2="82" y2="92"
+            <motion.line initial={false} x1="60" y1="62" x2="82" y2="92"
               animate={{ x2: [82, 62, 82] }}
               transition={{ repeat: Infinity, duration: 0.35 }} />
           </motion.g>
@@ -445,7 +445,7 @@ function renderPose(pose: StickFigurePose) {
       return (
         <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
           <GroundShadow />
-          <motion.circle cx="60" cy="22" r="10"
+          <motion.circle initial={false} cx="60" cy="22" r="10"
             animate={{ cy: [22, 23, 22] }}
             transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }} />
           <BreathingTorso x1={60} y1={32} x2={60} y2={70} stroke={s} strokeWidth={sw} />
@@ -475,7 +475,7 @@ function renderPose(pose: StickFigurePose) {
           <circle cx="50" cy="30" r="10" />
           <line x1="50" y1="40" x2="50" y2="72" />
           <line x1="50" y1="52" x2="35" y2="62" />
-          <motion.line x1="50" y1="52" x2="72" y2="37"
+          <motion.line initial={false} x1="50" y1="52" x2="72" y2="37"
             animate={{ x2: [72, 79, 72], y2: [37, 33, 37] }}
             transition={{ repeat: Infinity, duration: 2 }} />
           <line x1="50" y1="72" x2="38" y2="100" />
@@ -485,10 +485,10 @@ function renderPose(pose: StickFigurePose) {
             <circle cx="82" cy="24" r="13" fill="none" strokeWidth={2.5} />
             <line x1="92" y1="33" x2="102" y2="43" strokeWidth={3} />
           </motion.g>
-          <motion.circle cx="82" cy="24" r="16" fill="none" strokeWidth={0.8}
+          <motion.circle initial={false} cx="82" cy="24" r="16" fill="none" strokeWidth={0.8}
             animate={{ r: [16, 24, 16], opacity: [0.3, 0, 0.3] }}
             transition={{ repeat: Infinity, duration: 2 }} />
-          <motion.circle cx="82" cy="24" r="20" fill="none" strokeWidth={0.6}
+          <motion.circle initial={false} cx="82" cy="24" r="20" fill="none" strokeWidth={0.6}
             animate={{ r: [20, 30, 20], opacity: [0.15, 0, 0.15] }}
             transition={{ repeat: Infinity, duration: 2, delay: 0.5 }} />
         </g>
@@ -498,11 +498,11 @@ function renderPose(pose: StickFigurePose) {
       return (
         <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
           <GroundShadow />
-          <motion.circle cx="60" cy="22" r="10"
+          <motion.circle initial={false} cx="60" cy="22" r="10"
             animate={{ cy: [22, 21, 22] }}
             transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }} />
           <BreathingTorso x1={60} y1={32} x2={60} y2={70} stroke={s} strokeWidth={sw} />
-          <motion.line x1="60" y1="45" x2="82" y2="22"
+          <motion.line initial={false} x1="60" y1="45" x2="82" y2="22"
             animate={{ x2: [82, 86, 82], y2: [22, 17, 22] }}
             transition={{ repeat: Infinity, duration: 0.55 }} />
           <line x1="60" y1="45" x2="40" y2="60" />
@@ -525,14 +525,14 @@ function renderPose(pose: StickFigurePose) {
     case 'coding':
       return (
         <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
-          <motion.circle cx="50" cy="20" r="10"
+          <motion.circle initial={false} cx="50" cy="20" r="10"
             animate={{ cy: [20, 19.5, 20] }}
             transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }} />
           <line x1="50" y1="30" x2="52" y2="62" />
-          <motion.line x1="51" y1="46" x2="33" y2="58"
+          <motion.line initial={false} x1="51" y1="46" x2="33" y2="58"
             animate={{ y2: [58, 55, 58] }}
             transition={{ repeat: Infinity, duration: 0.4 }} />
-          <motion.line x1="51" y1="46" x2="67" y2="58"
+          <motion.line initial={false} x1="51" y1="46" x2="67" y2="58"
             animate={{ y2: [55, 58, 55] }}
             transition={{ repeat: Infinity, duration: 0.4 }} />
           <line x1="52" y1="62" x2="40" y2="78" />
@@ -550,7 +550,7 @@ function renderPose(pose: StickFigurePose) {
             <line x1="72" y1="42" x2="90" y2="42" strokeWidth={1} />
             <line x1="72" y1="46" x2="82" y2="46" strokeWidth={1} />
           </motion.g>
-          <motion.line x1="84" y1="46" x2="84" y2="48" strokeWidth={1.5}
+          <motion.line initial={false} x1="84" y1="46" x2="84" y2="48" strokeWidth={1.5}
             animate={{ opacity: [1, 0, 1] }}
             transition={{ repeat: Infinity, duration: 0.8 }} />
           <motion.text x="66" y="26" fontSize="6" fill={s} strokeWidth={0}
@@ -566,11 +566,11 @@ function renderPose(pose: StickFigurePose) {
       return (
         <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
           <GroundShadow />
-          <motion.circle cx="60" cy="22" r="10"
+          <motion.circle initial={false} cx="60" cy="22" r="10"
             animate={{ cy: [22, 21.5, 22] }}
             transition={{ repeat: Infinity, duration: 4 }} />
           <BreathingTorso x1={60} y1={32} x2={60} y2={70} stroke={s} strokeWidth={sw} />
-          <motion.line x1="60" y1="48" x2="75" y2="42"
+          <motion.line initial={false} x1="60" y1="48" x2="75" y2="42"
             animate={{ y2: [42, 40, 42] }}
             transition={{ repeat: Infinity, duration: 3 }} />
           <line x1="60" y1="48" x2="42" y2="58" />
@@ -601,7 +601,7 @@ function renderPose(pose: StickFigurePose) {
           <circle cx="30" cy="28" r="10" />
           <line x1="30" y1="38" x2="30" y2="72" />
           <line x1="30" y1="52" x2="16" y2="60" />
-          <motion.line x1="30" y1="52" x2="55" y2="32"
+          <motion.line initial={false} x1="30" y1="52" x2="55" y2="32"
             animate={{ x2: [55, 57, 55] }}
             transition={{ repeat: Infinity, duration: 0.5 }} />
           <line x1="30" y1="72" x2="18" y2="100" />
@@ -609,7 +609,7 @@ function renderPose(pose: StickFigurePose) {
           <circle cx="90" cy="28" r="10" />
           <line x1="90" y1="38" x2="90" y2="72" />
           <line x1="90" y1="52" x2="104" y2="60" />
-          <motion.line x1="90" y1="52" x2="65" y2="32"
+          <motion.line initial={false} x1="90" y1="52" x2="65" y2="32"
             animate={{ x2: [65, 63, 65] }}
             transition={{ repeat: Infinity, duration: 0.5 }} />
           <line x1="90" y1="72" x2="78" y2="100" />
@@ -635,11 +635,11 @@ function renderPose(pose: StickFigurePose) {
           <circle cx="60" cy="20" r="10" />
           <line x1="60" y1="30" x2="60" y2="64" />
           {/* Left arm bouncing to keyboard */}
-          <motion.line x1="60" y1="44" x2="43" y2="72"
+          <motion.line initial={false} x1="60" y1="44" x2="43" y2="72"
             animate={{ y2: [72, 70, 74, 71, 72] }}
             transition={{ repeat: Infinity, duration: 0.4, ease: 'linear' }} />
           {/* Right arm bouncing to keyboard */}
-          <motion.line x1="60" y1="44" x2="77" y2="72"
+          <motion.line initial={false} x1="60" y1="44" x2="77" y2="72"
             animate={{ y2: [72, 74, 70, 73, 72] }}
             transition={{ repeat: Infinity, duration: 0.4, ease: 'linear', delay: 0.1 }} />
           {/* Keyboard */}
@@ -651,7 +651,7 @@ function renderPose(pose: StickFigurePose) {
           <line x1="44" y1="84" x2="44" y2="100" />
           <line x1="76" y1="84" x2="76" y2="100" />
           {/* Concentration dot */}
-          <motion.circle cx="60" cy="7" r="2" fill={s} stroke="none"
+          <motion.circle initial={false} cx="60" cy="7" r="2" fill={s} stroke="none"
             animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ repeat: Infinity, duration: 0.8 }} />
         </g>
@@ -676,10 +676,10 @@ function renderPose(pose: StickFigurePose) {
             <line x1="60" y1="66" x2="80" y2="88" />
           </motion.g>
           {/* Energy sparkles */}
-          <motion.circle cx="22" cy="56" r="3" fill={s} stroke="none"
+          <motion.circle initial={false} cx="22" cy="56" r="3" fill={s} stroke="none"
             animate={{ opacity: [0, 1, 0], r: [1.5, 3, 1.5] }}
             transition={{ repeat: Infinity, duration: 0.65, delay: 0.2 }} />
-          <motion.circle cx="98" cy="56" r="3" fill={s} stroke="none"
+          <motion.circle initial={false} cx="98" cy="56" r="3" fill={s} stroke="none"
             animate={{ opacity: [0, 1, 0], r: [1.5, 3, 1.5] }}
             transition={{ repeat: Infinity, duration: 0.65, delay: 0.4 }} />
         </g>
@@ -690,7 +690,7 @@ function renderPose(pose: StickFigurePose) {
       return (
         <g stroke={s} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
           <GroundShadow />
-          <motion.circle cx="60" cy="22" r="10"
+          <motion.circle initial={false} cx="60" cy="22" r="10"
             animate={{ cy: [22, 21.5, 22] }}
             transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }} />
           <BreathingTorso x1={60} y1={32} x2={60} y2={70} stroke={s} strokeWidth={sw} />
@@ -703,7 +703,7 @@ function renderPose(pose: StickFigurePose) {
           <line x1="31" y1="60" x2="41" y2="60" strokeWidth={1.5} />
           <line x1="36" y1="68" x2="36" y2="72" strokeWidth={1.5} />
           {/* Right arm slightly extended in greeting gesture */}
-          <motion.line x1="60" y1="46" x2="80" y2="60"
+          <motion.line initial={false} x1="60" y1="46" x2="80" y2="60"
             animate={{ x2: [80, 82, 80], y2: [60, 58, 60] }}
             transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }} />
           {/* Professional upright legs */}
@@ -729,7 +729,7 @@ function renderPose(pose: StickFigurePose) {
           {/* Left arm hanging naturally */}
           <line x1="60" y1="46" x2="42" y2="65" />
           {/* Right arm raised to head — scratching */}
-          <motion.line x1="60" y1="46" x2="76" y2="26"
+          <motion.line initial={false} x1="60" y1="46" x2="76" y2="26"
             animate={{ x2: [76, 78, 74, 76], y2: [26, 24, 28, 26] }}
             transition={{ repeat: Infinity, duration: 1.1, ease: 'easeInOut' }} />
           {/* Question mark */}

@@ -16,7 +16,8 @@ import { hapticLight, hapticSuccess } from '../utils/haptic';
 import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 import { TextReveal } from '../motion/TextReveal';
 import { ScoreBar } from '../components/guidance/ScoreBar';
-import { Volume2 } from 'lucide-react';
+import { VoiceWaveform } from '../components/guidance/VoiceWaveform';
+import { AnimatePresence, motion } from 'motion/react';
 export function AssessValuesPage() {
   const navigate = useNavigate();
   const { passport, updatePassport } = useGuidance();
@@ -66,7 +67,7 @@ export function AssessValuesPage() {
         </div>
         {voiceStatus.message && <p className="mb-3 font-[Inter] text-xs text-black/55" role="status" aria-live="polite">{voiceStatus.message}</p>}
         {result ? (
-          <div className="max-w-xl mx-auto">
+          <AnimatePresence mode="wait"><motion.div key={choice.id} initial={{x:24,opacity:0}} animate={{x:0,opacity:1}} exit={{x:-24,opacity:0}} transition={{duration:.35}} className="max-w-xl mx-auto">
             <div className="space-y-3">
               {Object.entries(result)
                 .sort(([, a], [, b]) => b - a)
@@ -87,7 +88,7 @@ export function AssessValuesPage() {
               {c.back}
             </button>
             {why && <WhyPanel evidence={why} onClose={()=>setWhy(null)}/>}
-          </div>
+          </motion.div></AnimatePresence>
         ) : (
           <div className="max-w-xl mx-auto">
             <div className="font-[JetBrains_Mono] text-xs mb-4">
@@ -107,7 +108,7 @@ export function AssessValuesPage() {
                   <div className="mt-4 text-xl font-[Playfair_Display]">
                   {valueItemText(lang, i, side, choice[side].label)}
                   </div>
-                <span onClick={(event)=>{event.stopPropagation();speak(valueItemText(lang,i,side,choice[side].label),locale)}} className="mt-3 inline-flex min-h-11 items-center gap-2 py-3 text-sm" role="button" aria-label="Read choice aloud"><Volume2 size={16} aria-hidden="true" /> {c.read}</span>
+                <span onClick={(event)=>{event.stopPropagation();speak(valueItemText(lang,i,side,choice[side].label),locale)}} className="mt-3 inline-flex min-h-11 items-center gap-2 py-3 text-sm" role="button" aria-label="Read choice aloud"><VoiceWaveform active={voiceStatus.status==='speaking'} /> {c.read}</span>
               </button>
               ))}
             </div>

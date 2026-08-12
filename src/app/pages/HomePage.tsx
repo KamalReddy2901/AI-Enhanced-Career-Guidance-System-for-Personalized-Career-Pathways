@@ -2,22 +2,19 @@ import { lazy, Suspense, useCallback, useState, useEffect, useRef, useMemo } fro
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, FlaskConical, Scale, ChevronDown, FileText, Brain, Swords, Zap, BarChart2, MessageSquare, ArrowRight, ExternalLink, TrendingUp, TrendingDown, Rocket, Loader2, Map, ArrowLeftRight } from 'lucide-react';
-import { ScrollingTitles } from '../components/ScrollingTitles';
-import { MagnifierSearch } from '../components/MagnifierSearch';
 import { StickFigure } from '../components/StickFigure';
-import { WhyPanel } from '../components/guidance/WhyPanel';
-import { EditorialHomeHero } from '../components/home/EditorialHomeHero';
 import { StaticMasthead } from '../components/hero/StaticMasthead';
 import type { CareerRecommendation } from '../engine/types';
 
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useGuidance } from '../context/GuidanceContext';
-import { occupationById } from '../data/knowledge';
-import { getTrendingCareers, type TrendingCareers } from '../services/ai';
+import type { TrendingCareers } from '../services/ai';
 import { toast } from 'sonner';
 
 const ShowpieceHero = lazy(() => import('../components/hero/ShowpieceHero').then(module => ({ default: module.ShowpieceHero })));
+const EditorialHomeHero = lazy(() => import('../components/home/EditorialHomeHero').then(module => ({ default: module.EditorialHomeHero })));
+const WhyPanel = lazy(() => import('../components/guidance/WhyPanel').then(module => ({ default: module.WhyPanel })));
 
 function showpieceCapable() {
   const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
@@ -152,7 +149,7 @@ export function HomePage() {
       if (entries[0].isIntersecting && !trendingFetched.current) {
         trendingFetched.current = true;
         setTrendingLoading(true);
-        getTrendingCareers()
+        import('../services/ai').then(({ getTrendingCareers }) => getTrendingCareers())
           .then(data => setTrending(data))
           .catch(() => null)
           .finally(() => setTrendingLoading(false));
@@ -187,182 +184,17 @@ export function HomePage() {
   return (
     <div className="relative bg-background">
       {useShowpiece ? <Suspense fallback={<StaticMasthead passport={passport} showLanding={showLanding} onNavigate={navigate}/>}><ShowpieceHero hasPassport={Boolean(passport)} showLanding={showLanding} onNavigate={navigate} onFallback={()=>setUseShowpiece(false)} /></Suspense> : <StaticMasthead passport={passport} showLanding={showLanding} onNavigate={navigate}/>} 
-      <EditorialHomeHero
+      <Suspense fallback={null}><EditorialHomeHero
         passport={passport}
         recommendations={recommendations}
         recommendationChanges={recommendationChanges}
         onNavigate={navigate}
         onExplain={setHomeExplanation}
         onDismissChanges={dismissRecommendationChanges}
-      />
+      /></Suspense>
       {homeExplanation && passport && (
-        <WhyPanel recommendation={homeExplanation} segment={passport.segment} onClose={() => setHomeExplanation(null)} />
+        <Suspense fallback={null}><WhyPanel recommendation={homeExplanation} segment={passport.segment} onClose={() => setHomeExplanation(null)} /></Suspense>
       )}
-      {/* ── HERO SECTION ───────────────────────────────────── */}
-      <div className="hidden" aria-hidden="true">
-      <ScrollingTitles paused={isSearchAnimating} dimmed={isSearchAnimating} />
-
-      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6">
-        {/* Header */}
-        <motion.div
-          className="text-center mb-10"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <div className="flex items-center justify-center gap-4 mb-5">
-            <StickFigure pose="searching" size={64} />
-          </div>
-
-          <h1
-            className="font-[Playfair_Display] text-black tracking-tight mb-3"
-            style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)' }}
-          >
-            What do you want to be?
-          </h1>
-
-          <motion.div
-            className="flex items-center gap-3 justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            <div className="h-px w-12 bg-black/20" />
-            <p
-              className="font-[Inter] text-black/40 tracking-widest uppercase"
-              style={{ fontSize: '0.7rem' }}
-            >
-              Experience any career before you commit
-            </p>
-            <div className="h-px w-12 bg-black/20" />
-          </motion.div>
-        </motion.div>
-
-        {/* Search */}
-        {showLanding ? (
-          <motion.div
-            className="flex flex-col items-center gap-5"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <motion.button
-              onClick={() => navigate('/onboarding')}
-              className="flex items-center gap-3 bg-black text-white py-4 px-10 font-[Inter] hover:bg-black/85 transition-colors"
-              style={{ fontSize: '1rem' }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-            >
-              Chart my pathway
-              <ArrowRight size={18} />
-            </motion.button>
-            <button
-              onClick={() => navigate('/auth?mode=signin')}
-              className="font-[Inter] text-black/35 hover:text-black/60 transition-colors underline underline-offset-2"
-              style={{ fontSize: '0.82rem' }}
-            >
-              Already have an account? Sign in
-            </button>
-          </motion.div>
-        ) : (
-          <motion.div
-            className="w-full max-w-xl"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <div className="mb-6 border-y-4 border-double border-black bg-[#f9f8f7]/95 p-4 text-left">
-              <div className="font-[JetBrains_Mono] text-[10px] uppercase tracking-widest">{passport ? 'Your living career map' : 'Start with guidance'}</div>
-              {passport && recommendations ? <><div className="mt-3 grid grid-cols-3 gap-2">{recommendations.recommendations.slice(0,3).map(item=><button key={item.occupationId} onClick={()=>setHomeExplanation(item)} className="min-h-11 border border-black/10 bg-white p-2 text-left hover:border-black" aria-label={`Explain ${occupationById.get(item.occupationId)?.title} score ${item.totalScore}`}><div className="font-[Playfair_Display] text-sm leading-tight">{occupationById.get(item.occupationId)?.title}</div><div className="mt-1 font-[JetBrains_Mono] text-lg">{item.totalScore}</div><div className="font-[Inter] text-[9px] underline">Why?</div></button>)}</div>{pathways[0]&&<button onClick={()=>navigate(`/pathway/${pathways[0].occupationId}`)} className="mt-3 min-h-11 font-[Inter] text-xs underline">Active pathway readiness · <strong>{pathways[0].gapReport.readiness}</strong> · explain</button>}<button onClick={()=>navigate('/recommendations')} className="mt-3 min-h-11 w-full bg-black px-4 py-3 font-[Inter] text-sm text-white">Open my career landscape →</button></>:<><p className="mt-2 font-[Inter] text-sm text-black/60">Assess your signals, compare transparent matches, and chart three grounded routes.</p><button onClick={()=>navigate('/onboarding')} className="mt-3 min-h-11 w-full bg-black px-4 py-3 font-[Inter] text-sm text-white">Chart my pathway →</button></>}
-              {homeExplanation && passport && <WhyPanel recommendation={homeExplanation} segment={passport.segment} onClose={()=>setHomeExplanation(null)}/>}
-            </div>
-            <MagnifierSearch
-              onSearchComplete={handleSearchComplete}
-              isAnimating={isSearchAnimating}
-              setIsAnimating={setIsSearchAnimating}
-            />
-          </motion.div>
-        )}
-
-        {/* AI Status + Quick Actions (only shown when logged in or no auth) */}
-        {!showLanding && (
-          <motion.div
-            className="mt-6 flex flex-col items-center gap-3"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-          >
-            {/* Quick action buttons */}
-            <div className="flex flex-wrap justify-center gap-2">
-                  <motion.button
-                    onClick={() => navigate('/quiz')}
-                    className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
-                    style={{ fontSize: '0.72rem' }}
-                    whileHover={{ y: -1 }}
-                  >
-                    <FlaskConical size={12} />
-                    Career Match Quiz
-                  </motion.button>
-                  <motion.button
-                    onClick={() => navigate('/mood')}
-                    className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
-                    style={{ fontSize: '0.72rem' }}
-                    whileHover={{ y: -1 }}
-                  >
-                    <Brain size={12} />
-                    Mood Match
-                  </motion.button>
-                  <motion.button
-                    onClick={() => navigate('/career-transition')}
-                    className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
-                    style={{ fontSize: '0.72rem' }}
-                    whileHover={{ y: -1 }}
-                  >
-                    <ArrowLeftRight size={12} />
-                    Transition
-                  </motion.button>
-                  <motion.button
-                    onClick={() => navigate('/roadmap')}
-                    className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
-                    style={{ fontSize: '0.72rem' }}
-                    whileHover={{ y: -1 }}
-                  >
-                    <Map size={12} />
-                    Roadmap
-                  </motion.button>
-              <motion.button
-                onClick={() => navigate('/compare')}
-                className="flex items-center gap-1.5 font-[Inter] text-black/40 hover:text-black/70 border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
-                style={{ fontSize: '0.72rem' }}
-                whileHover={{ y: -1 }}
-              >
-                <Scale size={12} />
-                Compare Careers
-              </motion.button>
-
-            </div>
-          </motion.div>
-        )}
-
-        {/* Scroll indicator */}
-        <motion.div
-          className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-2 opacity-30"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.3 }}
-          transition={{ delay: 1.2 }}
-        >
-          <span className="font-[Inter] uppercase tracking-[0.2em] text-black/60" style={{ fontSize: '0.6rem' }}>
-            Scroll to know more
-          </span>
-          <motion.div
-            animate={{ y: [0, 6, 0] }}
-            transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
-          >
-            <ChevronDown size={16} className="text-black/50" />
-          </motion.div>
-        </motion.div>
-      </div>
-      </div>
 
       {/* ── WHAT'S TRENDING ────────────────────────────────── */}
       {!showLanding && (
@@ -871,13 +703,13 @@ export function HomePage() {
             <StickFigure pose="standing" size={28} animate={false} />
             <span className="font-[Playfair_Display] text-black/60" style={{ fontSize: '0.92rem' }}>CareerCase</span>
           </div>
-          <p className="font-[Inter] text-black/30" style={{ fontSize: '0.72rem' }}>
+          <p className="font-[Inter] text-[var(--ink-soft)]" style={{ fontSize: '0.72rem' }}>
             Built by Kamal Reddy &middot; v1.0.0
           </p>
-          <div className="flex items-center gap-4 font-[Inter] text-black/30" style={{ fontSize: '0.72rem' }}>
-            <button onClick={() => navigate('/how-it-works')} className="hover:text-black/50 transition-colors">How guidance works</button>
-            <button onClick={() => navigate('/settings')} className="hover:text-black/50 transition-colors">Settings</button>
-            <button onClick={() => navigate('/history')} className="hover:text-black/50 transition-colors">History</button>
+          <div className="flex items-center gap-4 font-[Inter] text-[var(--ink-soft)]" style={{ fontSize: '0.72rem' }}>
+            <button onClick={() => navigate('/how-it-works')} className="hover:text-black transition-colors">How guidance works</button>
+            <button onClick={() => navigate('/settings')} className="hover:text-black transition-colors">Settings</button>
+            <button onClick={() => navigate('/history')} className="hover:text-black transition-colors">History</button>
           </div>
         </div>
       </footer>

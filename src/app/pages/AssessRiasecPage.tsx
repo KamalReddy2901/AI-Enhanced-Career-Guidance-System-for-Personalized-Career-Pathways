@@ -21,7 +21,8 @@ import { useVoiceStatus } from "../hooks/useVoiceStatus";
 import { hapticLight, hapticSuccess } from '../utils/haptic';
 import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 import { TextReveal } from '../motion/TextReveal';
-import { Volume2 } from 'lucide-react';
+import { VoiceWaveform } from '../components/guidance/VoiceWaveform';
+import { AnimatePresence, motion } from 'motion/react';
 
 export function AssessRiasecPage() {
   const navigate = useNavigate();
@@ -93,6 +94,7 @@ export function AssessRiasecPage() {
   return (
     <AssessmentShell title={lang === "hi" ? "किस तरह का काम आपको आकर्षित करता है?" : lang === "te" ? "ఎలాంటి పని మిమ్మల్ని ఆకర్షిస్తుంది?" : "What kind of work draws you in?"} pose="thinking">
       <GuidanceEntrance className="mx-auto max-w-xl">
+        <AnimatePresence mode="wait"><motion.div key={item.id} initial={{x:24,opacity:0}} animate={{x:0,opacity:1}} exit={{x:-24,opacity:0}} transition={{duration:.35}}>
         {localStorage.getItem("cc_guidance_quiz_interest_hint") && (
           <div className="mb-5 border-l-4 border-black bg-white p-4 font-[Inter] text-sm">
             {resultCopy.hint}
@@ -109,22 +111,23 @@ export function AssessRiasecPage() {
         </div>
         <div className="mb-8 flex items-start gap-3">
           <h2 className="flex-1 text-3xl font-[Playfair_Display]">
-            {itemText}
+            <TextReveal text={itemText}/>
           </h2>
           <button
             onClick={() => speak(itemText, locale)}
             className="min-h-11 min-w-11 border border-black/20"
             aria-label="Read question aloud"
           >
-            <Volume2 size={16} aria-hidden="true" />
+            <VoiceWaveform active={voiceStatus.status==='speaking'} />
           </button>
         </div>
         {voiceStatus.message && <p className="-mt-5 mb-5 font-[Inter] text-xs text-black/55" role="status" aria-live="polite">{voiceStatus.message}</p>}
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-5">
+        <div className="grid grid-cols-5 gap-3">
           {responseLabels.map(
             (label, n) => (
               <button
                 key={label}
+                aria-label={`${n+1}: ${label}`}
                 onClick={() => {
                   const next = { ...answers, [item.id]: n + 1 };
                   setAnswers(next);
@@ -133,13 +136,14 @@ export function AssessRiasecPage() {
                   if (index === RIASEC_ITEMS.length - 1) finish(next);
                   else setIndex(index + 1);
                 }}
-                className="card-sketch min-h-16 p-3 font-mono-ui text-xs transition-[transform,background-color,color] hover:-translate-y-0.5 hover:bg-[var(--ink)] hover:text-[var(--paper)]"
+                className="group flex min-h-20 flex-col items-center gap-2 font-mono-ui text-[10px] uppercase"
               >
-                {label}
+                <motion.span whileTap={{scale:.82}} className="grid size-12 place-items-center rounded-full border-2 border-black text-sm transition-[transform,background-color,color] group-hover:-translate-y-0.5 group-hover:bg-black group-hover:text-white">{n+1}</motion.span><span className={n===0||n===responseLabels.length-1?'block':'sr-only'}>{label}</span>
               </button>
             ),
           )}
         </div>
+        </motion.div></AnimatePresence>
       </GuidanceEntrance>
     </AssessmentShell>
   );
@@ -159,7 +163,7 @@ function AssessmentShell({
         <div className="mb-8 flex items-center gap-4 border-b-2 border-black pb-5">
           <StickFigure pose={pose} size={76} />
           <div>
-            <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">
+            <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-[var(--ink-soft)]">
               CareerCase · assessment desk
             </div>
             <h1><TextReveal text={title} /></h1>

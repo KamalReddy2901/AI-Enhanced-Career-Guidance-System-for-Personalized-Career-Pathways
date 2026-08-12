@@ -16,16 +16,7 @@ import type {
   RecommendationSet,
   PathwayPlan,
 } from "../engine/types";
-import {
-  savePassport as savePassportToDb,
-  migrateLocalGuidanceToCloud,
-} from "../services/guidanceDb";
 import { useAuth } from "./AuthContext";
-import { matchCareers } from "../engine/matching";
-import { buildPathwayPlan } from "../engine/pathways";
-import { saveRecommendationSet } from "../services/guidanceDb";
-import { logProgress } from "../services/guidanceDb";
-import { savePathway } from "../services/guidanceDb";
 
 // ─── Context Types ────────────────────────────────────────────────────────────
 
@@ -62,6 +53,65 @@ const GuidanceContext = createContext<GuidanceContextValue | null>(null);
 const PASSPORT_STORAGE_KEY = "cc_guidance_passport";
 const PATHWAYS_STORAGE_KEY = "cc_guidance_pathways";
 
+/**
+ * Older anonymous profiles can outlive the UI version that created them.
+ * Fill only structurally-required collection/default fields here so a stale
+ * browser record never takes down recommendations or pathways.
+ */
+function normalizeStoredPassport(value: CareerPassport): CareerPassport {
+  const legacy = value as CareerPassport & {
+    values?: CareerPassport["values"] & {
+      achievement?: number;
+      independence?: number;
+      recognition?: number;
+      relationships?: number;
+      support?: number;
+      workingConditions?: number;
+    };
+    constraints?: CareerPassport["constraints"] & { mustMaintainIncome?: boolean };
+  };
+  const numberOr = (candidate: number | undefined, fallback: number) =>
+    Number.isFinite(candidate) ? candidate! : fallback;
+  return {
+    ...value,
+    experiences: Array.isArray(value.experiences) ? value.experiences : [],
+    skills: Array.isArray(value.skills) ? value.skills : [],
+    values: legacy.values
+      ? {
+          stability: numberOr(legacy.values.stability, numberOr(legacy.values.support, 50)),
+          growth: numberOr(legacy.values.growth, numberOr(legacy.values.achievement, 50)),
+          autonomy: numberOr(legacy.values.autonomy, numberOr(legacy.values.independence, 50)),
+          impact: numberOr(legacy.values.impact, numberOr(legacy.values.relationships, 50)),
+          balance: numberOr(legacy.values.balance, numberOr(legacy.values.workingConditions, 50)),
+          compensation: numberOr(legacy.values.compensation, numberOr(legacy.values.recognition, 50)),
+        }
+      : undefined,
+    aspiration: value.aspiration
+      ? {
+          ...value.aspiration,
+          horizonYears: value.aspiration.horizonYears ?? 5,
+          themes: Array.isArray(value.aspiration.themes) ? value.aspiration.themes : [],
+          dreamOccupationIds: Array.isArray(value.aspiration.dreamOccupationIds)
+            ? value.aspiration.dreamOccupationIds
+            : [],
+          entrepreneurialIntent: value.aspiration.entrepreneurialIntent ?? "none",
+          capturedVia: value.aspiration.capturedVia ?? "form",
+        }
+      : undefined,
+    constraints: {
+      location: value.constraints?.location ?? "",
+      canRelocate: value.constraints?.canRelocate ?? false,
+      weeklyLearningHours: value.constraints?.weeklyLearningHours ?? 5,
+      budgetLevel: value.constraints?.budgetLevel ?? "medium",
+      languages: Array.isArray(value.constraints?.languages)
+        ? value.constraints.languages
+        : [],
+      needsIncomeContinuity:
+        value.constraints?.needsIncomeContinuity ?? legacy.constraints?.mustMaintainIncome ?? false,
+    },
+  };
+}
+
 export function GuidanceProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
 
@@ -83,7 +133,8 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
       try {
         const localRaw = localStorage.getItem(PASSPORT_STORAGE_KEY);
         if (localRaw) {
-          const localPassport = JSON.parse(localRaw) as CareerPassport;
+          const localPassport = normalizeStoredPassport(JSON.parse(localRaw) as CareerPassport);
+          localStorage.setItem(PASSPORT_STORAGE_KEY, JSON.stringify(localPassport));
           setPassport(localPassport);
         }
       } catch (err) {
@@ -99,8 +150,9 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
       // If signed in, load from Supabase and merge
       if (user?.id) {
         try {
+          const { migrateLocalGuidanceToCloud } = await import("../services/guidanceDb");
           const migration = await migrateLocalGuidanceToCloud(user.id);
-          if (migration.passport) setPassport(migration.passport);
+          if (migration.passport) setPassport(normalizeStoredPassport(migration.passport));
           setPathways(migration.pathways);
           localStorage.setItem("cc_guidance_last_sync", JSON.stringify({ userId: user.id, at: new Date().toISOString(), uploaded: migration.uploaded }));
         } catch (error) {
@@ -133,11 +185,11 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
 
         // Save to Supabase if signed in
         if (user?.id) {
-          savePassportToDb(user.id, updated).catch((err) => {
-            console.error("Failed to save passport to Supabase:", err);
-          });
-          void logProgress(user.id, "profile_edit", {
-            passportVersion: updated.version,
+          void import("../services/guidanceDb").then(({ savePassport, logProgress }) => {
+            void savePassport(user.id, updated).catch((err) => {
+              console.error("Failed to save passport to Supabase:", err);
+            });
+            void logProgress(user.id, "profile_edit", { passportVersion: updated.version });
           });
         }
 
@@ -148,8 +200,12 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
   );
 
   // ─── Deterministic recommendation and active-pathway recomputation ─────────
-  const recompute = useCallback(() => {
+  const recompute = useCallback(async () => {
     if (!passport) return;
+    const [{ matchCareers }, { buildPathwayPlan }] = await Promise.all([
+      import("../engine/matching"),
+      import("../engine/pathways"),
+    ]);
     const next = matchCareers(passport);
     setRecommendations((previous) => {
       if (previous) {
@@ -219,7 +275,7 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
     } catch {
       /* optional */
     }
-    if (user?.id) void saveRecommendationSet(user.id, next);
+    if (user?.id) void import("../services/guidanceDb").then(({ saveRecommendationSet }) => saveRecommendationSet(user.id, next));
     setPathways((previous) => {
       const refreshed = previous.map((saved) => {
         const rebuilt = buildPathwayPlan(passport, saved.occupationId);
@@ -246,10 +302,9 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
       } catch {
         /* optional */
       }
-      if (user?.id)
-        refreshed.forEach((plan) => {
-          void savePathway(user.id, plan);
-        });
+      if (user?.id) void import("../services/guidanceDb").then(({ savePathway }) => {
+        refreshed.forEach((plan) => { void savePathway(user.id, plan); });
+      });
       return refreshed;
     });
   }, [passport, user]);
@@ -261,9 +316,10 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
         plan,
       ];
       localStorage.setItem(PATHWAYS_STORAGE_KEY, JSON.stringify(next));
+      if (user?.id) void import("../services/guidanceDb").then(({ savePathway }) => savePathway(user.id, plan));
       return next;
     });
-  }, []);
+  }, [user]);
 
   const replacePathwayPlan = useCallback((plan: PathwayPlan) => {
     setPathways((previous) => {
@@ -271,9 +327,10 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
         item.occupationId === plan.occupationId ? plan : item,
       );
       localStorage.setItem(PATHWAYS_STORAGE_KEY, JSON.stringify(next));
+      if (user?.id) void import("../services/guidanceDb").then(({ savePathway }) => savePathway(user.id, plan));
       return next;
     });
-  }, []);
+  }, [user]);
 
   const resetGuidance = useCallback(() => {
     setPassport(null);

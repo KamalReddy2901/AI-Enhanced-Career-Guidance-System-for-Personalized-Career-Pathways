@@ -118,7 +118,7 @@ export function CounselorPage() {
         <header className="mb-8 flex items-center gap-4 border-b-2 border-black pb-6">
           <StickFigure pose="pointing" size={84} />
           <div>
-            <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">
+            <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-[var(--ink-soft)]">
               CareerCase · grounded counselor desk
             </div>
             <h1 className="font-display text-5xl leading-[1.25]"><TextReveal text="Ask why. Ask what-if." /></h1>

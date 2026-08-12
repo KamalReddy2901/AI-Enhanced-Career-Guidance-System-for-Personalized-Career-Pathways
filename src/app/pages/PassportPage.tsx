@@ -117,10 +117,10 @@ export function PassportPage() {
             <div>
               <h1 className="font-display text-5xl leading-[1.25] text-black mb-1"><TextReveal text={pc.title} /></h1>
               <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-4 font-[JetBrains_Mono] text-xs uppercase tracking-wide md:grid-cols-4">
-                <span><b className="block text-[9px] text-black/45">{pc.name}</b>{user?.email?.split('@')[0] ?? pc.explorer}</span>
-                <span><b className="block text-[9px] text-black/45">{pc.code}</b>{riasecCode}</span>
-                <span><b className="block text-[9px] text-black/45">{pc.match}</b>{passport.aspiration?.themes[0] ?? passport.segment.replace('_', ' ')}</span>
-                <span><b className="block text-[9px] text-black/45">NSQF</b>~{nsqfLevel}</span>
+                <span><b className="block text-[9px] text-[var(--ink-soft)]">{pc.name}</b>{user?.email?.split('@')[0] ?? pc.explorer}</span>
+                <span><b className="block text-[9px] text-[var(--ink-soft)]">{pc.code}</b>{riasecCode}</span>
+                <span><b className="block text-[9px] text-[var(--ink-soft)]">{pc.match}</b>{passport.aspiration?.themes[0] ?? passport.segment.replace('_', ' ')}</span>
+                <span><b className="block text-[9px] text-[var(--ink-soft)]">NSQF</b>~{nsqfLevel}</span>
               </div>
             </div>
             <motion.svg initial={{scale:.5,rotate:-18,opacity:0}} animate={{scale:1,rotate:-8,opacity:1}} transition={{type:'spring',bounce:.55,duration:.8}} className="passport-stamp hidden h-24 w-24 shrink-0 text-[var(--accent-news)] md:block" viewBox="0 0 100 100" role="img" aria-label={`${pc.assessed} 2026`}><circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="3"/><circle cx="50" cy="50" r="38" fill="none" stroke="currentColor"/><text x="50" y="38" textAnchor="middle" fill="currentColor" fontFamily="monospace" fontSize="9">{pc.assessed.toUpperCase()}</text><text x="50" y="57" textAnchor="middle" fill="currentColor" fontFamily="monospace" fontSize="17">✓ 2026</text><text x="50" y="72" textAnchor="middle" fill="currentColor" fontFamily="monospace" fontSize="9">{passport.completeness}%</text></motion.svg>
@@ -166,7 +166,7 @@ export function PassportPage() {
         <div className="bg-white border border-black/10 p-6 mb-6">
           <h2 className="text-2xl font-[Playfair_Display] text-black mb-4">Skills</h2>
           {passport.skills.length === 0 ? (
-            <p className="text-sm font-[Inter] text-black/50">No skills yet. Add from resume or complete assessments.</p>
+            <p className="text-sm font-[Inter] text-[var(--ink-soft)]">No skills yet. Add from resume or complete assessments.</p>
           ) : (
             <div className="space-y-4">
               {Object.entries(groupedSkills).map(([category, claims]) => (
@@ -195,14 +195,14 @@ export function PassportPage() {
                                   />
                                 ))}
                               </div>
-                              <span className="font-[JetBrains_Mono] text-xs text-black/50">
+                              <span className="font-[JetBrains_Mono] text-xs text-[var(--ink-soft)]">
                                 {claim.confidence < 0.7 ? 'unverified' : `${Math.round(claim.confidence * 100)}% confidence`}
                               </span>
                             </div>
                           </div>
-                          <div className="flex gap-3"><button onClick={() => {sounds.click();hapticLight();setExpandedEvidence(expandedEvidence===claim.skillId?null:claim.skillId)}} className="min-h-11 text-xs font-[Inter] text-black/50 hover:text-black underline">{claim.evidence.length} evidence</button><button onClick={()=>{sounds.modalOpen();hapticLight();setValidating(claim)}} className="min-h-11 border border-black/15 px-3 font-[Inter] text-xs">Validate</button></div>
+                          <div className="flex gap-3"><button onClick={() => {sounds.click();hapticLight();setExpandedEvidence(expandedEvidence===claim.skillId?null:claim.skillId)}} className="min-h-11 text-xs font-[Inter] text-[var(--ink-soft)] hover:text-black underline">{claim.evidence.length} evidence</button><button onClick={()=>{sounds.modalOpen();hapticLight();setValidating(claim)}} className="min-h-11 border border-black/15 px-3 font-[Inter] text-xs">Validate</button></div>
                           </div>
-                          {expandedEvidence === claim.skillId && <div className="mt-3 border-t border-black/10 pt-3 space-y-2">{claim.evidence.map((evidence,index)=><div key={`${evidence.observedAt}-${index}`} className="font-[Inter] text-xs"><span className="font-[JetBrains_Mono] uppercase text-black/50">{evidence.type} · {Math.round(evidence.confidence*100)}%</span><p className="text-black/70">{evidence.description}</p></div>)}</div>}
+                          {expandedEvidence === claim.skillId && <div className="mt-3 border-t border-black/10 pt-3 space-y-2">{claim.evidence.map((evidence,index)=><div key={`${evidence.observedAt}-${index}`} className="font-[Inter] text-xs"><span className="font-[JetBrains_Mono] uppercase text-[var(--ink-soft)]">{evidence.type} · {Math.round(evidence.confidence*100)}%</span><p className="text-black/70">{evidence.description}</p></div>)}</div>}
                         </div>
                       );
                     })}
@@ -217,13 +217,13 @@ export function PassportPage() {
         <div className="bg-white border border-black/10 p-6 mb-6">
           <h2 className="text-2xl font-[Playfair_Display] text-black mb-4">Experiences</h2>
           {passport.experiences.length === 0 ? (
-            <p className="text-sm font-[Inter] text-black/50">No experiences yet.</p>
+            <p className="text-sm font-[Inter] text-[var(--ink-soft)]">No experiences yet.</p>
           ) : (
             <div className="space-y-3">
               {passport.experiences.map((exp, idx) => (
                 <div key={idx} className="p-4 border border-black/5 rounded-sm">
                   <div className="font-[Inter] text-sm font-semibold text-black">{exp.title}</div>
-                  <div className="font-[JetBrains_Mono] text-xs text-black/50 mt-1">
+                  <div className="font-[JetBrains_Mono] text-xs text-[var(--ink-soft)] mt-1">
                     {exp.years} {exp.years === 1 ? 'year' : 'years'}
                   </div>
                   {exp.description && (
@@ -254,7 +254,7 @@ export function PassportPage() {
               </div>
             ) : (
               <div className="p-4 border border-black/10 rounded-sm text-center">
-                <p className="font-[Inter] text-sm text-black/50 mb-2">No interest assessment yet</p>
+                <p className="font-[Inter] text-sm text-[var(--ink-soft)] mb-2">No interest assessment yet</p>
                 <button
                   onClick={() => navigate('/assess/interests')}
                   className="text-sm font-[Inter] text-black hover:underline"
@@ -278,7 +278,7 @@ export function PassportPage() {
               </div>
             ) : (
               <div className="p-4 border border-black/10 rounded-sm text-center">
-                <p className="font-[Inter] text-sm text-black/50 mb-2">No aptitude assessment yet</p>
+                <p className="font-[Inter] text-sm text-[var(--ink-soft)] mb-2">No aptitude assessment yet</p>
                 <button
                   onClick={() => navigate('/assess/aptitude')}
                   className="text-sm font-[Inter] text-black hover:underline"
@@ -304,7 +304,7 @@ export function PassportPage() {
               </div>
             ) : (
               <div className="p-4 border border-black/10 rounded-sm text-center">
-                <p className="font-[Inter] text-sm text-black/50 mb-2">No values assessment yet</p>
+                <p className="font-[Inter] text-sm text-[var(--ink-soft)] mb-2">No values assessment yet</p>
                 <button
                   onClick={() => navigate('/assess/values')}
                   className="text-sm font-[Inter] text-black hover:underline"

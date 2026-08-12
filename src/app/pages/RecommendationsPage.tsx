@@ -19,7 +19,7 @@ import { hapticTap } from '../utils/haptic';
 import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 import { TextReveal } from '../motion/TextReveal';
 import { useReveal } from '../motion/useReveal';
-import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Volume2 } from 'lucide-react';
 
 type LandscapeFilter = 'all' | 'safe' | 'stretch' | 'frontier';
@@ -30,7 +30,11 @@ const landscapeGroup = (group: RecommendationGroup): Exclude<LandscapeFilter, 'a
 function CountUp({value}:{value:number}) {
   const reduced=useReducedMotion();
   const [display,setDisplay]=useState(reduced?Math.round(value):0);
-  useEffect(()=>{if(reduced){setDisplay(Math.round(value));return;}return animate(0,value,{duration:.9,ease:[.22,1,.36,1],onUpdate:latest=>setDisplay(Math.round(latest))}).stop;},[value,reduced]);
+  useEffect(()=>{
+    if(reduced){setDisplay(Math.round(value));return;}
+    const controls=animate(0,value,{duration:.9,ease:[.22,1,.36,1],onUpdate:latest=>setDisplay(Math.round(latest))});
+    return ()=>controls.stop();
+  },[value,reduced]);
   return <>{display}</>;
 }
 
@@ -80,7 +84,7 @@ export function RecommendationsPage() {
         <header className="mb-10 grid gap-6 border-b-2 border-[var(--ink)] pb-8 md:grid-cols-[1fr_auto]">
           <StickFigure pose="mapping" size={112} />
           <div>
-            <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">
+            <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-[var(--ink-soft)]">
               {c.header} ·{" "}
               {new Date(recommendations.generatedAt).toLocaleDateString(locale)}{" "}
               · profile v{passport.version} · {recommendations.kbVersion}
@@ -100,6 +104,7 @@ export function RecommendationsPage() {
           <TabsList aria-label="Career landscape filters">
             {(['all','safe','stretch','frontier'] as const).map(value=><TabsTrigger key={value} value={value} data-testid={`recommendations-filter-${value}`}>{value}</TabsTrigger>)}
           </TabsList>
+          {(['all','safe','stretch','frontier'] as const).map(value=><TabsContent key={value} value={value} className="sr-only">Showing {value} career recommendations</TabsContent>)}
         </Tabs>
         <p className="font-display mb-8 italic text-[var(--ink-soft)]">Every landscape keeps grounded, ambitious and exploratory routes in view.</p>
         <motion.div ref={reveal.ref} variants={reveal.containerVariants} initial="hidden" animate={reveal.animate} className="mb-12 grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
@@ -109,7 +114,7 @@ export function RecommendationsPage() {
             </motion.div>
           ))}
         </motion.div>
-        <p className="font-[JetBrains_Mono] text-[10px] uppercase tracking-wide text-black/45">
+        <p className="font-[JetBrains_Mono] text-[10px] uppercase tracking-wide text-[var(--ink-soft)]">
           {c.footer} · KB {recommendations.kbVersion} · profile v{passport.version}
         </p>
         <Link
@@ -147,8 +152,8 @@ function RecommendationCard({
   const market = marketFor(occupation.id);
   return (
     <article className="card-sketch group h-full p-6 transition-[transform,box-shadow] hover:-translate-y-[3px] hover:shadow-[6px_6px_0_var(--ink)] md:p-8">
-      <div className={`label-caps mb-3 ${landscapeGroup(recommendation.group)==='frontier'?'!text-[var(--accent-news)]':''}`}>{landscapeGroup(recommendation.group)}</div>
-      <div className="font-[JetBrains_Mono] text-[10px] uppercase text-black/50">
+      <div className={`label-caps mb-3 ${landscapeGroup(recommendation.group)==='frontier'?'border-l-4 border-[var(--accent-news)] pl-2':''}`}>{landscapeGroup(recommendation.group)}</div>
+      <div className="font-[JetBrains_Mono] text-[10px] uppercase text-[var(--ink-soft)]">
         NCO {occupation.ncoCode} · NSQF {occupation.nsqfEntryLevel}
       </div>
       <div className="flex items-start justify-between gap-2">
@@ -197,7 +202,7 @@ function RecommendationCard({
         ))}
       </div>
       {market && (
-        <p className="mt-4 font-[JetBrains_Mono] text-[9px] uppercase text-black/50">
+        <p className="mt-4 font-[JetBrains_Mono] text-[9px] uppercase text-[var(--ink-soft)]">
           {copy.demand} {market.demandIndex} · {localizedTrend(market.growthTrend, lang)} ·{" "}
           {market.observedPeriod} · {market.regions.join(", ")}
         </p>

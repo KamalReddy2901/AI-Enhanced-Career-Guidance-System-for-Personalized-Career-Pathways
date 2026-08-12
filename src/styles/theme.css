@@ -48,7 +48,7 @@
   --paper: #f9f8f6;          /* app background surface */
   --paper-raised: #ffffff;   /* cards */
   --ink-soft: #4a4a4a;       /* secondary text */
-  --ink-faint: #9a9a94;      /* metadata, captions */
+  --ink-faint: #666662;      /* accessible metadata and captions */
   --rule: #0a0a0a;           /* hairline borders */
   --accent-news: #e63946;    /* the ONE red accent — breaking-news red */
   --accent-soft: #ffd166;    /* rare highlight (marks, highlighter strokes) */
@@ -396,6 +396,11 @@ nav a, nav button {
 @keyframes counselor-dot { to { transform: translateY(-4px); opacity: .4; } }
 .typewriter-caret { animation: caret-blink .7s steps(1,end) infinite; }
 @keyframes caret-blink { 50% { opacity: 0; } }
+.voice-waveform { display:inline-flex; height:16px; align-items:center; gap:2px; }
+.voice-waveform i { width:2px; height:45%; background:currentColor; animation:voice-bar .55s ease-in-out infinite alternate; }
+.voice-waveform i:nth-child(2) { height:100%; animation-delay:.12s; }
+.voice-waveform i:nth-child(3) { height:70%; animation-delay:.24s; }
+@keyframes voice-bar { to { transform:scaleY(.35); } }
 .editorial-utility h1 {
   font-family: 'Playfair Display', Georgia, serif;
   letter-spacing: -.035em;

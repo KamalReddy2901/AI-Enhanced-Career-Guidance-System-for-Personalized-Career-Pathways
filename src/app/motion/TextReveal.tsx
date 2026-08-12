@@ -11,9 +11,11 @@ export function TextReveal({ text, className = '' }: TextRevealProps) {
   const words = useMemo(() => text.trim().split(/\s+/u), [text]);
 
   return (
-    <span className={`inline-flex flex-wrap gap-x-[0.25em] ${className}`} aria-label={text}>
-      {words.map((word, index) => (
-        <span key={`${text}-${word}-${index}`} className="inline-block overflow-hidden" aria-hidden="true">
+    <>
+      <span className="sr-only">{text}</span>
+      <span className={`inline-flex flex-wrap gap-x-[0.25em] ${className}`} aria-hidden="true">
+        {words.map((word, index) => (
+          <span key={`${text}-${word}-${index}`} className="inline-block overflow-hidden">
           <motion.span
             className="inline-block"
             initial={reducedMotion ? false : { y: '110%' }}
@@ -27,7 +29,8 @@ export function TextReveal({ text, className = '' }: TextRevealProps) {
             {word}
           </motion.span>
         </span>
-      ))}
-    </span>
+        ))}
+      </span>
+    </>
   );
 }

@@ -16,6 +16,10 @@ import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
 import { TextReveal } from '../motion/TextReveal';
 
+function WinnerCircle() {
+  return <svg className="pointer-events-none absolute inset-1 h-[calc(100%-8px)] w-[calc(100%-8px)] text-[var(--accent-news)]" viewBox="0 0 200 80" preserveAspectRatio="none" aria-hidden="true"><ellipse cx="100" cy="40" rx="94" ry="34" fill="none" stroke="currentColor" strokeWidth="2" /></svg>;
+}
+
 function CareerSlot({
   slot,
   job,
@@ -261,13 +265,13 @@ export function ComparisonPage() {
     }
   };
 
-  const CompareRow = ({ label, valueA, valueB }: { label: string; valueA: React.ReactNode; valueB: React.ReactNode }) => (
+  const CompareRow = ({ label, valueA, valueB, winner }: { label: string; valueA: React.ReactNode; valueB: React.ReactNode; winner?:'a'|'b' }) => (
     <div className="grid grid-cols-[1fr_100px_1fr] gap-0 border-b border-[var(--ink)]/20 last:border-b-0">
-      <div className="font-mono-ui p-4 text-sm text-[var(--ink-soft)]">{valueA}</div>
+      <div className="font-mono-ui relative p-4 text-sm text-[var(--ink-soft)]">{valueA}{winner==='a'&&<WinnerCircle/>}</div>
       <div className="flex items-center justify-center border-x border-[var(--ink)]/20 p-4">
         <span className="label-caps text-center">{label}</span>
       </div>
-      <div className="font-mono-ui p-4 text-sm text-[var(--ink-soft)]">{valueB}</div>
+      <div className="font-mono-ui relative p-4 text-sm text-[var(--ink-soft)]">{valueB}{winner==='b'&&<WinnerCircle/>}</div>
     </div>
   );
 
@@ -519,6 +523,7 @@ export function ComparisonPage() {
               {(wlbLoading || wlbA || wlbB) && (
                 <CompareRow
                   label="Work-Life Balance"
+                  winner={wlbA&&wlbB&&wlbA.overallScore!==wlbB.overallScore?(wlbA.overallScore>wlbB.overallScore?'a':'b'):undefined}
                   valueA={
                     wlbLoading ? (
                       <Loader2 size={12} className="animate-spin text-black/25" />
@@ -620,6 +625,7 @@ export function ComparisonPage() {
               {(diffLoading || diffA || diffB) && (
                 <CompareRow
                   label="Interview"
+                  winner={diffA&&diffB&&diffA.score!==diffB.score?(diffA.score<diffB.score?'a':'b'):undefined}
                   valueA={
                     diffLoading ? (
                       <Loader2 size={12} className="animate-spin text-black/25" />

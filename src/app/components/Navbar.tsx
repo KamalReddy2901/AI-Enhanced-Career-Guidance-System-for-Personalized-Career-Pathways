@@ -115,7 +115,7 @@ export function Navbar() {
         </div>
 
         {/* Keyboard shortcut hint */}
-        <div className="hidden sm:block absolute right-6 -bottom-5 pointer-events-none">
+        <div className="hidden sm:block absolute right-6 -bottom-5 pointer-events-none" aria-hidden="true">
           <span className="font-[JetBrains_Mono] text-black/12" style={{ fontSize: '0.52rem' }}>
             Ctrl+K search · Esc back
           </span>
@@ -133,6 +133,7 @@ export function Navbar() {
             transition={{ duration: 0.18 }}
           >
             <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-1">
+              <div className="mb-2 flex justify-end"><LanguageSwitcher compact /></div>
               {navLinks.map(link => (
                 <Link
                   key={link.to}
@@ -171,6 +172,7 @@ function NavLink({
   return (
     <Link
       to={to}
+      aria-label={label}
       onClick={() => sounds.navigate()}
       className={`label-caps group relative flex items-center gap-1.5 px-2.5 py-2 transition-colors sm:px-3 ${
         active

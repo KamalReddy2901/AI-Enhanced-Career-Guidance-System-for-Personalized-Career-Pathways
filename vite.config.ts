@@ -36,9 +36,8 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
+        onlyExplicitManualChunks: true,
         manualChunks(id) {
-          if (id.includes('jspdf') || id.includes('html2canvas')) return 'pdf-vendor';
-          if (id.includes('recharts') || id.includes('d3-')) return 'chart-vendor';
           if (id.includes('@radix-ui') || id.includes('cmdk') || id.includes('vaul')) return 'ui-vendor';
           if (id.includes('react-dom') || id.includes('react/')) return 'react-vendor';
           if (id.includes('react-router')) return 'router-vendor';

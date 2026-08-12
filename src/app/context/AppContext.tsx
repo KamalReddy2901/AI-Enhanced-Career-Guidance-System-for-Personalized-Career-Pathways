@@ -1,7 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { type JobData } from '../data/jobs';
-import { generateJobDataAI, generatePreliminaryAssessmentAI, clearAllCache } from '../services/ai';
-import { fetchRemoteHistory, saveHistoryEntry, clearRemoteHistory } from '../services/supabase';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
 
@@ -48,7 +46,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Sync history from Supabase when user logs in
   useEffect(() => {
     if (!user) return;
-    fetchRemoteHistory(user.id).then(entries => {
+    import('../services/supabase').then(({ fetchRemoteHistory }) => fetchRemoteHistory(user.id)).then(entries => {
       if (entries.length === 0) return;
       setHistory(prev => {
         const remoteItems: HistoryEntry[] = entries.map(e => ({
@@ -77,6 +75,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const searchJobPreliminary = useCallback(async (title: string): Promise<JobData> => {
+    const { generatePreliminaryAssessmentAI } = await import('../services/ai');
     const prelim = await generatePreliminaryAssessmentAI(title);
     const id = title.toLowerCase().replace(/\s+/g, '-');
     return {
@@ -119,6 +118,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const searchJobAI = useCallback(async (title: string, skipCache = false, contextDescription?: string): Promise<JobData> => {
     try {
+      const { generateJobDataAI } = await import('../services/ai');
       const aiData = await generateJobDataAI(title, skipCache, contextDescription);
       const id = title.toLowerCase().replace(/\s+/g, '-');
       return {
@@ -157,13 +157,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
     // Sync to Supabase if logged in
     if (user) {
-      saveHistoryEntry(user.id, jobData.title, jobData, entry.timestamp).catch(() => {});
+      void import('../services/supabase').then(({ saveHistoryEntry }) =>
+        saveHistoryEntry(user.id, jobData.title, jobData, entry.timestamp),
+      ).catch(() => {});
     }
   }, [user]);
 
   const clearHistory = useCallback(() => {
     setHistory([]);
-    if (user) clearRemoteHistory(user.id).catch(() => {});
+    if (user) void import('../services/supabase').then(({ clearRemoteHistory }) => clearRemoteHistory(user.id)).catch(() => {});
     toast.success('History cleared');
   }, [user]);
 
@@ -176,7 +178,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearAICache = useCallback(() => {
-    clearAllCache();
+    void import('../services/ai').then(({ clearAllCache }) => clearAllCache());
     toast.success('AI cache cleared - fresh data on next search');
   }, []);
 

@@ -53,7 +53,7 @@ export function EditorialHomeHero({
               <h2 id="home-progress-title" className="font-display text-2xl">{t('homeProgress')}</h2>
               <span className="font-mono-ui text-sm">{Math.round(progress)}%</span>
             </div>
-            <div className="mt-4 h-1 overflow-hidden bg-[var(--ink)]/15" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}>
+            <div className="mt-4 h-1 overflow-hidden bg-[var(--ink)]/15" role="progressbar" aria-label="Assessment completion" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}>
               <motion.div className="h-full origin-left bg-[var(--ink)]" initial={{ scaleX: 0 }} whileInView={{ scaleX: progress / 100 }} viewport={{ once: true }} transition={{ duration: 0.8 }} />
             </div>
           </div>
@@ -81,7 +81,7 @@ export function EditorialHomeHero({
                     data-testid={`home-pick-${item.occupationId}`}
                     aria-label={`${occupation?.title ?? item.occupationId}, ${Math.round(item.totalScore)} percent match`}
                   >
-                    <span className={`label-caps ${index === 2 ? '!text-[var(--accent-news)]' : ''}`}>{pickGroups[index]}</span>
+                    <span className={`label-caps ${index === 2 ? 'border-l-4 border-[var(--accent-news)] pl-2' : ''}`}>{pickGroups[index]}</span>
                     <h3 className={`font-display mt-4 ${index === 0 ? 'text-3xl md:text-4xl' : 'text-2xl'}`}>{occupation?.title ?? item.occupationId}</h3>
                     <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-[var(--ink-soft)]">{item.topReasons[0]}</p>
                     <span className="font-mono-ui mt-8 block text-2xl">{Math.round(item.totalScore)}%</span>

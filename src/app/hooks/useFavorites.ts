@@ -1,14 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { JobData } from '../data/jobs';
 import { useAuth } from '../context/AuthContext';
-import {
-  fetchRemoteFavorites,
-  saveFavorite as saveFavoriteRemote,
-  deleteRemoteFavorite,
-  clearRemoteFavorites,
-} from '../services/supabase';
 import { useGuidance } from '../context/GuidanceContext';
-import { occupationById } from '../data/knowledge';
 
 const FAVORITES_KEY = 'careersim_favorites';
 
@@ -38,7 +31,7 @@ export function useFavorites() {
   // Sync remote favorites when user logs in
   useEffect(() => {
     if (!user) return;
-    fetchRemoteFavorites(user.id).then(remote => {
+    import('../services/supabase').then(({ fetchRemoteFavorites }) => fetchRemoteFavorites(user.id)).then(remote => {
       if (remote.length === 0) return;
       const remoteFavs: Favorite[] = remote.map(r => ({
         id: r.id,
@@ -82,22 +75,24 @@ export function useFavorites() {
     saveFavorites(updated);
     if (passport) {
       const title = jobData.title.toLowerCase();
-      const occupation = [...occupationById.values()].find(item => item.title.toLowerCase() === title || item.title.toLowerCase().includes(title) || title.includes(item.title.toLowerCase()));
-      updatePassport(previous => {
-        if (!previous) throw new Error('Passport unavailable');
-        const current = previous.aspiration ?? { statement: `Explore ${jobData.title}`, horizonYears: 3, themes: [], dreamOccupationIds: [], entrepreneurialIntent: 'none' as const, capturedVia: 'form' as const };
-        return { ...previous, aspiration: { ...current, themes: [...new Set([...current.themes, jobData.title.toLowerCase()])].slice(0, 12), dreamOccupationIds: occupation ? [...new Set([...current.dreamOccupationIds, occupation.id])].slice(0, 5) : current.dreamOccupationIds } };
+      void import('../data/knowledge').then(({ occupationById }) => {
+        const occupation = [...occupationById.values()].find(item => item.title.toLowerCase() === title || item.title.toLowerCase().includes(title) || title.includes(item.title.toLowerCase()));
+        updatePassport(previous => {
+          if (!previous) throw new Error('Passport unavailable');
+          const current = previous.aspiration ?? { statement: `Explore ${jobData.title}`, horizonYears: 3, themes: [], dreamOccupationIds: [], entrepreneurialIntent: 'none' as const, capturedVia: 'form' as const };
+          return { ...previous, aspiration: { ...current, themes: [...new Set([...current.themes, jobData.title.toLowerCase()])].slice(0, 12), dreamOccupationIds: occupation ? [...new Set([...current.dreamOccupationIds, occupation.id])].slice(0, 5) : current.dreamOccupationIds } };
+        });
       });
     }
     if (user) {
-      saveFavoriteRemote(user.id, jobData.title, jobData, newFav.timestamp).catch(() => {});
+      void import('../services/supabase').then(({ saveFavorite }) => saveFavorite(user.id, jobData.title, jobData, newFav.timestamp)).catch(() => {});
     }
   }, [favorites, saveFavorites, user, passport, updatePassport]);
 
   const removeFavorite = useCallback((jobTitle: string) => {
     saveFavorites(favorites.filter(f => f.jobTitle.toLowerCase() !== jobTitle.toLowerCase()));
     if (user) {
-      deleteRemoteFavorite(user.id, jobTitle).catch(() => {});
+      void import('../services/supabase').then(({ deleteRemoteFavorite }) => deleteRemoteFavorite(user.id, jobTitle)).catch(() => {});
     }
   }, [favorites, saveFavorites, user]);
 
@@ -118,7 +113,7 @@ export function useFavorites() {
   const clearFavorites = useCallback(() => {
     saveFavorites([]);
     if (user) {
-      clearRemoteFavorites(user.id).catch(() => {});
+      void import('../services/supabase').then(({ clearRemoteFavorites }) => clearRemoteFavorites(user.id)).catch(() => {});
     }
   }, [saveFavorites, user]);
 

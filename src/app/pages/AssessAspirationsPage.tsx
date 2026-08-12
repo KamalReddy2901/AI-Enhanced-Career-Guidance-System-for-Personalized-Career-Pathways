@@ -14,7 +14,9 @@ import { useVoiceStatus } from "../hooks/useVoiceStatus";
 import { hapticLight, hapticSuccess } from '../utils/haptic';
 import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 import { TextReveal } from '../motion/TextReveal';
-import { Mic, Volume2 } from 'lucide-react';
+import { Mic } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { VoiceWaveform } from '../components/guidance/VoiceWaveform';
 
 const questions = {
   en: [
@@ -140,17 +142,17 @@ export function AssessAspirationsPage() {
               </p>
             </div>
           ))}
-          <div className="border-t border-black/10 pt-5">
+          <AnimatePresence mode="wait"><motion.div key={index} initial={{x:24,opacity:0}} animate={{x:0,opacity:1}} exit={{x:-24,opacity:0}} transition={{duration:.35}} className="border-t border-black/10 pt-5">
             <div className="flex gap-3">
               <h2 className="flex-1 text-2xl font-[Playfair_Display]">
-                {prompt}
+                <TextReveal text={prompt}/>
               </h2>
               <button
                 onClick={() => speak(prompt, locale)}
                 className="min-h-11 min-w-11 border border-black/20"
                 aria-label="Read question aloud"
               >
-                <Volume2 size={16} aria-hidden="true" />
+                <VoiceWaveform active={voiceStatus.status==='speaking'} />
               </button>
             </div>
             <textarea
@@ -180,7 +182,7 @@ export function AssessAspirationsPage() {
             </div>
             {busy && <div className="rule-top mt-5 flex items-center gap-3 py-4" role="status" aria-live="polite"><StickFigure pose="working" size={44} /><span className="font-mono-ui text-xs uppercase tracking-widest">{c.typesetting}<span className="button-loading-dots ml-2" aria-hidden="true"><i/><i/><i/></span></span></div>}
             {voiceStatus.message && <p className="mt-2 font-[Inter] text-xs text-black/55" role="status" aria-live="polite">{voiceStatus.message}</p>}
-          </div>
+          </motion.div></AnimatePresence>
           {error && (
             <div className="mt-4 bg-amber-50 p-3 font-[Inter] text-sm text-amber-900">
               {error}

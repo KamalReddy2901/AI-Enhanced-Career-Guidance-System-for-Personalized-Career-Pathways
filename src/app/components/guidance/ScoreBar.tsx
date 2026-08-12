@@ -20,11 +20,12 @@ export function ScoreBar({ value, label }: ScoreBarProps) {
       return;
     }
 
-    return animate(0, clampedValue, {
+    const controls = animate(0, clampedValue, {
       duration: 0.9,
       ease: [0.22, 1, 0.36, 1],
       onUpdate: (latest) => setDisplayValue(Math.round(latest)),
-    }).stop;
+    });
+    return () => controls.stop();
   }, [clampedValue, isInView, reducedMotion]);
 
   return (

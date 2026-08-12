@@ -63,7 +63,7 @@ import { generateShareUrl, decodeDossier } from "../utils/share";
 import { sounds } from "../utils/sounds";
 import { usePreferences } from "../hooks/usePreferences";
 import { useGuidance } from "../context/GuidanceContext";
-import { occupationById } from "../data/knowledge";
+import { marketFor, occupationById } from "../data/knowledge";
 import { WhyPanel } from "../components/guidance/WhyPanel";
 import type { CareerRecommendation } from "../engine/types";
 
@@ -302,6 +302,7 @@ export function JobDetailPage() {
         (item) => item.occupationId === knowledgeOccupation.id,
       )
     : undefined;
+  const marketSignal=knowledgeOccupation?marketFor(knowledgeOccupation.id):undefined;
 
   const toggleFavorite = () => {
     if (isFav) {
@@ -549,6 +550,7 @@ export function JobDetailPage() {
             <div className="flex-1">
               <h1 className="font-display text-black"><TextReveal text={currentJob.title} /></h1>
               <div className="flex flex-wrap items-center gap-3 mt-2">
+                {knowledgeOccupation && <span className="label-caps">{knowledgeOccupation.sector} · NSQF {knowledgeOccupation.nsqfEntryLevel}{marketSignal?` · demand ${marketSignal.demandIndex}`:''}</span>}
                 <span
                   className="font-[Inter] text-black/40 border border-black/10 px-2.5 py-1"
                   style={{ fontSize: "0.72rem" }}
@@ -1895,6 +1897,7 @@ export function JobDetailPage() {
 
       {/* Mobile floating action bar */}
       <div className="fixed bottom-0 left-0 right-0 z-30 sm:hidden bg-[#f9f8f7]/95 backdrop-blur-md border-t border-black/10 flex print:hidden">
+        {knowledgeOccupation && <button onClick={()=>navigate(`/pathway/${knowledgeOccupation.id}`)} data-testid="job-detail-build-pathway" aria-label="Build my pathway" className="flex-[1.6] bg-black px-3 py-3 font-mono-ui text-xs uppercase text-white">Build my pathway</button>}
         <button
           onClick={() => {
             sounds.click();
@@ -1993,12 +1996,9 @@ function Section({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
     >
-      <div className="flex items-center gap-2.5 mb-4">
+      <div className="rule-top flex items-center gap-2.5 mb-4 pt-3">
         <span className="text-black/40">{icon}</span>
-        <h2
-          className="font-[Playfair_Display] text-black"
-          style={{ fontSize: "1.2rem" }}
-        >
+        <span className="label-caps">Case section</span><h2 className="font-display text-2xl text-black">
           {title}
         </h2>
         <div className="h-px flex-1 bg-black/8" />
