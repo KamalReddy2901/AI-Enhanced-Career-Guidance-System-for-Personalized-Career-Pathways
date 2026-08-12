@@ -1,18 +1,4 @@
-import { StickFigure } from '../components/StickFigure';
-
-export function RecommendationsPage() {
-  return (
-    <div className="min-h-screen p-6 flex flex-col items-center justify-center">
-      <StickFigure pose="searching" size={140} />
-      <h1 className="mt-8 text-4xl font-[Playfair_Display] text-black">
-        Your Career Landscape
-      </h1>
-      <p className="mt-4 text-center text-black/70 max-w-md">
-        Coming in Phase 5 — Deterministic multi-objective career recommendations 
-        grouped by fit, growth, transition ease, and aspiration.
-      </p>
-    </div>
-  );
-}
-
+import { Link } from 'react-router'; import { StickFigure } from '../components/StickFigure'; import { useGuidance } from '../context/GuidanceContext'; import { occupationById, marketFor } from '../data/knowledge';
+const labels: Record<string,string>={best_fit:'Best current fit',growth:'Growth bets',easiest_transition:'Easiest transitions',aspiration:'Your aspiration',vocational_entrepreneurial:'Build & own',exploration:'Worth exploring'};
+export function RecommendationsPage(){const {passport,recommendations,recompute}=useGuidance();if(!passport)return <div className="min-h-screen p-8 text-center"><StickFigure pose="searching" size={120}/><h1 className="text-4xl font-[Playfair_Display] mt-6">Your career landscape starts with a passport</h1><Link to="/onboarding" className="inline-block mt-5 bg-black text-white px-5 py-3 font-[Inter]">Start onboarding</Link></div>;if(!recommendations){recompute();return <div className="min-h-screen p-8 text-center font-[Inter]">Preparing your landscape…</div>}const groups=Object.entries(recommendations.recommendations.reduce<Record<string,typeof recommendations.recommendations>>((all,r)=>{(all[r.group]??=[]).push(r);return all},{}));return <div className="min-h-screen bg-[#f9f8f7] p-4 md:p-8"><div className="max-w-5xl mx-auto"><header className="flex items-center gap-4 border-b-2 border-black pb-6 mb-6"><StickFigure pose="searching" size={84}/><div><div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-black/50">The Career Landscape · profile v{passport.version}</div><h1 className="text-4xl font-[Playfair_Display]">Strong options to explore</h1><p className="font-[Inter] text-black/60 mt-2">Deterministic scoring over KB kb-2026.06.1 · the LLM is used for wording only.</p></div></header>{groups.map(([group,recs])=><section key={group} className="mb-8"><h2 className="font-[JetBrains_Mono] text-xs uppercase tracking-widest border-b border-black/20 pb-2 mb-3">{labels[group]??group}</h2><div className="grid md:grid-cols-3 gap-3">{recs.map(rec=>{const o=occupationById.get(rec.occupationId);if(!o)return null;const m=marketFor(o.id);return <article key={o.id} className="bg-white border border-black/10 p-4"><div className="font-[JetBrains_Mono] text-xs text-black/50">{o.ncoCode} · NSQF {o.nsqfEntryLevel}</div><h3 className="text-2xl font-[Playfair_Display] mt-2">{o.title}</h3><div className="flex justify-between mt-4 font-[JetBrains_Mono] text-xs"><span>FIT {rec.totalScore}</span><span>{rec.confidence}</span></div><div className="h-2 bg-black/10 mt-2"><div className="h-2 bg-black" style={{width:rec.totalScore+'%'}}/></div><p className="font-[Inter] text-sm text-black/70 mt-4">{rec.topReasons[0]}</p><p className="font-[JetBrains_Mono] text-[10px] text-black/50 mt-3">{m?('Demand '+m.demandIndex+' · '+m.growthTrend+' · '+m.observedPeriod):'Indicative demand unavailable'}</p><Link to={'/pathway/'+o.id} className="block mt-4 border border-black/20 text-center p-2 font-[Inter] text-sm">Build my pathway →</Link></article>})}</div></section>)}</div></div> }
 export default RecommendationsPage;

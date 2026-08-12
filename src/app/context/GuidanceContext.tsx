@@ -22,6 +22,8 @@ import {
   fetchPathways as fetchPathwaysFromDb,
 } from '../services/guidanceDb';
 import { useAuth } from './AuthContext';
+import { matchCareers } from '../engine/matching';
+import { saveRecommendationSet } from '../services/guidanceDb';
 
 // ─── Context Types ────────────────────────────────────────────────────────────
 
@@ -31,7 +33,7 @@ interface GuidanceContextValue {
   pathways: PathwayPlan[];
   
   updatePassport: (mutator: (prev: CareerPassport | null) => CareerPassport) => void;
-  recompute: () => void;  // stub until Phase 5
+  recompute: () => void;
   
   loading: boolean;
 }
@@ -136,9 +138,18 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
   
   // ─── Recompute stub (Phase 5) ───────────────────────────────────────────────
   const recompute = useCallback(() => {
-    // Phase 5: call matching.ts, update recommendations, refresh gap reports
-    console.log('[GuidanceContext] recompute() stub — will be implemented in Phase 5');
-  }, []);
+    if (!passport) return;
+    const next = matchCareers(passport);
+    setRecommendations(next);
+    try { localStorage.setItem('cc_guidance_recommendations', JSON.stringify(next)); } catch { /* optional */ }
+    if (user?.id) void saveRecommendationSet(user.id, next);
+  }, [passport, user]);
+
+  useEffect(() => {
+    if (!passport) return;
+    const raw = localStorage.getItem('cc_guidance_recommendations');
+    if (raw) { try { setRecommendations(JSON.parse(raw) as RecommendationSet); } catch { /* stale cache */ } }
+  }, [passport]);
   
   return (
     <GuidanceContext.Provider
