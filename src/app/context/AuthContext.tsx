@@ -81,8 +81,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     const { supabase } = await import('../services/supabase');
-    if (!supabase) return;
-    await supabase.auth.signOut();
+    if (supabase) await supabase.auth.signOut();
+    // The next visitor must never inherit this browser's in-memory or local
+    // career journey. Account data remains safely stored in Supabase.
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith('cc_guidance_') || key.startsWith('careersim_'))
+      .forEach((key) => localStorage.removeItem(key));
+    setSession(null);
+    setUser(null);
   };
 
   return (

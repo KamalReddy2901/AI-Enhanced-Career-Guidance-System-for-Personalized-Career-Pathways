@@ -47,6 +47,12 @@ export function speak(text: string, lang = 'en-IN'): boolean {
   return true;
 }
 
+export function stopSpeaking(): void {
+  if (!voiceOutputSupported()) return;
+  window.speechSynthesis.cancel();
+  emit('idle', 'Read-aloud stopped.');
+}
+
 export function listen(lang = 'en-IN', timeoutMs = 15_000): Promise<string> {
   return new Promise((resolve, reject) => {
     if (localStorage.getItem('cc_guidance_voice') === 'off') { emit('disabled', 'Voice assistance is disabled in Settings.'); reject(new Error('Voice assistance is disabled in Settings')); return; }

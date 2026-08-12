@@ -35,7 +35,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, isSupabaseConfigured } = useAuth();
   const [currentJob, setCurrentJob] = useState<JobData | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [refinementCount, setRefinementCount] = useState(0);
@@ -45,7 +45,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Sync history from Supabase when user logs in
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setHistory([]);
+      setCurrentJob(null);
+      setComparisonJobs([null, null]);
+      setRefinementCount(0);
+      return;
+    }
     import('../services/supabase').then(({ fetchRemoteHistory }) => fetchRemoteHistory(user.id)).then(entries => {
       if (entries.length === 0) return;
       setHistory(prev => {
@@ -150,6 +156,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addToHistory = useCallback((jobData: JobData) => {
+    if (isSupabaseConfigured && !user) return;
     const entry: HistoryEntry = { id: crypto.randomUUID(), jobTitle: jobData.title, timestamp: Date.now(), jobData };
     setHistory(prev => {
       const filtered = prev.filter(h => h.jobTitle.toLowerCase() !== jobData.title.toLowerCase());
@@ -161,7 +168,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         saveHistoryEntry(user.id, jobData.title, jobData, entry.timestamp),
       ).catch(() => {});
     }
-  }, [user]);
+  }, [user, isSupabaseConfigured]);
 
   const clearHistory = useCallback(() => {
     setHistory([]);

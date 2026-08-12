@@ -11,7 +11,7 @@ export function BottomNav() {
   const navItems = [
     { path: '/', icon: Home, label: t('home') },
     { path: '/job', icon: Compass, label: t('explore') },
-    { path: '/passport', icon: Map, label: t('pathways') },
+    { path: '/pathways', icon: Map, label: t('pathways') },
     { path: '/counselor', icon: MessageCircle, label: t('counselor') },
     { path: '/settings', icon: Settings, label: t('settings') },
   ];

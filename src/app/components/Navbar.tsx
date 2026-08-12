@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Clock, Home, Compass, Settings, Menu, X, Map, MessageCircle, MoreHorizontal } from 'lucide-react';
+import { Clock, Home, Compass, Settings, Menu, X, Map, MessageCircle, ClipboardCheck, Route, UserRound } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { sounds } from '../utils/sounds';
 import { LanguageSwitcher, useT } from '../i18n';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 
 export function Navbar() {
   const { t } = useT();
@@ -30,7 +29,10 @@ export function Navbar() {
   const navLinks = [
     { to: '/', icon: <Home size={14} />, label: t('home'), active: isHome },
     { to: '/job', icon: <Compass size={14} />, label: t('explore'), active: ['/job','/quiz','/mood','/compare','/career-transition','/roadmap'].some(path => location.pathname.startsWith(path)) },
-    { to: '/passport', icon: <Map size={14} />, label: t('pathways'), active: ['/passport','/assess','/recommendations','/pathway'].some(path => location.pathname.startsWith(path)) },
+    { to: '/assess', icon: <ClipboardCheck size={14} />, label: t('assess'), active: location.pathname.startsWith('/assess') },
+    { to: '/recommendations', icon: <Map size={14} />, label: t('recommendations'), active: location.pathname === '/recommendations' },
+    { to: '/pathways', icon: <Route size={14} />, label: t('pathways'), active: location.pathname.startsWith('/pathway') || location.pathname === '/pathways' },
+    { to: '/passport', icon: <UserRound size={14} />, label: t('passport'), active: location.pathname === '/passport' },
     { to: '/counselor', icon: <MessageCircle size={14} />, label: t('counselor'), active: location.pathname === '/counselor' },
     ...user ? [
       {
@@ -42,9 +44,6 @@ export function Navbar() {
       { to: '/settings', icon: <Settings size={14} />, label: t('settings'), active: location.pathname === '/settings' },
     ] : [{ to: '/settings', icon: <Settings size={14} />, label: t('settings'), active: location.pathname === '/settings' }],
   ];
-  const primaryLinks = navLinks.slice(0, 4);
-  const overflowLinks = navLinks.slice(4);
-
   return (
     <>
       <motion.nav
@@ -75,30 +74,11 @@ export function Navbar() {
           </Link>
 
           {/* Desktop nav links */}
-          <div className="hidden md:flex items-center gap-0.5 sm:gap-1">
-            {primaryLinks.map(link => (
+          <div className="hidden md:flex min-w-0 items-center gap-0.5 overflow-x-auto">
+            {navLinks.map(link => (
               <NavLink key={link.to} {...link} />
             ))}
             <LanguageSwitcher compact />
-            {overflowLinks.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button type="button" className="label-caps flex items-center gap-1 px-3 py-2" aria-label={t('more')} data-testid="navbar-more-menu">
-                    <MoreHorizontal size={16} strokeWidth={1.5} />
-                    <span className="hidden lg:inline">{t('more')}</span>
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="card-sketch bg-[var(--paper-raised)] p-1">
-                  {overflowLinks.map((link) => (
-                    <DropdownMenuItem key={link.to} asChild>
-                      <Link to={link.to} className="font-mono-ui flex min-h-11 items-center gap-2 px-3 text-xs uppercase tracking-wide">
-                        {link.icon}{link.label}
-                      </Link>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
           </div>
 
           {/* Mobile hamburger */}
@@ -174,7 +154,7 @@ function NavLink({
       to={to}
       aria-label={label}
       onClick={() => sounds.navigate()}
-      className={`label-caps group relative flex items-center gap-1.5 px-2.5 py-2 transition-colors sm:px-3 ${
+      className={`label-caps group relative flex shrink-0 items-center gap-1.5 px-2.5 py-2 transition-colors sm:px-3 ${
         active
           ? 'bg-black text-white'
           : 'text-black/55 hover:text-black hover:bg-black/5'
@@ -182,7 +162,7 @@ function NavLink({
       style={{ fontSize: '0.78rem' }}
     >
       {icon}
-      <span className="hidden lg:inline">{label}</span>
+      <span>{label}</span>
       <span className="absolute inset-x-2 bottom-0 h-px origin-left scale-x-0 bg-[var(--ink)] transition-transform duration-200 group-hover:scale-x-100" />
     </Link>
   );

@@ -113,7 +113,7 @@ function normalizeStoredPassport(value: CareerPassport): CareerPassport {
 }
 
 export function GuidanceProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading, isSupabaseConfigured } = useAuth();
 
   const [passport, setPassport] = useState<CareerPassport | null>(null);
   const [recommendations, setRecommendations] =
@@ -128,6 +128,18 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const loadInitialData = async () => {
       setLoading(true);
+
+      // With account-backed auth enabled, never expose a previous visitor's
+      // browser profile in a signed-out session. Cloud data is loaded only for
+      // the authenticated account below.
+      if (isSupabaseConfigured && !user) {
+        setPassport(null);
+        setRecommendations(null);
+        setPathways([]);
+        setRecommendationChanges([]);
+        setLoading(false);
+        return;
+      }
 
       // Try localStorage first (always available)
       try {
@@ -165,8 +177,8 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     };
 
-    loadInitialData();
-  }, [user]);
+    if (!authLoading) void loadInitialData();
+  }, [user?.id, authLoading, isSupabaseConfigured]);
 
   // ─── Update passport ────────────────────────────────────────────────────────
   const updatePassport = useCallback(
@@ -348,7 +360,7 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    if (!passport) return;
+    if (!passport || (isSupabaseConfigured && !user)) return;
     const raw = localStorage.getItem("cc_guidance_recommendations");
     if (raw) {
       try {
@@ -357,7 +369,7 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
         /* stale cache */
       }
     }
-  }, [passport]);
+  }, [passport, isSupabaseConfigured, user]);
 
   useEffect(() => {
     if (!passport) return;
