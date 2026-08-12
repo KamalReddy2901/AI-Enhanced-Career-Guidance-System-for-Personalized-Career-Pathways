@@ -163,9 +163,8 @@ export function PathwayPage() {
           return next;
         });
     }
-    if (user?.id)
-      void logProgress(
-        user.id,
+    void logProgress(
+        user?.id ?? null,
         step.kind === "qualification" || step.kind === "learn"
           ? "module_completed"
           : "milestone_done",

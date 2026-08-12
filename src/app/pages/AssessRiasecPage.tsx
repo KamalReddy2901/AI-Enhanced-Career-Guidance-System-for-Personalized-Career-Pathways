@@ -41,8 +41,7 @@ export function AssessRiasecPage() {
       passport.completeness = calculateCompleteness(passport);
       return passport;
     });
-    if (user?.id)
-      void saveAssessment(user.id, "riasec", {
+    void saveAssessment(user?.id ?? null, "riasec", {
         scores,
         topCode: getTopCode(scores),
       });

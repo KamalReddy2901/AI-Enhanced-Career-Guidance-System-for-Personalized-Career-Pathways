@@ -33,7 +33,9 @@ export function SettingsPage() {
   const exportGuidance = async () => {
     const cloud = user?.id ? await Promise.all([fetchAssessments(user.id), fetchRecommendations(user.id), fetchProgress(user.id), fetchConsents(user.id)]) : [[], [], [], []];
     const localConsents = JSON.parse(localStorage.getItem('cc_guidance_consents') ?? '[]') as unknown[];
-    const payload = { exportedAt: new Date().toISOString(), passport, pathways, currentRecommendations: recommendations, assessments: cloud[0], recommendationHistory: cloud[1], progress: cloud[2], consents: cloud[3].length ? cloud[3] : localConsents };
+    const localAssessments = JSON.parse(localStorage.getItem('cc_guidance_assessment_runs') ?? '[]') as unknown[];
+    const localProgress = JSON.parse(localStorage.getItem('cc_guidance_progress_events') ?? '[]') as unknown[];
+    const payload = { exportedAt: new Date().toISOString(), passport, pathways, currentRecommendations: recommendations, assessments: cloud[0].length ? cloud[0] : localAssessments, recommendationHistory: cloud[1], progress: cloud[2].length ? cloud[2] : localProgress, consents: cloud[3].length ? cloud[3] : localConsents };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'careercase-guidance-data.json'; anchor.click(); URL.revokeObjectURL(url); toast.success('Complete guidance data exported');
   };
@@ -326,7 +328,9 @@ export function SettingsPage() {
                     </div>
                     <div>
                       <p className="font-[Inter] text-black/70" style={{ fontSize: '0.88rem' }}>{user.email}</p>
-                      <p className="font-[Inter] text-black/30" style={{ fontSize: '0.72rem' }}>History synced across devices</p>
+                      <p className="font-[Inter] text-black/30" style={{ fontSize: '0.72rem' }}>
+                        {(() => { try { const sync = JSON.parse(localStorage.getItem('cc_guidance_last_sync') ?? '{}') as { error?: string; uploaded?: Record<string, number> }; return sync.error ? 'Local copy safe · cloud sync will retry' : sync.uploaded ? `Synced with no data loss · ${Object.values(sync.uploaded).reduce((sum, count) => sum + count, 0)} records uploaded` : 'History synced across devices'; } catch { return 'History synced across devices'; } })()}
+                      </p>
                     </div>
                   </div>
                   <button

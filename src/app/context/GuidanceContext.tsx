@@ -17,9 +17,8 @@ import type {
   PathwayPlan,
 } from "../engine/types";
 import {
-  loadPassport,
   savePassport as savePassportToDb,
-  fetchPathways as fetchPathwaysFromDb,
+  migrateLocalGuidanceToCloud,
 } from "../services/guidanceDb";
 import { useAuth } from "./AuthContext";
 import { matchCareers } from "../engine/matching";
@@ -99,41 +98,15 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
 
       // If signed in, load from Supabase and merge
       if (user?.id) {
-        const remotePassport = await loadPassport(user.id);
-        const remotePathways = await fetchPathwaysFromDb(user.id);
-
-        if (remotePassport) {
-          // Remote wins on conflict (compare updatedAt)
-          const localRaw = localStorage.getItem(PASSPORT_STORAGE_KEY);
-          let shouldUseRemote = true;
-
-          if (localRaw) {
-            try {
-              const localPassport = JSON.parse(localRaw) as CareerPassport;
-              const localTime = new Date(localPassport.updatedAt).getTime();
-              const remoteTime = new Date(remotePassport.updatedAt).getTime();
-
-              if (localTime > remoteTime) {
-                // Local is newer, save it to remote
-                await savePassportToDb(user.id, localPassport);
-                shouldUseRemote = false;
-              }
-            } catch {
-              // Parse error, use remote
-            }
-          }
-
-          if (shouldUseRemote) {
-            setPassport(remotePassport);
-            localStorage.setItem(
-              PASSPORT_STORAGE_KEY,
-              JSON.stringify(remotePassport),
-            );
-          }
-        }
-
-        if (remotePathways.length > 0) {
-          setPathways(remotePathways.map((p) => p.plan as PathwayPlan));
+        try {
+          const migration = await migrateLocalGuidanceToCloud(user.id);
+          if (migration.passport) setPassport(migration.passport);
+          setPathways(migration.pathways);
+          localStorage.setItem("cc_guidance_last_sync", JSON.stringify({ userId: user.id, at: new Date().toISOString(), uploaded: migration.uploaded }));
+        } catch (error) {
+          // Never discard the anonymous browser copy when cloud sync is unavailable.
+          console.error("Guidance migration failed; local data retained:", error);
+          localStorage.setItem("cc_guidance_last_sync", JSON.stringify({ userId: user.id, at: new Date().toISOString(), error: String(error) }));
         }
       }
 

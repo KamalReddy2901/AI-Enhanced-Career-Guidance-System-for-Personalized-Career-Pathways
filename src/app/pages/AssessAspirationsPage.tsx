@@ -91,7 +91,7 @@ export function AssessAspirationsPage() {
         passport.completeness = calculateCompleteness(passport);
         return passport;
       });
-      if (user?.id) void saveAssessment(user.id, "aspiration", aspiration);
+      void saveAssessment(user?.id ?? null, "aspiration", aspiration);
       sounds.assessComplete();
       navigate("/assess");
     } catch {

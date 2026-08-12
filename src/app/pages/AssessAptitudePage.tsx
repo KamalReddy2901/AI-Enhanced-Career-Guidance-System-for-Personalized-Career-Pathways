@@ -55,8 +55,7 @@ export function AssessAptitudePage() {
       next.completeness = calculateCompleteness(next);
       return next;
     });
-    if (user?.id)
-      void saveAssessment(user.id, "aptitude", {
+    void saveAssessment(user?.id ?? null, "aptitude", {
         scores,
         form,
         elapsedSeconds: TOTAL_SECONDS - remainingSeconds,

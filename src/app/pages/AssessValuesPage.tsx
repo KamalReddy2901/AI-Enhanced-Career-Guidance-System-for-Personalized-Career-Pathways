@@ -36,7 +36,7 @@ export function AssessValuesPage() {
         p.completeness = calculateCompleteness(p);
         return p;
       });
-      if (user?.id) void saveAssessment(user.id, "values", scored);
+      void saveAssessment(user?.id ?? null, "values", scored);
       sounds.success();
     } else {
       setAnswers(next);

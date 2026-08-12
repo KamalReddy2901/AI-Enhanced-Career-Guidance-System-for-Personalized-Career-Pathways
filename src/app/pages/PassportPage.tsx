@@ -365,7 +365,7 @@ export function PassportPage() {
           </div>}
         </div>
       </div>
-      {validating && <SkillValidationDialog claim={validating} onClose={()=>setValidating(null)} onValidate={evidence=>{updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');const skills=previous.skills.map(claim=>claim.skillId===validating.skillId?addSkillEvidence(claim,evidence):claim);const next={...previous,skills};next.completeness=calculateCompleteness(next);return next});if(user?.id)void logProgress(user.id,'skill_validated',{skillId:validating.skillId,evidence});sounds.success();setValidating(null)}}/>}
+      {validating && <SkillValidationDialog claim={validating} onClose={()=>setValidating(null)} onValidate={evidence=>{updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');const skills=previous.skills.map(claim=>claim.skillId===validating.skillId?addSkillEvidence(claim,evidence):claim);const next={...previous,skills};next.completeness=calculateCompleteness(next);return next});void logProgress(user?.id ?? null,'skill_validated',{skillId:validating.skillId,evidence});sounds.success();setValidating(null)}}/>}
       {scoreEvidence && <WhyPanel evidence={scoreEvidence} onClose={()=>setScoreEvidence(null)}/>}
     </div>
   );
