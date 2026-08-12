@@ -15,21 +15,22 @@ export interface WordCloudMastheadProps {
 export function WordCloudMasthead({ passport, showLanding, onNavigate }: WordCloudMastheadProps) {
   const { t, lang } = useT();
 
-  const labels =
+  const rightLabels =
     lang === 'hi'
       ? ['योग्यता', 'आकांक्षा', 'क्षमता']
       : lang === 'te'
       ? ['ప్రతిభ', 'ఆకాంక్ష', 'సామర్థ్యం']
       : ['aptitude', 'aspiration', 'ability'];
 
+  const leftLabel =
+    lang === 'hi' ? 'अनुभव' : lang === 'te' ? 'అనుభవం' : 'experience';
+
   const primaryPath = showLanding ? '/onboarding' : passport ? '/assess' : '/onboarding';
 
   return (
     <section id="hero" className="relative min-h-screen overflow-hidden bg-[var(--paper)]" data-testid="hero-section">
-      {/* ── Word-cloud background ── */}
       <ScrollingTitles />
 
-      {/* ── Centred content ── */}
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 text-center">
         <motion.div
           className="flex flex-col items-center"
@@ -40,8 +41,24 @@ export function WordCloudMasthead({ passport, showLanding, onNavigate }: WordClo
           {/* Stick figure + annotations */}
           <div className="relative mb-6 flex justify-center">
             <StickFigure pose="searching" size={96} />
+
+            {/* Left annotation — experience */}
+            <motion.span
+              className="absolute right-[6.5rem] top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1.5 font-[JetBrains_Mono] text-[0.65rem] italic text-[var(--ink-soft)]"
+              initial={{ opacity: 0, x: 6 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.72 }}
+            >
+              {leftLabel}
+              {/* squiggle pointing right toward figure */}
+              <svg width="22" height="8" viewBox="0 0 24 8" aria-hidden="true">
+                <path d="M23 6C16 1 10 7 1 2" fill="none" stroke="currentColor" strokeWidth="1.5" />
+              </svg>
+            </motion.span>
+
+            {/* Right annotations — aptitude / aspiration / ability */}
             <div className="absolute left-[6.5rem] top-1 hidden space-y-4 sm:flex sm:flex-col">
-              {labels.map((label, i) => (
+              {rightLabels.map((label, i) => (
                 <motion.span
                   key={label}
                   className="flex items-center gap-1.5 font-[JetBrains_Mono] text-[0.65rem] italic text-[var(--ink-soft)]"
