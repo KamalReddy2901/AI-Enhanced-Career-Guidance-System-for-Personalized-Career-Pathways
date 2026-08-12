@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  X, ArrowRight, ArrowLeft, Sparkles, Search, BookOpen, Play,
-  Star, Scale, FlaskConical, MessageSquare, ArrowLeftRight, Map,
+  X, ArrowRight, ArrowLeft, Sparkles, Search, Play,
+  Star, Scale, MessageSquare, Map,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -168,8 +168,8 @@ const STEPS: TourStep[] = [
   {
     tag: 'WELCOME',
     icon: <Sparkles size={22} />,
-    headline: 'Your living career map.',
-    body: "CareerCase combines a transparent Career Passport and 100 NCO-coded pathways with the exploration tools you already know. Here is the full system.",
+    headline: 'Your career workspace, in one place.',
+    body: 'CareerCase keeps your Passport, assessments, recommendations and pathways connected to your signed-in account. This short tour shows where each part lives.',
     preview: (
       <div className="flex items-center justify-center w-full py-2">
         <div className="text-center">
@@ -181,17 +181,17 @@ const STEPS: TourStep[] = [
     ),
   },
   {
-    tag: 'PATHWAYS',
+    tag: 'PERSONAL',
     icon: <Map size={22} />,
-    headline: 'Assess, match, build a route, then replan.',
-    body: 'Four short assessments and your evidence-led Passport create a diverse landscape. Pick a target, compare three grounded routes, and watch readiness update as you complete evidence.',
+    headline: 'Start in Personal.',
+    body: 'Build your Career Passport, complete interests, aptitude and values assessments, then review your personalised Career Landscape and practical pathways.',
     preview: <RoadmapPreview />,
   },
   {
     tag: 'SEARCH',
     icon: <Search size={22} />,
-    headline: 'Search any career — or ask a question.',
-    body: "Type a role (\"UX Designer\"), a field (\"tech\"), or a question (\"jobs that involve travel?\"). With AI enabled, fuzzy queries work too.",
+    headline: 'Explore any career you are curious about.',
+    body: 'Use Explore to search a role by title. You can open a preliminary profile, refine it, and then build a full career dossier.',
     preview: (
       <div className="w-full">
         <div className="flex items-center gap-2 border border-black/15 px-3 py-2 mb-3">
@@ -208,64 +208,24 @@ const STEPS: TourStep[] = [
     ),
   },
   {
-    tag: 'DOSSIER',
-    icon: <BookOpen size={22} />,
-    headline: 'Get a full AI career dossier.',
-    body: "Every career comes with salary data, education paths, daily routines, skills breakdown, work-life balance scores, and much more.",
-    preview: <DossierPreview />,
-  },
-  {
-    tag: 'SIMULATE',
+    tag: 'DOSSIER & SIMULATION',
     icon: <Play size={22} />,
-    headline: 'Live a day in the role.',
-    body: "Step into a realistic 8-hour workday. Make decisions, face unexpected events, and see how you think under pressure.",
+    headline: 'Read the role, then try a day in it.',
+    body: 'Dossiers organise a role’s responsibilities, skills, routes and trade-offs. The day simulation lets you respond to realistic decisions, then use “Does it fit me?” for a Passport-aware AI reflection.',
     preview: <SimPreview />,
   },
   {
-    tag: 'INTERVIEW',
-    icon: <MessageSquare size={22} />,
-    headline: 'Practice interview questions.',
-    body: "Get AI-generated interview questions calibrated to each specific role, with instant feedback on your answers.",
-    preview: <InterviewPreview />,
-  },
-  {
-    tag: 'COMPARE',
+    tag: 'EXPLORE TOOLS',
     icon: <Scale size={22} />,
-    headline: 'Compare careers side by side.',
-    body: "Stack any two careers against each other — salary, skills, work-life balance, growth outlook, and more — in a single view.",
+    headline: 'Use the right tool for the question.',
+    body: 'Explore also includes Compare, Mood Match, Career Quiz, Career Transition Planner and Roadmap Builder. If you have current work experience, Roadmap Builder can start from that role.',
     preview: <ComparePreview />,
   },
   {
-    tag: 'QUIZ & MOOD',
-    icon: <FlaskConical size={22} />,
-    headline: 'Discover careers that fit you.',
-    body: "Take the Career Match Quiz to get matched by personality, or try Mood Match to find careers that vibe with how you feel right now.",
-    preview: (
-      <div className="w-full space-y-2">
-        <QuizPreview />
-        <div className="border-t border-black/8 pt-2 opacity-70"><MoodPreview /></div>
-      </div>
-    ),
-  },
-  {
-    tag: 'TRANSITION',
-    icon: <ArrowLeftRight size={22} />,
-    headline: 'Plan your career transition.',
-    body: "Already working? Map out the exact steps, skills, and timeline to switch from your current role to your dream career.",
-    preview: <TransitionPreview />,
-  },
-  {
-    tag: 'ROADMAP',
-    icon: <Map size={22} />,
-    headline: 'Build a personalised roadmap.',
-    body: "Get a step-by-step roadmap from where you are today — with milestones, resources, and timelines tailored to your goal.",
-    preview: <RoadmapPreview />,
-  },
-  {
-    tag: 'HISTORY',
-    icon: <Star size={22} />,
-    headline: 'Save favourites & track your journey.',
-    body: "Every career you explore is saved. Star favourites, revisit old searches, and compare or plan transitions directly from your history.",
+    tag: 'COUNSELOR & ARCHIVE',
+    icon: <MessageSquare size={22} />,
+    headline: 'Ask, revisit, and keep moving.',
+    body: 'Counselor answers questions using your saved Passport and active pathways. Archive keeps your explored careers and favourites available when you return.',
     preview: <HistoryPreview />,
   },
 ];
@@ -326,13 +286,13 @@ export function OnboardingTour() {
 
           {/* Card */}
           <motion.div
-            className="fixed z-50 inset-x-4 top-1/2 -translate-y-1/2 sm:inset-auto sm:top-auto sm:bottom-8 sm:right-8 sm:w-[420px]"
+            className="fixed inset-4 z-50 flex items-center justify-center sm:inset-0"
             initial={{ opacity: 0, y: 40, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.96 }}
             transition={{ type: 'spring', damping: 28, stiffness: 280 }}
           >
-            <div className="bg-[#f9f8f7] border border-black/12 shadow-2xl overflow-hidden">
+            <div className="flex h-[min(680px,calc(100vh-2rem))] w-full max-w-[600px] flex-col overflow-hidden border border-black/20 bg-[#f9f8f7] shadow-2xl">
 
               {/* Progress bar */}
               <div className="h-0.5 bg-black/8">
@@ -357,13 +317,13 @@ export function OnboardingTour() {
                 ))}
               </div>
 
-              <div className="p-6">
+              <div className="flex min-h-0 flex-1 flex-col p-6">
 
                 {/* Preview panel */}
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={`preview-${step}`}
-                    className="mb-5 border border-black/8 bg-white/60 p-4 min-h-[96px] flex items-start"
+                    className="mb-5 flex h-[132px] shrink-0 items-start border border-black/8 bg-white/60 p-4"
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
@@ -397,6 +357,7 @@ export function OnboardingTour() {
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={`text-${step}`}
+                    className="min-h-[145px]"
                     initial={{ opacity: 0, x: 12 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -12 }}
@@ -418,7 +379,7 @@ export function OnboardingTour() {
                 </AnimatePresence>
 
                 {/* Actions */}
-                <div className="flex items-center justify-between mt-6">
+                <div className="mt-auto flex items-center justify-between border-t border-black/8 pt-5">
                   <div className="flex items-center gap-3">
                     {step > 0 ? (
                       <button
