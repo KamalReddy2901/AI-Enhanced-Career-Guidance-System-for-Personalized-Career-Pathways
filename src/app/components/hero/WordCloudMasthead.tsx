@@ -70,10 +70,35 @@ export function WordCloudMasthead({ passport, showLanding, onNavigate }: WordClo
           </motion.p>
 
           {/* Main headline */}
-          <h1
-            className="font-display max-w-3xl text-4xl leading-[1.2] tracking-tight text-[var(--ink)] sm:text-5xl lg:text-6xl"
-          >
-            {t('homeHeadline')}
+          <h1 className="font-display max-w-3xl text-4xl leading-[1.2] tracking-tight text-[var(--ink)] sm:text-5xl lg:text-6xl">
+            {lang === 'en' ? (
+              <>
+                Find the work that fits
+                <br />
+                <span className="relative inline-block">
+                  <span className="relative z-10">your</span>
+                  {/* hand-drawn underline */}
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 60 6"
+                    preserveAspectRatio="none"
+                    className="absolute left-0 w-full pointer-events-none"
+                    style={{ bottom: '-0.12em', height: '0.18em' }}
+                  >
+                    <path
+                      d="M1 4 Q15 1 30 3.5 Q45 6 59 2.5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>
+                {' '}story.
+              </>
+            ) : (
+              t('homeHeadline')
+            )}
           </h1>
 
           {/* Rule */}
