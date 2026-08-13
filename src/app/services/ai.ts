@@ -1179,9 +1179,10 @@ export async function getCareerRoadmap(jobTitle: string, signal?: AbortSignal, d
       : 'Be moderately detailed — include 3 milestones and 3 skills per stage.';
 
   return withRetry(async () => {
-    const raw = await callGroqStreaming(
-      'You are a career development strategist. Return ONLY valid JSON with no markdown formatting. Do not use ** for bold or any other markdown syntax. Be specific to this profession.',
-      `Create a comprehensive career roadmap for "${jobTitle}"${isIndia ? ' in the Indian job market. Use INR (LPA format) for salaries, reference relevant Indian companies, certifications (e.g. GATE, CA, UPSC where relevant), and realistic Indian career progression timelines.' : ''}.${description ? ` The user's specific context for this role: "${description}" — tailor the roadmap to this specialisation and setting.` : ''} ${detailInstruction} Return this exact JSON with NO markdown formatting:
+    try {
+      const raw = await callGroqStreaming(
+        'You are a career development strategist. Return ONLY valid JSON with no markdown formatting. Do not use ** for bold or any other markdown syntax. Be specific to this profession.',
+        `Create a comprehensive career roadmap for "${jobTitle}"${isIndia ? ' in the Indian job market. Use INR (LPA format) for salaries, reference relevant Indian companies, certifications (e.g. GATE, CA, UPSC where relevant), and realistic Indian career progression timelines.' : ''}.${description ? ` The user's specific context for this role: "${description}" — tailor the roadmap to this specialisation and setting.` : ''} ${detailInstruction} Return this exact JSON with NO markdown formatting:
 {
   "title": "${jobTitle}",
   "totalYears": "e.g. 20+ years to reach peak",
@@ -1202,26 +1203,34 @@ export async function getCareerRoadmap(jobTitle: string, signal?: AbortSignal, d
   "industryOutlook": "2-3 sentences on where this career is heading over the next decade"
 }
 Include 5 stages (Entry, Junior, Mid-level, Senior, Expert/Leadership). Use distinct colors for each stage.`,
-      { temperature: 0.6, maxTokens: 1400, signal, usageType: 'roadmap' }
-    );
+        { temperature: 0.6, maxTokens: 1400, signal, usageType: 'roadmap' }
+      );
 
-    // Clean the response: remove markdown code fences and any markdown formatting
-    let cleaned = raw.trim();
-    // Remove markdown code blocks (```json ... ``` or ``` ... ```)
-    cleaned = cleaned.replace(/^```(?:json)?\s*\n?/g, '').replace(/\n?```\s*$/g, '');
-    // Remove any remaining triple backticks
-    cleaned = cleaned.replace(/```/g, '');
-    // Trim whitespace again
-    cleaned = cleaned.trim();
+      // Clean the response: remove markdown code fences and any markdown formatting
+      let cleaned = raw.trim();
+      // Remove markdown code blocks (```json ... ``` or ``` ... ```)
+      cleaned = cleaned.replace(/^```(?:json)?\s*\n?/g, '').replace(/\n?```\s*$/g, '');
+      // Remove any remaining triple backticks
+      cleaned = cleaned.replace(/```/g, '');
+      // Trim whitespace again
+      cleaned = cleaned.trim();
 
-    try {
       const result = JSON.parse(cleaned) as CareerRoadmap;
+      
+      // Validate the result has required fields
+      if (!result.title || !result.stages || !Array.isArray(result.stages) || result.stages.length === 0) {
+        console.error('Invalid roadmap structure:', result);
+        throw new Error('AI returned incomplete roadmap data');
+      }
+      
       setCache(cacheKey, result);
       return result;
     } catch (parseError) {
-      console.error('Failed to parse roadmap JSON:', parseError);
-      console.error('Cleaned response:', cleaned);
-      throw new Error('Failed to generate roadmap. The AI response was not in the expected format. Please try again.');
+      console.error('Roadmap generation error:', parseError);
+      if (parseError instanceof SyntaxError) {
+        throw new Error('Failed to generate roadmap. The AI response was not in valid JSON format. Please try again.');
+      }
+      throw parseError;
     }
   });
 }

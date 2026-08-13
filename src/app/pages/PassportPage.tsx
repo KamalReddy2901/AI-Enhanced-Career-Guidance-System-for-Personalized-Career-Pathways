@@ -20,7 +20,7 @@ import { TextReveal } from '../motion/TextReveal';
 import { useT } from '../i18n';
 import { readResumeText } from '../utils/resumeText';
 import { useUndoStack } from '../hooks/useUndoStack';
-import { Undo2, Redo2, RotateCcw, Plus } from 'lucide-react';
+import { Undo2, Redo2, RotateCcw, Plus, Trash2, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function PassportPage() {
@@ -55,6 +55,8 @@ export function PassportPage() {
   const [addingManualSkill, setAddingManualSkill] = useState(false);
   const [manualSkillName, setManualSkillName] = useState('');
   const [manualSkillProficiency, setManualSkillProficiency] = useState<Proficiency>(2);
+  const [editingAspiration, setEditingAspiration] = useState(false);
+  const [aspirationText, setAspirationText] = useState('');
   const resumeInputRef = useRef<HTMLInputElement>(null);
 
   const handleResumeFile = async (file: File | undefined) => {
@@ -178,6 +180,63 @@ export function PassportPage() {
     sounds.success();
     hapticSuccess();
     toast.success('Skill added to passport');
+  };
+
+  const handleResetResumeData = () => {
+    if (!window.confirm('Reset all skills and experiences from resume? This cannot be undone. Your assessment results will be preserved.')) {
+      return;
+    }
+
+    updatePassport(prev => {
+      if (!prev) throw new Error('Passport unavailable');
+      undoStack.pushState(prev);
+      const next = {
+        ...prev,
+        skills: [],
+        experiences: [],
+        education: '',
+      };
+      next.completeness = calculateCompleteness(next);
+      return next;
+    });
+
+    sounds.success();
+    hapticSuccess();
+    toast.success('Skills and experiences cleared');
+  };
+
+  const handleUpdateAspiration = () => {
+    if (!aspirationText.trim()) {
+      toast.error('Please enter your aspiration');
+      return;
+    }
+
+    updatePassport(prev => {
+      if (!prev) throw new Error('Passport unavailable');
+      undoStack.pushState(prev);
+      // Simple theme extraction - split by common separators
+      const themes = aspirationText
+        .split(/[,;]/)
+        .map(t => t.trim())
+        .filter(t => t.length > 0)
+        .slice(0, 5);
+      
+      const next = {
+        ...prev,
+        aspiration: {
+          statement: aspirationText.trim(),
+          themes: themes.length > 0 ? themes : [aspirationText.trim().split(' ')[0]],
+        },
+      };
+      next.completeness = calculateCompleteness(next);
+      return next;
+    });
+
+    setEditingAspiration(false);
+    setAspirationText('');
+    sounds.success();
+    hapticSuccess();
+    toast.success('Aspiration updated');
   };
 
   if (!passport) {
@@ -307,27 +366,37 @@ export function PassportPage() {
         </div>
 
         {/* Resume Extraction */}
-        <div className="mb-6 border border-[var(--ink-faint)] bg-[var(--paper-raised)] p-6">
-          <h2 className="font-display mb-3 text-2xl">{t('passportAddResume')}</h2>
+        <div className="mb-6 border-2 border-[var(--ink)] bg-[var(--paper-raised)] p-6 shadow-md">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display text-2xl">{t('passportAddResume')}</h2>
+            {(passport.skills.length > 0 || passport.experiences.length > 0) && (
+              <button
+                onClick={handleResetResumeData}
+                className="flex items-center gap-2 border-2 border-[var(--accent-news)] px-3 py-2 text-xs font-mono-ui uppercase text-[var(--accent-news)] hover:bg-[var(--accent-news)] hover:text-[var(--paper)] transition-colors"
+              >
+                <Trash2 size={14} /> Reset All
+              </button>
+            )}
+          </div>
           <p className="mb-4 text-sm text-[var(--ink-soft)]">
             {t('passportResumeHelp')}
           </p>
           <input ref={resumeInputRef} type="file" accept=".pdf,.doc,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" className="sr-only" onChange={(event) => void handleResumeFile(event.target.files?.[0])} />
-          <button type="button" onClick={() => resumeInputRef.current?.click()} disabled={isExtracting} className="mb-3 min-h-11 border-2 border-[var(--ink)] px-4 font-mono-ui text-xs uppercase disabled:opacity-40">Upload PDF, DOCX or TXT</button>
+          <button type="button" onClick={() => resumeInputRef.current?.click()} disabled={isExtracting} className="mb-3 min-h-11 border-2 border-[var(--ink)] px-4 font-mono-ui text-xs uppercase disabled:opacity-40 hover:bg-[var(--ink)] hover:text-[var(--paper)] transition-colors">Upload PDF, DOCX or TXT</button>
           <textarea
             value={resumeText}
             onChange={(e) => setResumeText(e.target.value)}
             placeholder={t('passportResumePlaceholder')}
-            className="mb-3 h-32 w-full resize-none rounded-sm border border-[var(--ink-faint)] bg-[var(--paper)] p-3 text-sm"
+            className="mb-3 h-32 w-full resize-none rounded-sm border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-3 text-sm focus:border-[var(--ink)] focus:outline-none"
             disabled={isExtracting}
           />
           {extractError && (
-            <div className="mb-3 rounded-sm border border-[var(--accent-news)] bg-[var(--paper)] p-3 text-sm">
+            <div className="mb-3 rounded-sm border-2 border-[var(--accent-news)] bg-[var(--paper)] p-3 text-sm">
               {extractError}
             </div>
           )}
           {extractProgress && (
-            <div className="mb-3 rounded-sm border border-[var(--ink-faint)] bg-[var(--paper)] p-3">
+            <div className="mb-3 rounded-sm border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold">{extractProgress.step}</span>
                 <span className="font-mono-ui text-xs">{extractProgress.current}/{extractProgress.total}</span>
@@ -342,7 +411,7 @@ export function PassportPage() {
           )}
           {extractNotice && <div className="mb-3 border-l-4 border-[var(--accent-news)] bg-[var(--paper)] p-3 text-sm">{extractNotice}</div>}
           {unmatchedSkills.length > 0 && (
-            <div className="mb-3 rounded-sm border border-[var(--ink-faint)] bg-[var(--paper)] p-3 text-sm">
+            <div className="mb-3 rounded-sm border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-3 text-sm">
               <p className="mb-1 font-semibold">{t('passportUnmatchedSkills')}</p>
               <p className="text-[var(--ink-soft)]">{unmatchedSkills.join(', ')}</p>
               <button
@@ -356,19 +425,19 @@ export function PassportPage() {
           <button
             onClick={handleResumeExtract}
             disabled={!resumeText.trim() || isExtracting}
-            className="bg-[var(--ink)] px-6 py-2 text-sm text-[var(--paper)] transition-opacity disabled:opacity-30"
+            className="bg-[var(--ink)] px-6 py-2 text-sm text-[var(--paper)] transition-opacity disabled:opacity-30 hover:shadow-lg"
           >
             {isExtracting ? t('passportExtracting') : t('passportExtract')}
           </button>
         </div>
 
         {/* Skills */}
-        <div className="mb-6 border border-[var(--ink-faint)] bg-[var(--paper-raised)] p-6">
+        <div className="mb-6 border-2 border-[var(--ink)] bg-[var(--paper-raised)] p-6 shadow-md">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-2xl">{t('passportSkills')}</h2>
             <button
               onClick={() => setAddingManualSkill(true)}
-              className="flex items-center gap-2 border border-[var(--ink-faint)] px-3 py-2 text-sm hover:border-[var(--ink)]"
+              className="flex items-center gap-2 border-2 border-[var(--ink)] px-3 py-2 text-xs font-mono-ui uppercase hover:bg-[var(--ink)] hover:text-[var(--paper)] transition-colors"
             >
               <Plus size={14} /> Add skill
             </button>
@@ -376,13 +445,13 @@ export function PassportPage() {
           {passport.skills.length === 0 ? (
             <p className="text-sm text-[var(--ink-soft)]">{t('passportNoSkills')}</p>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {Object.entries(groupedSkills).map(([category, claims]) => (
                 <div key={category}>
-                  <h3 className="label-caps mb-2 text-[var(--ink-soft)]">
+                  <h3 className="label-caps mb-3 text-[var(--ink-soft)] bg-[var(--paper)] inline-block px-2 py-1 rounded">
                     {category}
                   </h3>
-                  <div className="space-y-2">
+                  <div className="grid gap-3 sm:grid-cols-2">
                     {claims.map(claim => {
                       const skill = skillById.get(claim.skillId);
                       if (!skill) return null;
@@ -390,66 +459,105 @@ export function PassportPage() {
                       return (
                         <motion.div 
                           key={claim.skillId}
-                          className="rounded-sm border border-[var(--ink-faint)] p-3 transition-colors hover:border-[var(--ink)]"
-                          whileHover={{ y: -2, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                          className="rounded border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-4 transition-colors hover:border-[var(--ink)] hover:shadow-md"
+                          whileHover={{ y: -2 }}
                           transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                         >
-                          <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="text-sm font-semibold">{skill.name}</div>
-                            <div className="flex items-center gap-2 mt-1">
-                              {editingSkillProficiency === claim.skillId ? (
-                                <div className="flex gap-1">
-                                  {[1, 2, 3, 4].map(level => (
-                                    <button
-                                      key={level}
-                                      onClick={() => handleSkillProficiencyChange(claim.skillId, level as Proficiency)}
-                                      className={`w-6 h-6 rounded-full border-2 ${
-                                        level <= claim.proficiency ? 'bg-[var(--ink)] border-[var(--ink)]' : 'border-[var(--ink-faint)]'
-                                      } hover:border-[var(--ink)] transition-colors`}
-                                    >
-                                      {level}
-                                    </button>
-                                  ))}
-                                  <button
-                                    onClick={() => setEditingSkillProficiency(null)}
-                                    className="ml-2 text-xs underline"
-                                  >
-                                    Cancel
-                                  </button>
-                                </div>
-                              ) : (
-                                <>
-                                  <button
-                                    onClick={() => {
-                                      sounds.click();
-                                      hapticLight();
-                                      setEditingSkillProficiency(claim.skillId);
-                                    }}
-                                    className="flex gap-1 group"
-                                    title="Click to edit proficiency"
-                                  >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-semibold truncate" title={skill.name}>{skill.name}</div>
+                              <div className="flex items-center gap-3 mt-2">
+                                {editingSkillProficiency === claim.skillId ? (
+                                  <div className="flex gap-1">
                                     {[1, 2, 3, 4].map(level => (
-                                      <motion.div
+                                      <button
                                         key={level}
-                                        className={`w-2 h-2 rounded-full ${
-                                          level <= claim.proficiency ? 'bg-[var(--ink)]' : 'bg-[var(--ink-faint)]'
+                                        onClick={() => handleSkillProficiencyChange(claim.skillId, level as Proficiency)}
+                                        className={`w-7 h-7 rounded-full border-2 text-xs font-bold transition-all ${
+                                          level <= claim.proficiency 
+                                            ? 'bg-[var(--ink)] border-[var(--ink)] text-[var(--paper)] scale-110' 
+                                            : 'border-[var(--ink-faint)] hover:border-[var(--ink)]'
                                         }`}
-                                        whileHover={{ scale: 1.3, boxShadow: '0 0 8px rgba(0,0,0,0.3)' }}
-                                        transition={{ type: 'spring', stiffness: 400, damping: 10 }}
-                                      />
+                                      >
+                                        {level}
+                                      </button>
                                     ))}
-                                  </button>
-                                  <span className="font-mono-ui text-xs text-[var(--ink-soft)]">
-                                    {claim.confidence < 0.7 ? t('passportUnverified') : `${Math.round(claim.confidence * 100)}% ${t('passportConfidence')}`}
-                                  </span>
-                                </>
-                              )}
+                                    <button
+                                      onClick={() => setEditingSkillProficiency(null)}
+                                      className="ml-2 text-xs underline hover:no-underline"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <button
+                                      onClick={() => {
+                                        sounds.click();
+                                        hapticLight();
+                                        setEditingSkillProficiency(claim.skillId);
+                                      }}
+                                      className="flex gap-1 group"
+                                      title="Click to edit proficiency"
+                                    >
+                                      {[1, 2, 3, 4].map(level => (
+                                        <motion.div
+                                          key={level}
+                                          className={`w-2.5 h-2.5 rounded-full ${
+                                            level <= claim.proficiency ? 'bg-[var(--ink)]' : 'bg-[var(--ink-faint)]'
+                                          }`}
+                                          whileHover={{ scale: 1.4, boxShadow: '0 0 8px rgba(0,0,0,0.3)' }}
+                                          transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                                        />
+                                      ))}
+                                    </button>
+                                    <span className="font-mono-ui text-[10px] text-[var(--ink-soft)]">
+                                      {claim.confidence < 0.7 ? t('passportUnverified') : `${Math.round(claim.confidence * 100)}%`}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              <button 
+                                onClick={() => {
+                                  sounds.click();
+                                  hapticLight();
+                                  setExpandedEvidence(expandedEvidence===claim.skillId?null:claim.skillId);
+                                }} 
+                                className="text-[10px] font-mono-ui text-[var(--ink-soft)] underline hover:text-[var(--ink)] whitespace-nowrap"
+                              >
+                                {claim.evidence.length} {t('passportEvidence')}
+                              </button>
+                              <button 
+                                onClick={()=>{
+                                  sounds.modalOpen();
+                                  hapticLight();
+                                  setValidating(claim);
+                                }} 
+                                className="border border-[var(--ink-faint)] px-2 py-1 text-[10px] font-mono-ui hover:border-[var(--ink)] whitespace-nowrap"
+                              >
+                                {t('passportValidate')}
+                              </button>
                             </div>
                           </div>
-                          <div className="flex gap-3"><button onClick={() => {sounds.click();hapticLight();setExpandedEvidence(expandedEvidence===claim.skillId?null:claim.skillId)}} className="min-h-11 text-xs text-[var(--ink-soft)] underline hover:text-[var(--ink)]">{claim.evidence.length} {t('passportEvidence')}</button><button onClick={()=>{sounds.modalOpen();hapticLight();setValidating(claim)}} className="min-h-11 border border-[var(--ink-faint)] px-3 text-xs">{t('passportValidate')}</button></div>
-                          </div>
-                          {expandedEvidence === claim.skillId && <div className="mt-3 space-y-2 border-t border-[var(--ink-faint)] pt-3">{claim.evidence.map((evidence,index)=><div key={`${evidence.observedAt}-${index}`} className="text-xs"><span className="font-mono-ui uppercase text-[var(--ink-soft)]">{evidence.type} · {Math.round(evidence.confidence*100)}%</span><p className="text-[var(--ink-soft)]">{evidence.description}</p></div>)}</div>}
+                          {expandedEvidence === claim.skillId && (
+                            <motion.div 
+                              initial={{height: 0, opacity: 0}}
+                              animate={{height: 'auto', opacity: 1}}
+                              exit={{height: 0, opacity: 0}}
+                              className="mt-3 space-y-2 border-t-2 border-[var(--ink-faint)] pt-3"
+                            >
+                              {claim.evidence.map((evidence,index)=>(
+                                <div key={`${evidence.observedAt}-${index}`} className="text-xs bg-[var(--paper-raised)] p-2 rounded">
+                                  <span className="font-mono-ui uppercase text-[var(--ink-soft)] block mb-1">
+                                    {evidence.type} · {Math.round(evidence.confidence*100)}%
+                                  </span>
+                                  <p className="text-[var(--ink-soft)]">{evidence.description}</p>
+                                </div>
+                              ))}
+                            </motion.div>
+                          )}
                         </motion.div>
                       );
                     })}
@@ -461,58 +569,99 @@ export function PassportPage() {
         </div>
 
         {/* Experiences */}
-        <div className="mb-6 border border-[var(--ink-faint)] bg-[var(--paper-raised)] p-6">
+        <div className="mb-6 border-2 border-[var(--ink)] bg-[var(--paper-raised)] p-6 shadow-md">
           <h2 className="font-display mb-4 text-2xl">{t('passportExperiences')}</h2>
           {passport.experiences.length === 0 ? (
             <p className="text-sm text-[var(--ink-soft)]">{t('passportNoExperiences')}</p>
           ) : (
-            <div className="space-y-3">
-              {passport.experiences.map((exp, idx) => (
-                <div key={idx} className="rounded-sm border border-[var(--ink-faint)] p-4">
-                  <div className="text-sm font-semibold">{exp.title}</div>
-                  <div className="font-mono-ui mt-1 text-xs text-[var(--ink-soft)]">
-                    {exp.years} {exp.years === 1 ? t('passportYear') : t('passportYears')}
-                  </div>
-                  {exp.description && (
-                    <p className="mt-2 text-sm text-[var(--ink-soft)]">{exp.description}</p>
-                  )}
-                </div>
-              ))}
+            <div className="relative pl-8 space-y-6">
+              {/* Timeline line */}
+              <div className="absolute left-2 top-3 bottom-3 w-0.5 bg-[var(--ink-faint)]" />
+              
+              {passport.experiences
+                .sort((a, b) => b.years - a.years)
+                .map((exp, idx) => (
+                  <motion.div 
+                    key={idx} 
+                    className="relative"
+                    initial={{opacity: 0, x: -20}}
+                    animate={{opacity: 1, x: 0}}
+                    transition={{delay: idx * 0.1}}
+                  >
+                    {/* Timeline dot */}
+                    <div className="absolute -left-[26px] top-2 w-3 h-3 rounded-full border-2 border-[var(--ink)] bg-[var(--paper-raised)]" />
+                    
+                    <div className="rounded border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-4 hover:border-[var(--ink)] hover:shadow-md transition-all">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="text-base font-semibold">{exp.title}</div>
+                          <div className="font-mono-ui mt-1 flex items-center gap-2 text-xs text-[var(--ink-soft)]">
+                            <span className="bg-[var(--ink)] text-[var(--paper)] px-2 py-0.5 rounded">
+                              {exp.years} {exp.years === 1 ? t('passportYear') : t('passportYears')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      {exp.description && (
+                        <p className="mt-3 text-sm text-[var(--ink-soft)] leading-relaxed border-l-2 border-[var(--ink-faint)] pl-3">
+                          {exp.description}
+                        </p>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
             </div>
           )}
         </div>
 
         {/* Assessments */}
-        <div className="mb-6 border border-[var(--ink-faint)] bg-[var(--paper-raised)] p-6">
+        <div className="mb-6 border-2 border-[var(--ink)] bg-[var(--paper-raised)] p-6 shadow-md">
           <h2 className="font-display mb-4 text-2xl">{t('passportAssessmentResults')}</h2>
           <div className="space-y-4">
             {passport.riasec ? (
-              <div className="rounded-sm border border-[var(--ink-faint)] p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm font-semibold">{t('passportRiasecProfile')}</div>
+              <div className="rounded border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-base font-semibold">{t('passportRiasecProfile')}</div>
                   <button
                     onClick={() => handleRetakeAssessment('riasec')}
-                    className="flex items-center gap-1 text-xs text-[var(--ink-soft)] hover:text-[var(--ink)] underline"
+                    className="flex items-center gap-1 text-xs font-mono-ui uppercase text-[var(--ink-soft)] hover:text-[var(--ink)] underline hover:no-underline"
                   >
                     <RotateCcw size={12} /> Retake
                   </button>
                 </div>
-                <RiasecHexagon scores={passport.riasec} compact />
-                <div className="font-mono-ui grid grid-cols-2 gap-2 text-xs">
-                  {Object.entries(passport.riasec).map(([key, val]) => (
-                    <button key={key} className="flex min-h-11 w-full items-center justify-between hover:underline" onClick={()=>setScoreEvidence({title:`${t('passportWhyScore')} ${key} — ${val}`,eyebrow:t('passportInterestEvidence'),summary:t('passportInterestSummary'),method:t('passportInterestMethod'),items:[{label:`${t('passportSavedScore')} ${key}`,value:val,detail:t('passportInterestDetail')}],source:t('passportInterestSource')})}>
-                      <span>{key}:</span>
-                      <span>{val}</span>
-                    </button>
-                  ))}
+                <div className="mb-4">
+                  <RiasecHexagon scores={passport.riasec} compact />
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {Object.entries(passport.riasec)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([key, val]) => (
+                      <button 
+                        key={key} 
+                        className="flex items-center justify-between p-3 border-2 border-[var(--ink-faint)] bg-[var(--paper-raised)] hover:border-[var(--ink)] hover:shadow-md transition-all rounded group"
+                        onClick={()=>setScoreEvidence({
+                          title:`${t('passportWhyScore')} ${key} — ${val}`,
+                          eyebrow:t('passportInterestEvidence'),
+                          summary:t('passportInterestSummary'),
+                          method:t('passportInterestMethod'),
+                          items:[{label:`${t('passportSavedScore')} ${key}`,value:val,detail:t('passportInterestDetail')}],
+                          source:t('passportInterestSource')
+                        })}
+                      >
+                        <span className="font-mono-ui text-sm font-bold text-[var(--ink-soft)] group-hover:text-[var(--ink)]">
+                          {key.toUpperCase()}
+                        </span>
+                        <span className="font-display text-2xl font-bold">{val}</span>
+                      </button>
+                    ))}
                 </div>
               </div>
             ) : (
-              <div className="rounded-sm border border-[var(--ink-faint)] p-4 text-center">
+              <div className="rounded border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-4 text-center">
                 <p className="mb-2 text-sm text-[var(--ink-soft)]">{t('passportNoInterest')}</p>
                 <button
                   onClick={() => navigate('/assess/interests')}
-                  className="text-sm hover:underline"
+                  className="text-sm font-semibold hover:underline"
                 >
                   {t('passportTakeAssessment')} →
                 </button>
@@ -520,31 +669,46 @@ export function PassportPage() {
             )}
 
             {passport.aptitude ? (
-              <div className="rounded-sm border border-[var(--ink-faint)] p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm font-semibold">{t('passportAptitudeScores')}</div>
+              <div className="rounded border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-base font-semibold">{t('passportAptitudeScores')}</div>
                   <button
                     onClick={() => handleRetakeAssessment('aptitude')}
-                    className="flex items-center gap-1 text-xs text-[var(--ink-soft)] hover:text-[var(--ink)] underline"
+                    className="flex items-center gap-1 text-xs font-mono-ui uppercase text-[var(--ink-soft)] hover:text-[var(--ink)] underline hover:no-underline"
                   >
                     <RotateCcw size={12} /> Retake
                   </button>
                 </div>
-                <div className="font-mono-ui grid grid-cols-2 gap-2 text-xs">
-                  {Object.entries(passport.aptitude).map(([key, val]) => (
-                    <button key={key} className="flex min-h-11 w-full items-center justify-between hover:underline" onClick={()=>setScoreEvidence({title:`${t('passportWhyScore')} ${key} — ${val}`,eyebrow:t('passportAptitudeEvidence'),summary:t('passportAptitudeSummary'),method:t('passportAptitudeMethod'),items:[{label:`${t('passportSavedScore')} ${key}`,value:val,detail:t('passportAptitudeDetail')}],source:t('passportAptitudeSource')})}>
-                      <span>{key}:</span>
-                      <span>{val}</span>
-                    </button>
-                  ))}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {Object.entries(passport.aptitude)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([key, val]) => (
+                      <button 
+                        key={key} 
+                        className="flex flex-col items-center p-3 border-2 border-[var(--ink-faint)] bg-[var(--paper-raised)] hover:border-[var(--ink)] hover:shadow-md transition-all rounded group"
+                        onClick={()=>setScoreEvidence({
+                          title:`${t('passportWhyScore')} ${key} — ${val}`,
+                          eyebrow:t('passportAptitudeEvidence'),
+                          summary:t('passportAptitudeSummary'),
+                          method:t('passportAptitudeMethod'),
+                          items:[{label:`${t('passportSavedScore')} ${key}`,value:val,detail:t('passportAptitudeDetail')}],
+                          source:t('passportAptitudeSource')
+                        })}
+                      >
+                        <span className="font-display text-2xl font-bold mb-1">{val}</span>
+                        <span className="font-mono-ui text-[10px] uppercase tracking-wide text-[var(--ink-soft)] group-hover:text-[var(--ink)]">
+                          {key}
+                        </span>
+                      </button>
+                    ))}
                 </div>
               </div>
             ) : (
-              <div className="rounded-sm border border-[var(--ink-faint)] p-4 text-center">
+              <div className="rounded border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-4 text-center">
                 <p className="mb-2 text-sm text-[var(--ink-soft)]">{t('passportNoAptitude')}</p>
                 <button
                   onClick={() => navigate('/assess/aptitude')}
-                  className="text-sm hover:underline"
+                  className="text-sm font-semibold hover:underline"
                 >
                   {t('passportTakeAssessment')} →
                 </button>
@@ -552,23 +716,54 @@ export function PassportPage() {
             )}
 
             {passport.values ? (
-              <div className="rounded-sm border border-[var(--ink-faint)] p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm font-semibold">{t('passportWorkValues')}</div>
+              <div className="rounded border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-base font-semibold">{t('passportWorkValues')}</div>
                   <button
                     onClick={() => handleRetakeAssessment('values')}
-                    className="flex items-center gap-1 text-xs text-[var(--ink-soft)] hover:text-[var(--ink)] underline"
+                    className="flex items-center gap-1 text-xs font-mono-ui uppercase text-[var(--ink-soft)] hover:text-[var(--ink)] underline hover:no-underline"
                   >
                     <RotateCcw size={12} /> Retake
                   </button>
                 </div>
-                <div className="font-mono-ui space-y-1 text-xs">
+                <div className="space-y-2">
                   {Object.entries(passport.values)
                     .sort(([, a], [, b]) => b - a)
-                    .map(([key, val]) => (
-                      <button key={key} className="flex min-h-11 w-full items-center justify-between hover:underline" onClick={()=>setScoreEvidence({title:`${t('passportWhyScore')} ${key} — ${val}`,eyebrow:t('passportValuesEvidence'),summary:t('passportValuesSummary'),method:t('passportValuesMethod'),items:[{label:`${t('passportSavedScore')} ${key}`,value:val,detail:t('passportValuesDetail')}],source:t('passportValuesSource')})}>
-                        <span>{key}:</span>
-                        <span>{val}</span>
+                    .map(([key, val], idx) => (
+                      <button 
+                        key={key} 
+                        className="flex items-center justify-between w-full p-3 border-2 border-[var(--ink-faint)] bg-[var(--paper-raised)] hover:border-[var(--ink)] hover:shadow-md transition-all rounded group"
+                        onClick={()=>setScoreEvidence({
+                          title:`${t('passportWhyScore')} ${key} — ${val}`,
+                          eyebrow:t('passportValuesEvidence'),
+                          summary:t('passportValuesSummary'),
+                          method:t('passportValuesMethod'),
+                          items:[{label:`${t('passportSavedScore')} ${key}`,value:val,detail:t('passportValuesDetail')}],
+                          source:t('passportValuesSource')
+                        })}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-mono-ui text-xs text-[var(--ink-soft)] w-5">#{idx + 1}</span>
+                          <span className="font-semibold text-sm capitalize group-hover:text-[var(--ink)]">{key}</span>
+                        </div>
+                        <span className="font-display text-xl font-bold">{val}</span>
+                      </button>
+                    ))}
+                </div>
+              </div>
+            ) : (
+              <div className="rounded border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-4 text-center">
+                <p className="mb-2 text-sm text-[var(--ink-soft)]">{t('passportNoValues')}</p>
+                <button
+                  onClick={() => navigate('/assess/values')}
+                  className="text-sm font-semibold hover:underline"
+                >
+                  {t('passportTakeAssessment')} →
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
                       </button>
                     ))}
                 </div>

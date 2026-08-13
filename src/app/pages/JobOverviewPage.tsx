@@ -42,16 +42,25 @@ function JobSearchEmptyState() {
           setIsAnimating={setIsSearchAnimating}
         />
         <div className="mt-8 border-t border-[var(--accent-news)]/45 pt-4 text-left">
-          <p className="mb-3 text-center font-mono-ui text-[0.62rem] uppercase tracking-[.14em] text-[var(--accent-news)]">Explore tools</p>
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+          <p className="mb-4 text-center font-mono-ui text-[0.62rem] uppercase tracking-[.14em] text-[var(--accent-news)]">Explore tools</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {[
-              { label: passport?.experiences[0]?.title ? 'Build from my current job' : 'Roadmap', icon: <Map size={14}/>, path: '/roadmap', note: passport?.experiences[0]?.title ? `${passport.experiences[0].title} → your next move` : 'Choose a destination' },
-              { label: 'Transition', icon: <ArrowLeftRight size={14}/>, path: '/career-transition', note: 'Plan a change' },
-              { label: 'Compare', icon: <Scale size={14}/>, path: '/compare', note: 'Compare two roles' },
-              { label: 'Mood Match', icon: <Zap size={14}/>, path: '/mood', note: 'Explore by energy' },
-              { label: 'Career Quiz', icon: <Brain size={14}/>, path: '/quiz', note: 'Find a starting point' },
-            ].map(tool => <button key={tool.label} type="button" onClick={() => navigate(tool.path)} className="min-h-[64px] min-w-[124px] flex-1 border border-black/12 bg-[var(--paper)] p-2.5 text-left transition-colors hover:border-[var(--accent-news)] hover:bg-black/[.025] focus-visible:border-[var(--accent-news)]">
-              <span className="mb-1.5 flex text-[var(--accent-news)]">{tool.icon}</span><span className="block font-[Inter] text-[.7rem] leading-tight text-black/75">{tool.label}</span><span className="mt-1 block font-[Inter] text-[.6rem] leading-tight text-black/38">{tool.note}</span>
+              { label: 'Roadmap', icon: <Map size={16}/>, path: '/roadmap', note: 'Career journey' },
+              { label: 'Transition', icon: <ArrowLeftRight size={16}/>, path: '/career-transition', note: 'Switch roles' },
+              { label: 'Compare', icon: <Scale size={16}/>, path: '/compare', note: 'Side by side' },
+              { label: 'Mood Match', icon: <Zap size={16}/>, path: '/mood', note: 'By energy' },
+              { label: 'Career Quiz', icon: <Brain size={16}/>, path: '/quiz', note: 'Find your fit' },
+            ].map(tool => <button 
+              key={tool.label} 
+              type="button" 
+              onClick={() => navigate(tool.path)} 
+              className="group flex flex-col items-center justify-center gap-2 border-2 border-black/10 bg-[var(--paper)] p-4 text-center transition-all hover:border-[var(--accent-news)] hover:bg-black/[.015] focus-visible:border-[var(--accent-news)] focus-visible:outline-none"
+            >
+              <span className="text-[var(--accent-news)] transition-transform group-hover:scale-110">{tool.icon}</span>
+              <div>
+                <span className="block font-[Inter] text-[.75rem] font-medium leading-tight text-black/80">{tool.label}</span>
+                <span className="mt-0.5 block font-[Inter] text-[.65rem] leading-tight text-black/40">{tool.note}</span>
+              </div>
             </button>)}
           </div>
         </div>
