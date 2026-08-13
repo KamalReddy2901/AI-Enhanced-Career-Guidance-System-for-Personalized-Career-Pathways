@@ -1,10 +1,11 @@
 import { lazy, Suspense, useCallback, useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, FlaskConical, Scale, ChevronDown, FileText, Brain, Swords, Zap, BarChart2, MessageSquare, ArrowRight, ExternalLink, TrendingUp, TrendingDown, Rocket, Loader2, Map, ArrowLeftRight } from 'lucide-react';
+import { Sparkles, FlaskConical, Scale, ChevronDown, FileText, Brain, Swords, Zap, BarChart2, MessageSquare, ArrowRight, ExternalLink, TrendingUp, TrendingDown, Rocket, Loader2, Map, ArrowLeftRight, CheckCircle2, Circle } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { BrandMark } from '../components/BrandMark';
 import { WordCloudMasthead } from '../components/hero/WordCloudMasthead';
+import { Skeleton } from '../components/ui/skeleton';
 import type { CareerRecommendation } from '../engine/types';
 
 import { useApp } from '../context/AppContext';
@@ -197,6 +198,78 @@ export function HomePage() {
         <Suspense fallback={null}><WhyPanel recommendation={homeExplanation} segment={passport.segment} onClose={() => setHomeExplanation(null)} /></Suspense>
       )}
 
+      {/* ── PERSONALIZED PROGRESS CARD ─────────────────────── */}
+      {!showLanding && passport && (
+        <section className="border-t border-black/8 bg-[var(--paper)] px-6 py-12">
+          <div className="mx-auto max-w-4xl">
+            <div className="bg-[var(--paper-raised)] border-2 border-[var(--ink)] p-6 md:p-8 shadow-[4px_4px_0_var(--ink)]">
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <h2 className="font-display text-2xl md:text-3xl mb-2">Your Progress</h2>
+                  <p className="text-sm text-[var(--ink-soft)]">Keep building your career profile</p>
+                </div>
+                <div className="text-right">
+                  <div className="font-display text-4xl">{passport.completeness}%</div>
+                  <div className="font-mono-ui text-xs uppercase text-[var(--ink-soft)]">Complete</div>
+                </div>
+              </div>
+
+              {/* Progress checklist */}
+              <div className="space-y-3">
+                {[
+                  { label: 'Career Passport created', done: true, path: '/passport' },
+                  { label: 'Interests assessment', done: !!passport.riasec, path: '/assess/interests' },
+                  { label: 'Aptitude assessment', done: !!passport.aptitude, path: '/assess/aptitude' },
+                  { label: 'Work values assessment', done: !!passport.values, path: '/assess/values' },
+                  { label: 'Skills added', done: passport.skills.length > 0, path: '/passport' },
+                  { label: 'Career pathway built', done: pathways.length > 0, path: '/recommendations' },
+                ].map((item, i) => (
+                  <Link
+                    key={i}
+                    to={item.path}
+                    className="flex items-center gap-3 p-3 border border-[var(--ink-faint)] hover:border-[var(--ink)] transition-colors group"
+                  >
+                    {item.done ? (
+                      <CheckCircle2 size={20} className="text-[var(--ink)] shrink-0" />
+                    ) : (
+                      <Circle size={20} className="text-[var(--ink-faint)] group-hover:text-[var(--ink)] shrink-0" />
+                    )}
+                    <span className={`flex-1 text-sm ${item.done ? 'text-[var(--ink)]' : 'text-[var(--ink-soft)]'}`}>
+                      {item.label}
+                    </span>
+                    {!item.done && (
+                      <span className="font-mono-ui text-xs uppercase text-[var(--ink-soft)]">
+                        Complete →
+                      </span>
+                    )}
+                  </Link>
+                ))}
+              </div>
+
+              {/* Next step suggestion */}
+              <div className="mt-6 pt-6 border-t border-[var(--ink-faint)]">
+                <div className="font-mono-ui text-xs uppercase text-[var(--ink-soft)] mb-2">Next step</div>
+                <div className="text-sm text-[var(--ink-soft)]">
+                  {!passport.riasec ? (
+                    <>Take the <Link to="/assess/interests" className="font-semibold text-[var(--ink)] underline">interests assessment</Link> to get personalized career matches</>
+                  ) : !passport.aptitude ? (
+                    <>Complete the <Link to="/assess/aptitude" className="font-semibold text-[var(--ink)] underline">aptitude assessment</Link> to refine your recommendations</>
+                  ) : !passport.values ? (
+                    <>Take the <Link to="/assess/values" className="font-semibold text-[var(--ink)] underline">work values assessment</Link> to improve matching accuracy</>
+                  ) : passport.skills.length === 0 ? (
+                    <>Add your skills to your <Link to="/passport" className="font-semibold text-[var(--ink)] underline">passport</Link> by uploading a resume</>
+                  ) : pathways.length === 0 ? (
+                    <>View your <Link to="/recommendations" className="font-semibold text-[var(--ink)] underline">career recommendations</Link> and build your first pathway</>
+                  ) : (
+                    <>Your profile is complete! Continue exploring careers or <Link to="/counselor" className="font-semibold text-[var(--ink)] underline">talk to the AI counselor</Link></>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ── HOW TO USE ─────────────────────────────────────── */}
       <section id="how-to-use" className="border-t border-black/8 bg-[var(--paper-raised)] px-6 py-16 md:py-20">
         <div className="mx-auto max-w-4xl">
@@ -276,9 +349,21 @@ export function HomePage() {
 
 
           {trendingLoading && (
-            <div className="flex items-center justify-center gap-3 py-12">
-              <Loader2 size={18} className="animate-spin text-[var(--ink-faint)]" />
-              <span className="text-[var(--ink-soft)]" style={{ fontSize: '0.85rem' }}>{t('homeTrendingLoading')}</span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[0, 1, 2].map((col) => (
+                <div key={col} className="space-y-3">
+                  <div className="flex items-center gap-2 border-b border-[var(--ink-faint)] pb-2 mb-4">
+                    <Skeleton className="h-4 w-4" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                  {[0, 1, 2, 3, 4].map((item) => (
+                    <div key={item} className="space-y-2">
+                      <Skeleton className="h-5 w-full" />
+                      <Skeleton className="h-3 w-4/5" />
+                    </div>
+                  ))}
+                </div>
+              ))}
             </div>
           )}
 

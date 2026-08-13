@@ -20,12 +20,17 @@ import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 import { TextReveal } from '../motion/TextReveal';
 import { useReveal } from '../motion/useReveal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Volume2 } from 'lucide-react';
+import { Volume2, Star, X, ArrowUpDown } from 'lucide-react';
+import { toast } from 'sonner';
 
 type LandscapeFilter = 'all' | 'safe' | 'stretch' | 'frontier';
+type SortOption = 'best_fit' | 'salary' | 'fastest' | 'wlb';
+
 const landscapeGroup = (group: RecommendationGroup): Exclude<LandscapeFilter, 'all'> =>
   group === 'best_fit' || group === 'easiest_transition' ? 'safe' :
     group === 'growth' ? 'stretch' : 'frontier';
+
+const HIDDEN_CAREERS_KEY = 'cc_hidden_recommendations';
 
 function CountUp({value}:{value:number}) {
   const reduced=useReducedMotion();
@@ -52,17 +57,86 @@ export function RecommendationsPage() {
     null,
   );
   const [filter, setFilter] = useState<LandscapeFilter>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('best_fit');
+  const [hiddenCareers, setHiddenCareers] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem(HIDDEN_CAREERS_KEY);
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
   const filterLabels: Record<LandscapeFilter, string> = {
     all: t('recommendationFilterAll'),
     safe: t('recommendationFilterSafe'),
     stretch: t('recommendationFilterStretch'),
     frontier: t('recommendationFilterFrontier'),
   };
+
+  const sortLabels: Record<SortOption, string> = {
+    best_fit: 'Best Fit',
+    salary: 'Highest Salary',
+    fastest: 'Fastest Path',
+    wlb: 'Best Work-Life Balance',
+  };
+
   const reveal = useReveal<HTMLDivElement>();
+  
   useEffect(() => {
     if (passport && !recommendations) recompute();
   }, [passport, recommendations, recompute]);
-  const visibleRecommendations = useMemo(() => recommendations?.recommendations.filter((item) => filter === 'all' || landscapeGroup(item.group) === filter) ?? [], [filter, recommendations]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(HIDDEN_CAREERS_KEY, JSON.stringify([...hiddenCareers]));
+    } catch {
+      // localStorage full
+    }
+  }, [hiddenCareers]);
+
+  const handleDismissCareer = (occupationId: string) => {
+    setHiddenCareers(prev => new Set([...prev, occupationId]));
+    sounds.click();
+    toast.success('Career hidden from recommendations');
+  };
+
+  const visibleRecommendations = useMemo(() => {
+    let filtered = recommendations?.recommendations.filter((item) => 
+      !hiddenCareers.has(item.occupationId) &&
+      (filter === 'all' || landscapeGroup(item.group) === filter)
+    ) ?? [];
+
+    // Sort recommendations
+    if (sortBy === 'salary') {
+      filtered = [...filtered].sort((a, b) => {
+        const marketA = marketFor(a.occupationId);
+        const marketB = marketFor(b.occupationId);
+        const salaryA = marketA?.medianSalary ?? 0;
+        const salaryB = marketB?.medianSalary ?? 0;
+        return salaryB - salaryA;
+      });
+    } else if (sortBy === 'fastest') {
+      filtered = [...filtered].sort((a, b) => {
+        // Sort by easiest transition first, then by score
+        if (a.group === 'easiest_transition' && b.group !== 'easiest_transition') return -1;
+        if (b.group === 'easiest_transition' && a.group !== 'easiest_transition') return 1;
+        return b.totalScore - a.totalScore;
+      });
+    } else if (sortBy === 'wlb') {
+      filtered = [...filtered].sort((a, b) => {
+        const occA = occupationById.get(a.occupationId);
+        const occB = occupationById.get(b.occupationId);
+        // Prioritize careers with lower typical hours
+        const hoursA = occA?.typicalHoursPerWeek ?? 40;
+        const hoursB = occB?.typicalHoursPerWeek ?? 40;
+        return hoursA - hoursB;
+      });
+    }
+    // Default 'best_fit' keeps original order (already sorted by score)
+
+    return filtered;
+  }, [filter, sortBy, recommendations, hiddenCareers]);
   if (!passport)
     return (
       <div className="min-h-screen bg-[var(--paper)] p-8 text-center text-[var(--ink)]">
@@ -106,20 +180,53 @@ export function RecommendationsPage() {
           onDismiss={dismissRecommendationChanges}
           onExplain={(occupationId)=>{const item=recommendations.recommendations.find(recommendation=>recommendation.occupationId===occupationId);if(item)setExplanation(item)}}
         />
-        <Tabs value={filter} onValueChange={(value)=>setFilter(value as LandscapeFilter)} className="mb-8">
-          <TabsList aria-label={t('recommendations')}>
-            {(['all','safe','stretch','frontier'] as const).map(value=><TabsTrigger key={value} value={value} data-testid={`recommendations-filter-${value}`}>{filterLabels[value]}</TabsTrigger>)}
-          </TabsList>
-          {(['all','safe','stretch','frontier'] as const).map(value=><TabsContent key={value} value={value} className="sr-only">{t('recommendationShowing')} {filterLabels[value]}</TabsContent>)}
-        </Tabs>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+          <Tabs value={filter} onValueChange={(value)=>setFilter(value as LandscapeFilter)}>
+            <TabsList aria-label={t('recommendations')}>
+              {(['all','safe','stretch','frontier'] as const).map(value=><TabsTrigger key={value} value={value} data-testid={`recommendations-filter-${value}`}>{filterLabels[value]}</TabsTrigger>)}
+            </TabsList>
+            {(['all','safe','stretch','frontier'] as const).map(value=><TabsContent key={value} value={value} className="sr-only">{t('recommendationShowing')} {filterLabels[value]}</TabsContent>)}
+          </Tabs>
+          
+          <div className="flex items-center gap-2">
+            <ArrowUpDown size={16} className="text-[var(--ink-soft)]" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
+              className="border border-[var(--ink-faint)] bg-[var(--paper)] px-3 py-2 text-sm font-mono-ui uppercase hover:border-[var(--ink)]"
+            >
+              {Object.entries(sortLabels).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
         <p className="font-display mb-8 italic text-[var(--ink-soft)]">{t('recommendationLandscapeNote')}</p>
         <motion.div ref={reveal.ref} variants={reveal.containerVariants} initial="hidden" animate={reveal.animate} className="mb-12 grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
           {visibleRecommendations.map((recommendation) => (
             <motion.div key={recommendation.occupationId} variants={reveal.itemVariants} layout>
-              <RecommendationCard recommendation={recommendation} locale={locale} lang={lang} copy={c} onExplain={() => setExplanation(recommendation)} />
+              <RecommendationCard recommendation={recommendation} locale={locale} lang={lang} copy={c} onExplain={() => setExplanation(recommendation)} onDismiss={() => handleDismissCareer(recommendation.occupationId)} />
             </motion.div>
           ))}
         </motion.div>
+        {hiddenCareers.size > 0 && (
+          <div className="mb-8 border border-[var(--ink-faint)] bg-[var(--paper-raised)] p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-[var(--ink-soft)]">
+                {hiddenCareers.size} career{hiddenCareers.size !== 1 ? 's' : ''} hidden
+              </span>
+              <button
+                onClick={() => {
+                  setHiddenCareers(new Set());
+                  toast.success('All hidden careers restored');
+                }}
+                className="text-sm underline hover:no-underline"
+              >
+                Show all
+              </button>
+            </div>
+          </div>
+        )}
         <p className="font-mono-ui text-[10px] uppercase tracking-wide text-[var(--ink-soft)]">
           {c.footer} · KB {recommendations.kbVersion} · profile v{passport.version}
         </p>
@@ -147,12 +254,14 @@ function RecommendationCard({
   lang,
   copy,
   onExplain,
+  onDismiss,
 }: {
   recommendation: CareerRecommendation;
   locale: string;
   lang: "en" | "hi" | "te";
   copy: { confidence:string; demand:string; why:string; build:string; dossier:string };
   onExplain: () => void;
+  onDismiss: () => void;
 }) {
   const { t } = useT();
   const occupation = occupationById.get(recommendation.occupationId)!;
@@ -163,8 +272,20 @@ function RecommendationCard({
     : group === 'stretch'
       ? t('recommendationFilterStretch')
       : t('recommendationFilterFrontier');
+
+  // Calculate star rating (0-5 based on totalScore 0-100)
+  const starRating = Math.round((recommendation.totalScore / 100) * 5);
+
   return (
-    <article className="card-sketch group h-full p-6 transition-[transform,box-shadow] hover:-translate-y-[3px] hover:shadow-[6px_6px_0_var(--ink)] md:p-8">
+    <article className="card-sketch group h-full p-6 transition-[transform,box-shadow] hover:-translate-y-[3px] hover:shadow-[6px_6px_0_var(--ink)] md:p-8 relative">
+      <button
+        onClick={onDismiss}
+        className="absolute top-4 right-4 p-1 text-[var(--ink-faint)] hover:text-[var(--ink)] opacity-0 group-hover:opacity-100 transition-opacity"
+        title="Not interested"
+      >
+        <X size={18} />
+      </button>
+      
       <div className={`label-caps mb-3 ${group==='frontier'?'border-l-4 border-[var(--accent-news)] pl-2':''}`}>{groupLabel}</div>
       <div className="font-mono-ui text-[10px] uppercase text-[var(--ink-soft)]">
         NCO {occupation.ncoCode} · NSQF {occupation.nsqfEntryLevel}
@@ -186,17 +307,27 @@ function RecommendationCard({
           <Volume2 size={16} aria-hidden="true" />
         </button>
       </div>
-      <div className="mt-4 flex items-end justify-between">
-        <div className="font-mono-ui text-5xl">
-          <CountUp value={recommendation.totalScore}/>
+      
+      {/* Visual Star Rating */}
+      <div className="mt-4 flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+              key={star}
+              size={18}
+              className={star <= starRating ? 'fill-[var(--ink)] text-[var(--ink)]' : 'text-[var(--ink-faint)]'}
+            />
+          ))}
         </div>
-        <div className="font-mono-ui text-[10px] uppercase">
-          {copy.confidence} · {localizedConfidence(recommendation.confidence, lang)}
-        </div>
+        <span className="font-mono-ui text-sm text-[var(--ink-soft)]">
+          {recommendation.totalScore}/100
+        </span>
       </div>
-      <div className="mt-2 h-2 bg-[var(--ink)]/10">
-        <div className="h-2 origin-left bg-[var(--ink)] transition-transform duration-700" style={{ transform: `scaleX(${recommendation.totalScore/100})` }} />
+      
+      <div className="font-mono-ui mt-2 text-[10px] uppercase text-[var(--ink-soft)]">
+        {copy.confidence} · {localizedConfidence(recommendation.confidence, lang)}
       </div>
+      
       <ul className="mt-4 space-y-2">
         {recommendation.topReasons.slice(0, 2).map((reason) => (
           <li key={reason} className="text-sm text-[var(--ink-soft)]">

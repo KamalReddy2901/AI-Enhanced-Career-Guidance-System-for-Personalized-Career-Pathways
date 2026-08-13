@@ -5,6 +5,7 @@ import { StickFigure } from "../components/StickFigure";
 import { PathwayGraph } from "../components/guidance/PathwayGraph";
 import { ScoreBar } from "../components/guidance/ScoreBar";
 import { WhyPanel, type ScoreEvidence } from "../components/guidance/WhyPanel";
+import { PathwayRouteQuiz } from "../components/guidance/PathwayRouteQuiz";
 import { useGuidance } from "../context/GuidanceContext";
 import { useAuth } from "../context/AuthContext";
 import { buildPathwayPlan } from "../engine/pathways";
@@ -32,6 +33,7 @@ import { TextReveal } from '../motion/TextReveal';
 import { useRichVisuals } from '../hooks/useRichVisuals';
 import { motion, useReducedMotion } from 'motion/react';
 import { toast } from 'sonner';
+import { HelpCircle } from 'lucide-react';
 
 const PathwayLineScene = lazy(() => import('../components/three/PathwayLineScene').then(module => ({ default: module.PathwayLineScene })));
 
@@ -73,6 +75,7 @@ export function PathwayPage() {
     initial?.chosenRoute ?? initial?.routes[0]?.kind,
   );
   const [why, setWhy] = useState<ScoreEvidence | null>(null);
+  const [showRouteQuiz, setShowRouteQuiz] = useState(false);
   const timelineRef = useRef<HTMLElement>(null);
   const richVisuals = useRichVisuals();
   const reducedMotion = useReducedMotion();
@@ -119,6 +122,12 @@ export function PathwayPage() {
     if (user?.id) void savePathway(user.id, next);
     sounds.pathUnlock();
     hapticLight();
+  };
+
+  const handleQuizResult = (recommendedRoute: 'direct' | 'stepping_stone' | 'qualification_first') => {
+    setShowRouteQuiz(false);
+    chooseRoute(recommendedRoute);
+    toast.success(`Recommended: ${c.labels[recommendedRoute]}`);
   };
   const toggleStep = (index: number) => {
     const routes = plan.routes.map((candidate) =>
@@ -286,9 +295,19 @@ export function PathwayPage() {
           </button>
         </section>
         <section className="mb-8">
-          <h2 className="text-3xl font-[Playfair_Display] mb-4">
-            {c.routes}
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-3xl font-[Playfair_Display]">
+              {c.routes}
+            </h2>
+            <button
+              onClick={() => setShowRouteQuiz(true)}
+              className="flex items-center gap-2 border border-[var(--ink-faint)] px-3 py-2 text-sm hover:border-[var(--ink)] transition-colors"
+              title="Take a quiz to find the best route for you"
+            >
+              <HelpCircle size={16} />
+              Which route for me?
+            </button>
+          </div>
           <div className="grid md:grid-cols-3 gap-3">
             {plan.routes.map((candidate) => (
               <button
@@ -375,6 +394,12 @@ export function PathwayPage() {
           {c.ask}
         </Link>
         {why && <WhyPanel evidence={why} onClose={()=>setWhy(null)}/>}
+        {showRouteQuiz && (
+          <PathwayRouteQuiz
+            onClose={() => setShowRouteQuiz(false)}
+            onResult={handleQuizResult}
+          />
+        )}
       </GuidanceEntrance>
     </div>
   );
