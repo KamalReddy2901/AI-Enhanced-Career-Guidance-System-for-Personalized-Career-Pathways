@@ -278,7 +278,13 @@ export function CareerLandscapeScatter({
           const isHovered = hoveredPoint?.id === point.id;
 
           return (
-            <g key={point.id}>
+            <g 
+              key={point.id}
+              onMouseEnter={() => setHoveredPoint(point)}
+              onMouseLeave={() => setHoveredPoint(null)}
+              onClick={() => onCareerClick?.(point.recommendation)}
+              style={{ cursor: 'pointer' }}
+            >
               {/* Hover/highlight ring */}
               {(isHighlighted || isHovered) && (
                 <circle
@@ -299,12 +305,8 @@ export function CareerLandscapeScatter({
                 r={radius}
                 fill={point.color}
                 opacity={isHighlighted || isHovered ? 1 : 0.7}
-                style={{ cursor: 'pointer' }}
                 whileHover={{ scale: 1.2 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 15, duration: 0.15 }}
-                onMouseEnter={() => setHoveredPoint(point)}
-                onMouseLeave={() => setHoveredPoint(null)}
-                onClick={() => onCareerClick?.(point.recommendation)}
               />
             </g>
           );
