@@ -388,7 +388,12 @@ export function PassportPage() {
                       if (!skill) return null;
                       
                       return (
-                        <div key={claim.skillId} className="rounded-sm border border-[var(--ink-faint)] p-3 transition-colors hover:border-[var(--ink)]">
+                        <motion.div 
+                          key={claim.skillId}
+                          className="rounded-sm border border-[var(--ink-faint)] p-3 transition-colors hover:border-[var(--ink)]"
+                          whileHover={{ y: -2, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                        >
                           <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="text-sm font-semibold">{skill.name}</div>
