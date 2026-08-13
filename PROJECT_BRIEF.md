@@ -413,11 +413,11 @@ TotalScore = Σ (DimensionScore × SegmentWeight) for all 11 dimensions
 
 ### 12. Career Landscape Card Visual Hierarchy
 **Enhanced visual differentiation for recommendation groups:**
-- **Frontier careers:** Full accent red left border (most emphasis)
-- **Stretch careers:** 40% opacity red left border (medium emphasis)
-- **Safe careers:** 20% opacity red left border (subtle emphasis)
-- **Benefit:** Quick visual scanning to identify career categories by risk/reward profile
-- **Consistency:** Matches the colored match percentages in explore section
+- **Frontier careers:** Red left border (bold, high-risk/high-reward)
+- **Stretch careers:** Blue left border (growth, medium challenge)
+- **Safe careers:** Green left border (stable, low-risk)
+- **Benefit:** Quick visual scanning to identify career categories by risk/reward profile with intuitive color psychology
+- **Color rationale:** Green = safe/stable, Blue = growth/potential, Red = bold/frontier
 - **Location:** RecommendationsPage card grid
 
 ### 13. Career Roadmap Builder Improvements

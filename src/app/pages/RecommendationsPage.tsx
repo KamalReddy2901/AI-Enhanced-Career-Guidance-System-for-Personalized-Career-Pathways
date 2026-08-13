@@ -365,8 +365,8 @@ function RecommendationCard({
       
       <div className={`label-caps mb-3 ${
         group==='frontier' ? 'border-l-4 border-[var(--accent-news)] pl-2' : 
-        group==='stretch' ? 'border-l-4 border-[var(--accent-news)]/40 pl-2' :
-        group==='safe' ? 'border-l-4 border-[var(--accent-news)]/20 pl-2' : ''
+        group==='stretch' ? 'border-l-4 border-blue-500 pl-2' :
+        group==='safe' ? 'border-l-4 border-emerald-500 pl-2' : ''
       }`}>{groupLabel}</div>
       <div className="font-mono-ui text-[10px] uppercase text-[var(--ink-soft)]">
         NCO {occupation.ncoCode} · NSQF {occupation.nsqfEntryLevel}
