@@ -644,55 +644,55 @@ export function JobDetailPage() {
                 <motion.button
                   onClick={handleRegenerate}
                   disabled={isRegenerating}
-                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-40 font-[Inter]"
-                  style={{ fontSize: "0.72rem" }}
+                  className="flex items-center gap-2 text-black/40 hover:text-black border border-black/10 px-3.5 py-2 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-40 font-[Inter] rounded-sm"
+                  style={{ fontSize: "0.75rem" }}
                   whileHover={{ y: -1 }}
                 >
                   {isRegenerating ? (
-                    <Loader2 size={12} className="animate-spin" />
+                    <Loader2 size={13} className="animate-spin" strokeWidth={2} />
                   ) : (
-                    <RefreshCw size={12} />
+                    <RefreshCw size={13} strokeWidth={1.5} />
                   )}
                   {isRegenerating ? "Regenerating..." : "Regenerate"}
                 </motion.button>
                 <motion.button
                   onClick={handlePrint}
-                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
-                  style={{ fontSize: "0.72rem" }}
+                  className="flex items-center gap-2 text-black/40 hover:text-black border border-black/10 px-3.5 py-2 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter] rounded-sm"
+                  style={{ fontSize: "0.75rem" }}
                   whileHover={{ y: -1 }}
                 >
-                  <Download size={12} />
+                  <Download size={13} strokeWidth={1.5} />
                   Download PDF
                 </motion.button>
                 <motion.button
                   onClick={handleCompare}
-                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
-                  style={{ fontSize: "0.72rem" }}
+                  className="flex items-center gap-2 text-black/40 hover:text-black border border-black/10 px-3.5 py-2 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter] rounded-sm"
+                  style={{ fontSize: "0.75rem" }}
                   whileHover={{ y: -1 }}
                 >
-                  <Scale size={12} />
+                  <Scale size={13} strokeWidth={1.5} />
                   Compare
                 </motion.button>
                 <motion.button
                   onClick={toggleFavorite}
-                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
-                  style={{ fontSize: "0.72rem" }}
+                  className="flex items-center gap-2 text-black/40 hover:text-black border border-black/10 px-3.5 py-2 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter] rounded-sm"
+                  style={{ fontSize: "0.75rem" }}
                   whileHover={{ y: -1 }}
                 >
                   {isFav ? (
-                    <Star size={12} className="text-black/50" />
+                    <Star size={13} className="text-black/50 fill-black/50" strokeWidth={1.5} />
                   ) : (
-                    <Star size={12} className="text-black/25" />
+                    <Star size={13} className="text-black/25" strokeWidth={1.5} />
                   )}
-                  {isFav ? "Remove from Favorites" : "Add to Favorites"}
+                  {isFav ? "Favorited" : "Favorite"}
                 </motion.button>
                 <motion.button
                   onClick={handleShare}
-                  className="flex items-center gap-1.5 text-black/40 hover:text-black border border-black/10 px-3 py-1.5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
-                  style={{ fontSize: "0.72rem" }}
+                  className="flex items-center gap-2 text-black/40 hover:text-black border border-black/10 px-3.5 py-2 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter] rounded-sm"
+                  style={{ fontSize: "0.75rem" }}
                   whileHover={{ y: -1 }}
                 >
-                  <Share2 size={12} />
+                  <Share2 size={13} strokeWidth={1.5} />
                   Share
                 </motion.button>
               </div>

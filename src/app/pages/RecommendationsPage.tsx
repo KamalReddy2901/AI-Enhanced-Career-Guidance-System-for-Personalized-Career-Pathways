@@ -112,8 +112,9 @@ export function RecommendationsPage() {
       filtered = [...filtered].sort((a, b) => {
         const marketA = marketFor(a.occupationId);
         const marketB = marketFor(b.occupationId);
-        const salaryA = marketA?.medianSalary ?? 0;
-        const salaryB = marketB?.medianSalary ?? 0;
+        // Since medianSalary is not available, use demandIndex as proxy
+        const salaryA = marketA?.demandIndex ?? 0;
+        const salaryB = marketB?.demandIndex ?? 0;
         return salaryB - salaryA;
       });
     } else if (sortBy === 'fastest') {
@@ -127,10 +128,10 @@ export function RecommendationsPage() {
       filtered = [...filtered].sort((a, b) => {
         const occA = occupationById.get(a.occupationId);
         const occB = occupationById.get(b.occupationId);
-        // Prioritize careers with lower typical hours
-        const hoursA = occA?.typicalHoursPerWeek ?? 40;
-        const hoursB = occB?.typicalHoursPerWeek ?? 40;
-        return hoursA - hoursB;
+        // Use work-life balance value as proxy for WLB
+        const wlbA = occA?.valuesProfile.balance ?? 50;
+        const wlbB = occB?.valuesProfile.balance ?? 50;
+        return wlbB - wlbA; // Higher balance score = better WLB
       });
     }
     // Default 'best_fit' keeps original order (already sorted by score)

@@ -317,13 +317,13 @@ export function OnboardingTour() {
                 ))}
               </div>
 
-              <div className="flex min-h-0 flex-1 flex-col p-6">
+              <div className="flex min-h-0 flex-1 flex-col p-7">
 
                 {/* Preview panel */}
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={`preview-${step}`}
-                    className="mb-5 flex h-[132px] shrink-0 items-start border border-black/8 bg-white/60 p-4"
+                    className="mb-6 flex h-[140px] shrink-0 items-start border-2 border-black/10 bg-white/70 p-4.5 rounded-sm"
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
@@ -334,22 +334,22 @@ export function OnboardingTour() {
                 </AnimatePresence>
 
                 {/* Header */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="text-black/30">{current.icon}</div>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="text-black/35">{current.icon}</div>
                     <span
-                      className="font-[JetBrains_Mono] text-black/25 uppercase"
-                      style={{ fontSize: '0.58rem', letterSpacing: '0.1em' }}
+                      className="font-[JetBrains_Mono] text-black/30 uppercase tracking-wider"
+                      style={{ fontSize: '0.6rem', letterSpacing: '0.12em' }}
                     >
                       {current.tag} · {step + 1}/{STEPS.length}
                     </span>
                   </div>
                   <button
                     onClick={dismiss}
-                    className="text-black/20 hover:text-black/50 transition-colors"
+                    className="text-black/25 hover:text-black/55 transition-colors rounded-sm p-1"
                     aria-label="Close tour"
                   >
-                    <X size={15} />
+                    <X size={16} strokeWidth={1.5} />
                   </button>
                 </div>
 
@@ -357,21 +357,21 @@ export function OnboardingTour() {
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={`text-${step}`}
-                    className="min-h-[145px]"
+                    className="min-h-[150px]"
                     initial={{ opacity: 0, x: 12 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -12 }}
                     transition={{ duration: 0.18 }}
                   >
                     <h3
-                      className="font-[Playfair_Display] text-black mb-2 leading-snug"
-                      style={{ fontSize: '1.1rem' }}
+                      className="font-[Playfair_Display] text-black mb-3 leading-tight"
+                      style={{ fontSize: '1.15rem' }}
                     >
                       {current.headline}
                     </h3>
                     <p
-                      className="font-[Inter] text-black/50 leading-relaxed"
-                      style={{ fontSize: '0.845rem' }}
+                      className="font-[Inter] text-black/55 leading-relaxed"
+                      style={{ fontSize: '0.88rem' }}
                     >
                       {current.body}
                     </p>
@@ -379,22 +379,22 @@ export function OnboardingTour() {
                 </AnimatePresence>
 
                 {/* Actions */}
-                <div className="mt-auto flex items-center justify-between border-t border-black/8 pt-5">
+                <div className="mt-auto flex items-center justify-between border-t border-black/8 pt-6">
                   <div className="flex items-center gap-3">
                     {step > 0 ? (
                       <button
                         onClick={prev}
-                        className="flex items-center gap-1 font-[Inter] text-black/30 hover:text-black/60 transition-colors"
-                        style={{ fontSize: '0.78rem' }}
+                        className="flex items-center gap-1.5 font-[Inter] text-black/35 hover:text-black/65 transition-colors"
+                        style={{ fontSize: '0.8rem' }}
                       >
-                        <ArrowLeft size={13} />
+                        <ArrowLeft size={14} strokeWidth={1.5} />
                         Back
                       </button>
                     ) : (
                       <button
                         onClick={dismiss}
-                        className="font-[Inter] text-black/25 hover:text-black/50 transition-colors"
-                        style={{ fontSize: '0.75rem' }}
+                        className="font-[Inter] text-black/30 hover:text-black/55 transition-colors"
+                        style={{ fontSize: '0.78rem' }}
                       >
                         Skip tour
                       </button>
@@ -402,15 +402,15 @@ export function OnboardingTour() {
                   </div>
                   <motion.button
                     onClick={next}
-                    className="flex items-center gap-2 bg-black text-white px-5 py-2.5 font-[Inter]"
-                    style={{ fontSize: '0.82rem' }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center gap-2 bg-black text-white px-6 py-2.5 font-[Inter] rounded-full transition-all hover:bg-black/90"
+                    style={{ fontSize: '0.85rem' }}
+                    whileHover={{ scale: 1.03, y: -1 }}
+                    whileTap={{ scale: 0.97 }}
                   >
                     {step < STEPS.length - 1 ? (
-                      <>Next <ArrowRight size={14} /></>
+                      <>Next <ArrowRight size={14} strokeWidth={2} /></>
                     ) : (
-                      <>Let's explore! <ArrowRight size={14} /></>
+                      <>Let's explore! <ArrowRight size={14} strokeWidth={2} /></>
                     )}
                   </motion.button>
                 </div>

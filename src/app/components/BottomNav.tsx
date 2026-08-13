@@ -55,7 +55,7 @@ export function BottomNav() {
           transition={{ duration: 0.2 }}
           aria-label="Bottom navigation"
         >
-          <div className="flex items-center justify-around h-14">
+          <div className="flex items-center justify-around h-14 px-2">
             {navItems.map(({ path, icon: Icon, label }) => {
               const isActive = location.pathname === path ||
                 (path === '/' && location.pathname === '/') ||
@@ -66,7 +66,7 @@ export function BottomNav() {
                 <button
                   key={path}
                   onClick={() => handleNav(path)}
-                  className={`font-mono-ui flex h-full w-full flex-col items-center justify-center gap-0.5 transition-colors ${
+                  className={`font-mono-ui flex h-full w-full flex-col items-center justify-center gap-1 transition-colors min-w-0 ${
                     isActive ? 'text-[var(--ink)]' : 'text-[var(--ink-faint)]'
                   }`}
                   aria-label={label}
@@ -74,13 +74,13 @@ export function BottomNav() {
                   data-testid={`bottom-nav-${path === '/' ? 'home' : path.slice(1)}`}
                 >
                   <motion.span
-                    className={`grid size-7 place-items-center rounded-full ${isActive ? 'bg-[var(--ink)] text-[var(--paper)]' : ''}`}
-                    whileTap={{ scale: 0.9 }}
+                    className={`grid size-8 place-items-center rounded-full transition-colors ${isActive ? 'bg-[var(--ink)] text-[var(--paper)]' : ''}`}
+                    whileTap={{ scale: 0.92 }}
                     transition={{ type: 'spring', stiffness: 450, damping: 20 }}
                   >
-                    <Icon size={17} strokeWidth={1.5} />
+                    <Icon size={18} strokeWidth={isActive ? 2 : 1.5} />
                   </motion.span>
-                  <span className="text-[9px] uppercase tracking-wide">{label}</span>
+                  <span className="text-[9px] uppercase tracking-wider leading-none">{label}</span>
                 </button>
               );
             })}

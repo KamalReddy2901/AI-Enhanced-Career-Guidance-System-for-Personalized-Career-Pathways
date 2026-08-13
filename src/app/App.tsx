@@ -10,12 +10,13 @@ import { LanguageProvider } from './i18n';
 function PageFallback() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
+      <div className="flex flex-col items-center gap-5">
         <div
-          className="w-8 h-8 border-2 border-black/20 border-t-black/70 rounded-full animate-spin"
+          className="w-10 h-10 border-3 border-black/15 border-t-black/70 rounded-full animate-spin"
+          style={{ borderWidth: '3px' }}
           aria-label="Loading"
         />
-        <p className="font-[Inter] text-black/30" style={{ fontSize: '0.78rem' }}>
+        <p className="font-[Inter] text-black/35 tracking-wide" style={{ fontSize: '0.8rem' }}>
           Loading…
         </p>
       </div>

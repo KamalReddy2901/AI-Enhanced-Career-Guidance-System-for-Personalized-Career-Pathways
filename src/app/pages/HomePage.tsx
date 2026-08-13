@@ -203,19 +203,19 @@ export function HomePage() {
         <section className="border-t border-black/8 bg-[var(--paper)] px-6 py-12">
           <div className="mx-auto max-w-4xl">
             <div className="bg-[var(--paper-raised)] border-2 border-[var(--ink)] p-6 md:p-8 shadow-[4px_4px_0_var(--ink)]">
-              <div className="flex items-start justify-between mb-6">
-                <div>
+              <div className="flex items-start justify-between gap-6 mb-6">
+                <div className="flex-1">
                   <h2 className="font-display text-2xl md:text-3xl mb-2">Your Progress</h2>
-                  <p className="text-sm text-[var(--ink-soft)]">Keep building your career profile</p>
+                  <p className="text-sm text-[var(--ink-soft)] leading-relaxed">Keep building your career profile</p>
                 </div>
-                <div className="text-right">
-                  <div className="font-display text-4xl">{passport.completeness}%</div>
-                  <div className="font-mono-ui text-xs uppercase text-[var(--ink-soft)]">Complete</div>
+                <div className="text-right shrink-0">
+                  <div className="font-display text-4xl md:text-5xl leading-none">{passport.completeness}%</div>
+                  <div className="font-mono-ui text-xs uppercase tracking-wider text-[var(--ink-soft)] mt-1">Complete</div>
                 </div>
               </div>
 
               {/* Progress checklist */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {[
                   { label: 'Career Passport created', done: true, path: '/passport' },
                   { label: 'Interests assessment', done: !!passport.riasec, path: '/assess/interests' },
@@ -227,18 +227,18 @@ export function HomePage() {
                   <Link
                     key={i}
                     to={item.path}
-                    className="flex items-center gap-3 p-3 border border-[var(--ink-faint)] hover:border-[var(--ink)] transition-colors group"
+                    className="flex items-center gap-3 p-3.5 border border-[var(--ink-faint)] hover:border-[var(--ink)] transition-colors group"
                   >
                     {item.done ? (
-                      <CheckCircle2 size={20} className="text-[var(--ink)] shrink-0" />
+                      <CheckCircle2 size={20} className="text-[var(--ink)] shrink-0" strokeWidth={2} />
                     ) : (
-                      <Circle size={20} className="text-[var(--ink-faint)] group-hover:text-[var(--ink)] shrink-0" />
+                      <Circle size={20} className="text-[var(--ink-faint)] group-hover:text-[var(--ink)] shrink-0" strokeWidth={1.5} />
                     )}
-                    <span className={`flex-1 text-sm ${item.done ? 'text-[var(--ink)]' : 'text-[var(--ink-soft)]'}`}>
+                    <span className={`flex-1 text-sm ${item.done ? 'text-[var(--ink)] font-medium' : 'text-[var(--ink-soft)]'}`}>
                       {item.label}
                     </span>
                     {!item.done && (
-                      <span className="font-mono-ui text-xs uppercase text-[var(--ink-soft)]">
+                      <span className="font-mono-ui text-xs uppercase text-[var(--ink-soft)] tracking-wider">
                         Complete →
                       </span>
                     )}
@@ -248,20 +248,20 @@ export function HomePage() {
 
               {/* Next step suggestion */}
               <div className="mt-6 pt-6 border-t border-[var(--ink-faint)]">
-                <div className="font-mono-ui text-xs uppercase text-[var(--ink-soft)] mb-2">Next step</div>
-                <div className="text-sm text-[var(--ink-soft)]">
+                <div className="font-mono-ui text-xs uppercase tracking-wider text-[var(--ink-soft)] mb-2.5">Next step</div>
+                <div className="text-sm text-[var(--ink-soft)] leading-relaxed">
                   {!passport.riasec ? (
-                    <>Take the <Link to="/assess/interests" className="font-semibold text-[var(--ink)] underline">interests assessment</Link> to get personalized career matches</>
+                    <>Take the <Link to="/assess/interests" className="font-semibold text-[var(--ink)] underline decoration-2 decoration-[var(--accent-news)] underline-offset-2 hover:decoration-[var(--ink)]">interests assessment</Link> to get personalized career matches</>
                   ) : !passport.aptitude ? (
-                    <>Complete the <Link to="/assess/aptitude" className="font-semibold text-[var(--ink)] underline">aptitude assessment</Link> to refine your recommendations</>
+                    <>Complete the <Link to="/assess/aptitude" className="font-semibold text-[var(--ink)] underline decoration-2 decoration-[var(--accent-news)] underline-offset-2 hover:decoration-[var(--ink)]">aptitude assessment</Link> to refine your recommendations</>
                   ) : !passport.values ? (
-                    <>Take the <Link to="/assess/values" className="font-semibold text-[var(--ink)] underline">work values assessment</Link> to improve matching accuracy</>
+                    <>Take the <Link to="/assess/values" className="font-semibold text-[var(--ink)] underline decoration-2 decoration-[var(--accent-news)] underline-offset-2 hover:decoration-[var(--ink)]">work values assessment</Link> to improve matching accuracy</>
                   ) : passport.skills.length === 0 ? (
-                    <>Add your skills to your <Link to="/passport" className="font-semibold text-[var(--ink)] underline">passport</Link> by uploading a resume</>
+                    <>Add your skills to your <Link to="/passport" className="font-semibold text-[var(--ink)] underline decoration-2 decoration-[var(--accent-news)] underline-offset-2 hover:decoration-[var(--ink)]">passport</Link> by uploading a resume</>
                   ) : pathways.length === 0 ? (
-                    <>View your <Link to="/recommendations" className="font-semibold text-[var(--ink)] underline">career recommendations</Link> and build your first pathway</>
+                    <>View your <Link to="/recommendations" className="font-semibold text-[var(--ink)] underline decoration-2 decoration-[var(--accent-news)] underline-offset-2 hover:decoration-[var(--ink)]">career recommendations</Link> and build your first pathway</>
                   ) : (
-                    <>Your profile is complete! Continue exploring careers or <Link to="/counselor" className="font-semibold text-[var(--ink)] underline">talk to the AI counselor</Link></>
+                    <>Your profile is complete! Continue exploring careers or <Link to="/counselor" className="font-semibold text-[var(--ink)] underline decoration-2 decoration-[var(--accent-news)] underline-offset-2 hover:decoration-[var(--ink)]">talk to the AI counselor</Link></>
                   )}
                 </div>
               </div>
@@ -306,18 +306,25 @@ export function HomePage() {
               },
             ].map((step) => (
               <li key={step.number} className="flex min-h-64 flex-col bg-[var(--paper-raised)] p-6 md:p-8">
-                <div className="flex items-start justify-between gap-4"><span className="font-mono-ui text-xs text-[var(--accent-news)]">STEP {step.number}</span><StickFigure pose={step.pose} size={48} /></div>
-                <h3 className="mt-4 font-display text-2xl">{step.title}</h3>
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <span className="font-mono-ui text-xs text-[var(--accent-news)] tracking-wider">STEP {step.number}</span>
+                  <StickFigure pose={step.pose} size={48} />
+                </div>
+                <h3 className="font-display text-2xl leading-tight">{step.title}</h3>
                 <p className="mt-3 text-sm leading-relaxed text-[var(--ink-soft)]">{step.body}</p>
-                <button type="button" onClick={() => navigate(step.path)} className="mt-auto inline-flex min-h-11 items-center gap-2 self-start pt-6 font-mono-ui text-xs uppercase underline decoration-[var(--accent-news)] decoration-2 underline-offset-4 hover:text-[var(--accent-news)]">
-                  {step.action} <ArrowRight size={14} aria-hidden="true" />
+                <button 
+                  type="button" 
+                  onClick={() => navigate(step.path)} 
+                  className="mt-auto inline-flex min-h-11 items-center gap-2 self-start pt-6 font-mono-ui text-xs uppercase tracking-wider underline decoration-[var(--accent-news)] decoration-2 underline-offset-4 hover:text-[var(--accent-news)] transition-colors"
+                >
+                  {step.action} <ArrowRight size={14} strokeWidth={2} aria-hidden="true" />
                 </button>
               </li>
             ))}
           </ol>
-          <p className="mx-auto mt-8 max-w-2xl text-center font-[Inter] text-sm leading-relaxed text-[var(--ink-soft)] md:text-base">
-            Or feel free to explore any career you want in the <Link to="/job?fresh=1" className="font-semibold text-[var(--ink)] underline decoration-[var(--accent-news)] decoration-2 underline-offset-4 hover:text-[var(--accent-news)]">Explore tab</Link>.<br />
-            Or talk to an AI counselor — open the <Link to="/counselor" className="font-semibold text-[var(--ink)] underline decoration-[var(--accent-news)] decoration-2 underline-offset-4 hover:text-[var(--accent-news)]">Counselor tab</Link>.
+          <p className="mx-auto mt-10 max-w-2xl text-center font-[Inter] text-sm leading-relaxed text-[var(--ink-soft)] md:text-base">
+            Or feel free to explore any career you want in the <Link to="/job?fresh=1" className="font-semibold text-[var(--ink)] underline decoration-[var(--accent-news)] decoration-2 underline-offset-2 hover:decoration-[var(--ink)] transition-colors">Explore tab</Link>.<br />
+            Or talk to an AI counselor — open the <Link to="/counselor" className="font-semibold text-[var(--ink)] underline decoration-[var(--accent-news)] decoration-2 underline-offset-2 hover:decoration-[var(--ink)] transition-colors">Counselor tab</Link>.
           </p>
         </div>
       </section>

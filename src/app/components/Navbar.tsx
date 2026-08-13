@@ -58,11 +58,11 @@ export function Navbar() {
         role="navigation"
         aria-label="Main navigation"
       >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-2">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
           {/* Logo */}
           <Link
             to="/"
-            className="flex items-center gap-2 group shrink-0"
+            className="flex items-center gap-2 group shrink-0 min-h-[44px] min-w-[44px] -ml-2 pl-2"
             aria-label="CareerCase home"
             onClick={(e) => {
               if (location.pathname === '/') {
@@ -87,14 +87,14 @@ export function Navbar() {
           <div className="flex md:hidden items-center gap-1">
             <button
               onClick={() => { sounds.toggle(); setMenuOpen(prev => !prev); }}
-              className="h-11 w-11 p-2 text-black/60 hover:text-black transition-colors"
+              className="h-11 w-11 flex items-center justify-center text-black/60 hover:text-black transition-colors rounded-sm hover:bg-black/5"
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={menuOpen}
             >
-              {menuOpen ? <X size={20} /> : <Menu size={20} />}
+              {menuOpen ? <X size={20} strokeWidth={1.5} /> : <Menu size={20} strokeWidth={1.5} />}
             </button>
           </div>
-          </> : <Link to="/auth?mode=signup" className="flex min-h-11 items-center gap-2 bg-black px-4 font-mono-ui text-xs uppercase text-white transition-opacity hover:opacity-80"><LogIn size={14} />Sign in</Link>}
+          </> : <Link to="/auth?mode=signup" className="flex min-h-11 items-center gap-2 bg-black px-5 rounded-full font-mono-ui text-xs uppercase text-white transition-all hover:bg-black/85 hover:-translate-y-0.5 active:translate-y-0"><LogIn size={14} strokeWidth={2} />Sign in</Link>}
         </div>
 
         {/* Keyboard shortcut hint */}
@@ -109,7 +109,7 @@ export function Navbar() {
       <AnimatePresence>
         {menuOpen && (
           <motion.div
-            className="fixed top-14 left-0 right-0 z-40 bg-[#f9f8f7]/98 backdrop-blur-md border-b border-black/8 shadow-lg md:hidden"
+            className="fixed top-14 left-0 right-0 z-40 bg-[#f9f8f7]/98 backdrop-blur-md border-b border-black/8 shadow-sm md:hidden"
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}

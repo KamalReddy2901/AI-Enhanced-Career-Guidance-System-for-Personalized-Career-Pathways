@@ -212,8 +212,8 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
       {/* Search Input */}
       <div className="relative">
         <motion.div
-          className="relative flex items-center bg-background border-2 border-black/25 rounded-none overflow-hidden shadow-[3px_3px_0px_0px_rgba(0,0,0,0.12)]"
-          animate={phase === 'scanning' ? { borderColor: ['rgba(0,0,0,0.25)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.25)'] } : {}}
+          className="relative flex items-center bg-background border-2 border-black/20 rounded-sm overflow-hidden shadow-[3px_3px_0px_0px_rgba(0,0,0,0.1)]"
+          animate={phase === 'scanning' ? { borderColor: ['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.2)'] } : {}}
           transition={phase === 'scanning' ? { repeat: Infinity, duration: 1.5 } : {}}
         >
           <input
@@ -233,18 +233,18 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
             onKeyDown={handleKeyDown}
             placeholder={inputFocused || query ? 'Enter any job title...' : (animatedPlaceholder ? `Try "${animatedPlaceholder}"` : 'Enter any job title...')}
             disabled={isAnimating}
-            className="w-full px-5 py-4 bg-transparent text-black placeholder:text-black/30 font-[Playfair_Display] outline-none disabled:opacity-50"
-            style={{ fontSize: '1.1rem', caretColor: 'rgba(0,0,0,0.5)' }}
+            className="w-full px-6 py-4 bg-transparent text-black placeholder:text-black/30 font-[Playfair_Display] outline-none disabled:opacity-50"
+            style={{ fontSize: '1.15rem', caretColor: 'rgba(0,0,0,0.5)' }}
           />
           <motion.button
             onClick={() => startSearch()}
             disabled={!query.trim() || isAnimating}
-            className="px-5 py-4 bg-black text-white hover:bg-black/80 disabled:bg-black/30 transition-colors flex items-center gap-2 shrink-0"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            className="px-6 py-4 bg-black text-white hover:bg-black/85 disabled:bg-black/30 transition-colors flex items-center gap-2.5 shrink-0"
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
           >
-            <Search size={18} />
-            <span className="hidden sm:inline font-[Inter]" style={{ fontSize: '0.85rem' }}>Investigate</span>
+            <Search size={18} strokeWidth={2} />
+            <span className="hidden sm:inline font-[Inter]" style={{ fontSize: '0.88rem' }}>Investigate</span>
           </motion.button>
         </motion.div>
       </div>
@@ -253,7 +253,7 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
       <AnimatePresence>
         {showSuggestions && phase === 'idle' && (suggestions.length > 0 || isFetchingSuggestions) && (
           <motion.div
-            className="absolute left-0 right-0 mt-1 z-20 bg-background border-2 border-black/15 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.06)]"
+            className="absolute left-0 right-0 mt-2 z-20 bg-background border-2 border-black/12 rounded-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,0.06)]"
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
@@ -261,8 +261,8 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
           >
             {/* Loading state */}
             {isFetchingSuggestions && suggestions.length === 0 && (
-              <div className="px-5 py-3.5 flex items-center gap-2.5 text-black/35 font-[Inter]" style={{ fontSize: '0.82rem' }}>
-                <Loader2 size={13} className="animate-spin shrink-0" />
+              <div className="px-6 py-4 flex items-center gap-3 text-black/35 font-[Inter]" style={{ fontSize: '0.85rem' }}>
+                <Loader2 size={14} className="animate-spin shrink-0" strokeWidth={2} />
                 <span>Finding matching careers...</span>
               </div>
             )}
@@ -273,12 +273,12 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
               return (
                 <button
                   key={title + i}
-                  className={`w-full text-left px-5 py-3 font-[Playfair_Display] transition-colors border-b border-black/5 last:border-0 ${
+                  className={`w-full text-left px-6 py-3.5 font-[Playfair_Display] transition-colors border-b border-black/5 last:border-0 ${
                     i === selectedSuggestion
                       ? 'bg-black text-white'
-                      : 'text-black/70 hover:bg-black/4'
+                      : 'text-black/70 hover:bg-black/5'
                   }`}
-                  style={{ fontSize: '0.95rem' }}
+                  style={{ fontSize: '0.98rem' }}
                   onMouseEnter={() => setSelectedSuggestion(i)}
                   onClick={() => {
                     setQuery(title);
@@ -289,7 +289,7 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
                   {matchIndex >= 0 ? (
                     <>
                       {title.slice(0, matchIndex)}
-                      <span className={i === selectedSuggestion ? 'underline' : 'bg-amber-100/70'}>
+                      <span className={i === selectedSuggestion ? 'underline decoration-2' : 'bg-amber-100/80'}>
                         {title.slice(matchIndex, matchIndex + query.length)}
                       </span>
                       {title.slice(matchIndex + query.length)}
@@ -300,9 +300,9 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
             })}
 
             {/* Footer hint */}
-            <div className="px-5 py-2 border-t border-black/8 flex items-center gap-1.5">
-              <p className="font-[Inter] text-black/25 flex items-center gap-1" style={{ fontSize: '0.67rem' }}>
-                <Sparkles size={9} />
+            <div className="px-6 py-2.5 border-t border-black/8 flex items-center gap-2">
+              <p className="font-[Inter] text-black/30 flex items-center gap-1.5" style={{ fontSize: '0.7rem' }}>
+                <Sparkles size={10} />
                 AI-predicted suggestions  ·  Any job title works, even made-up ones
               </p>
             </div>
