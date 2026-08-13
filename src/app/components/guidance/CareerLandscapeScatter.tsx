@@ -68,10 +68,10 @@ export function CareerLandscapeScatter({
     }).filter((p): p is ScatterPoint => p !== null);
   }, [recommendations]);
 
-  // SVG dimensions
-  const width = 600;
-  const height = 400;
-  const padding = { top: 40, right: 40, bottom: 60, left: 60 };
+  // SVG dimensions - MUCH LARGER for better interaction
+  const width = 1000;
+  const height = 700;
+  const padding = { top: 60, right: 60, bottom: 80, left: 80 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
 
@@ -81,15 +81,28 @@ export function CareerLandscapeScatter({
 
   return (
     <div className={`relative ${className}`}>
+      {/* Instructions */}
+      <div className="mb-4 rounded-sm border-2 border-[var(--accent-news)] bg-[var(--paper)] p-4">
+        <h4 className="mb-2 font-mono-ui text-sm font-semibold uppercase tracking-wide">
+          📊 How to Use This Visualization
+        </h4>
+        <ul className="space-y-1 text-sm text-[var(--ink-soft)]">
+          <li>• <strong>Hover</strong> over any circle to see detailed career information</li>
+          <li>• <strong>Click</strong> a circle to view full career details</li>
+          <li>• <strong>Larger circles</strong> = Better overall match score</li>
+          <li>• <strong>Look for the ★ SWEET SPOT ★</strong> quadrant (top-right) = High reward + Easy transition</li>
+        </ul>
+      </div>
+
       {/* Legend */}
-      <div className="mb-4 flex flex-wrap gap-4 text-xs">
+      <div className="mb-4 flex flex-wrap gap-4 text-sm">
         <div className="flex items-center gap-2">
-          <Target size={14} className="text-[var(--ink-soft)]" />
+          <Target size={16} className="text-[var(--ink-soft)]" />
           <span className="text-[var(--ink-soft)]">Size = Match Score</span>
         </div>
         <div className="flex items-center gap-2">
-          <Zap size={14} className="text-[var(--ink-soft)]" />
-          <span className="text-[var(--ink-soft)]">Color = Career Theme</span>
+          <Zap size={16} className="text-[var(--ink-soft)]" />
+          <span className="text-[var(--ink-soft)]">Color = Career Cluster</span>
         </div>
       </div>
 
@@ -97,20 +110,20 @@ export function CareerLandscapeScatter({
       <svg
         width={width}
         height={height}
-        className="border border-[var(--ink-faint)] bg-[var(--paper-raised)]"
+        className="mx-auto border-2 border-[var(--ink)] bg-[var(--paper-raised)] shadow-lg"
         role="img"
         aria-label="Career landscape scatter plot"
       >
         {/* Y-axis label */}
         <text
-          x={20}
+          x={30}
           y={height / 2}
           textAnchor="middle"
-          className="fill-[var(--ink-soft)]"
-          style={{ fontSize: '11px', fontFamily: 'var(--font-mono-ui)' }}
-          transform={`rotate(-90 20 ${height / 2})`}
+          className="fill-[var(--ink)]"
+          style={{ fontSize: '13px', fontFamily: 'var(--font-mono-ui)', fontWeight: 600 }}
+          transform={`rotate(-90 30 ${height / 2})`}
         >
-          REWARD POTENTIAL →
+          REWARD POTENTIAL (Higher = Better) →
         </text>
 
         {/* X-axis label */}
@@ -118,10 +131,10 @@ export function CareerLandscapeScatter({
           x={width / 2}
           y={height - 20}
           textAnchor="middle"
-          className="fill-[var(--ink-soft)]"
-          style={{ fontSize: '11px', fontFamily: 'var(--font-mono-ui)' }}
+          className="fill-[var(--ink)]"
+          style={{ fontSize: '13px', fontFamily: 'var(--font-mono-ui)', fontWeight: 600 }}
         >
-          ACCESSIBILITY (EASE OF TRANSITION) →
+          ACCESSIBILITY / EASE OF TRANSITION (Higher = Easier) →
         </text>
 
         {/* Grid lines */}
@@ -154,49 +167,50 @@ export function CareerLandscapeScatter({
           })}
         </g>
 
-        {/* Quadrant labels */}
-        <g style={{ fontSize: '10px', fontFamily: 'var(--font-mono-ui)' }}>
+        {/* Quadrant labels - LARGER and more visible */}
+        <g style={{ fontSize: '12px', fontFamily: 'var(--font-mono-ui)', fontWeight: 600 }}>
           <text
             x={padding.left + chartWidth * 0.25}
-            y={padding.top + chartHeight * 0.25}
+            y={padding.top + chartHeight * 0.2}
             textAnchor="middle"
-            className="fill-[var(--ink-soft)]"
-            opacity="0.5"
+            className="fill-[var(--ink)]"
+            opacity="0.6"
           >
-            High Reward
+            HIGH REWARD
           </text>
           <text
             x={padding.left + chartWidth * 0.25}
-            y={padding.top + chartHeight * 0.25 + 12}
+            y={padding.top + chartHeight * 0.2 + 16}
             textAnchor="middle"
-            className="fill-[var(--ink-soft)]"
-            opacity="0.5"
+            className="fill-[var(--ink)]"
+            opacity="0.6"
           >
-            Hard Transition
+            CHALLENGING PATH
           </text>
 
           <text
             x={padding.left + chartWidth * 0.75}
-            y={padding.top + chartHeight * 0.25}
+            y={padding.top + chartHeight * 0.2}
             textAnchor="middle"
-            className="fill-[var(--ink-soft)]"
-            opacity="0.5"
+            className="fill-[var(--accent-news)]"
+            opacity="0.8"
+            style={{ fontSize: '14px', fontWeight: 700 }}
           >
-            High Reward
+            ★ SWEET SPOT ★
           </text>
           <text
             x={padding.left + chartWidth * 0.75}
-            y={padding.top + chartHeight * 0.25 + 12}
+            y={padding.top + chartHeight * 0.2 + 16}
             textAnchor="middle"
-            className="fill-[var(--ink-soft)]"
-            opacity="0.5"
+            className="fill-[var(--accent-news)]"
+            opacity="0.8"
           >
-            Easy Transition
+            High Reward + Easy Access
           </text>
 
           <text
             x={padding.left + chartWidth * 0.25}
-            y={padding.top + chartHeight * 0.75}
+            y={padding.top + chartHeight * 0.8}
             textAnchor="middle"
             className="fill-[var(--ink-soft)]"
             opacity="0.5"
@@ -205,31 +219,31 @@ export function CareerLandscapeScatter({
           </text>
           <text
             x={padding.left + chartWidth * 0.25}
-            y={padding.top + chartHeight * 0.75 + 12}
+            y={padding.top + chartHeight * 0.8 + 16}
             textAnchor="middle"
             className="fill-[var(--ink-soft)]"
             opacity="0.5"
           >
-            Hard Transition
+            Challenging Path
           </text>
 
           <text
             x={padding.left + chartWidth * 0.75}
-            y={padding.top + chartHeight * 0.75}
+            y={padding.top + chartHeight * 0.8}
             textAnchor="middle"
-            className="fill-[var(--ink-soft)]"
-            opacity="0.5"
+            className="fill-[var(--ink)]"
+            opacity="0.6"
           >
-            Lower Reward
+            QUICK WINS
           </text>
           <text
             x={padding.left + chartWidth * 0.75}
-            y={padding.top + chartHeight * 0.75 + 12}
+            y={padding.top + chartHeight * 0.8 + 16}
             textAnchor="middle"
-            className="fill-[var(--ink-soft)]"
-            opacity="0.5"
+            className="fill-[var(--ink)]"
+            opacity="0.6"
           >
-            Easy Transition
+            Lower Reward + Easy Access
           </text>
         </g>
 
@@ -259,7 +273,7 @@ export function CareerLandscapeScatter({
         {scatterPoints.map(point => {
           const cx = padding.left + (point.x / 100) * chartWidth;
           const cy = padding.top + chartHeight - (point.y / 100) * chartHeight;
-          const radius = 4 + (point.size / 100) * 12; // 4-16px radius based on score
+          const radius = 8 + (point.size / 100) * 20; // 8-28px radius - LARGER for better visibility
           const isHighlighted = point.id === highlightedId;
           const isHovered = hoveredPoint?.id === point.id;
 

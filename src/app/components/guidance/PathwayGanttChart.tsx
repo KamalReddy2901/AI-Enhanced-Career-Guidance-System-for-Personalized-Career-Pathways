@@ -69,11 +69,11 @@ export function PathwayGanttChart({ route, className = '' }: PathwayGanttChartPr
   const totalWeeks = Math.max(...ganttTasks.map(t => t.endWeek), 1);
   const totalMonths = Math.ceil(totalWeeks / 4);
 
-  // Chart dimensions
-  const rowHeight = 60;
-  const headerHeight = 80;
-  const labelWidth = 200;
-  const weekWidth = 40;
+  // Chart dimensions - LARGER for better readability
+  const rowHeight = 80;
+  const headerHeight = 100;
+  const labelWidth = 250;
+  const weekWidth = 50;
   const chartWidth = totalWeeks * weekWidth;
   const chartHeight = ganttTasks.length * rowHeight + headerHeight;
 
@@ -101,7 +101,7 @@ export function PathwayGanttChart({ route, className = '' }: PathwayGanttChartPr
       </div>
 
       {/* Gantt Chart */}
-      <div className="overflow-x-auto rounded-sm border border-[var(--ink-faint)] bg-[var(--paper-raised)]">
+      <div className="overflow-x-auto rounded-sm border-2 border-[var(--ink)] bg-[var(--paper-raised)] shadow-lg">
         <svg
           width={labelWidth + chartWidth + 40}
           height={chartHeight}
@@ -195,17 +195,17 @@ export function PathwayGanttChart({ route, className = '' }: PathwayGanttChartPr
                   <div className="flex h-full flex-col justify-center">
                     <div className="flex items-center gap-2">
                       {task.isMilestone ? (
-                        <CheckCircle2 size={14} className="shrink-0 text-[var(--accent-news)]" />
+                        <CheckCircle2 size={16} className="shrink-0 text-[var(--accent-news)]" />
                       ) : (
-                        <Circle size={14} className="shrink-0 text-[var(--ink-soft)]" />
+                        <Circle size={16} className="shrink-0 text-[var(--ink-soft)]" />
                       )}
-                      <span className="font-mono-ui text-xs font-semibold text-[var(--ink)]">
+                      <span className="font-mono-ui text-sm font-semibold text-[var(--ink)]">
                         {task.name}
                       </span>
                     </div>
-                    <div className="mt-1 flex items-center gap-1 text-[9px] text-[var(--ink-soft)]">
-                      <Clock size={10} />
-                      <span>{Math.round(task.duration)} weeks</span>
+                    <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--ink-soft)]">
+                      <Clock size={12} />
+                      <span>{Math.round(task.duration)} weeks ({(task.duration / 4).toFixed(1)} months)</span>
                     </div>
                   </div>
                 </foreignObject>
@@ -261,13 +261,13 @@ export function PathwayGanttChart({ route, className = '' }: PathwayGanttChartPr
                     rx="4"
                   />
 
-                  {/* Duration label on bar */}
+                  {/* Duration label on bar - LARGER */}
                   <text
                     x={barX + barWidth / 2}
-                    y={y + rowHeight / 2 + 4}
+                    y={y + rowHeight / 2 + 5}
                     textAnchor="middle"
                     className="fill-white"
-                    style={{ fontSize: '10px', fontFamily: 'var(--font-mono-ui)', fontWeight: 600 }}
+                    style={{ fontSize: '13px', fontFamily: 'var(--font-mono-ui)', fontWeight: 700 }}
                   >
                     {Math.round(task.duration)}w
                   </text>
