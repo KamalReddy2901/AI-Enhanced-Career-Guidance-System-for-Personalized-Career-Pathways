@@ -1,10 +1,11 @@
 import { lazy, Suspense, useCallback, useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, FlaskConical, Scale, ChevronDown, FileText, Brain, Swords, Zap, BarChart2, MessageSquare, ArrowRight, ExternalLink, TrendingUp, TrendingDown, Rocket, Loader2, Map, ArrowLeftRight, CheckCircle2, Circle } from 'lucide-react';
+import { Sparkles, FlaskConical, Scale, ChevronDown, FileText, Brain, Swords, Zap, BarChart2, MessageSquare, ArrowRight, ExternalLink, TrendingUp, TrendingDown, Rocket, Loader2, Map, ArrowLeftRight } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { BrandMark } from '../components/BrandMark';
 import { WordCloudMasthead } from '../components/hero/WordCloudMasthead';
+import { FixedRibbon } from '../components/FixedRibbon';
 import { Skeleton } from '../components/ui/skeleton';
 import type { CareerRecommendation } from '../engine/types';
 
@@ -185,6 +186,13 @@ export function HomePage() {
 
   return (
     <div className="relative bg-background">
+      {/* Fixed Ribbon - only visible on homepage for logged-in users */}
+      {!showLanding && (
+        <div className="sticky top-14 z-40 print:hidden">
+          <FixedRibbon />
+        </div>
+      )}
+      
       <WordCloudMasthead passport={passport} showLanding={showLanding} onNavigate={navigate} />
       {!showLanding && <Suspense fallback={null}><EditorialHomeHero
           passport={passport}
@@ -198,77 +206,7 @@ export function HomePage() {
         <Suspense fallback={null}><WhyPanel recommendation={homeExplanation} segment={passport.segment} onClose={() => setHomeExplanation(null)} /></Suspense>
       )}
 
-      {/* ── PERSONALIZED PROGRESS CARD ─────────────────────── */}
-      {!showLanding && passport && (
-        <section className="border-t border-black/8 bg-[var(--paper)] px-6 py-12">
-          <div className="mx-auto max-w-4xl">
-            <div className="bg-[var(--paper-raised)] border-2 border-[var(--ink)] p-6 md:p-8 shadow-[4px_4px_0_var(--ink)]">
-              <div className="flex items-start justify-between gap-6 mb-6">
-                <div className="flex-1">
-                  <h2 className="font-display text-2xl md:text-3xl mb-2">Your Progress</h2>
-                  <p className="text-sm text-[var(--ink-soft)] leading-relaxed">Keep building your career profile</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <div className="font-display text-4xl md:text-5xl leading-none">{passport.completeness}%</div>
-                  <div className="font-mono-ui text-xs uppercase tracking-wider text-[var(--ink-soft)] mt-1">Complete</div>
-                </div>
-              </div>
 
-              {/* Progress checklist */}
-              <div className="space-y-2">
-                {[
-                  { label: 'Career Passport created', done: true, path: '/passport' },
-                  { label: 'Interests assessment', done: !!passport.riasec, path: '/assess/interests' },
-                  { label: 'Aptitude assessment', done: !!passport.aptitude, path: '/assess/aptitude' },
-                  { label: 'Work values assessment', done: !!passport.values, path: '/assess/values' },
-                  { label: 'Skills added', done: passport.skills.length > 0, path: '/passport' },
-                  { label: 'Career pathway built', done: pathways.length > 0, path: '/recommendations' },
-                ].map((item, i) => (
-                  <Link
-                    key={i}
-                    to={item.path}
-                    className="flex items-center gap-3 p-3.5 border border-[var(--ink-faint)] hover:border-[var(--ink)] transition-colors group"
-                  >
-                    {item.done ? (
-                      <CheckCircle2 size={20} className="text-[var(--ink)] shrink-0" strokeWidth={2} />
-                    ) : (
-                      <Circle size={20} className="text-[var(--ink-faint)] group-hover:text-[var(--ink)] shrink-0" strokeWidth={1.5} />
-                    )}
-                    <span className={`flex-1 text-sm ${item.done ? 'text-[var(--ink)] font-medium' : 'text-[var(--ink-soft)]'}`}>
-                      {item.label}
-                    </span>
-                    {!item.done && (
-                      <span className="font-mono-ui text-xs uppercase text-[var(--ink-soft)] tracking-wider">
-                        Complete →
-                      </span>
-                    )}
-                  </Link>
-                ))}
-              </div>
-
-              {/* Next step suggestion */}
-              <div className="mt-6 pt-6 border-t border-[var(--ink-faint)]">
-                <div className="font-mono-ui text-xs uppercase tracking-wider text-[var(--ink-soft)] mb-2.5">Next step</div>
-                <div className="text-sm text-[var(--ink-soft)] leading-relaxed">
-                  {!passport.riasec ? (
-                    <>Take the <Link to="/assess/interests" className="font-semibold text-[var(--ink)] underline decoration-2 decoration-[var(--accent-news)] underline-offset-2 hover:decoration-[var(--ink)]">interests assessment</Link> to get personalized career matches</>
-                  ) : !passport.aptitude ? (
-                    <>Complete the <Link to="/assess/aptitude" className="font-semibold text-[var(--ink)] underline decoration-2 decoration-[var(--accent-news)] underline-offset-2 hover:decoration-[var(--ink)]">aptitude assessment</Link> to refine your recommendations</>
-                  ) : !passport.values ? (
-                    <>Take the <Link to="/assess/values" className="font-semibold text-[var(--ink)] underline decoration-2 decoration-[var(--accent-news)] underline-offset-2 hover:decoration-[var(--ink)]">work values assessment</Link> to improve matching accuracy</>
-                  ) : passport.skills.length === 0 ? (
-                    <>Add your skills to your <Link to="/passport" className="font-semibold text-[var(--ink)] underline decoration-2 decoration-[var(--accent-news)] underline-offset-2 hover:decoration-[var(--ink)]">passport</Link> by uploading a resume</>
-                  ) : pathways.length === 0 ? (
-                    <>View your <Link to="/recommendations" className="font-semibold text-[var(--ink)] underline decoration-2 decoration-[var(--accent-news)] underline-offset-2 hover:decoration-[var(--ink)]">career recommendations</Link> and build your first pathway</>
-                  ) : (
-                    <>Your profile is complete! Continue exploring careers or <Link to="/counselor" className="font-semibold text-[var(--ink)] underline decoration-2 decoration-[var(--accent-news)] underline-offset-2 hover:decoration-[var(--ink)]">talk to the AI counselor</Link></>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* ── HOW TO USE ─────────────────────────────────────── */}
       <section id="how-to-use" className="border-t border-black/8 bg-[var(--paper-raised)] px-6 py-16 md:py-20">

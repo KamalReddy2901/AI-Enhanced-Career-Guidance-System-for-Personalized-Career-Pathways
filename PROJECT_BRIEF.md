@@ -49,7 +49,15 @@ A hybrid system that:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                      USER INTERFACE                          │
-│  (React + TypeScript + Framer Motion + Tailwind)           │
+│  • Landing Page (public)                                     │
+│  • Dashboard (personal hub) ✨ NEW                           │
+│  • Assessment Desk (4 assessments)                           │
+│  • Career Landscape (recommendations with scatter plot)      │
+│  • Career Pathways (step-by-step routes with Gantt chart)   │
+│  • Career Passport (profile management)                      │
+│  • Explore Tools (dossiers, simulations, comparisons)        │
+│  • AI Counselor (conversational guidance)                    │
+│  (React + TypeScript + Framer Motion + Tailwind)            │
 └────────────────────┬────────────────────────────────────────┘
                      │
                      ▼
@@ -180,11 +188,22 @@ TotalScore = Σ (DimensionScore × SegmentWeight) for all 11 dimensions
 ### Step 1: Onboarding
 **Goal:** Build initial Career Passport
 
-1. User selects segment (student/job seeker/etc.)
-2. Provides basic constraints (location, learning time)
-3. Can skip to start exploring immediately
+**Landing Experience:**
+- Public homepage with animated word cloud of career titles
+- Fixed red scrolling ribbon below navbar (logged-in users only)
+- "How to use" section with 3-step visual guide
+- Feature showcase grid
+- Trending careers section (shared daily cache)
 
-**Page:** `/onboarding`
+**Onboarding Flow:**
+1. User creates account (email or social login)
+2. Selects segment (student/job seeker/career switcher/professional)
+3. Provides basic constraints (location, learning time, education)
+4. Can skip to start exploring immediately or go to Dashboard
+
+**New User Destination:** Dashboard (central hub)
+
+**Page:** `/` (landing), `/onboarding` (profile setup), `/dashboard` (home base)
 
 ### Step 2: Assessment Hub
 **Goal:** Complete multi-dimensional profiling
@@ -430,6 +449,47 @@ TotalScore = Σ (DimensionScore × SegmentWeight) for all 11 dimensions
 - **Auto-generate removed:** User must explicitly click "Build Roadmap" button
 - **Location:** CareerRoadmapPage input section
 
+### 14. Personal Dashboard ✨ NEW
+**Central command center for all career activities:**
+- **Unified hub:** Single page showing all personal features with beautiful, interactive cards
+- **Quick access sections:**
+  - Assessment Desk (with completion stats)
+  - Career Landscape (recommendations count)
+  - Career Pathways (saved pathways)
+  - Career Passport (completeness percentage)
+- **Visual design:**
+  - Black/white/red color scheme
+  - Animated stick figures for each section
+  - Card hover effects with shadow animations
+  - Top accent stripes that animate on hover
+- **Progress tracking:**
+  - Visual progress bar showing overall completion
+  - Checklist of all key milestones
+  - Dynamic "next step" suggestions with contextual links
+  - Quick stats showing career matches, skills tracked, and active pathways
+- **Navigation:**
+  - First item in "Personal" dropdown menu
+  - Accessible from anywhere in the app
+  - Direct links to all major features
+- **User-centric design:**
+  - Designed for users to spend most of their time here
+  - All information at a glance
+  - Reduces navigation friction
+  - Motivates completion through progress visualization
+- **Location:** `/dashboard` route, first in Personal menu
+
+### 15. Homepage Improvements ✨ NEW
+**Streamlined homepage experience:**
+- **Progress moved to Dashboard:** Removed "Your Progress" section from homepage to avoid redundancy
+- **Fixed ribbon:** Red scrolling ribbon with motivational messages, positioned below navbar
+  - Only visible for logged-in users
+  - Stays fixed while scrolling (sticky positioning)
+  - Seamless looping animation
+  - Messages include "Discover your perfect career match", "Science-backed career guidance", etc.
+- **Cleaner layout:** Focus on trending careers and feature showcase
+- **Better hierarchy:** Landing page for new users, streamlined dashboard path for existing users
+- **Location:** `/` (home page)
+
 ---
 
 ## Data Model
@@ -655,6 +715,23 @@ const result = JSON.parse(raw) as TypedInterface;
 ---
 
 ## User Journey
+
+### Overview: The CareerCase Flow
+
+**New User Experience:**
+1. **Landing Page** → Learn about CareerCase, see features
+2. **Sign Up** → Create account to begin personalized journey
+3. **Onboarding** → Quick profile setup (segment, location, constraints)
+4. **Dashboard** → Central hub showing all available features and progress
+5. **Assessment Desk** → Complete 4 assessments (Interests, Aptitude, Values, Aspirations)
+6. **Career Landscape** → View personalized recommendations
+7. **Career Pathways** → Build step-by-step plans to target careers
+8. **Career Passport** → Ongoing skill and experience tracking
+
+**Returning User Experience:**
+1. **Home Page** → See progress card and trending careers
+2. **Dashboard** → Quick access to all personal features and current progress
+3. **Continue Journey** → Pick up where they left off based on next step suggestions
 
 ### Persona 1: Rahul (College Student, CS Major)
 **Goal:** Find tech careers beyond software engineering

@@ -301,7 +301,7 @@ export function CareerLandscapeScatter({
                 opacity={isHighlighted || isHovered ? 1 : 0.7}
                 style={{ cursor: 'pointer' }}
                 whileHover={{ scale: 1.2 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 15, duration: 0.15 }}
                 onMouseEnter={() => setHoveredPoint(point)}
                 onMouseLeave={() => setHoveredPoint(null)}
                 onClick={() => onCareerClick?.(point.recommendation)}
@@ -324,40 +324,39 @@ export function CareerLandscapeScatter({
         />
       </svg>
 
-      {/* Hover tooltip */}
+      {/* Hover tooltip - NO ANIMATION DELAY */}
       {hoveredPoint && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-4 rounded-sm border border-[var(--ink-faint)] bg-[var(--paper-raised)] p-4"
-        >
-          <h4 className="mb-2 font-semibold text-sm">
+        <div className="mt-4 rounded border-2 border-[var(--ink)] bg-[var(--paper-raised)] p-4 shadow-md">
+          <h4 className="mb-3 font-display text-xl leading-tight border-b-2 border-[var(--ink-faint)] pb-2">
             {occupationById.get(hoveredPoint.recommendation.occupationId)?.title || hoveredPoint.id}
           </h4>
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div>
-              <div className="text-[var(--ink-soft)]">Match Score</div>
-              <div className="font-semibold">{Math.round(hoveredPoint.size)}/100</div>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <div className="flex items-center justify-between border-b border-[var(--ink-faint)] pb-2">
+              <span className="font-mono-ui text-xs uppercase text-[var(--ink-soft)] tracking-wide">Match Score</span>
+              <span className="font-display text-lg font-bold">{Math.round(hoveredPoint.size)}<span className="text-xs text-[var(--ink-soft)]">/100</span></span>
             </div>
-            <div>
-              <div className="text-[var(--ink-soft)]">Accessibility</div>
-              <div className="font-semibold">{Math.round(hoveredPoint.x)}/100</div>
+            <div className="flex items-center justify-between border-b border-[var(--ink-faint)] pb-2">
+              <span className="font-mono-ui text-xs uppercase text-[var(--ink-soft)] tracking-wide">Accessibility</span>
+              <span className="font-display text-lg font-bold">{Math.round(hoveredPoint.x)}<span className="text-xs text-[var(--ink-soft)]">/100</span></span>
             </div>
-            <div>
-              <div className="text-[var(--ink-soft)]">Reward Potential</div>
-              <div className="font-semibold">{Math.round(hoveredPoint.y)}/100</div>
+            <div className="flex items-center justify-between border-b border-[var(--ink-faint)] pb-2">
+              <span className="font-mono-ui text-xs uppercase text-[var(--ink-soft)] tracking-wide">Reward</span>
+              <span className="font-display text-lg font-bold">{Math.round(hoveredPoint.y)}<span className="text-xs text-[var(--ink-soft)]">/100</span></span>
             </div>
-            <div>
-              <div className="text-[var(--ink-soft)]">Compensation Index</div>
-              <div className="font-semibold">
-                {occupationById.get(hoveredPoint.recommendation.occupationId)?.valuesProfile.compensation || 0}/100
-              </div>
+            <div className="flex items-center justify-between border-b border-[var(--ink-faint)] pb-2">
+              <span className="font-mono-ui text-xs uppercase text-[var(--ink-soft)] tracking-wide">Compensation</span>
+              <span className="font-display text-lg font-bold">
+                {occupationById.get(hoveredPoint.recommendation.occupationId)?.valuesProfile.compensation || 0}<span className="text-xs text-[var(--ink-soft)]">/100</span>
+              </span>
             </div>
           </div>
-          <div className="mt-2 text-xs text-[var(--ink-soft)]">
-            {occupationById.get(hoveredPoint.recommendation.occupationId)?.cluster || 'General'}
+          <div className="mt-3 pt-3 border-t-2 border-[var(--ink-faint)]">
+            <span className="font-mono-ui text-[10px] uppercase tracking-widest text-[var(--ink-soft)]">Cluster: </span>
+            <span className="font-semibold text-sm capitalize">
+              {(occupationById.get(hoveredPoint.recommendation.occupationId)?.cluster || 'general').replace('_', ' ')}
+            </span>
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* Interpretation guide */}

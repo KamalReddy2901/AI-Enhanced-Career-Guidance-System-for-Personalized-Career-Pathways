@@ -42,6 +42,7 @@ export function Navbar() {
     ] : [{ to: '/settings', icon: <Settings size={12} />, label: t('settings'), active: location.pathname === '/settings' }],
   ];
   const personalLinks = [
+    { to: '/dashboard', icon: <Home size={13} />, label: 'Dashboard', active: location.pathname === '/dashboard' },
     { to: '/assess', icon: <ClipboardCheck size={13} />, label: t('assess'), active: location.pathname.startsWith('/assess') },
     { to: '/recommendations', icon: <Map size={13} />, label: t('recommendations'), active: location.pathname === '/recommendations' },
     { to: '/pathways', icon: <Route size={13} />, label: t('pathways'), active: location.pathname.startsWith('/pathway') || location.pathname === '/pathways' },

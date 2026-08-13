@@ -20,6 +20,7 @@ const CareerRoadmapPage = lazy(() => import('./pages/CareerRoadmapPage').then(m 
 const PricingPage = lazy(() => import('./pages/PricingPage').then(m => ({ default: m.PricingPage })));
 
 // ── Phase 1: Guidance system pages ───────────────────────────────────────
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage').then(m => ({ default: m.OnboardingPage })));
 const AssessmentHubPage = lazy(() => import('./pages/AssessmentHubPage').then(m => ({ default: m.AssessmentHubPage })));
 const AssessRiasecPage = lazy(() => import('./pages/AssessRiasecPage').then(m => ({ default: m.AssessRiasecPage })));
@@ -54,6 +55,7 @@ export const router = createBrowserRouter([
     { path: 'roadmap', Component: CareerRoadmapPage },
     { path: 'pricing', Component: PricingPage },
     // ── Phase 1: Guidance system routes ───────────────────────────────────
+    { path: 'dashboard', Component: DashboardPage },
     { path: 'onboarding', Component: OnboardingPage },
     { path: 'assess', Component: AssessmentHubPage },
     { path: 'assess/interests', Component: AssessRiasecPage },
