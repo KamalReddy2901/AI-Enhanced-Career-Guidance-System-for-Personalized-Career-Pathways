@@ -359,6 +359,40 @@ TotalScore = Σ (DimensionScore × SegmentWeight) for all 11 dimensions
 - Can be imported to other systems
 - Privacy-compliant (user owns data)
 
+### 9. Career Landscape Scatter Plot ✨ NEW
+**Interactive visualization showing all recommendations:**
+- **X-axis:** Accessibility (ease of transition based on skill gap)
+- **Y-axis:** Reward potential (compensation profile + market growth)
+- **Size:** Match score (larger = better fit)
+- **Color:** Career cluster (analytical, creative, people, hands_on, enterprising, structured)
+- **Quadrants:** Visual grouping by reward vs accessibility
+- **Interactions:**
+  - Hover for detailed metrics (match score, accessibility, reward, compensation)
+  - Click career to view full details
+  - Toggle between Cards view and Landscape view
+- **Benefits:**
+  - Quick visual understanding of trade-offs
+  - Identify "sweet spot" careers (high reward + easy transition)
+  - Compare accessibility vs long-term potential
+- **Location:** RecommendationsPage with view toggle button
+
+### 10. Pathway Timeline Gantt Chart ✨ NEW
+**Professional project management-style timeline:**
+- **Timeline bars:** Visual duration for each step (color-coded)
+- **Month/week grid:** Time reference headers (Month 1, Month 2, etc.)
+- **Milestone markers:** Diamond indicators for certifications and qualifications
+- **Dependencies:** Visual arrows showing sequential requirements
+- **Interactive elements:**
+  - Hover for highlighting
+  - Click for detailed task panel (duration, timeline, dependencies)
+  - Progress indicators show completed vs pending steps
+- **Benefits:**
+  - Clear visual timeline of entire pathway
+  - Understand parallel vs sequential steps
+  - Realistic time expectations
+  - Easy milestone identification
+- **Location:** PathwayPage below step checklist
+
 ---
 
 ## Data Model
@@ -764,13 +798,11 @@ Returns live job postings for Graphic Designers
 ### Phase 2 (Post-SIH)
 - ✨ Transition prediction ML model (train on historical data)
 - ✨ Real-time salary data via web scraping + job portal APIs
-- ✨ Career landscape scatter plot visualization
-- ✨ Pathway timeline Gantt chart
 - ✨ Mobile app (React Native)
+- ✨ Video assessments (replace text-based questions)
 
 ### Phase 3 (Scale)
 - ✨ Multilingual support (Hindi, Telugu, Tamil, Bengali, Marathi)
-- ✨ Video assessments (replace text-based questions)
 - ✨ Peer comparison (anonymized benchmarking)
 - ✨ Mentor matching (connect users with professionals)
 - ✨ Job application tracking
