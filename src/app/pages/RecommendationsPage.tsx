@@ -25,12 +25,12 @@ import { Volume2, Star, X, ArrowUpDown, Map } from 'lucide-react';
 import { toast } from 'sonner';
 import { CareerLandscapeScatter } from '../components/guidance/CareerLandscapeScatter';
 
-type LandscapeFilter = 'all' | 'safe' | 'stretch' | 'frontier';
+type LandscapeFilter = 'all' | 'safe' | 'stretch' | 'ambitious';
 type SortOption = 'best_fit' | 'salary' | 'fastest' | 'wlb';
 
 const landscapeGroup = (group: RecommendationGroup): Exclude<LandscapeFilter, 'all'> =>
   group === 'best_fit' || group === 'easiest_transition' ? 'safe' :
-    group === 'growth' ? 'stretch' : 'frontier';
+    group === 'growth' ? 'stretch' : 'ambitious';
 
 const HIDDEN_CAREERS_KEY = 'cc_hidden_recommendations';
 
@@ -74,7 +74,7 @@ export function RecommendationsPage() {
     all: t('recommendationFilterAll'),
     safe: t('recommendationFilterSafe'),
     stretch: t('recommendationFilterStretch'),
-    frontier: t('recommendationFilterFrontier'),
+    ambitious: t('recommendationFilterAmbitious'),
   };
 
   const sortLabels: Record<SortOption, string> = {
@@ -187,9 +187,9 @@ export function RecommendationsPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <Tabs value={filter} onValueChange={(value)=>setFilter(value as LandscapeFilter)}>
             <TabsList aria-label={t('recommendations')}>
-              {(['all','safe','stretch','frontier'] as const).map(value=><TabsTrigger key={value} value={value} data-testid={`recommendations-filter-${value}`}>{filterLabels[value]}</TabsTrigger>)}
+              {(['all','safe','stretch','ambitious'] as const).map(value=><TabsTrigger key={value} value={value} data-testid={`recommendations-filter-${value}`}>{filterLabels[value]}</TabsTrigger>)}
             </TabsList>
-            {(['all','safe','stretch','frontier'] as const).map(value=><TabsContent key={value} value={value} className="sr-only">{t('recommendationShowing')} {filterLabels[value]}</TabsContent>)}
+            {(['all','safe','stretch','ambitious'] as const).map(value=><TabsContent key={value} value={value} className="sr-only">{t('recommendationShowing')} {filterLabels[value]}</TabsContent>)}
           </Tabs>
           
           <div className="flex items-center gap-3">
@@ -348,7 +348,7 @@ function RecommendationCard({
     ? t('recommendationFilterSafe')
     : group === 'stretch'
       ? t('recommendationFilterStretch')
-      : t('recommendationFilterFrontier');
+      : t('recommendationFilterAmbitious');
 
   // Calculate star rating (0-5 based on totalScore 0-100)
   const starRating = Math.round((recommendation.totalScore / 100) * 5);
@@ -364,7 +364,7 @@ function RecommendationCard({
       </button>
       
       <div className={`label-caps mb-3 ${
-        group==='frontier' ? 'border-l-4 border-[var(--accent-news)] pl-2' : 
+        group==='ambitious' ? 'border-l-4 border-[var(--accent-news)] pl-2' : 
         group==='stretch' ? 'border-l-4 border-blue-500 pl-2' :
         group==='safe' ? 'border-l-4 border-emerald-500 pl-2' : ''
       }`}>{groupLabel}</div>

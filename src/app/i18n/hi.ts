@@ -67,7 +67,7 @@ export const hi: Record<keyof typeof en, string> = {
   recommendationFilterAll: "सभी",
   recommendationFilterSafe: "सुरक्षित",
   recommendationFilterStretch: "महत्त्वाकांक्षी",
-  recommendationFilterFrontier: "अग्रणी",
+  recommendationFilterAmbitious: "महत्त्वाकांक्षी",
   recommendationShowing: "दिखाए जा रहे करियर सुझाव:",
   recommendationLandscapeNote: "हर परिदृश्य में व्यावहारिक, महत्त्वाकांक्षी और खोजपरक मार्ग साथ दिखाई देते हैं।",
   passportNoPassport: "अभी कोई पासपोर्ट नहीं है",

@@ -38,7 +38,7 @@ const FAQ_CATEGORIES = [
       },
       {
         q: 'What do the recommendation groups mean?',
-        a: 'Safe = best fit or easiest transition; Stretch = growth opportunities that challenge you; Frontier = emerging or unconventional careers that require significant pivoting.',
+        a: 'Safe = best fit or easiest transition; Stretch = growth opportunities that challenge you; Ambitious = emerging or unconventional careers that require significant pivoting.',
       },
       {
         q: 'Can I hide recommendations I\'m not interested in?',

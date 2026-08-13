@@ -66,7 +66,7 @@ export const en = {
   recommendationFilterAll: "All",
   recommendationFilterSafe: "Safe",
   recommendationFilterStretch: "Stretch",
-  recommendationFilterFrontier: "Frontier",
+  recommendationFilterAmbitious: "Ambitious",
   recommendationShowing: "Showing career recommendations:",
   recommendationLandscapeNote: "Every landscape keeps grounded, ambitious and exploratory routes in view.",
   passportNoPassport: "No passport yet",

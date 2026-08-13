@@ -224,7 +224,7 @@ TotalScore = Σ (DimensionScore × SegmentWeight) for all 11 dimensions
 - Click "Build pathway" → Navigate to pathway planning
 - Click "Read full dossier" → See AI-generated career deep-dive
 - Sort by: Best Fit, Salary, Fastest Path, Work-Life Balance
-- Filter by: All, Safe, Stretch, Frontier
+- Filter by: All, Safe, Stretch, Ambitious
 
 **Pages:** `/recommendations`, `/job/detail`
 
@@ -413,11 +413,11 @@ TotalScore = Σ (DimensionScore × SegmentWeight) for all 11 dimensions
 
 ### 12. Career Landscape Card Visual Hierarchy
 **Enhanced visual differentiation for recommendation groups:**
-- **Frontier careers:** Red left border (bold, high-risk/high-reward)
+- **Ambitious careers:** Red left border (bold, high-risk/high-reward)
 - **Stretch careers:** Blue left border (growth, medium challenge)
 - **Safe careers:** Green left border (stable, low-risk)
 - **Benefit:** Quick visual scanning to identify career categories by risk/reward profile with intuitive color psychology
-- **Color rationale:** Green = safe/stable, Blue = growth/potential, Red = bold/frontier
+- **Color rationale:** Green = safe/stable, Blue = growth/potential, Red = bold/ambitious
 - **Location:** RecommendationsPage card grid
 
 ### 13. Career Roadmap Builder Improvements

@@ -67,7 +67,7 @@ export const te: Record<keyof typeof en, string> = {
   recommendationFilterAll: "అన్నీ",
   recommendationFilterSafe: "సురక్షితమైనవి",
   recommendationFilterStretch: "సవాలుతో కూడినవి",
-  recommendationFilterFrontier: "అగ్రగామి",
+  recommendationFilterAmbitious: "ప్రతిష్ఠాత్మక",
   recommendationShowing: "చూపిస్తున్న కెరీర్ సిఫార్సులు:",
   recommendationLandscapeNote: "ప్రతి దృశ్యం ఆచరణాత్మక, ప్రతిష్ఠాత్మక మరియు అన్వేషణాత్మక మార్గాలను కలిపి చూపిస్తుంది.",
   passportNoPassport: "ఇంకా పాస్‌పోర్ట్ లేదు",
