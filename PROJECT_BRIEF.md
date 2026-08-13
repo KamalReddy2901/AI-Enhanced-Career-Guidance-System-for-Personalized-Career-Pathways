@@ -393,6 +393,42 @@ TotalScore = Σ (DimensionScore × SegmentWeight) for all 11 dimensions
   - Easy milestone identification
 - **Location:** PathwayPage below step checklist
 
+### 11. Explore Tools - Quick Access
+**Streamlined tool discovery in explore section:**
+- **Tools renamed for clarity:**
+  - "Roadmap" (was "Career Roadmap Builder" or "Build from my current job")
+  - "Transition" (was "Career Transition Planner")
+  - "Compare" (was "Side-by-Side Compare")
+  - "Mood Match" (unchanged)
+  - "Career Quiz" (unchanged)
+- **Button styling:**
+  - Optimized dimensions: 64px height × 124px min width
+  - Compact design for better mobile responsiveness
+  - Icon + label + description in clean hierarchy
+  - Red accent hover state for consistency
+- **Smart defaults:**
+  - "Build from my current job" only shown when passport has experience
+  - Direct links to context-aware starting points
+- **Location:** JobOverviewPage explore section
+
+### 12. Career Landscape Card Visual Hierarchy
+**Enhanced visual differentiation for recommendation groups:**
+- **Frontier careers:** Full accent red left border (most emphasis)
+- **Stretch careers:** 40% opacity red left border (medium emphasis)
+- **Safe careers:** 20% opacity red left border (subtle emphasis)
+- **Benefit:** Quick visual scanning to identify career categories by risk/reward profile
+- **Consistency:** Matches the colored match percentages in explore section
+- **Location:** RecommendationsPage card grid
+
+### 13. Career Roadmap Builder Improvements
+**Enhanced user experience for roadmap generation:**
+- **Default selection removed:** "Build from my current job" button no longer auto-selected
+- **Optional context-aware starting point:** Button shown only when user has passport experience
+- **Conditional visibility:** Only displays when input field is empty to reduce clutter
+- **Error handling:** Improved error messages for AI generation failures
+- **Auto-generate removed:** User must explicitly click "Build Roadmap" button
+- **Location:** CareerRoadmapPage input section
+
 ---
 
 ## Data Model

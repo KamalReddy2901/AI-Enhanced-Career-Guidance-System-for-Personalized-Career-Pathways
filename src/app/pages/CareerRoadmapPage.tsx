@@ -79,12 +79,6 @@ export function CareerRoadmapPage() {
   // Abort in-flight request on unmount
   useEffect(() => () => { abortRef.current?.abort(); }, []);
 
-  // Auto-generate if job param was passed from dossier
-  useEffect(() => {
-    if (searchParams.get('job')) handleGenerate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const handleGenerate = async () => {
     if (!jobTitle.trim()) return;
     abortRef.current?.abort();
@@ -154,7 +148,7 @@ export function CareerRoadmapPage() {
           <label className="block font-[Inter] text-black/40 mb-2 uppercase tracking-[0.1em]" style={{ fontSize: '0.62rem' }}>
             Career / Job Title
           </label>
-          {passport?.experiences[0]?.title && (
+          {passport?.experiences[0]?.title && !jobTitle && (
             <button type="button" onClick={() => { setJobTitle(passport.experiences[0].title); setDescription(''); void fetchDescription(passport.experiences[0].title); }} className="mb-3 inline-flex items-center gap-2 border border-black/15 px-3 py-2 font-[Inter] text-xs text-black/65 hover:border-black/40 hover:text-black">
               <Map size={13} /> Build from my current job: {passport.experiences[0].title}
             </button>

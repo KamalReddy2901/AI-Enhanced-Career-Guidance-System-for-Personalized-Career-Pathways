@@ -45,12 +45,12 @@ function JobSearchEmptyState() {
           <p className="mb-3 text-center font-mono-ui text-[0.62rem] uppercase tracking-[.14em] text-[var(--accent-news)]">Explore tools</p>
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
             {[
-              { label: passport?.experiences[0]?.title ? 'Build from my current job' : 'Career Roadmap Builder', icon: <Map size={14}/>, path: passport?.experiences[0]?.title ? `/roadmap?job=${encodeURIComponent(passport.experiences[0].title)}` : '/roadmap', note: passport?.experiences[0]?.title ? `${passport.experiences[0].title} → your next move` : 'Choose a destination' },
-              { label: 'Career Transition Planner', icon: <ArrowLeftRight size={14}/>, path: '/career-transition', note: 'Plan a change' },
+              { label: passport?.experiences[0]?.title ? 'Build from my current job' : 'Roadmap', icon: <Map size={14}/>, path: '/roadmap', note: passport?.experiences[0]?.title ? `${passport.experiences[0].title} → your next move` : 'Choose a destination' },
+              { label: 'Transition', icon: <ArrowLeftRight size={14}/>, path: '/career-transition', note: 'Plan a change' },
+              { label: 'Compare', icon: <Scale size={14}/>, path: '/compare', note: 'Compare two roles' },
               { label: 'Mood Match', icon: <Zap size={14}/>, path: '/mood', note: 'Explore by energy' },
-              { label: 'Side-by-Side Compare', icon: <Scale size={14}/>, path: '/compare', note: 'Compare two roles' },
               { label: 'Career Quiz', icon: <Brain size={14}/>, path: '/quiz', note: 'Find a starting point' },
-            ].map(tool => <button key={tool.label} type="button" onClick={() => navigate(tool.path)} className="min-h-[76px] min-w-[116px] flex-1 border border-black/12 bg-[var(--paper)] p-2.5 text-left transition-colors hover:border-[var(--accent-news)] hover:bg-black/[.025] focus-visible:border-[var(--accent-news)]">
+            ].map(tool => <button key={tool.label} type="button" onClick={() => navigate(tool.path)} className="min-h-[64px] min-w-[124px] flex-1 border border-black/12 bg-[var(--paper)] p-2.5 text-left transition-colors hover:border-[var(--accent-news)] hover:bg-black/[.025] focus-visible:border-[var(--accent-news)]">
               <span className="mb-1.5 flex text-[var(--accent-news)]">{tool.icon}</span><span className="block font-[Inter] text-[.7rem] leading-tight text-black/75">{tool.label}</span><span className="mt-1 block font-[Inter] text-[.6rem] leading-tight text-black/38">{tool.note}</span>
             </button>)}
           </div>

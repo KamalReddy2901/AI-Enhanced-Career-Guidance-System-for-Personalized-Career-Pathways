@@ -247,13 +247,40 @@ export function RecommendationsPage() {
 
         {/* Cards view */}
         {viewMode === 'cards' && (
-          <motion.div ref={reveal.ref} variants={reveal.containerVariants} initial="hidden" animate={reveal.animate} className="mb-12 grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
+          <motion.div 
+            className="mb-12 grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-3"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: { opacity: 0 },
+              visible: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.1
+                }
+              }
+            }}
+          >
             {visibleRecommendations.map((recommendation) => (
-              <motion.div key={recommendation.occupationId} variants={reveal.itemVariants} layout>
-              <RecommendationCard recommendation={recommendation} locale={locale} lang={lang} copy={c} onExplain={() => setExplanation(recommendation)} onDismiss={() => handleDismissCareer(recommendation.occupationId)} />
-            </motion.div>
-          ))}
-        </motion.div>
+              <motion.div 
+                key={recommendation.occupationId} 
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  visible: { opacity: 1, y: 0 }
+                }}
+                layout
+              >
+                <RecommendationCard 
+                  recommendation={recommendation} 
+                  locale={locale} 
+                  lang={lang} 
+                  copy={c} 
+                  onExplain={() => setExplanation(recommendation)} 
+                  onDismiss={() => handleDismissCareer(recommendation.occupationId)} 
+                />
+              </motion.div>
+            ))}
+          </motion.div>
         )}
         
         {hiddenCareers.size > 0 && (
@@ -336,7 +363,11 @@ function RecommendationCard({
         <X size={18} />
       </button>
       
-      <div className={`label-caps mb-3 ${group==='frontier'?'border-l-4 border-[var(--accent-news)] pl-2':''}`}>{groupLabel}</div>
+      <div className={`label-caps mb-3 ${
+        group==='frontier' ? 'border-l-4 border-[var(--accent-news)] pl-2' : 
+        group==='stretch' ? 'border-l-4 border-[var(--accent-news)]/40 pl-2' :
+        group==='safe' ? 'border-l-4 border-[var(--accent-news)]/20 pl-2' : ''
+      }`}>{groupLabel}</div>
       <div className="font-mono-ui text-[10px] uppercase text-[var(--ink-soft)]">
         NCO {occupation.ncoCode} · NSQF {occupation.nsqfEntryLevel}
       </div>

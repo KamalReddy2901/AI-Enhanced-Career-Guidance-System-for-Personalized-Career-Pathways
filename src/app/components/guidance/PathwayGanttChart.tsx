@@ -72,7 +72,7 @@ export function PathwayGanttChart({ route, className = '' }: PathwayGanttChartPr
   // Chart dimensions - LARGER for better readability
   const rowHeight = 80;
   const headerHeight = 100;
-  const labelWidth = 250;
+  const labelWidth = 350; // Increased from 250 to prevent text overflow
   const weekWidth = 50;
   const chartWidth = totalWeeks * weekWidth;
   const chartHeight = ganttTasks.length * rowHeight + headerHeight;
@@ -192,18 +192,18 @@ export function PathwayGanttChart({ route, className = '' }: PathwayGanttChartPr
                   width={labelWidth - 20}
                   height={rowHeight - 20}
                 >
-                  <div className="flex h-full flex-col justify-center">
-                    <div className="flex items-center gap-2">
+                  <div className="flex h-full flex-col justify-center px-2">
+                    <div className="flex items-start gap-2">
                       {task.isMilestone ? (
-                        <CheckCircle2 size={16} className="shrink-0 text-[var(--accent-news)]" />
+                        <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[var(--accent-news)]" />
                       ) : (
-                        <Circle size={16} className="shrink-0 text-[var(--ink-soft)]" />
+                        <Circle size={16} className="mt-0.5 shrink-0 text-[var(--ink-soft)]" />
                       )}
-                      <span className="font-mono-ui text-sm font-semibold text-[var(--ink)]">
+                      <span className="font-mono-ui text-sm font-semibold text-[var(--ink)] leading-tight">
                         {task.name}
                       </span>
                     </div>
-                    <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--ink-soft)]">
+                    <div className="mt-2 flex items-center gap-1 text-[10px] text-[var(--ink-soft)]">
                       <Clock size={12} />
                       <span>{Math.round(task.duration)} weeks ({(task.duration / 4).toFixed(1)} months)</span>
                     </div>
