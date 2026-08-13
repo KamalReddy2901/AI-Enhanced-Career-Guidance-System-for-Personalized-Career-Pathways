@@ -21,8 +21,9 @@ import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 import { TextReveal } from '../motion/TextReveal';
 import { useReveal } from '../motion/useReveal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Volume2, Star, X, ArrowUpDown } from 'lucide-react';
+import { Volume2, Star, X, ArrowUpDown, Map } from 'lucide-react';
 import { toast } from 'sonner';
+import { CareerLandscapeScatter } from '../components/guidance/CareerLandscapeScatter';
 
 type LandscapeFilter = 'all' | 'safe' | 'stretch' | 'frontier';
 type SortOption = 'best_fit' | 'salary' | 'fastest' | 'wlb';
@@ -59,6 +60,7 @@ export function RecommendationsPage() {
   );
   const [filter, setFilter] = useState<LandscapeFilter>('all');
   const [sortBy, setSortBy] = useState<SortOption>('best_fit');
+  const [viewMode, setViewMode] = useState<'cards' | 'scatter'>('cards');
   const [hiddenCareers, setHiddenCareers] = useState<Set<string>>(() => {
     try {
       const stored = localStorage.getItem(HIDDEN_CAREERS_KEY);
@@ -190,27 +192,70 @@ export function RecommendationsPage() {
             {(['all','safe','stretch','frontier'] as const).map(value=><TabsContent key={value} value={value} className="sr-only">{t('recommendationShowing')} {filterLabels[value]}</TabsContent>)}
           </Tabs>
           
-          <div className="flex items-center gap-2">
-            <ArrowUpDown size={16} className="text-[var(--ink-soft)]" />
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="border border-[var(--ink-faint)] bg-[var(--paper)] px-3 py-2 text-sm font-mono-ui uppercase hover:border-[var(--ink)]"
-            >
-              {Object.entries(sortLabels).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
+          <div className="flex items-center gap-3">
+            {/* View mode toggle */}
+            <div className="flex items-center gap-1 border border-[var(--ink-faint)] rounded-sm overflow-hidden">
+              <button
+                onClick={() => setViewMode('cards')}
+                className={`px-3 py-2 text-xs font-mono-ui uppercase transition-colors ${
+                  viewMode === 'cards' ? 'bg-[var(--ink)] text-[var(--paper)]' : 'bg-[var(--paper)] text-[var(--ink-soft)] hover:text-[var(--ink)]'
+                }`}
+                title="Card view"
+              >
+                Cards
+              </button>
+              <button
+                onClick={() => setViewMode('scatter')}
+                className={`px-3 py-2 text-xs font-mono-ui uppercase transition-colors flex items-center gap-1 ${
+                  viewMode === 'scatter' ? 'bg-[var(--ink)] text-[var(--paper)]' : 'bg-[var(--paper)] text-[var(--ink-soft)] hover:text-[var(--ink)]'
+                }`}
+                title="Scatter plot view"
+              >
+                <Map size={12} />
+                Landscape
+              </button>
+            </div>
+
+            {/* Sort dropdown */}
+            <div className="flex items-center gap-2">
+              <ArrowUpDown size={16} className="text-[var(--ink-soft)]" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="border border-[var(--ink-faint)] bg-[var(--paper)] px-3 py-2 text-sm font-mono-ui uppercase hover:border-[var(--ink)]"
+              >
+                {Object.entries(sortLabels).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
         <p className="font-display mb-8 italic text-[var(--ink-soft)]">{t('recommendationLandscapeNote')}</p>
-        <motion.div ref={reveal.ref} variants={reveal.containerVariants} initial="hidden" animate={reveal.animate} className="mb-12 grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
-          {visibleRecommendations.map((recommendation) => (
-            <motion.div key={recommendation.occupationId} variants={reveal.itemVariants} layout>
+        
+        {/* Scatter plot view */}
+        {viewMode === 'scatter' && (
+          <div className="mb-12">
+            <CareerLandscapeScatter
+              recommendations={visibleRecommendations}
+              onCareerClick={(rec) => setExplanation(rec)}
+              highlightedId={explanation?.occupationId}
+              className="mx-auto"
+            />
+          </div>
+        )}
+
+        {/* Cards view */}
+        {viewMode === 'cards' && (
+          <motion.div ref={reveal.ref} variants={reveal.containerVariants} initial="hidden" animate={reveal.animate} className="mb-12 grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
+            {visibleRecommendations.map((recommendation) => (
+              <motion.div key={recommendation.occupationId} variants={reveal.itemVariants} layout>
               <RecommendationCard recommendation={recommendation} locale={locale} lang={lang} copy={c} onExplain={() => setExplanation(recommendation)} onDismiss={() => handleDismissCareer(recommendation.occupationId)} />
             </motion.div>
           ))}
         </motion.div>
+        )}
+        
         {hiddenCareers.size > 0 && (
           <div className="mb-8 border border-[var(--ink-faint)] bg-[var(--paper-raised)] p-4">
             <div className="flex items-center justify-between">
