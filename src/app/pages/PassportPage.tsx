@@ -194,7 +194,7 @@ export function PassportPage() {
         ...prev,
         skills: [],
         experiences: [],
-        education: '',
+        education: { level: 'below_10' as const }, // Reset to default
       };
       next.completeness = calculateCompleteness(next);
       return next;
@@ -217,7 +217,7 @@ export function PassportPage() {
       // Simple theme extraction - split by common separators
       const themes = aspirationText
         .split(/[,;]/)
-        .map(t => t.trim())
+        .map(t => t.trim().toLowerCase())
         .filter(t => t.length > 0)
         .slice(0, 5);
       
@@ -225,7 +225,11 @@ export function PassportPage() {
         ...prev,
         aspiration: {
           statement: aspirationText.trim(),
-          themes: themes.length > 0 ? themes : [aspirationText.trim().split(' ')[0]],
+          themes: themes.length > 0 ? themes : [aspirationText.trim().split(' ')[0].toLowerCase()],
+          horizonYears: prev.aspiration?.horizonYears || 3,
+          dreamOccupationIds: prev.aspiration?.dreamOccupationIds || [],
+          entrepreneurialIntent: prev.aspiration?.entrepreneurialIntent || 'none' as const,
+          capturedVia: 'form' as const,
         },
       };
       next.completeness = calculateCompleteness(next);
@@ -757,23 +761,6 @@ export function PassportPage() {
                 <button
                   onClick={() => navigate('/assess/values')}
                   className="text-sm font-semibold hover:underline"
-                >
-                  {t('passportTakeAssessment')} →
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-                      </button>
-                    ))}
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-sm border border-[var(--ink-faint)] p-4 text-center">
-                <p className="mb-2 text-sm text-[var(--ink-soft)]">{t('passportNoValues')}</p>
-                <button
-                  onClick={() => navigate('/assess/values')}
-                  className="text-sm hover:underline"
                 >
                   {t('passportTakeAssessment')} →
                 </button>
