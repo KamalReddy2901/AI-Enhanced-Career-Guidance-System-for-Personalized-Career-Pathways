@@ -396,19 +396,20 @@ TotalScore = Σ (DimensionScore × SegmentWeight) for all 11 dimensions
 ### 11. Explore Tools - Quick Access
 **Streamlined tool discovery in explore section:**
 - **Tools renamed for clarity:**
-  - "Roadmap" (was "Career Roadmap Builder" or "Build from my current job")
+  - "Roadmap" (consistent naming, no conditional text)
   - "Transition" (was "Career Transition Planner")
   - "Compare" (was "Side-by-Side Compare")
   - "Mood Match" (unchanged)
   - "Career Quiz" (unchanged)
 - **Button styling:**
-  - Optimized dimensions: 64px height × 124px min width
-  - Compact design for better mobile responsiveness
-  - Icon + label + description in clean hierarchy
-  - Red accent hover state for consistency
-- **Smart defaults:**
-  - "Build from my current job" only shown when passport has experience
-  - Direct links to context-aware starting points
+  - Grid layout: 2 columns mobile, 5 columns desktop
+  - Centered design with icon above text
+  - Clean border hover states with red accent
+  - Better visual hierarchy and spacing
+- **Uniform labels:**
+  - Removed conditional "Build from my current job" text
+  - All tools have consistent, short labels
+  - Descriptive subtitles for clarity
 - **Location:** JobOverviewPage explore section
 
 ### 12. Career Landscape Card Visual Hierarchy

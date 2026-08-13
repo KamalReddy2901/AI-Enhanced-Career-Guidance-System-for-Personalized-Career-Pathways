@@ -784,44 +784,157 @@ export function PassportPage() {
 
         {/* Aspiration */}
         {passport.aspiration && (
-          <div className="mb-6 border border-[var(--ink-faint)] bg-[var(--paper-raised)] p-6">
-            <h2 className="font-display mb-3 text-2xl">{t('passportAspiration')}</h2>
-            <p className="mb-2 text-sm text-[var(--ink-soft)]">{passport.aspiration.statement}</p>
-            <div className="flex flex-wrap gap-2 mt-3">
-              {passport.aspiration.themes.map(theme => (
-                <span key={theme} className="rounded-full border border-[var(--ink-faint)] bg-[var(--paper)] px-3 py-1 text-xs">
-                  {theme}
-                </span>
-              ))}
+          <div className="mb-6 border-2 border-[var(--ink)] bg-[var(--paper-raised)] p-6 shadow-md">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-2xl">{t('passportAspiration')}</h2>
+              <button
+                onClick={() => {
+                  setEditingAspiration(true);
+                  setAspirationText(passport.aspiration?.statement || '');
+                }}
+                className="flex items-center gap-2 border-2 border-[var(--ink)] px-3 py-2 text-xs font-mono-ui uppercase hover:bg-[var(--ink)] hover:text-[var(--paper)] transition-colors"
+              >
+                <Edit2 size={14} /> Update
+              </button>
+            </div>
+            <div className="rounded border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-4">
+              <p className="mb-3 text-sm leading-relaxed italic">&ldquo;{passport.aspiration.statement}&rdquo;</p>
+              <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-[var(--ink-faint)]">
+                {passport.aspiration.themes.map(theme => (
+                  <span key={theme} className="rounded-full border-2 border-[var(--ink-faint)] bg-[var(--paper-raised)] px-3 py-1 text-xs font-semibold">
+                    {theme}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
         {/* Constraints */}
-        <div className="border border-[var(--ink-faint)] bg-[var(--paper-raised)] p-6">
-          <div className="mb-4 flex items-center justify-between"><h2 className="font-display text-2xl">{t('passportConstraints')}</h2><button onClick={()=>setEditingConstraints(value=>!value)} className="min-h-11 border border-[var(--ink-faint)] px-4 py-2 text-sm">{editingConstraints?t('passportDone'):t('passportEdit')}</button></div>
-          {editingConstraints ? <div className="grid gap-4 text-sm sm:grid-cols-2"><label>{t('passportLocation')}<input value={passport.constraints.location} onChange={event=>updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');return {...previous,constraints:{...previous.constraints,location:event.target.value}}})} className="mt-1 min-h-11 w-full border border-[var(--ink-faint)] bg-[var(--paper)] p-2"/></label><label>{t('passportLearningHours')}<input type="number" min="1" max="40" value={passport.constraints.weeklyLearningHours} onChange={event=>updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');return {...previous,constraints:{...previous.constraints,weeklyLearningHours:Number(event.target.value)}}})} className="mt-1 min-h-11 w-full border border-[var(--ink-faint)] bg-[var(--paper)] p-2"/></label><label>{t('passportBudget')}<select value={passport.constraints.budgetLevel} onChange={event=>updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');return {...previous,constraints:{...previous.constraints,budgetLevel:event.target.value as 'low'|'medium'|'high'}}})} className="mt-1 min-h-11 w-full border border-[var(--ink-faint)] bg-[var(--paper)] p-2"><option value="low">{t('passportBudgetLow')}</option><option value="medium">{t('passportBudgetMedium')}</option><option value="high">{t('passportBudgetHigh')}</option></select></label><label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={passport.constraints.canRelocate} onChange={event=>updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');return {...previous,constraints:{...previous.constraints,canRelocate:event.target.checked}}})}/>{t('passportCanRelocate')}</label></div> : <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-[var(--ink-soft)]">{t('passportLocation')}:</span>{' '}
-              <span>{passport.constraints.location}</span>
+        <div className="border-2 border-[var(--ink)] bg-[var(--paper-raised)] p-6 shadow-md">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-display text-2xl">{t('passportConstraints')}</h2>
+            <button 
+              onClick={()=>setEditingConstraints(value=>!value)} 
+              className="min-h-11 border-2 border-[var(--ink)] px-4 py-2 text-xs font-mono-ui uppercase hover:bg-[var(--ink)] hover:text-[var(--paper)] transition-colors"
+            >
+              {editingConstraints?t('passportDone'):t('passportEdit')}
+            </button>
+          </div>
+          {editingConstraints ? (
+            <div className="grid gap-4 text-sm sm:grid-cols-2">
+              <label className="block">
+                <span className="text-sm font-semibold mb-2 block">{t('passportLocation')}</span>
+                <input 
+                  value={passport.constraints.location} 
+                  onChange={event=>updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');return {...previous,constraints:{...previous.constraints,location:event.target.value}}})} 
+                  className="mt-1 min-h-11 w-full border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-2 focus:border-[var(--ink)] focus:outline-none"
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm font-semibold mb-2 block">{t('passportLearningHours')}</span>
+                <input 
+                  type="number" 
+                  min="1" 
+                  max="40" 
+                  value={passport.constraints.weeklyLearningHours} 
+                  onChange={event=>updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');return {...previous,constraints:{...previous.constraints,weeklyLearningHours:Number(event.target.value)}}})} 
+                  className="mt-1 min-h-11 w-full border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-2 focus:border-[var(--ink)] focus:outline-none"
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm font-semibold mb-2 block">{t('passportBudget')}</span>
+                <select 
+                  value={passport.constraints.budgetLevel} 
+                  onChange={event=>updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');return {...previous,constraints:{...previous.constraints,budgetLevel:event.target.value as 'low'|'medium'|'high'}}})} 
+                  className="mt-1 min-h-11 w-full border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-2 focus:border-[var(--ink)] focus:outline-none"
+                >
+                  <option value="low">{t('passportBudgetLow')}</option>
+                  <option value="medium">{t('passportBudgetMedium')}</option>
+                  <option value="high">{t('passportBudgetHigh')}</option>
+                </select>
+              </label>
+              <label className="flex min-h-11 items-center gap-2 p-2 border-2 border-[var(--ink-faint)] bg-[var(--paper)] rounded cursor-pointer hover:border-[var(--ink)]">
+                <input 
+                  type="checkbox" 
+                  checked={passport.constraints.canRelocate} 
+                  onChange={event=>updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');return {...previous,constraints:{...previous.constraints,canRelocate:event.target.checked}}})}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm">{t('passportCanRelocate')}</span>
+              </label>
             </div>
-            <div>
-              <span className="text-[var(--ink-soft)]">{t('passportRelocation')}:</span>{' '}
-              <span>{passport.constraints.canRelocate ? t('passportYes') : t('passportNo')}</span>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="rounded border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-4">
+                <span className="text-xs font-mono-ui uppercase text-[var(--ink-soft)] block mb-1">{t('passportLocation')}</span>
+                <span className="text-sm font-semibold">{passport.constraints.location}</span>
+              </div>
+              <div className="rounded border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-4">
+                <span className="text-xs font-mono-ui uppercase text-[var(--ink-soft)] block mb-1">{t('passportRelocation')}</span>
+                <span className="text-sm font-semibold">{passport.constraints.canRelocate ? t('passportYes') : t('passportNo')}</span>
+              </div>
+              <div className="rounded border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-4">
+                <span className="text-xs font-mono-ui uppercase text-[var(--ink-soft)] block mb-1">{t('passportLearningHours')}</span>
+                <span className="text-sm font-semibold">{passport.constraints.weeklyLearningHours}h / week</span>
+              </div>
+              <div className="rounded border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-4">
+                <span className="text-xs font-mono-ui uppercase text-[var(--ink-soft)] block mb-1">{t('passportBudget')}</span>
+                <span className="text-sm font-semibold capitalize">
+                  {passport.constraints.budgetLevel === 'low' ? t('passportBudgetLow') : passport.constraints.budgetLevel === 'medium' ? t('passportBudgetMedium') : t('passportBudgetHigh')}
+                </span>
+              </div>
             </div>
-            <div>
-              <span className="text-[var(--ink-soft)]">{t('passportLearningHours')}:</span>{' '}
-              <span>{passport.constraints.weeklyLearningHours}h</span>
-            </div>
-            <div>
-              <span className="text-[var(--ink-soft)]">{t('passportBudget')}:</span>{' '}
-              <span>{passport.constraints.budgetLevel === 'low' ? t('passportBudgetLow') : passport.constraints.budgetLevel === 'medium' ? t('passportBudgetMedium') : t('passportBudgetHigh')}</span>
-            </div>
-          </div>}
+          )}
         </div>
       </GuidanceEntrance>
       {validating && <SkillValidationDialog claim={validating} onClose={()=>{sounds.modalClose();setValidating(null)}} onValidate={evidence=>{updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');const skills=previous.skills.map(claim=>claim.skillId===validating.skillId?addSkillEvidence(claim,evidence):claim);const next={...previous,skills};next.completeness=calculateCompleteness(next);return next});void logProgress(user?.id ?? null,'skill_validated',{skillId:validating.skillId,evidence});sounds.success();hapticSuccess();setValidating(null)}}/>}
       {scoreEvidence && <WhyPanel evidence={scoreEvidence} onClose={()=>setScoreEvidence(null)}/>}
+      
+      {/* Aspiration Update Dialog */}
+      {editingAspiration && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-w-lg w-full bg-[var(--paper-raised)] border-2 border-[var(--ink)] p-6 shadow-[var(--shadow-hard)]">
+            <h3 className="font-display text-2xl mb-4">Update Your Aspiration</h3>
+            <p className="text-sm text-[var(--ink-soft)] mb-4">
+              Describe your career goals, what you want to achieve, and the themes that matter to you. 
+              Separate themes with commas.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold mb-2">Your Aspiration Statement</label>
+                <textarea
+                  value={aspirationText}
+                  onChange={(e) => setAspirationText(e.target.value)}
+                  placeholder="e.g., I want to transition into data science, work with AI, and contribute to meaningful projects"
+                  className="w-full border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-3 text-sm h-32 resize-none focus:border-[var(--ink)] focus:outline-none"
+                  autoFocus
+                />
+                <p className="mt-1 text-xs text-[var(--ink-soft)]">
+                  Themes will be automatically extracted from your statement
+                </p>
+              </div>
+              <div className="flex gap-2 pt-4">
+                <button
+                  onClick={handleUpdateAspiration}
+                  className="flex-1 bg-[var(--ink)] px-4 py-3 text-sm text-[var(--paper)] hover:shadow-lg transition-shadow"
+                >
+                  Update Aspiration
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingAspiration(false);
+                    setAspirationText('');
+                  }}
+                  className="flex-1 border-2 border-[var(--ink)] px-4 py-3 text-sm hover:bg-[var(--ink)] hover:text-[var(--paper)] transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Manual Skill Addition Dialog */}
       {addingManualSkill && (
@@ -836,7 +949,7 @@ export function PassportPage() {
                   value={manualSkillName}
                   onChange={(e) => setManualSkillName(e.target.value)}
                   placeholder="e.g. Python Programming, Project Management"
-                  className="w-full border border-[var(--ink-faint)] bg-[var(--paper)] p-3 text-sm"
+                  className="w-full border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-3 text-sm focus:border-[var(--ink)] focus:outline-none"
                   autoFocus
                 />
               </div>
@@ -849,7 +962,7 @@ export function PassportPage() {
                     <button
                       key={level}
                       onClick={() => setManualSkillProficiency(level as Proficiency)}
-                      className={`flex-1 border-2 py-3 text-sm font-mono-ui ${
+                      className={`flex-1 border-2 py-3 text-sm font-mono-ui transition-colors ${
                         level === manualSkillProficiency
                           ? 'border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]'
                           : 'border-[var(--ink-faint)] hover:border-[var(--ink)]'
@@ -866,7 +979,7 @@ export function PassportPage() {
               <div className="flex gap-2 pt-4">
                 <button
                   onClick={handleAddManualSkill}
-                  className="flex-1 bg-[var(--ink)] px-4 py-3 text-sm text-[var(--paper)]"
+                  className="flex-1 bg-[var(--ink)] px-4 py-3 text-sm text-[var(--paper)] hover:shadow-lg transition-shadow"
                 >
                   Add Skill
                 </button>
@@ -876,7 +989,7 @@ export function PassportPage() {
                     setManualSkillName('');
                     setManualSkillProficiency(2);
                   }}
-                  className="flex-1 border-2 border-[var(--ink)] px-4 py-3 text-sm"
+                  className="flex-1 border-2 border-[var(--ink)] px-4 py-3 text-sm hover:bg-[var(--ink)] hover:text-[var(--paper)] transition-colors"
                 >
                   Cancel
                 </button>
