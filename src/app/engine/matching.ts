@@ -71,10 +71,36 @@ function experienceScore(passport: CareerPassport, occupation: Occupation): [num
 
 function aspirationScore(passport: CareerPassport, occupation: Occupation): [number, boolean] {
   if (!passport.aspiration) return [50, false];
-  if (passport.aspiration.dreamOccupationIds.includes(occupation.id)) return [100, true];
-  if (passport.aspiration.dreamOccupationIds.some(id => occupationById.get(id)?.cluster === occupation.cluster)) return [70, true];
-  const haystack = `${occupation.title} ${occupation.sector} ${occupation.cluster} ${occupation.descriptionKey}`.toLowerCase();
-  return [passport.aspiration.themes.some(theme => haystack.includes(theme.toLowerCase())) ? 55 : 30, true];
+  
+  let score = 30; // Base score
+  
+  // Exact occupation match - strongest signal
+  if (passport.aspiration.dreamOccupationIds.includes(occupation.id)) {
+    score = 100;
+  }
+  // Cluster match - strong signal
+  else if (passport.aspiration.dreamOccupationIds.some(id => occupationById.get(id)?.cluster === occupation.cluster)) {
+    score = 75;
+  }
+  // Theme match - moderate signal
+  else {
+    const haystack = `${occupation.title} ${occupation.sector} ${occupation.cluster} ${occupation.descriptionKey}`.toLowerCase();
+    if (passport.aspiration.themes.some(theme => haystack.includes(theme.toLowerCase()))) {
+      score = 65;
+    }
+  }
+  
+  // Boost for entrepreneurial intent alignment
+  if (passport.aspiration.entrepreneurialIntent === 'strong' && occupation.entrepreneurialFit >= 70) {
+    score = Math.min(100, score + 15);
+  }
+  
+  // Boost for horizon alignment - short-term goals + accessible careers
+  if (passport.aspiration.horizonYears && passport.aspiration.horizonYears <= 2 && occupation.nsqfEntryLevel <= 5) {
+    score = Math.min(100, score + 10);
+  }
+  
+  return [clamp(score), true];
 }
 
 function marketScore(occupation: Occupation): number {

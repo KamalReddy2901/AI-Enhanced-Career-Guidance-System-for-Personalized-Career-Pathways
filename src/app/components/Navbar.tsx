@@ -8,6 +8,7 @@ import { useFavorites } from '../hooks/useFavorites';
 import { sounds } from '../utils/sounds';
 import { LanguageSwitcher, useT } from '../i18n';
 import { BrandMark } from './BrandMark';
+import { NCOBadge } from './NCOBadge';
 
 export function Navbar() {
   const { t } = useT();
@@ -76,7 +77,8 @@ export function Navbar() {
 
           {user ? <>
           {/* Desktop nav links */}
-          <div className="hidden md:flex min-w-0 flex-1 items-center justify-end gap-0">
+          <div className="hidden md:flex min-w-0 flex-1 items-center justify-end gap-2">
+            <NCOBadge variant="compact" />
             {navLinks.map(link => (
               link.to === '/counselor' ? <><PersonalMenu key="personal" links={personalLinks} open={personalOpen} setOpen={setPersonalOpen} active={personalActive} /><NavLink key={link.to} {...link} /></> : <NavLink key={link.to} {...link} />
             ))}

@@ -416,16 +416,22 @@ export function PassportPage() {
                               ) : (
                                 <>
                                   <button
-                                    onClick={() => setEditingSkillProficiency(claim.skillId)}
-                                    className="flex gap-1 hover:opacity-70"
+                                    onClick={() => {
+                                      sounds.click();
+                                      hapticLight();
+                                      setEditingSkillProficiency(claim.skillId);
+                                    }}
+                                    className="flex gap-1 group"
                                     title="Click to edit proficiency"
                                   >
                                     {[1, 2, 3, 4].map(level => (
-                                      <div
+                                      <motion.div
                                         key={level}
                                         className={`w-2 h-2 rounded-full ${
                                           level <= claim.proficiency ? 'bg-[var(--ink)]' : 'bg-[var(--ink-faint)]'
                                         }`}
+                                        whileHover={{ scale: 1.3, boxShadow: '0 0 8px rgba(0,0,0,0.3)' }}
+                                        transition={{ type: 'spring', stiffness: 400, damping: 10 }}
                                       />
                                     ))}
                                   </button>
@@ -439,7 +445,7 @@ export function PassportPage() {
                           <div className="flex gap-3"><button onClick={() => {sounds.click();hapticLight();setExpandedEvidence(expandedEvidence===claim.skillId?null:claim.skillId)}} className="min-h-11 text-xs text-[var(--ink-soft)] underline hover:text-[var(--ink)]">{claim.evidence.length} {t('passportEvidence')}</button><button onClick={()=>{sounds.modalOpen();hapticLight();setValidating(claim)}} className="min-h-11 border border-[var(--ink-faint)] px-3 text-xs">{t('passportValidate')}</button></div>
                           </div>
                           {expandedEvidence === claim.skillId && <div className="mt-3 space-y-2 border-t border-[var(--ink-faint)] pt-3">{claim.evidence.map((evidence,index)=><div key={`${evidence.observedAt}-${index}`} className="text-xs"><span className="font-mono-ui uppercase text-[var(--ink-soft)]">{evidence.type} · {Math.round(evidence.confidence*100)}%</span><p className="text-[var(--ink-soft)]">{evidence.description}</p></div>)}</div>}
-                        </div>
+                        </motion.div>
                       );
                     })}
                   </div>

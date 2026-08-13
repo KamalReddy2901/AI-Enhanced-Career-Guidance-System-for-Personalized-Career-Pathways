@@ -4,6 +4,7 @@ import { Link } from "react-router";
 import { StickFigure } from "../components/StickFigure";
 import { WhyPanel } from "../components/guidance/WhyPanel";
 import { StopPress } from "../components/guidance/StopPress";
+import { NCOBadge } from "../components/NCOBadge";
 import { useGuidance } from "../context/GuidanceContext";
 import { marketFor, occupationById, skillById } from "../data/knowledge";
 import type {
@@ -231,6 +232,9 @@ export function RecommendationsPage() {
         <p className="font-mono-ui text-[10px] uppercase tracking-wide text-[var(--ink-soft)]">
           {c.footer} · KB {recommendations.kbVersion} · profile v{passport.version}
         </p>
+        <div className="mt-4">
+          <NCOBadge variant="footer" />
+        </div>
         <Link
           to="/counselor"
           className="fixed bottom-28 right-5 z-30 border-2 border-[var(--ink)] bg-[var(--paper-raised)] px-4 py-3 text-sm shadow-[var(--shadow-hard-sm)] md:bottom-8"

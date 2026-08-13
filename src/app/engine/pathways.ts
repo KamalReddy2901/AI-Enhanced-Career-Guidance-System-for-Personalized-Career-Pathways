@@ -90,7 +90,58 @@ function credentialRoute(passport: CareerPassport, occupationId: string): Pathwa
   return { kind: 'qualification_first', label: 'Credential route', tradeoff: 'Strongest formal signal, but usually the highest time and cost commitment.', totalMonths: totalMonths(steps), steps, confidence: qualification ? 'high' : 'low' };
 }
 
+function entrepreneurialRoute(passport: CareerPassport, occupationId: string): PathwayRoute {
+  const target = occupationById.get(occupationId)!;
+  const gap = computeGapReport(passport, occupationId);
+  const topGapIds = gap.gaps.slice(0, 3).map(item => item.skillId);
+  
+  const steps: PathwayStep[] = [
+    ...topGapIds.map(skillId => ({ kind: 'learn' as const, label: `Build ${skillName(skillId)} through practical projects`, refId: skillId, estMonths: 1, done: false })),
+    { kind: 'project', label: `Launch minimum viable service/product as ${target.title}`, estMonths: 2, done: false },
+    { kind: 'learn', label: 'Business setup: registration, taxation, basic accounting', estMonths: 1, done: false },
+    { kind: 'project', label: 'Acquire first 3-5 paying clients/customers', estMonths: 3, done: false },
+    { kind: 'target', label: `Operate as independent ${target.title}`, refId: target.id, nsqfLevel: target.nsqfEntryLevel, estMonths: 0, done: false },
+  ];
+  
+  return { kind: 'direct', label: 'Entrepreneurial', tradeoff: 'Build your own practice instead of seeking employment. Higher risk, higher autonomy.', totalMonths: totalMonths(steps), steps, confidence: passport.aspiration?.entrepreneurialIntent === 'strong' ? 'medium' : 'low' };
+}
+
+function fastTrackRoute(passport: CareerPassport, occupationId: string): PathwayRoute {
+  const target = occupationById.get(occupationId)!;
+  const gap = computeGapReport(passport, occupationId);
+  const topGapIds = gap.gaps.slice(0, 2).map(item => item.skillId);
+  
+  const steps: PathwayStep[] = [
+    { kind: 'learn', label: 'Complete intensive bootcamp or micro-credential program', estMonths: Math.min(3, Math.ceil(passport.constraints.weeklyLearningHours * 4 / 40)), done: false },
+    ...topGapIds.map(skillId => ({ kind: 'learn' as const, label: `Master ${skillName(skillId)} via rapid-learning resources`, refId: skillId, estMonths: 1, done: false })),
+    { kind: 'project', label: `Build strong portfolio demonstrating ${target.title} capabilities`, estMonths: 1, done: false },
+    { kind: 'target', label: `Apply for entry ${target.title} roles with portfolio focus`, refId: target.id, nsqfLevel: target.nsqfEntryLevel, estMonths: 0, done: false },
+  ];
+  
+  return { kind: 'direct', label: 'Fast-track', tradeoff: 'Optimized for speed over credentials. Best for those who can dedicate intensive learning time.', totalMonths: totalMonths(steps), steps, confidence: passport.constraints.weeklyLearningHours >= 15 ? 'medium' : 'low' };
+}
+
 export function buildPathwayPlan(passport: CareerPassport, occupationId: string): PathwayPlan {
   if (!occupationById.has(occupationId)) throw new Error(`Unknown occupation: ${occupationId}`);
-  return { occupationId, routes: [directRoute(passport, occupationId), steppingStoneRoute(passport, occupationId), credentialRoute(passport, occupationId)], gapReport: computeGapReport(passport, occupationId), createdAt: new Date().toISOString() };
+  
+  const routes = [
+    directRoute(passport, occupationId),
+    steppingStoneRoute(passport, occupationId),
+    credentialRoute(passport, occupationId),
+  ];
+  
+  // Add aspiration-optimized routes
+  if (passport.aspiration) {
+    if (passport.aspiration.entrepreneurialIntent === 'strong') {
+      const occupation = occupationById.get(occupationId)!;
+      if (occupation.entrepreneurialFit >= 60) {
+        routes.push(entrepreneurialRoute(passport, occupationId));
+      }
+    }
+    if (passport.aspiration.horizonYears && passport.aspiration.horizonYears <= 2) {
+      routes.push(fastTrackRoute(passport, occupationId));
+    }
+  }
+  
+  return { occupationId, routes, gapReport: computeGapReport(passport, occupationId), createdAt: new Date().toISOString() };
 }

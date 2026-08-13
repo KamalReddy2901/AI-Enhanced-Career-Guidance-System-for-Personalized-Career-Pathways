@@ -6,6 +6,7 @@ import { PathwayGraph } from "../components/guidance/PathwayGraph";
 import { ScoreBar } from "../components/guidance/ScoreBar";
 import { WhyPanel, type ScoreEvidence } from "../components/guidance/WhyPanel";
 import { PathwayRouteQuiz } from "../components/guidance/PathwayRouteQuiz";
+import { NCOBadge } from "../components/NCOBadge";
 import { useGuidance } from "../context/GuidanceContext";
 import { useAuth } from "../context/AuthContext";
 import { buildPathwayPlan } from "../engine/pathways";
@@ -387,6 +388,9 @@ export function PathwayPage() {
         <p className="mt-6 font-[JetBrains_Mono] text-[10px] uppercase text-[var(--ink-soft)]">
           {c.footer} · KB kb-2026.06.1 · profile v{passport.version}
         </p>
+        <div className="mt-4">
+          <NCOBadge variant="footer" />
+        </div>
         <Link
           to="/counselor"
           className="fixed right-5 bottom-20 border-2 border-black bg-[#f9f8f7] px-4 py-3 font-[Inter] text-sm shadow-[3px_3px_0_#1a1a1a]"

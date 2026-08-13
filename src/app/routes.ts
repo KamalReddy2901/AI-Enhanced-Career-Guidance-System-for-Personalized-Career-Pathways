@@ -33,6 +33,8 @@ const PathwaysPage = lazy(() => import('./pages/PathwaysPage').then(m => ({ defa
 const HowItWorksPage = lazy(() => import('./pages/HowItWorksPage').then(m => ({ default: m.HowItWorksPage })));
 const CounselorPage = lazy(() => import('./pages/CounselorPage').then(m => ({ default: m.CounselorPage })));
 const HelpCenterPage = lazy(() => import('./pages/HelpCenterPage').then(m => ({ default: m.HelpCenterPage })));
+const AboutPage = lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
+const IntegrationPage = lazy(() => import('./pages/IntegrationPage').then(m => ({ default: m.IntegrationPage })));
 
 export const router = createBrowserRouter([
   { path: '/', Component: RootLayout, children: [
@@ -65,6 +67,8 @@ export const router = createBrowserRouter([
     { path: 'how-it-works', Component: HowItWorksPage },
     { path: 'counselor', Component: CounselorPage },
     { path: 'help', Component: HelpCenterPage },
+    { path: 'about', Component: AboutPage },
+    { path: 'integration', Component: IntegrationPage },
     { path: '*', Component: NotFoundPage },
   ]},
 ]);
