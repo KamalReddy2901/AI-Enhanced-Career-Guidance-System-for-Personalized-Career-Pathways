@@ -305,9 +305,7 @@ export function CareerLandscapeScatter({
                 onMouseEnter={() => setHoveredPoint(point)}
                 onMouseLeave={() => setHoveredPoint(null)}
                 onClick={() => onCareerClick?.(point.recommendation)}
-              >
-                <title>{occupationById.get(point.recommendation.occupationId)?.title || point.id}</title>
-              </motion.circle>
+              />
             </g>
           );
         })}
