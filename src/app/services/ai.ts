@@ -14,20 +14,22 @@ const FALLBACK_MODEL = 'openai/gpt-oss-120b';
 
 // Direct keys — only loaded when no proxy is configured (dev fallback).
 // In production, VITE_GROQ_API_KEYS should be left unset so the bundle is clean.
-const BUILT_IN_KEYS: string[] = AI_PROXY_URL ? [] : (import.meta.env.VITE_GROQ_API_KEYS as string || '')
+const BUILT_IN_KEYS: string[] = AI_PROXY_URL ? [] : [...new Set((import.meta.env.VITE_GROQ_API_KEYS as string || '')
   .split(',')
   .map(k => k.trim())
-  .filter(k => k.startsWith('gsk_'));
+  .filter(k => k.startsWith('gsk_')))];
 
 let currentKeyIndex = Math.floor(Math.random() * Math.max(BUILT_IN_KEYS.length, 1));
 const exhaustedKeys = new Map<string, number>();
 let allKeysExhausted = false;
 const KEY_COOLDOWN_MS = 65_000;
+const AUTH_FAILURE_QUARANTINE_MS = 15 * 60_000;
+const TRANSIENT_RETRY_DELAY_MS = 250;
 
 function isKeyExhausted(key: string): boolean {
-  const exhaustedAt = exhaustedKeys.get(key);
-  if (!exhaustedAt) return false;
-  if (Date.now() - exhaustedAt > KEY_COOLDOWN_MS) { exhaustedKeys.delete(key); return false; }
+  const unavailableUntil = exhaustedKeys.get(key);
+  if (!unavailableUntil) return false;
+  if (Date.now() >= unavailableUntil) { exhaustedKeys.delete(key); return false; }
   return true;
 }
 function getActiveKey(): string {
@@ -35,18 +37,62 @@ function getActiveKey(): string {
   allKeysExhausted = false;
   for (let i = 0; i < BUILT_IN_KEYS.length; i++) {
     const idx = (currentKeyIndex + i) % BUILT_IN_KEYS.length;
-    if (!isKeyExhausted(BUILT_IN_KEYS[idx])) { currentKeyIndex = idx; return BUILT_IN_KEYS[idx]; }
+    if (!isKeyExhausted(BUILT_IN_KEYS[idx])) {
+      currentKeyIndex = (idx + 1) % BUILT_IN_KEYS.length;
+      return BUILT_IN_KEYS[idx];
+    }
   }
   allKeysExhausted = true; return '';
 }
-function rotateToNextKey(): boolean {
-  const cur = BUILT_IN_KEYS[currentKeyIndex];
-  if (cur) exhaustedKeys.set(cur, Date.now());
-  for (let i = 1; i < BUILT_IN_KEYS.length; i++) {
-    const idx = (currentKeyIndex + i) % BUILT_IN_KEYS.length;
-    if (!isKeyExhausted(BUILT_IN_KEYS[idx])) { currentKeyIndex = idx; return true; }
+
+function retryAfterMs(value: string | null): number {
+  if (!value) return KEY_COOLDOWN_MS;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.max(1_000, Math.ceil(seconds * 1_000));
+  const retryAt = Date.parse(value);
+  return Number.isFinite(retryAt) ? Math.max(1_000, retryAt - Date.now()) : KEY_COOLDOWN_MS;
+}
+
+function markKeyUnavailable(key: string, durationMs: number): void {
+  exhaustedKeys.set(key, Date.now() + Math.max(1_000, durationMs));
+}
+
+async function fetchDirectWithKeyRotation(request: (key: string) => Promise<Response>): Promise<Response> {
+  let transientRetryAvailable = true;
+  const maxAttempts = BUILT_IN_KEYS.length + 1;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const key = getActiveKey();
+    if (!key) break;
+
+    let response: Response;
+    try {
+      response = await request(key);
+    } catch (error) {
+      if (!transientRetryAvailable) throw error;
+      transientRetryAvailable = false;
+      await new Promise(resolve => setTimeout(resolve, TRANSIENT_RETRY_DELAY_MS));
+      continue;
+    }
+
+    if (response.status === 429) {
+      markKeyUnavailable(key, retryAfterMs(response.headers.get('Retry-After')));
+      continue;
+    }
+    if (response.status === 401) {
+      markKeyUnavailable(key, AUTH_FAILURE_QUARANTINE_MS);
+      continue;
+    }
+    if (response.status >= 500 && transientRetryAvailable) {
+      transientRetryAvailable = false;
+      await new Promise(resolve => setTimeout(resolve, TRANSIENT_RETRY_DELAY_MS));
+      continue;
+    }
+    return response;
   }
-  allKeysExhausted = true; return false;
+
+  allKeysExhausted = true;
+  throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
 }
 
 export function getApiKey(): string { return getActiveKey(); }
@@ -186,28 +232,21 @@ export async function callGroq(
   }
 
   // ── Direct Groq fallback (dev mode) ────────────────────────
-  const activeKey = getActiveKey();
-  if (!activeKey) throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
+  if (!hasApiKey()) throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
 
   const dedupKey = `${systemPrompt.slice(0, 80)}|${userPrompt.slice(0, 80)}|${temperature}|${maxTokens}`;
   const existing = pendingRequests.get(dedupKey);
   if (existing) return existing;
 
   const request = (async (): Promise<string> => {
-    for (let attempt = 0; attempt < BUILT_IN_KEYS.length; attempt++) {
-      const key = getActiveKey();
-      if (!key) throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
-      const response = await fetch(GROQ_API_URL, {
+    const response = await fetchDirectWithKeyRotation(key => fetch(GROQ_API_URL, {
         method: 'POST', signal,
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
         body: JSON.stringify({ model: FALLBACK_MODEL, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], temperature, max_tokens: maxTokens, ...(jsonMode ? { response_format: { type: 'json_object' } } : {}) }),
-      });
-      if (response.status === 429) { if (!rotateToNextKey()) throw new Error('All AI servers are busy right now. Please wait a moment and try again.'); continue; }
-      if (!response.ok) { const err = await response.json().catch(() => ({})) as { error?: { message?: string } }; throw new Error(err?.error?.message || `Groq API error: ${response.status}`); }
-      const data = await response.json() as { choices: Array<{ message: { content: string } }> };
-      return data.choices[0]?.message?.content || '';
-    }
-    throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
+      }));
+    if (!response.ok) { const err = await response.json().catch(() => ({})) as { error?: { message?: string } }; throw new Error(err?.error?.message || `Groq API error: ${response.status}`); }
+    const data = await response.json() as { choices: Array<{ message: { content: string } }> };
+    return data.choices[0]?.message?.content || '';
   })();
 
   pendingRequests.set(dedupKey, request);
@@ -266,19 +305,13 @@ export async function callGroqStreaming(
   }
 
   // ── Direct Groq fallback (dev) ──────────────
-  for (let attempt = 0; attempt < BUILT_IN_KEYS.length; attempt++) {
-    const key = getActiveKey();
-    if (!key) throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
-    const response = await fetch(GROQ_API_URL, {
+  const response = await fetchDirectWithKeyRotation(key => fetch(GROQ_API_URL, {
       method: 'POST', signal,
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
       body: JSON.stringify({ model: FALLBACK_MODEL, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], temperature, max_tokens: maxTokens, stream: true, response_format: { type: 'json_object' } }),
-    });
-    if (response.status === 429) { if (!rotateToNextKey()) throw new Error('All AI servers are busy right now. Please wait a moment and try again.'); continue; }
-    if (!response.ok) { const err = await response.json().catch(() => ({})) as { error?: { message?: string } }; throw new Error(err?.error?.message || `Groq error: ${response.status}`); }
-    return readStream(response);
-  }
-  throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
+    }));
+  if (!response.ok) { const err = await response.json().catch(() => ({})) as { error?: { message?: string } }; throw new Error(err?.error?.message || `Groq error: ${response.status}`); }
+  return readStream(response);
 }
 
 // ─── Stream Chat ───────────────────────────────────────────────
@@ -355,13 +388,11 @@ Formatting rules:
   }
 
   // ── Direct Groq fallback (dev) ──────────────
-  const key = getActiveKey();
-  if (!key) throw new Error('All AI servers are busy right now. Please wait a moment and try again.');
-  const response = await fetch(GROQ_API_URL, {
+  const response = await fetchDirectWithKeyRotation(key => fetch(GROQ_API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
     body: JSON.stringify({ model: FALLBACK_MODEL, messages: apiMessages, temperature: 0.7, max_tokens: 1024, stream: true }),
-  });
+  }));
   if (!response.ok) {
     const err = await response.json().catch(() => ({})) as { error?: { message?: string } };
     throw new Error(err?.error?.message || `Groq API error: ${response.status}`);
