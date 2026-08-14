@@ -10,7 +10,7 @@ const AI_PROXY_URL = (import.meta.env.VITE_AI_PROXY_URL as string || '').trim().
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 // Fallback model used only when AI_PROXY_URL is not set (dev mode).
 // In production the worker picks the model via worker/src/models.ts.
-const FALLBACK_MODEL = 'llama-3.3-70b-versatile';
+const FALLBACK_MODEL = 'openai/gpt-oss-120b';
 
 // Direct keys — only loaded when no proxy is configured (dev fallback).
 // In production, VITE_GROQ_API_KEYS should be left unset so the bundle is clean.
