@@ -222,6 +222,7 @@ The August 2026 production audit used a signed-in burner account from onboarding
 - path duration labels and fastest sorting use real route durations;
 - saved paths no longer change length after a completed step;
 - AI counselor counterfactual claims are constrained to computed evidence;
+- the Counselor cannot label an already-met requirement as a skill gap, name an absent provider, or imply a score increase without a supplied counterfactual;
 - the grounded Counselor no longer exceeds Groq's request budget for a rich passport, and its stream parser preserves events split across network chunks;
 - GPT-OSS strict-JSON validation failures receive a single safe prompt-guided retry, while unrelated 4xx failures remain non-retryable;
 - every active AI feature has an explicit model-tier route, including compatibility, roadmap, and market intelligence;
