@@ -16,7 +16,7 @@ import {
   occupationById,
   qualificationById,
 } from "../data/knowledge";
-import { skillName } from "../engine/gaps";
+import { learningRoutesForSkill, skillName } from "../engine/gaps";
 import {
   calculateCompleteness,
   mergeSkillClaims,
@@ -35,7 +35,7 @@ import { TextReveal } from '../motion/TextReveal';
 import { useRichVisuals } from '../hooks/useRichVisuals';
 import { motion, useReducedMotion } from 'motion/react';
 import { toast } from 'sonner';
-import { HelpCircle } from 'lucide-react';
+import { ExternalLink, HelpCircle } from 'lucide-react';
 
 const PathwayLineScene = lazy(() => import('../components/three/PathwayLineScene').then(module => ({ default: module.PathwayLineScene })));
 
@@ -52,7 +52,7 @@ export function PathwayPage() {
   const streak = useStreak();
   const { lang } = useT();
   const occupation = occupationById.get(occupationId);
-  const c = lang === "hi" ? { start:"पहले ऑनबोर्डिंग शुरू करें", missing:"यह व्यवसाय मौजूदा ज्ञान-आधार में नहीं है।", demand:"माँग", unavailable:"माँग का सांकेतिक डेटा उपलब्ध नहीं", gaps:"कौशल-अंतर रिपोर्ट · दक्षता और विश्वसनीयता के अनुसार", evidence:"प्रमाण की विश्वसनीयता", readiness:"तैयारी", bring:"आपके मौजूदा उपयोगी कौशल", validate:"स्थानांतरित होने वाले प्रमाण दिखाने के लिए पूर्व सीख को सत्यापित करें।", routes:"तीन व्यावहारिक मार्ग", months:"महीने", confidence:"विश्वसनीयता", map:"इंटरैक्टिव मार्ग मानचित्र", checklist:"जाँच-सूची", streak:"विकास क्रम", day:"दिन", find:"यहाँ खोजें", complete:"मार्ग पूरा—बातचीत की तैयारी करें", completeNote:"आपके प्रमाण और तैयारी की दोबारा गणना हुई है। आवेदन से पहले भूमिका-विशिष्ट प्रश्नों का अभ्यास करें।", interview:"साक्षात्कार अभ्यास खोलें", ask:"क्यों पूछें · अगर ऐसा हो तो पूछें", whyGap:"यह अंतर क्यों?", whyScores:"ये स्कोर क्यों?", footer:"संस्करणित ज्ञान-आधार पर नियम-आधारित स्कोरिंग · अंकों के लिए LLM का उपयोग नहीं", labels:{direct:"केंद्रित मार्ग",stepping_stone:"कम जोखिम",qualification_first:"प्रमाणपत्र मार्ग"} } : lang === "te" ? { start:"ముందుగా ఆన్‌బోర్డింగ్ ప్రారంభించండి", missing:"ఈ వృత్తి ప్రస్తుత జ్ఞాన భాండాగారంలో లేదు.", demand:"డిమాండ్", unavailable:"సూచనాత్మక డిమాండ్ సమాచారం అందుబాటులో లేదు", gaps:"నైపుణ్య లోటు నివేదిక · ప్రావీణ్యం, నమ్మకం ప్రకారం", evidence:"ఆధారాల నమ్మకం", readiness:"సిద్ధత", bring:"మీరు ఇప్పటికే తీసుకువచ్చేవి", validate:"బదిలీ చేయగల ఆధారాలను చూపడానికి గత అభ్యాసాన్ని ధృవీకరించండి.", routes:"మూడు ఆచరణీయ మార్గాలు", months:"నెలలు", confidence:"నమ్మకం", map:"ఇంటరాక్టివ్ మార్గ పటం", checklist:"తనిఖీ జాబితా", streak:"ఎదుగుదల పరంపర", day:"రోజు", find:"ఇక్కడ కనుగొనండి", complete:"మార్గం పూర్తి—సంభాషణకు సిద్ధం కండి", completeNote:"మీ ఆధారాలు, సిద్ధత మళ్లీ లెక్కించబడ్డాయి. దరఖాస్తుకు ముందు పాత్ర-నిర్దిష్ట ప్రశ్నలను సాధన చేయండి.", interview:"ఇంటర్వ్యూ సాధన తెరవండి", ask:"ఎందుకో అడగండి · పరిస్థితి మారితే అడగండి", whyGap:"ఈ లోటు ఎందుకు?", whyScores:"ఈ స్కోర్లు ఎందుకు?", footer:"వెర్షన్ చేసిన జ్ఞాన భాండాగారంపై నియమ-ఆధారిత స్కోరింగ్ · స్కోర్లకు LLM ఉపయోగించలేదు", labels:{direct:"కేంద్రీకృత మార్గం",stepping_stone:"తక్కువ ప్రమాదం",qualification_first:"అర్హత మార్గం"} } : { start:"Start onboarding first", missing:"This occupation is not in the current knowledge base.", demand:"Demand", unavailable:"Indicative demand signal unavailable", gaps:"Skill gap report · proficiency & confidence adjusted", evidence:"Evidence confidence", readiness:"Readiness", bring:"What you already bring", validate:"Validate prior learning to surface transferable evidence.", routes:"Three plausible routes", months:"months", confidence:"confidence", map:"Interactive pathway map", checklist:"checklist", streak:"growth streak", day:"day", find:"Find via", complete:"Route complete—prepare for the conversation", completeNote:"Your evidence and readiness have been recomputed. Practice role-specific questions before applying.", interview:"Open interview prep", ask:"Ask why · Ask what-if", whyGap:"Why this gap?", whyScores:"Why these scores?", footer:"Deterministic scoring over the versioned knowledge base · LLM not used for scores", labels:{direct:"Focused route",stepping_stone:"Lower-risk",qualification_first:"Credential route"} };
+  const c = lang === "hi" ? { start:"पहले ऑनबोर्डिंग शुरू करें", missing:"यह व्यवसाय मौजूदा ज्ञान-आधार में नहीं है।", demand:"माँग", unavailable:"माँग का सांकेतिक डेटा उपलब्ध नहीं", gaps:"कौशल-अंतर रिपोर्ट · दक्षता और विश्वसनीयता के अनुसार", closeGap:"यह अंतर इनसे पाटें", evidence:"प्रमाण की विश्वसनीयता", readiness:"तैयारी", bring:"आपके मौजूदा उपयोगी कौशल", validate:"स्थानांतरित होने वाले प्रमाण दिखाने के लिए पूर्व सीख को सत्यापित करें।", routes:"तीन व्यावहारिक मार्ग", months:"महीने", confidence:"विश्वसनीयता", map:"इंटरैक्टिव मार्ग मानचित्र", checklist:"जाँच-सूची", streak:"विकास क्रम", day:"दिन", find:"यहाँ खोजें", complete:"मार्ग पूरा—बातचीत की तैयारी करें", completeNote:"आपके प्रमाण और तैयारी की दोबारा गणना हुई है। आवेदन से पहले भूमिका-विशिष्ट प्रश्नों का अभ्यास करें।", interview:"साक्षात्कार अभ्यास खोलें", ask:"क्यों पूछें · अगर ऐसा हो तो पूछें", whyGap:"यह अंतर क्यों?", whyScores:"ये स्कोर क्यों?", footer:"संस्करणित ज्ञान-आधार पर नियम-आधारित स्कोरिंग · अंकों के लिए LLM का उपयोग नहीं", labels:{direct:"केंद्रित मार्ग",stepping_stone:"कम जोखिम",qualification_first:"प्रमाणपत्र मार्ग"} } : lang === "te" ? { start:"ముందుగా ఆన్‌బోర్డింగ్ ప్రారంభించండి", missing:"ఈ వృత్తి ప్రస్తుత జ్ఞాన భాండాగారంలో లేదు.", demand:"డిమాండ్", unavailable:"సూచనాత్మక డిమాండ్ సమాచారం అందుబాటులో లేదు", gaps:"నైపుణ్య లోటు నివేదిక · ప్రావీణ్యం, నమ్మకం ప్రకారం", closeGap:"ఈ లోటును వీటితో పూరించండి", evidence:"ఆధారాల నమ్మకం", readiness:"సిద్ధత", bring:"మీరు ఇప్పటికే తీసుకువచ్చేవి", validate:"బదిలీ చేయగల ఆధారాలను చూపడానికి గత అభ్యాసాన్ని ధృవీకరించండి.", routes:"మూడు ఆచరణీయ మార్గాలు", months:"నెలలు", confidence:"నమ్మకం", map:"ఇంటరాక్టివ్ మార్గ పటం", checklist:"తనిఖీ జాబితా", streak:"ఎదుగుదల పరంపర", day:"రోజు", find:"ఇక్కడ కనుగొనండి", complete:"మార్గం పూర్తి—సంభాషణకు సిద్ధం కండి", completeNote:"మీ ఆధారాలు, సిద్ధత మళ్లీ లెక్కించబడ్డాయి. దరఖాస్తుకు ముందు పాత్ర-నిర్దిష్ట ప్రశ్నలను సాధన చేయండి.", interview:"ఇంటర్వ్యూ సాధన తెరవండి", ask:"ఎందుకో అడగండి · పరిస్థితి మారితే అడగండి", whyGap:"ఈ లోటు ఎందుకు?", whyScores:"ఈ స్కోర్లు ఎందుకు?", footer:"వెర్షన్ చేసిన జ్ఞాన భాండాగారంపై నియమ-ఆధారిత స్కోరింగ్ · స్కోర్లకు LLM ఉపయోగించలేదు", labels:{direct:"కేంద్రీకృత మార్గం",stepping_stone:"తక్కువ ప్రమాదం",qualification_first:"అర్హత మార్గం"} } : { start:"Start onboarding first", missing:"This occupation is not in the current knowledge base.", demand:"Demand", unavailable:"Indicative demand signal unavailable", gaps:"Skill gap report · proficiency & confidence adjusted", closeGap:"Close this gap via", evidence:"Evidence confidence", readiness:"Readiness", bring:"What you already bring", validate:"Validate prior learning to surface transferable evidence.", routes:"Three plausible routes", months:"months", confidence:"confidence", map:"Interactive pathway map", checklist:"checklist", streak:"growth streak", day:"day", find:"Find via", complete:"Route complete—prepare for the conversation", completeNote:"Your evidence and readiness have been recomputed. Practice role-specific questions before applying.", interview:"Open interview prep", ask:"Ask why · Ask what-if", whyGap:"Why this gap?", whyScores:"Why these scores?", footer:"Deterministic scoring over the versioned knowledge base · LLM not used for scores", labels:{direct:"Focused route",stepping_stone:"Lower-risk",qualification_first:"Credential route"} };
   const existing = pathways.find((plan) => plan.occupationId === occupationId);
   const initial = useMemo(() => {
     if (!passport || !occupation) return null;
@@ -297,6 +297,28 @@ export function PathwayPage() {
             )}
           </button>
         </section>
+        <section className="mb-8 border border-black/10 bg-white p-5">
+          <h2 className="font-display text-2xl">{c.closeGap}</h2>
+          <div className="mt-4 space-y-4">
+            {plan.gapReport.gaps.slice(0, 3).map(gap => (
+              <div key={gap.skillId} className="rule-top pt-4">
+                <div className="font-[Inter] text-sm font-semibold">{skillName(gap.skillId)}</div>
+                {learningRoutesForSkill(gap.skillId).map(qualification => (
+                  <div key={qualification.id} className="mt-3">
+                    <p className="font-[Inter] text-xs text-[var(--ink-soft)]">{qualification.name} · {qualification.typicalMonths} {c.months} · NSQF {qualification.nsqfLevel}</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {qualification.links?.map(link => (
+                        <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" data-testid={`pathway-learn-link-${qualification.id}-${link.label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`} onClick={() => { sounds.click(); hapticLight(); }} className="inline-flex min-h-11 items-center gap-1 border border-[var(--ink)] px-3 font-[JetBrains_Mono] text-[10px] uppercase tracking-widest transition-colors hover:bg-[var(--ink)] hover:text-white">
+                          {link.label}<ExternalLink className="h-3 w-3" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </section>
         <section className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-3xl font-[Playfair_Display]">
@@ -369,16 +391,7 @@ export function PathwayPage() {
                   <div className="font-[JetBrains_Mono] text-[10px] uppercase text-[var(--ink-soft)]">
                     {localizedStepKind(step.kind, lang)} · {step.estMonths} {c.months}
                   </div>
-                  {step.refId && qualificationById.has(step.refId) && (
-                    <a
-                      className="font-[Inter] text-xs underline"
-                      href="https://www.skillindiadigital.gov.in/"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {c.find} {qualificationById.get(step.refId)!.providerHint}
-                    </a>
-                  )}
+                  {step.refId && qualificationById.has(step.refId) && <div className="mt-3"><p className="font-[Inter] text-xs">{c.find} {qualificationById.get(step.refId)!.providerHint}</p><div className="mt-2 flex flex-wrap gap-2">{qualificationById.get(step.refId)!.links?.map(link => <a key={link.url} className="inline-flex min-h-11 items-center gap-1 border border-[var(--ink)] px-3 font-[JetBrains_Mono] text-[10px] uppercase tracking-widest transition-colors hover:bg-[var(--ink)] hover:text-white" href={link.url} target="_blank" rel="noopener noreferrer" data-testid={`pathway-learn-link-${step.refId}-${link.label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`} onClick={() => { sounds.click(); hapticLight(); }}>{link.label}<ExternalLink className="h-3 w-3" /></a>)}</div></div>}
                   <details className="mt-3 border-t border-black/15 pt-2 font-[Inter] text-xs text-black/60"><summary data-testid={`pathway-step-${index+1}-details`} className="min-h-11 cursor-pointer py-3 font-mono-ui uppercase" aria-label={`${timelineCopy.fine}: ${localizedStep(step,lang)}`}>{timelineCopy.fine}</summary><p>{localizedStepKind(step.kind,lang)} · {localizedTradeoff(route,lang)} · {localizedConfidence(route.confidence,lang)} {c.confidence}</p></details>
                 </div>
                 {(index+1)%3===0 && <StickFigure pose="walking" size={44} className="absolute -bottom-6 right-4"/>}

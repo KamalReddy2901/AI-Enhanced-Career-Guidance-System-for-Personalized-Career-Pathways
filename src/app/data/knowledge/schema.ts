@@ -70,6 +70,11 @@ export interface TransitionEdge {
 
 // ─── Qualifications ───────────────────────────────────────────────────────────
 
+export interface ProviderLink {
+  label: string;
+  url: string;
+}
+
 export interface Qualification {
   id: string;                          // slug
   name: string;
@@ -79,6 +84,7 @@ export interface Qualification {
   preparesForOccupationIds: string[];
   typicalMonths: number;
   providerHint: string;                // e.g. 'Skill India Digital Hub / PMKVY centre', 'NPTEL/SWAYAM', 'State ITI'
+  links?: ProviderLink[];              // stable public learning portal landing/search links
 }
 
 // ─── Market Signals ───────────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ import { OCCUPATIONS as RAW_OCCUPATIONS } from './occupations';
 import { TRANSITIONS as RAW_TRANSITIONS } from './transitions';
 import { QUALIFICATIONS as RAW_QUALIFICATIONS } from './qualifications';
 import { MARKET_SIGNALS as RAW_MARKET_SIGNALS } from './market';
+import { providerLinksForQualification } from './providers';
 import type { Skill, Occupation, TransitionEdge, Qualification, MarketSignal, OccupationSkillReq } from './schema';
 
 export const KB_VERSION = 'kb-2026.06.1';
@@ -81,6 +82,7 @@ export const TRANSITIONS: TransitionEdge[] = supplementedTransitions;
 const sanitizedQualifications: Qualification[] = RAW_QUALIFICATIONS
   .map(qualification => ({
     ...qualification,
+    links: qualification.links?.length ? qualification.links : providerLinksForQualification(qualification),
     developsSkillIds: qualification.developsSkillIds.filter(skillId => skillIds.has(skillId)),
     preparesForOccupationIds: qualification.preparesForOccupationIds.filter(occupationId => occupationIds.has(occupationId)),
   }))
@@ -98,6 +100,7 @@ for (const occupation of OCCUPATIONS) {
     preparesForOccupationIds: [occupation.id],
     typicalMonths: occupation.isVocational ? 6 : 4,
     providerHint: occupation.isVocational ? 'Skill India Digital Hub / PMKVY centre' : 'NPTEL / SWAYAM or an accredited sector provider',
+    links: providerLinksForQualification({ name: `${occupation.title} NSQF bridge route`, type: occupation.isVocational ? 'nsqf_course' : 'certification' }),
   });
 }
 
@@ -115,6 +118,7 @@ for (let index = 0; index < untaughtSkills.length; index += 16) {
     preparesForOccupationIds: relevantOccupations.length ? relevantOccupations : [OCCUPATIONS[0].id],
     typicalMonths: 3,
     providerHint: 'Skill India Digital Hub / PMKVY centre / SWAYAM',
+    links: providerLinksForQualification({ name: `Cross-sector skill development route ${index / 16 + 1}`, type: 'nsqf_course' }),
   });
 }
 

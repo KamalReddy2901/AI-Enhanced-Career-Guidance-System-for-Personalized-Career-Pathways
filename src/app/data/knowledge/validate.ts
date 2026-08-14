@@ -93,6 +93,11 @@ export function validateKB(): string[] {
   const occReachableViaQual = new Set<string>();
 
   QUALIFICATIONS.forEach((q, idx) => {
+    if (!q.links?.length) violations.push(`Qualification ${q.id}: missing learning portal links`);
+    q.links?.forEach(link => {
+      if (!link.label.trim()) violations.push(`Qualification ${q.id}: learning portal link has an empty label`);
+      if (!link.url.startsWith('https://')) violations.push(`Qualification ${q.id}: learning portal URL must use https`);
+    });
     // Check skill references
     q.developsSkillIds.forEach(skillId => {
       if (!skillById.has(skillId)) {

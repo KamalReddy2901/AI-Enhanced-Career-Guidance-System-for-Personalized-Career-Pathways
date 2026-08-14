@@ -1,4 +1,5 @@
-import { occupationById, skillById } from '../data/knowledge';
+import { occupationById, QUALIFICATIONS, skillById } from '../data/knowledge';
+import type { Qualification } from '../data/knowledge';
 import type { CareerPassport, GapReport, Proficiency, SkillClaim } from './types';
 
 export function claimFor(passport: CareerPassport, skillId: string): SkillClaim | undefined {
@@ -42,4 +43,10 @@ export function computeGapReport(passport: CareerPassport, occupationId: string)
 
 export function skillName(skillId: string): string {
   return skillById.get(skillId)?.name ?? skillId;
+}
+
+export function learningRoutesForSkill(skillId: string, limit = 3): Qualification[] {
+  return QUALIFICATIONS.filter(qualification => qualification.developsSkillIds.includes(skillId))
+    .sort((a, b) => a.typicalMonths - b.typicalMonths)
+    .slice(0, limit);
 }
