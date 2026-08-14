@@ -17,9 +17,10 @@ export const PROVIDER_PORTALS = {
 export function providerLinksForQualification(qualification: Pick<Qualification, 'name' | 'type'>): ProviderLink[] {
   const p = PROVIDER_PORTALS;
   const swayam = { label: p.swayam.label, url: p.swayam.urlFor(qualification.name) };
+  const isItRoute = /computer|software|web|mobile|graphic|digital|data|technology|electronics|iot/i.test(qualification.name);
   switch (qualification.type) {
     case 'iti': return [p.iti, p.skillIndia];
-    case 'diploma': return [p.skillIndia, p.nielit];
+    case 'diploma': return [p.skillIndia, isItRoute ? p.nielit : p.ncs];
     case 'degree': return [swayam, p.ugc];
     case 'certification': return [swayam, p.eSkillIndia];
     case 'apprenticeship': return [p.apprenticeship];

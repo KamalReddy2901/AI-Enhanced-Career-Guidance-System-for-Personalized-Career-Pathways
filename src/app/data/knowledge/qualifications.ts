@@ -4,8 +4,9 @@
 // ══════════════════════════════════════════════════════════════════════════════
 
 import type { Qualification } from './schema';
+import { providerLinksForQualification } from './providers';
 
-export const QUALIFICATIONS: Qualification[] = [
+const QUALIFICATION_DEFINITIONS: Array<Omit<Qualification, 'links'>> = [
   // ═══ IT-ITeS SECTOR ═════════════════════════════════════════════════════════
   { id: 'nsqf-it-support-l4', name: 'IT Support Technician (NSQF Level 4)', nsqfLevel: 4, type: 'nsqf_course', developsSkillIds: ['computer-hardware', 'troubleshooting', 'customer-service'], preparesForOccupationIds: ['it-support-specialist'], typicalMonths: 6, providerHint: 'Skill India Digital Hub / PMKVY centres' },
   { id: 'nsqf-web-dev-l5', name: 'Web Development & Design (NSQF Level 5)', nsqfLevel: 5, type: 'nsqf_course', developsSkillIds: ['web-development', 'javascript', 'html-css', 'ui-design'], preparesForOccupationIds: ['web-developer'], typicalMonths: 9, providerHint: 'NSDC partners / Online bootcamps (SWAYAM)' },
@@ -107,3 +108,9 @@ export const QUALIFICATIONS: Qualification[] = [
   { id: 'naps-electrician', name: 'Electrician Apprenticeship (NAPS)', nsqfLevel: 4, type: 'apprenticeship', developsSkillIds: ['electrical-wiring', 'troubleshooting'], preparesForOccupationIds: ['electrician'], typicalMonths: 24, providerHint: 'NAPS / Electrical contractors' },
   { id: 'naps-machinist', name: 'Machinist Apprenticeship (NAPS)', nsqfLevel: 4, type: 'apprenticeship', developsSkillIds: ['cnc-operation', 'attention-to-detail'], preparesForOccupationIds: ['cnc-operator', 'machine-operator'], typicalMonths: 24, providerHint: 'NAPS / Manufacturing units' },
 ];
+
+/** Every curated qualification ships with stable public learning-portal links. */
+export const QUALIFICATIONS: Qualification[] = QUALIFICATION_DEFINITIONS.map(qualification => ({
+  ...qualification,
+  links: providerLinksForQualification(qualification),
+}));

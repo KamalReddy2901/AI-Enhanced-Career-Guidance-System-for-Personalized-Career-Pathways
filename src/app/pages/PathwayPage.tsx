@@ -29,7 +29,7 @@ import { useStreak } from "../hooks/useStreak";
 import { useT } from "../i18n";
 import { occupationName } from "../i18n/occupationNames";
 import { localizedConfidence, localizedStep, localizedStepKind, localizedTradeoff, localizedTrend } from "../i18n/guidanceFormatting";
-import { hapticLight, hapticSuccess } from '../utils/haptic';
+import { hapticLight, hapticSuccess, hapticTap } from '../utils/haptic';
 import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 import { gsap } from '../motion/gsap';
 import { TextReveal } from '../motion/TextReveal';
@@ -309,7 +309,7 @@ export function PathwayPage() {
                     <p className="font-[Inter] text-xs text-[var(--ink-soft)]">{qualification.name} · {qualification.typicalMonths} {c.months} · NSQF {qualification.nsqfLevel}</p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {qualification.links?.map(link => (
-                        <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" data-testid={`pathway-learn-link-${qualification.id}-${link.label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`} onClick={() => { sounds.click(); hapticLight(); }} className="inline-flex min-h-11 items-center gap-1 border border-[var(--ink)] px-3 font-[JetBrains_Mono] text-[10px] uppercase tracking-widest transition-colors hover:bg-[var(--ink)] hover:text-white">
+                        <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" data-testid={`pathway-learn-link-${qualification.id}-${link.label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`} onClick={() => { sounds.click(); hapticTap(); }} className="inline-flex min-h-11 items-center gap-1 border border-[var(--ink)] px-3 font-[JetBrains_Mono] text-[10px] uppercase tracking-widest transition-colors hover:bg-[var(--ink)] hover:text-white">
                           {link.label}<ExternalLink className="h-3 w-3" />
                         </a>
                       ))}
@@ -392,7 +392,7 @@ export function PathwayPage() {
                   <div className="font-[JetBrains_Mono] text-[10px] uppercase text-[var(--ink-soft)]">
                     {localizedStepKind(step.kind, lang)} · {step.estMonths} {c.months}
                   </div>
-                  {step.refId && qualificationById.has(step.refId) && <div className="mt-3"><p className="font-[Inter] text-xs">{c.find} {qualificationById.get(step.refId)!.providerHint}</p><div className="mt-2 flex flex-wrap gap-2">{qualificationById.get(step.refId)!.links?.map(link => <a key={link.url} className="inline-flex min-h-11 items-center gap-1 border border-[var(--ink)] px-3 font-[JetBrains_Mono] text-[10px] uppercase tracking-widest transition-colors hover:bg-[var(--ink)] hover:text-white" href={link.url} target="_blank" rel="noopener noreferrer" data-testid={`pathway-learn-link-${step.refId}-${link.label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`} onClick={() => { sounds.click(); hapticLight(); }}>{link.label}<ExternalLink className="h-3 w-3" /></a>)}</div></div>}
+                  {step.refId && qualificationById.has(step.refId) && <div className="mt-3"><p className="font-[Inter] text-xs">{c.find} {qualificationById.get(step.refId)!.providerHint}</p><div className="mt-2 flex flex-wrap gap-2">{qualificationById.get(step.refId)!.links?.map(link => <a key={link.url} className="inline-flex min-h-11 items-center gap-1 border border-[var(--ink)] px-3 font-[JetBrains_Mono] text-[10px] uppercase tracking-widest transition-colors hover:bg-[var(--ink)] hover:text-white" href={link.url} target="_blank" rel="noopener noreferrer" data-testid={`pathway-learn-link-${step.refId}-${link.label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`} onClick={() => { sounds.click(); hapticTap(); }}>{link.label}<ExternalLink className="h-3 w-3" /></a>)}</div></div>}
                   <details className="mt-3 border-t border-black/15 pt-2 font-[Inter] text-xs text-black/60"><summary data-testid={`pathway-step-${index+1}-details`} className="min-h-11 cursor-pointer py-3 font-mono-ui uppercase" aria-label={`${timelineCopy.fine}: ${localizedStep(step,lang)}`}>{timelineCopy.fine}</summary><p>{localizedStepKind(step.kind,lang)} · {localizedTradeoff(route,lang)} · {localizedConfidence(route.confidence,lang)} {c.confidence}</p></details>
                 </div>
                 {(index+1)%3===0 && <StickFigure pose="walking" size={44} className="absolute -bottom-6 right-4"/>}
