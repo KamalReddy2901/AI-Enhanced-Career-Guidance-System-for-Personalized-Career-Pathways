@@ -1,5 +1,6 @@
 import { toast } from 'sonner';
 import { callGroq } from './ai';
+import { occupationById, skillById } from '../data/knowledge';
 
 const CACHE_PREFIX = 'careersim_interview_';
 const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -39,6 +40,9 @@ export async function generateInterviewQuestions(
   skipCache = false
 ): Promise<InterviewQuestion[]> {
   const cacheKey = `${jobTitle.toLowerCase().replace(/\s+/g, '_')}`;
+  const normalizedTitle = jobTitle.trim().toLowerCase();
+  const occupation = [...occupationById.values()].find(item => item.title.toLowerCase() === normalizedTitle);
+  const groundedContext = occupation ? `NCO ${occupation.ncoCode}; sector ${occupation.sector}; cluster ${occupation.cluster}; required skills: ${occupation.skills.map(requirement => `${skillById.get(requirement.skillId)?.name ?? requirement.skillId} level ${requirement.requiredProficiency}/4`).join(', ')}.` : 'No exact knowledge-base occupation record was found; do not invent a numeric score or official classification.';
 
   if (!skipCache) {
     const cached = getCached<InterviewQuestion[]>(cacheKey);
@@ -48,9 +52,11 @@ export async function generateInterviewQuestions(
     }
   }
 
-  const systemPrompt = `You are a career interview coach. Generate realistic interview questions that would actually be asked for this specific role. Return ONLY valid JSON, no markdown.`;
+  const systemPrompt = `You are a career interview coach. Generate realistic interview questions grounded in the supplied CareerCase occupation knowledge-base context. Return ONLY valid JSON, no markdown. Never produce a numeric candidate score.`;
 
-  const userPrompt = `Generate exactly 12 interview questions for a "${jobTitle}" position.
+  const userPrompt = `Knowledge-base context: ${groundedContext}
+
+Generate exactly 12 interview questions for a "${jobTitle}" position.
 
 Include these categories (mix them throughout):
 - Behavioral (3-4 questions)

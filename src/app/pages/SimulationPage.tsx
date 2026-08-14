@@ -6,7 +6,7 @@ import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import { generateSimulation, type SimulationScenario } from '../data/simulations';
 import { generateJobData } from '../data/jobs';
-import { assessCareerCompatibility, generateSimulationAI, generateSimulationSummary } from '../services/ai';
+import { assessCareerCompatibility, generateSimulationSummary } from '../services/ai';
 import { downloadAssessmentPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
@@ -50,8 +50,6 @@ function BlackConfetti({ active }: { active: boolean }) {
   );
 }
 
-type StickFigurePose = 'waking' | 'walking' | 'sitting' | 'presenting' | 'thinking' | 'working' | 'talking' | 'eating' | 'celebrating' | 'tired' | 'running' | 'reading';
-
 export function SimulationPage() {
   const navigate = useNavigate();
   const { lang } = useT();
@@ -63,7 +61,7 @@ export function SimulationPage() {
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [selectedChoice, setSelectedChoice] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
-  const [completedScenarios, setCompletedScenarios] = useState<{ index: number; wasCorrect: boolean }[]>([]);
+  const [completedScenarios, setCompletedScenarios] = useState<{ index: number; wasCorrect: boolean; selectedChoiceIndex?: number }[]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const [isLoadingScenarios, setIsLoadingScenarios] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
@@ -97,7 +95,6 @@ export function SimulationPage() {
   useEffect(() => {
     if (isComplete) {
       sounds.complete();
-      setTimeout(() => sounds.confetti(), 400);
     }
   }, [isComplete]);
 
@@ -120,23 +117,8 @@ export function SimulationPage() {
     }, 2000);
 
     try {
-      const aiScenarios = await generateSimulationAI(currentJob.title, skipCache);
-      const formatted: SimulationScenario[] = aiScenarios.map((s, i) => ({
-        id: `scenario-${i}`,
-        time: s.time,
-        title: s.title,
-        description: s.description,
-        stickFigurePose: s.stickFigurePose as StickFigurePose,
-        choices: s.choices,
-        correctChoiceIndex: s.correctChoiceIndex,
-        explanation: s.explanation,
-      }));
-      setScenarios(formatted);
-      if (!skipCache) toast.success('Simulation ready!');
-    } catch (error) {
-      console.error('AI simulation generation failed:', error);
-      toast.error('AI failed - using template scenarios');
       setScenarios(generateSimulation(currentJob.title));
+      if (!skipCache) toast.success('Simulation ready!');
     } finally {
       clearInterval(interval);
       setIsLoadingScenarios(false);
@@ -170,9 +152,9 @@ export function SimulationPage() {
     if (selectedChoice !== null) return;
     setSelectedChoice(choiceIndex);
     const wasCorrect = choiceIndex === currentScenario?.correctChoiceIndex;
-    setCompletedScenarios(prev => [...prev, { index: currentIndex, wasCorrect }]);
+    setCompletedScenarios(prev => [...prev.filter(item => item.index !== currentIndex), { index: currentIndex, wasCorrect, selectedChoiceIndex: choiceIndex }]);
     // Haptic feedback
-    if (wasCorrect) hapticLight(); else hapticWarn();
+    if (wasCorrect) { sounds.quizCorrect(); hapticLight(); } else { sounds.quizWrong(); hapticWarn(); }
 
     setTimeout(() => {
       setShowExplanation(true);
@@ -196,7 +178,8 @@ export function SimulationPage() {
   const generateAISummary = async () => {
     setLoadingSummary(true);
     try {
-      const allCompleted = [...completedScenarios, { index: currentIndex, wasCorrect: selectedChoice === currentScenario?.correctChoiceIndex }];
+      const currentResult = { index: currentIndex, wasCorrect: selectedChoice === currentScenario?.correctChoiceIndex, selectedChoiceIndex: selectedChoice ?? undefined };
+      const allCompleted = completedScenarios.some(item => item.index === currentIndex) ? completedScenarios : [...completedScenarios, currentResult];
       const correctCount = allCompleted.filter(s => s.wasCorrect).length;
       const titles = scenarios.map(s => s.title);
       const wasCorrectArr = scenarios.map((_, i) => {
@@ -619,7 +602,7 @@ export function SimulationPage() {
                   <div className="font-[Inter] text-black/40" style={{ fontSize: '0.75rem' }}>Alignment</div>
                 </div>
               </div>
-              <EvidenceButton testId="simulation-score-why-btn" label={lang === 'hi' ? 'मुझे कैसे अंक मिले?' : lang === 'te' ? 'నాకు ఎలా స్కోర్ ఇచ్చారు?' : 'How was I scored?'} evidence={{title:lang === 'hi' ? 'सिमुलेशन प्रमाण' : lang === 'te' ? 'సిమ్యులేషన్ ఆధారం' : 'Simulation evidence',eyebrow:currentJob.title,summary:lang === 'hi' ? 'संरेखण प्रत्येक परिदृश्य में सही विकल्पों का अनुपात है।' : lang === 'te' ? 'అలైన్‌మెంట్ ప్రతి సన్నివేశంలో సరైన ఎంపికల నిష్పత్తి.' : 'Alignment is the proportion of correct choices across the scenarios.',method:lang === 'hi' ? 'स्कोर = सही विकल्प ÷ कुल परिदृश्य × 100। AI सारांश वर्णनात्मक है और इस अंक को नहीं बदलता।' : lang === 'te' ? 'స్కోర్ = సరైన ఎంపికలు ÷ మొత్తం సన్నివేశాలు × 100. AI సారాంశం వివరణాత్మకమే, స్కోర్‌ను మార్చదు.' : 'score = correct choices ÷ total scenarios × 100. The AI summary is descriptive and does not change this score.',items:scenarios.map((scenario,index)=>({label:scenario.title,detail:completedScenarios.find(item=>item.index===index)?.wasCorrect ? (lang === 'hi' ? 'आपका विकल्प: सर्वोत्तम विकल्प' : lang === 'te' ? 'మీ ఎంపిక: ఉత్తమ ఎంపిక' : 'Your choice: optimal option') : (lang === 'hi' ? 'आपका विकल्प: दूसरा विकल्प' : lang === 'te' ? 'మీ ఎంపిక: వేరే ఎంపిక' : 'Your choice: a different option')})),source:'Curated scenario rubric · deterministic' }} />
+              <EvidenceButton testId="simulation-score-why-btn" label={lang === 'hi' ? 'मुझे कैसे अंक मिले?' : lang === 'te' ? 'నాకు ఎలా స్కోర్ ఇచ్చారు?' : 'How was I scored?'} evidence={{title:lang === 'hi' ? 'सिमुलेशन प्रमाण' : lang === 'te' ? 'సిమ్యులేషన్ ఆధారం' : 'Simulation evidence',eyebrow:currentJob.title,summary:lang === 'hi' ? 'संरेखण प्रत्येक परिदृश्य में सही विकल्पों का अनुपात है।' : lang === 'te' ? 'అలైన్‌మెంట్ ప్రతి సన్నివేశంలో సరైన ఎంపికల నిష్పత్తి.' : 'Alignment is the proportion of correct choices across the scenarios.',method:lang === 'hi' ? 'स्कोर = सही विकल्प ÷ कुल परिदृश्य × 100। AI सारांश वर्णनात्मक है और इस अंक को नहीं बदलता।' : lang === 'te' ? 'స్కోర్ = సరైన ఎంపికలు ÷ మొత్తం సన్నివేశాలు × 100. AI సారాంశం వివరణాత్మకమే, స్కోర్‌ను మార్చదు.' : 'score = correct choices ÷ total scenarios × 100. The AI summary is descriptive and does not change this score.',items:scenarios.map((scenario,index)=>{const result=completedScenarios.find(item=>item.index===index);const chosen=result?.selectedChoiceIndex === undefined ? (lang === 'hi' ? 'पुराने सहेजे रन में विकल्प दर्ज नहीं' : lang === 'te' ? 'పాత సేవ్ చేసిన రన్‌లో ఎంపిక నమోదు కాలేదు' : 'Choice not recorded in legacy saved run') : scenario.choices[result.selectedChoiceIndex]?.text ?? '';const optimal=scenario.choices[scenario.correctChoiceIndex]?.text ?? '';return {label:scenario.title,detail:lang === 'hi' ? `आपका विकल्प: ${chosen} · सर्वोत्तम: ${optimal}` : lang === 'te' ? `మీ ఎంపిక: ${chosen} · ఉత్తమం: ${optimal}` : `Your choice: ${chosen} · Optimal: ${optimal}`};}),source:lang === 'hi' ? 'संपादित परिदृश्य रूब्रिक · नियत गणना' : lang === 'te' ? 'క్యూరేటెడ్ సన్నివేశ రూబ్రిక్ · నిర్ణీత లెక్కింపు' : 'Curated scenario rubric · deterministic computation' }} />
 
               {/* AI Summary */}
               {(aiSummary || loadingSummary) && (

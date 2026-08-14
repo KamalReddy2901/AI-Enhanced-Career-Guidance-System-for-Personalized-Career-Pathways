@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, Loader2, ChevronDown, ChevronUp, CheckCircle, XCircle, AlertTriangle, ArrowLeftRight, ExternalLink, Download, Share2, Clock, X, Zap, Pencil } from 'lucide-react';
@@ -12,6 +12,8 @@ import { sounds } from '../utils/sounds';
 import { TextReveal } from '../motion/TextReveal';
 import { hapticTap } from '../utils/haptic';
 import { EvidenceButton } from '../components/guidance/EvidenceButton';
+import { KB_VERSION, occupationById, transitionsFrom } from '../data/knowledge';
+import { useT } from '../i18n';
 
 const DIFFICULTY_COLOR: Record<string, string> = {
   Easy: 'text-emerald-700 bg-emerald-50 border-emerald-200',
@@ -22,6 +24,7 @@ const DIFFICULTY_COLOR: Record<string, string> = {
 
 export function CareerTransitionPage() {
   const [searchParams] = useSearchParams();
+  const { lang } = useT();
 
   const [fromCareer, setFromCareer] = useState(() => searchParams.get('from') || '');
   const [toCareer, setToCareer] = useState(() => searchParams.get('to') || '');
@@ -65,6 +68,9 @@ export function CareerTransitionPage() {
     try { return JSON.parse(localStorage.getItem('cs_transition_history') || '[]'); } catch { return []; }
   });
   const [showTransitionHistory, setShowTransitionHistory] = useState(false);
+  const sourceOccupation = useMemo(() => [...occupationById.values()].find(item => item.title.toLowerCase() === fromCareer.trim().toLowerCase()), [fromCareer]);
+  const targetOccupation = useMemo(() => [...occupationById.values()].find(item => item.title.toLowerCase() === toCareer.trim().toLowerCase()), [toCareer]);
+  const kbEdge = useMemo(() => sourceOccupation && targetOccupation ? transitionsFrom(sourceOccupation.id).find(edge => edge.toId === targetOccupation.id) : undefined, [sourceOccupation, targetOccupation]);
 
   // AI suggestions for "from" field
   useEffect(() => {
@@ -417,6 +423,7 @@ export function CareerTransitionPage() {
                 <p className="font-[Inter] text-black/60" style={{ fontSize: '0.9rem', lineHeight: 1.7 }}>
                   {plan.overview}
                 </p>
+                <EvidenceButton testId="career-transition-why-btn" label={lang === 'hi' ? 'यह बदलाव संभव क्यों?' : lang === 'te' ? 'ఈ మార్పు సాధ్యమని ఎందుకు?' : 'Why plausible?'} evidence={kbEdge ? {title:lang === 'hi' ? `${plan.fromTitle} से ${plan.toTitle}` : lang === 'te' ? `${plan.fromTitle} నుండి ${plan.toTitle}` : `${plan.fromTitle} to ${plan.toTitle}`,eyebrow:lang === 'hi' ? 'संक्रमण प्रमाण' : lang === 'te' ? 'మార్పు ఆధారం' : 'Transition evidence',summary:kbEdge.transferNote,method:lang === 'hi' ? 'संभाव्यता संस्करणित ज्ञान-आधार के संपादित संक्रमण किनारे से आती है; AI इस शक्ति या समय को नहीं बदलता।' : lang === 'te' ? 'సాధ్యత వెర్షన్ చేసిన నాలెడ్జ్-బేస్‌లోని క్యూరేటెడ్ మార్పు ఎడ్జ్ నుండి వస్తుంది; AI ఈ బలం లేదా కాలాన్ని మార్చదు.' : 'Plausibility comes from a curated transition edge in the versioned knowledge base; AI does not alter its strength or duration.',items:[{label:lang === 'hi' ? 'संक्रमण शक्ति' : lang === 'te' ? 'మార్పు బలం' : 'Transition strength',value:Math.round(kbEdge.strength*100),detail:`${Math.round(kbEdge.strength*100)}/100`},{label:lang === 'hi' ? 'सामान्य समय' : lang === 'te' ? 'సాధారణ కాలం' : 'Typical time',detail:lang === 'hi' ? `${kbEdge.typicalYears} वर्ष` : lang === 'te' ? `${kbEdge.typicalYears} సంవత్సరాలు` : `${kbEdge.typicalYears} years`},{label:lang === 'hi' ? 'क्या स्थानांतरित होता है' : lang === 'te' ? 'ఏది బదిలీ అవుతుంది' : 'What transfers',detail:kbEdge.transferNote}],source:`Curated transition edges · ${KB_VERSION}`} : {title:lang === 'hi' ? 'ज्ञान-आधार किनारा उपलब्ध नहीं' : lang === 'te' ? 'నాలెడ్జ్-బేస్ ఎడ్జ్ అందుబాటులో లేదు' : 'No knowledge-base edge available',eyebrow:lang === 'hi' ? 'संक्रमण सीमा' : lang === 'te' ? 'మార్పు పరిమితి' : 'Transition limitation',summary:lang === 'hi' ? 'इन दर्ज शीर्षकों के लिए कोई संपादित संक्रमण किनारा नहीं मिला, इसलिए कोई संख्यात्मक संभाव्यता नहीं दिखाई गई।' : lang === 'te' ? 'ఈ నమోదు చేసిన శీర్షికలకు క్యూరేటెడ్ మార్పు ఎడ్జ్ దొరకలేదు; అందువల్ల సంఖ్యాత్మక సాధ్యత చూపలేదు.' : 'No curated transition edge was found for these entered titles, so no numeric plausibility is shown.',method:lang === 'hi' ? 'नीचे का मार्ग केवल वर्णनात्मक योजना है और नियम-आधारित स्कोर नहीं है।' : lang === 'te' ? 'క్రింది మార్గం వివరణాత్మక ప్రణాళిక మాత్రమే; నియమ-ఆధారిత స్కోర్ కాదు.' : 'The roadmap below is descriptive planning only, not a deterministic score.',items:[{label:lang === 'hi' ? 'स्रोत भूमिका' : lang === 'te' ? 'మూల పాత్ర' : 'Source role',detail:plan.fromTitle},{label:lang === 'hi' ? 'लक्ष्य भूमिका' : lang === 'te' ? 'లక్ష్య పాత్ర' : 'Target role',detail:plan.toTitle}],source:`Curated transition edges · ${KB_VERSION}`}} />
               </div>
 
               {/* Skills analysis */}
@@ -472,7 +479,6 @@ export function CareerTransitionPage() {
                           <div>
                             <p className="font-[Playfair_Display] text-black" style={{ fontSize: '1rem' }}>{step.phase}</p>
                             <p className="font-[Inter] text-black/35" style={{ fontSize: '0.72rem' }}>{step.duration}</p>
-                            <EvidenceButton testId={`transition-step-${i + 1}-why-btn`} evidence={{title:'Transition step evidence',eyebrow:step.phase,summary:plan.overview,method:'This planning step is explanatory guidance for the selected source and target careers, not a numeric plausibility score.',items:[{label:'Typical duration',detail:step.duration},{label:'Actions',detail:step.actions.join(' · ')}],source:'Transition plan · no score'}} />
                           </div>
                         </div>
                         {expandedPhase === i ? (

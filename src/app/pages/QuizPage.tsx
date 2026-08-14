@@ -387,22 +387,10 @@ export function QuizPage() {
 
                 <div className="space-y-3">
                   {result.careers.map((career, i) => {
-                    const matchPct = career.matchScore;
-                    const accentClass = matchPct >= 80
-                      ? 'border-l-4 border-l-emerald-400'
-                      : matchPct >= 60
-                        ? 'border-l-4 border-l-violet-400'
-                        : 'border-l-4 border-l-amber-400';
-                    const scoreClass = matchPct >= 80
-                      ? 'bg-emerald-50 text-emerald-700'
-                      : matchPct >= 60
-                        ? 'bg-violet-50 text-violet-700'
-                        : 'bg-amber-50 text-amber-700';
-
                     return (
                     <motion.div
                       key={career.title}
-                      className={`border-2 border-black/10 p-5 hover:border-black/25 transition-[color,background-color,border-color,opacity,transform,box-shadow] ${accentClass}`}
+                      className="border-2 border-black/10 border-l-4 border-l-[var(--ink)] p-5 transition-[color,background-color,border-color,opacity,transform,box-shadow] hover:border-black/25"
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.1 }}
@@ -416,7 +404,7 @@ export function QuizPage() {
                             <h3 className="font-[Playfair_Display] text-black" style={{ fontSize: '1.15rem' }}>
                               {career.title}
                             </h3>
-                            <div className={`flex items-center gap-1 px-2 py-0.5 ${scoreClass}`}>
+                            <div className="flex items-center gap-1 border border-black/15 px-2 py-0.5">
                               <span className="font-[Inter] opacity-60" style={{ fontSize: '0.65rem' }}>{lang === 'hi' ? 'सुझाया गया' : lang === 'te' ? 'సూచించబడింది' : 'suggested'}</span>
                             </div>
                           </div>

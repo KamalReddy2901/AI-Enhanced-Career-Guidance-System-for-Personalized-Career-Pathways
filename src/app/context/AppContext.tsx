@@ -2,12 +2,17 @@ import { createContext, useContext, useState, useCallback, useEffect, type React
 import { generateJobData, normalizeJobData, type JobData } from '../data/jobs';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
+import { useGuidance } from './GuidanceContext';
+import { KB_VERSION } from '../data/knowledge';
+import type { Segment } from '../engine/types';
 
 interface HistoryEntry {
   id: string;
   jobTitle: string;
   timestamp: number;
   jobData: JobData;
+  segment?: Segment;
+  kbVersion?: string;
 }
 
 interface AppContextType {
@@ -35,6 +40,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const { passport } = useGuidance();
   const { user, isSupabaseConfigured } = useAuth();
   const [currentJob, setCurrentJobState] = useState<JobData | null>(null);
   const setCurrentJob = useCallback((job: JobData | null) => {
@@ -163,7 +169,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addToHistory = useCallback((jobData: JobData) => {
     if (isSupabaseConfigured && !user) return;
-    const entry: HistoryEntry = { id: crypto.randomUUID(), jobTitle: jobData.title, timestamp: Date.now(), jobData };
+    const entry: HistoryEntry = { id: crypto.randomUUID(), jobTitle: jobData.title, timestamp: Date.now(), jobData, segment: passport?.segment, kbVersion: KB_VERSION };
     setHistory(prev => {
       const filtered = prev.filter(h => h.jobTitle.toLowerCase() !== jobData.title.toLowerCase());
       return [entry, ...filtered].slice(0, 50);
@@ -174,7 +180,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         saveHistoryEntry(user.id, jobData.title, jobData, entry.timestamp),
       ).catch(() => {});
     }
-  }, [user, isSupabaseConfigured]);
+  }, [user, isSupabaseConfigured, passport?.segment]);
 
   const clearHistory = useCallback(() => {
     setHistory([]);

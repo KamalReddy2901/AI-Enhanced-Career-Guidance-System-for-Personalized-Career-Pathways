@@ -17,6 +17,7 @@ import { sounds } from '../utils/sounds';
 import { TextReveal } from '../motion/TextReveal';
 import { EvidenceButton } from '../components/guidance/EvidenceButton';
 import { hapticLight } from '../utils/haptic';
+import { useT } from '../i18n';
 
 function WinnerCircle() {
   return <svg className="pointer-events-none absolute inset-1 h-[calc(100%-8px)] w-[calc(100%-8px)] text-[var(--accent-news)]" viewBox="0 0 200 80" preserveAspectRatio="none" aria-hidden="true"><ellipse cx="100" cy="40" rx="94" ry="34" fill="none" stroke="currentColor" strokeWidth="2" /></svg>;
@@ -35,6 +36,7 @@ function CareerSlot({
   onClear: () => void;
   onOpen: () => void;
 }) {
+  const { lang } = useT();
   return (
     <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: slot * 0.1 }}>
       {isLoading ? (
@@ -55,6 +57,7 @@ function CareerSlot({
           </h3>
           <span className="font-[Inter] text-black/40" style={{ fontSize: '0.72rem' }}>{job.category}</span>
           <p className="font-[Inter] text-black/50 mt-2" style={{ fontSize: '0.82rem' }}>{job.avgSalary}</p>
+          <EvidenceButton testId={`comparison-career-${slot === 0 ? 'a' : 'b'}-why-btn`} label={lang === 'hi' ? 'ये संख्याएँ क्यों?' : lang === 'te' ? 'ఈ సంఖ్యలు ఎందుకు?' : 'Why these numbers?'} evidence={{title:lang === 'hi' ? `${job.title} के प्रमाण` : lang === 'te' ? `${job.title} ఆధారం` : `${job.title} evidence`,eyebrow:lang === 'hi' ? 'तुलना आयाम' : lang === 'te' ? 'పోలిక కొలతలు' : 'Comparison dimensions',summary:lang === 'hi' ? 'यह कॉलम चुने गए करियर डॉसियर के दर्ज मान दिखाता है; नया मिलान अंक नहीं बनता।' : lang === 'te' ? 'ఈ కాలమ్ ఎంచుకున్న కెరీర్ డోసియర్ విలువలను చూపుతుంది; కొత్త మ్యాచ్ స్కోర్ రూపొందదు.' : 'This column shows recorded values from the selected career dossier; it does not create a new match score.',method:lang === 'hi' ? 'वेतन, श्रेणी, कौशल और शिक्षा को उसी डॉसियर से साथ-साथ रखा जाता है।' : lang === 'te' ? 'జీతం, వర్గం, నైపుణ్యాలు, విద్య అదే డోసియర్ నుండి పక్కపక్కన ఉంచబడతాయి.' : 'Salary, category, skills, and education are placed side by side from the same dossier.',items:[{label:lang === 'hi' ? 'श्रेणी' : lang === 'te' ? 'వర్గం' : 'Category',detail:job.category},{label:lang === 'hi' ? 'औसत वेतन' : lang === 'te' ? 'సగటు జీతం' : 'Average salary',detail:job.avgSalary},{label:lang === 'hi' ? 'मुख्य कौशल' : lang === 'te' ? 'ముఖ్య నైపుణ్యాలు' : 'Key skills',detail:job.skills.slice(0,5).join(' · ')}],source:lang === 'hi' ? 'चुना गया करियर डॉसियर · कोई नया अंक नहीं' : lang === 'te' ? 'ఎంచుకున్న కెరీర్ డోసియర్ · కొత్త స్కోర్ లేదు' : 'Selected career dossier · no new score'}} />
         </div>
       ) : (
         <button
@@ -307,7 +310,6 @@ export function ComparisonPage() {
           <p className="font-[Inter] text-black/40" style={{ fontSize: '0.85rem' }}>
             Compare two careers side by side
           </p>
-          {(comparisonJobs[0] || comparisonJobs[1]) && <EvidenceButton testId="comparison-numbers-why-btn" evidence={{title:'Comparison evidence',eyebrow:'Comparison dimensions',summary:'The table places the two selected dossiers side by side; it does not create a new match score.',method:'Displayed values are the source fields already recorded in each career dossier.',items:[comparisonJobs[0],comparisonJobs[1]].filter(Boolean).map((job,index)=>({label:index===0?'Career A':'Career B',detail:`${job!.title} · ${job!.category ?? 'career dossier'}`})),source:'Selected career dossiers · no generated score'}} />}
           {compareHistory.length > 0 && (
             <button
               onClick={() => setShowCompareHistory(true)}

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Map, Loader2, AlertTriangle, ChevronDown, ChevronUp, TrendingUp, Download, Share2, Clock, X, Zap, Pencil, ArrowRight } from 'lucide-react';
@@ -13,6 +13,10 @@ import { TextReveal } from '../motion/TextReveal';
 import { hapticTap } from '../utils/haptic';
 import { EvidenceButton } from '../components/guidance/EvidenceButton';
 import { useGuidance } from '../context/GuidanceContext';
+import { occupationById } from '../data/knowledge';
+import { computeGapReport, learningRoutesForSkill, skillName } from '../engine/gaps';
+import { counterfactualText } from '../engine/explain';
+import { useT } from '../i18n';
 
 const STAGE_COLORS: Record<string, { dot: string; bg: string; border: string }> = {
   blue:   { dot: 'bg-violet-500',  bg: 'bg-violet-50',  border: 'border-violet-200' },
@@ -25,7 +29,8 @@ const STAGE_COLORS: Record<string, { dot: string; bg: string; border: string }> 
 
 export function CareerRoadmapPage() {
   const [searchParams] = useSearchParams();
-  const { passport } = useGuidance();
+  const { passport, recommendations } = useGuidance();
+  const { lang } = useT();
 
   const [jobTitle, setJobTitle] = useState(() => searchParams.get('job') || '');
   const [description, setDescription] = useState('');
@@ -58,6 +63,9 @@ export function CareerRoadmapPage() {
     try { return JSON.parse(localStorage.getItem('cs_roadmap_history') || '[]'); } catch { return []; }
   });
   const [showRoadmapHistory, setShowRoadmapHistory] = useState(false);
+  const roadmapOccupation = useMemo(() => [...occupationById.values()].find(item => item.title.toLowerCase() === jobTitle.trim().toLowerCase()), [jobTitle]);
+  const roadmapGapReport = useMemo(() => passport && roadmapOccupation ? computeGapReport(passport, roadmapOccupation.id) : null, [passport, roadmapOccupation]);
+  const currentFit = roadmapOccupation ? recommendations?.recommendations.find(item => item.occupationId === roadmapOccupation.id)?.totalScore ?? 0 : 0;
 
   // AI-powered suggestions
   useEffect(() => {
@@ -325,7 +333,7 @@ export function CareerRoadmapPage() {
                               <p className="font-[Inter] text-black/40 mt-0.5" style={{ fontSize: '0.75rem' }}>
                                 {stage.salary}
                               </p>
-                              <EvidenceButton testId={`roadmap-stage-${i + 1}-why-btn`} evidence={{title:'Roadmap step evidence',eyebrow:stage.stage,summary:`This stage is part of the saved ${roadmap.title} roadmap.`,method:'This planning step is explanatory guidance and never creates or changes a numeric career score.',items:[{label:'Role',detail:stage.role},{label:'Milestones',detail:stage.milestones.join(' · ')},{label:'Skills',detail:stage.skills.join(' · ')}],source:'Career roadmap plan · no score'}} />
+                              {(() => { const gap=roadmapGapReport?.gaps[i % Math.max(roadmapGapReport.gaps.length,1)]; const route=gap ? learningRoutesForSkill(gap.skillId,1)[0] : undefined; const nextLevel=gap ? Math.min(4,gap.current+1) : 0; const counterfactual=gap&&passport&&roadmapOccupation ? counterfactualText(passport,roadmapOccupation.id,currentFit,gap.skillId,nextLevel) : ''; return <EvidenceButton testId={`roadmap-stage-${i + 1}-why-btn`} label={lang==='hi'?'यह चरण क्यों?':lang==='te'?'ఈ దశ ఎందుకు?':'Why this step?'} evidence={{title:lang==='hi'?'रोडमैप चरण प्रमाण':lang==='te'?'రోడ్‌మ్యాప్ దశ ఆధారం':'Roadmap-step evidence',eyebrow:stage.stage,summary:gap ? (lang==='hi'?`यह चरण ${skillName(gap.skillId)} के दर्ज कौशल-अंतर से जुड़ा है।`:lang==='te'?`ఈ దశ ${skillName(gap.skillId)} నమోదు చేసిన నైపుణ్య లోటుతో అనుసంధానమైంది.`:`This stage is grounded in the recorded ${skillName(gap.skillId)} skill gap.`) : (lang==='hi'?'यह वर्णनात्मक चरण है; इस शीर्षक के लिए पासपोर्ट कौशल-अंतर उपलब्ध नहीं है।':lang==='te'?'ఇది వివరణాత్మక దశ; ఈ శీర్షికకు పాస్‌పోర్ట్ నైపుణ్య లోటు అందుబాటులో లేదు.':'This is a descriptive stage; no Passport skill gap is available for this title.'),method:lang==='hi'?'मील-पत्थर का पाठ AI-सहायित है; दिखाया गया अंतर, योग्यता और प्रति-तथ्य नियम-आधारित इंजन व ज्ञान-आधार से आते हैं और कोई अंक नहीं बदलते।':lang==='te'?'మైలురాయి వచనం AI సహాయంతో ఉంటుంది; చూపిన లోటు, అర్హత, కౌంటర్‌ఫ్యాక్చువల్ నియమ-ఆధారిత ఇంజిన్, నాలెడ్జ్-బేస్ నుండి వస్తాయి; స్కోర్‌ను మార్చవు.':'Milestone copy is AI-assisted; the displayed gap, qualification, and counterfactual come from the deterministic engine and knowledge base and do not alter a score.',items:[{label:lang==='hi'?'भूमिका':lang==='te'?'పాత్ర':'Role',detail:stage.role},...(gap?[{label:lang==='hi'?'उत्पन्न कौशल-अंतर':lang==='te'?'ఉత్పన్న నైపుణ్య లోటు':'Generating skill gap',detail:`${skillName(gap.skillId)} · ${gap.current}/4 → ${gap.required}/4`},{label:lang==='hi'?'योग्यता मार्ग':lang==='te'?'అర్హత మార్గం':'Qualification route',detail:route?`${route.name} · NSQF ${route.nsqfLevel}`:(lang==='hi'?'कोई सीधा मार्ग नहीं मिला':lang==='te'?'ప్రత్యక్ష మార్గం దొరకలేదు':'No direct route found')},{label:lang==='hi'?'अगर कौशल बढ़े':lang==='te'?'నైపుణ్యం పెరిగితే':'If the skill improves',detail:counterfactual}]:[])],source:lang==='hi'?'कौशल-अंतर इंजन · संस्करणित योग्यता ज्ञान-आधार':lang==='te'?'నైపుణ్య లోటు ఇంజిన్ · వెర్షన్ చేసిన అర్హత నాలెడ్జ్-బేస్':'Skill-gap engine · versioned qualification knowledge base'}}/>; })()}
                             </div>
                             {isExpanded ? (
                               <ChevronUp size={15} className="text-black/30 shrink-0 ml-3" />

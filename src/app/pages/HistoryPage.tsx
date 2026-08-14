@@ -10,11 +10,13 @@ import { sounds } from '../utils/sounds';
 import { TextReveal } from '../motion/TextReveal';
 import { KB_VERSION } from '../data/knowledge';
 import { hapticTap } from '../utils/haptic';
+import { useT } from '../i18n';
 
 type Tab = 'history' | 'saved';
 
 export function HistoryPage() {
   const navigate = useNavigate();
+  const { lang } = useT();
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const initialTab: Tab = params.get('tab') === 'saved' ? 'saved' : 'history';
@@ -297,7 +299,7 @@ export function HistoryPage() {
                                   {formatTime(entry.timestamp)}
                                 </span>
                               </div>
-                              <p className="mt-2 font-mono-ui text-[10px] uppercase text-black/30">{new Date(entry.timestamp).toLocaleString()} · KB {KB_VERSION} · saved dossier method</p>
+                              <p className="mt-2 font-mono-ui text-[10px] uppercase text-black/30">{lang==='hi'?'विधि':lang==='te'?'పద్ధతి':'method'} · {new Date(entry.timestamp).toLocaleString()} · KB {entry.kbVersion ?? KB_VERSION} · {lang==='hi'?'खंड':lang==='te'?'విభాగం':'segment'} {entry.segment?.replace('_',' ') ?? (lang==='hi'?'पुराने रन में दर्ज नहीं':lang==='te'?'పాత రన్‌లో నమోదు కాలేదు':'not recorded in legacy run')}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">

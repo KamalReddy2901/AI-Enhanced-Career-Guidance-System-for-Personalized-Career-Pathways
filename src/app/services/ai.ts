@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 import { supabase } from './supabase';
 import { normalizeTrendingCareers, type TrendingCareers } from './trendingSchemas';
+import { OCCUPATIONS } from '../data/knowledge';
 
 export { normalizeTrendingCareers, type TrendingCareers } from './trendingSchemas';
 
@@ -905,27 +906,17 @@ export interface MoodMatch {
 }
 
 export async function getMoodMatches(mood: string): Promise<MoodMatch[]> {
-  const cacheKey = `mood_${mood.toLowerCase().replace(/\s+/g, '_')}`;
-  const cached = getCached<MoodMatch[]>(cacheKey);
-  if (cached) return cached;
-
-  return withRetry(async () => {
-    const raw = await callGroq(
-      `You are a career counsellor who matches careers to moods and emotional states.
-Given a user's mood or feeling, suggest 3 careers that would resonate with or suit that emotional state.
-Be creative, insightful, and specific. Think about careers that attract or suit people feeling this way.
-Return JSON: { "matches": [ { "title": string, "reason": string, "vibe": string } ] }
-"reason" is 1-2 sentences on why this career matches the mood.
-"vibe" is a 3-5 word poetic description of the career's daily energy.`,
-      `My mood/feeling right now: "${mood}". Suggest 3 careers that match this energy.`,
-      { temperature: 0.7, maxTokens: 600, jsonMode: true, usageType: 'mood' }
-    );
-
-    const parsed = JSON.parse(raw);
-    const result = (parsed.matches ?? []) as MoodMatch[];
-    setCache(cacheKey, result);
-    return result;
-  });
+  const text = mood.toLowerCase();
+  const rule = /creative|express|art|imagin/.test(text) ? { cluster: 'creative', dimension: 'A' as const, vibe: 'creative · expressive · open' }
+    : /help|care|people|calm/.test(text) ? { cluster: 'people', dimension: 'S' as const, vibe: 'people · impact · care' }
+    : /build|hands|outdoor|restless/.test(text) ? { cluster: 'hands_on', dimension: 'R' as const, vibe: 'hands-on · tangible · active' }
+    : /competitive|lead|driven|ambitious/.test(text) ? { cluster: 'enterprising', dimension: 'E' as const, vibe: 'enterprising · decisive · visible' }
+    : /analyt|curious|puzzle|focus|world/.test(text) ? { cluster: 'analytical', dimension: 'I' as const, vibe: 'deep-work · investigative · focused' }
+    : { cluster: 'structured', dimension: 'C' as const, vibe: 'structured · steady · precise' };
+  return [...OCCUPATIONS]
+    .sort((a, b) => Number(b.cluster === rule.cluster) - Number(a.cluster === rule.cluster) || b.riasecProfile[rule.dimension] - a.riasecProfile[rule.dimension] || a.title.localeCompare(b.title))
+    .slice(0, 3)
+    .map(occupation => ({ title: occupation.title, vibe: rule.vibe, reason: `${occupation.title} is tagged ${occupation.cluster.replace('_', ' ')} with ${rule.dimension} ${occupation.riasecProfile[rule.dimension]}/100 in the versioned occupation profile.` }));
 }
 
 // ─── Career Quiz ───────────────────────────────────────────────
@@ -942,12 +933,12 @@ Return this exact JSON:
 {
   "personalityInsight": "3-4 sentences describing their career personality and what makes them unique professionally",
   "careers": [
-    {"title": "Career Title", "matchScore": 92, "reason": "One specific sentence explaining why this fits them personally"},
+    {"title": "Career Title", "reason": "One specific sentence explaining why this may be worth exploring"},
     ...
   ]
 }
 
-Match scores should be realistic (60–97). Order by match score descending.`,
+Do not produce scores, percentages, rankings, or verdicts. These suggestions are practice-only and do not alter the deterministic recommendation engine.`,
       { temperature: 0.75, maxTokens: 800, jsonMode: true, usageType: 'quiz' }
     );
     return JSON.parse(raw) as QuizResult;
@@ -957,7 +948,6 @@ Match scores should be realistic (60–97). Order by match score descending.`,
 export interface QuizResult {
   careers: Array<{
     title: string;
-    matchScore: number;
     reason: string;
   }>;
   personalityInsight: string;
@@ -971,9 +961,9 @@ export async function getQuizResults(answers: Record<string, string>): Promise<Q
 
 ${Object.entries(answers).map(([q, a]) => `Q: ${q}\nA: ${a}`).join('\n\n')}
 
-Return: {"careers":[{"title":"Career Name","matchScore":85,"reason":"One sentence why this matches."}],"personalityInsight":"2-3 sentence summary of their work personality based on answers."}
+Return: {"careers":[{"title":"Career Name","reason":"One sentence explaining why this may be worth exploring."}],"personalityInsight":"2-3 sentence summary of their work personality based on answers."}
 
-matchScore should be 60-98 (never 100). Be diverse in suggestions. At least one unexpected career.`,
+Do not produce scores, percentages, rankings, or verdicts. Be diverse in suggestions and include at least one unexpected career.`,
       { temperature: 0.8, maxTokens: 800, jsonMode: true, usageType: 'quiz' }
     );
 
