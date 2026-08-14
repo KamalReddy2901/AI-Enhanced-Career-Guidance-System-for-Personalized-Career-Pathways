@@ -1,5 +1,6 @@
 import { MODELS, USAGE_MODEL_TIER } from './models';
 import { executeWithKeyRotation, KeyPool } from './keyRotation';
+import { shouldRetryWithoutJsonMode } from './responsePolicy';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
@@ -24,6 +25,7 @@ function cors(origin: string | null) {
     'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Usage-Type, X-Stream',
+    'Access-Control-Expose-Headers': 'X-CareerCase-AI-Model, X-CareerCase-Key-Pool-Size',
     'Access-Control-Max-Age': '86400',
   };
 }
@@ -44,10 +46,15 @@ async function hasValidSupabaseSession(request: Request, env: Env): Promise<bool
   }
 }
 
-function jsonResponse(data: unknown, status = 200, origin: string | null = null) {
+function jsonResponse(
+  data: unknown,
+  status = 200,
+  origin: string | null = null,
+  extraHeaders: Record<string, string> = {},
+) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json', ...cors(origin) },
+    headers: { 'Content-Type': 'application/json', ...cors(origin), ...extraHeaders },
   });
 }
 
@@ -79,16 +86,28 @@ async function proxyToGroq(
   payload['model'] = MODELS[modelTier];
   sanitizeResponseFormat(payload);
 
+  const requestGroq = () => executeWithKeyRotation(keys, groqKeyPool, key => fetch(GROQ_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${key}`,
+    },
+    body: JSON.stringify(payload),
+  }));
+
   let groqResp: Response | null;
   try {
-    groqResp = await executeWithKeyRotation(keys, groqKeyPool, key => fetch(GROQ_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${key}`,
-      },
-      body: JSON.stringify(payload),
-    }));
+    groqResp = await requestGroq();
+    if (groqResp?.status === 400 && payload['response_format']) {
+      const errorPayload = await groqResp.clone().json().catch(() => null);
+      if (shouldRetryWithoutJsonMode(groqResp.status, true, errorPayload)) {
+        // GPT-OSS can occasionally fail Groq's strict JSON validator even when
+        // the prompt itself requests JSON. Retry once in prompt-guided JSON
+        // mode; callers still parse and validate the returned structure.
+        delete payload['response_format'];
+        groqResp = await requestGroq();
+      }
+    }
   } catch {
     return jsonResponse({ error: 'Unable to reach the AI service' }, 502, origin);
   }
@@ -110,6 +129,11 @@ async function proxyToGroq(
     );
   }
 
+  const operationalHeaders = {
+    'X-CareerCase-AI-Model': MODELS[modelTier],
+    'X-CareerCase-Key-Pool-Size': String(keys.length),
+  };
+
   if (isStream) {
     return new Response(groqResp.body, {
       status: 200,
@@ -117,12 +141,13 @@ async function proxyToGroq(
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         ...cors(origin),
+        ...operationalHeaders,
       },
     });
   }
 
   const data = await groqResp.json();
-  return jsonResponse(data, 200, origin);
+  return jsonResponse(data, 200, origin, operationalHeaders);
 }
 
 export default {

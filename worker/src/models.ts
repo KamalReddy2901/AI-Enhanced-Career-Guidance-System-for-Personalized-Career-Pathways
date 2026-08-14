@@ -33,4 +33,6 @@ export const USAGE_MODEL_TIER: Record<string, ModelTier> = {
   counselor: 'premium',       // grounded counselor chat
   translate: 'standard',      // i18n content translation
   gap_advice: 'standard',     // skill-gap learning tips
+  compatibility: 'premium',  // passport + dossier compatibility narrative
+  'market-intelligence': 'premium', // structured market narrative with stronger JSON adherence
 };

@@ -81,8 +81,13 @@ export function CounselorPage() {
       passport: passport && {
         segment: passport.segment,
         education: passport.education,
-        experience: passport.experiences,
-        skills: passport.skills.map((claim) => ({
+        experience: passport.experiences.slice(0, 5).map((experience) => ({
+          title: experience.title,
+          occupationId: experience.occupationId,
+          years: experience.years,
+          description: experience.description.slice(0, 240),
+        })),
+        skills: passport.skills.slice(0, 15).map((claim) => ({
           name: skillClaimName(claim),
           proficiency: claim.proficiency,
           confidence: claim.confidence,
@@ -95,20 +100,63 @@ export function CounselorPage() {
         aspiration: passport.aspiration,
         constraints: passport.constraints,
       },
-      recommendations: recommendations?.recommendations.slice(0, 8),
+      recommendations: recommendations?.recommendations.slice(0, 5).map((recommendation) => ({
+        occupationId: recommendation.occupationId,
+        occupation: occupationById.get(recommendation.occupationId)?.title,
+        totalScore: recommendation.totalScore,
+        confidence: recommendation.confidence,
+        group: recommendation.group,
+        evidenceCoverage: recommendation.evidenceCoverage,
+        components: recommendation.components.map((component) => ({
+          dimension: component.dimension,
+          score: component.score,
+          weight: component.weight,
+          dataAvailable: component.dataAvailable,
+          source: component.source,
+        })),
+        topReasons: recommendation.topReasons.slice(0, 2),
+        whyNotHigher: recommendation.whyNotHigher.slice(0, 2),
+      })),
       activePathways: pathways
         .filter((plan) => plan.chosenRoute)
+        .slice(0, 3)
         .map((plan) => ({
           target: occupationById.get(plan.occupationId)?.title,
           readiness: plan.gapReport.readiness,
-          gaps: plan.gapReport.gaps.slice(0, 5),
+          gaps: plan.gapReport.gaps.slice(0, 5).map((gap) => ({
+            skill: skillById.get(gap.skillId)?.name ?? gap.skillId,
+            current: gap.current,
+            required: gap.required,
+            severity: gap.severity,
+          })),
         })),
       retrievedKnowledge: {
-        occupations: mentioned,
-        qualifications,
+        occupations: mentioned.slice(0, 5).map((occupation) => ({
+          id: occupation.id,
+          title: occupation.title,
+          ncoCode: occupation.ncoCode,
+          nsqfEntryLevel: occupation.nsqfEntryLevel,
+          sector: occupation.sector,
+          educationMin: occupation.educationMin,
+          skills: occupation.skills.map((requirement) => ({
+            name: skillById.get(requirement.skillId)?.name ?? requirement.skillId,
+            requiredProficiency: requirement.requiredProficiency,
+            importance: requirement.importance,
+          })),
+        })),
+        qualifications: qualifications.map((qualification) => ({
+          id: qualification.id,
+          name: qualification.name,
+          type: qualification.type,
+          nsqfLevel: qualification.nsqfLevel,
+          typicalMonths: qualification.typicalMonths,
+          providerHint: qualification.providerHint,
+        })),
         skills: [...relevantSkills]
+          .slice(0, 15)
           .map((id) => skillById.get(id))
-          .filter(Boolean),
+          .filter((skill): skill is NonNullable<typeof skill> => Boolean(skill))
+          .map((skill) => ({ id: skill.id, name: skill.name, category: skill.category })),
       },
     });
     try {

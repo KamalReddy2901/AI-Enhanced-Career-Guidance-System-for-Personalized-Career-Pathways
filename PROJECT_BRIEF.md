@@ -120,14 +120,14 @@ The landscape returns 13 diverse recommendations across safe, stretch, and ambit
 
 Current AI use cases include:
 
-- preliminary role snapshots and full dossiers;
+- full dossiers for roles outside the grounded knowledge base;
 - resume and aspiration extraction;
 - simulations and interview questions;
-- related careers, work-life prompts, and resource suggestions;
+- related careers and resource suggestions;
 - career comparisons, roadmaps, and transition plans;
 - grounded counselor responses.
 
-AI responses are normalized before rendering so missing fields cannot crash dossier pages. The counselor is instructed not to invent score changes: a change may be quantified only when the supplied context contains a computed before/after counterfactual.
+Known occupations use the versioned knowledge base for their preliminary snapshot and deterministic work-life/interview indicators instead of spending an AI request. AI responses are normalized before rendering so missing fields cannot crash dossier pages. The counselor is instructed not to invent score changes: a change may be quantified only when the supplied context contains a computed before/after counterfactual.
 
 AI-generated salaries, companies, resources, work-life descriptions, and narrative market commentary still require independent verification. They are not authoritative labor-market data.
 
@@ -175,10 +175,16 @@ All 100 occupations pass structural validation and generate three core routes. T
 
 ### AI key reliability
 
-- Worker-side key rotation retries only retryable failures and honors cooldowns/rate-limit signals.
+- Production requests go through the authenticated Cloudflare Worker; Groq credentials are not embedded in the production browser bundle.
+- The Worker selects healthy keys round-robin within each warm isolate, deduplicates configured keys, honors `Retry-After` on 429 responses, quarantines 401 keys for 15 minutes, and performs one bounded retry for a network or 5xx failure. Request-level 4xx failures do not incorrectly quarantine a healthy key.
+- Usage types route explicitly between `openai/gpt-oss-20b` for lighter tasks and `openai/gpt-oss-120b` for dossiers, simulations, counselor, interview, comparison, transition, roadmap, compatibility, and structured market-intelligence work. Unknown usage types fail safe to the premium tier.
+- Intermittent GPT-OSS strict-JSON validation failures receive one prompt-guided JSON retry without `response_format`; callers still parse and validate the result.
+- Successful Worker responses expose only non-secret operational metadata: selected model and configured key-pool size.
+- Counselor evidence is compacted and bounded, recent history is capped, and output is limited so a complete passport remains below the provider request budget. SSE parsing buffers split network chunks instead of silently dropping partial events.
 - The repository includes a non-secret diagnostic command: `cd worker && npm run keys:check`.
 - It fingerprints keys rather than printing them, checks authentication/model availability, performs a JSON-mode call, and verifies a complete SSE streaming response.
-- On 14 August 2026, all 11 locally configured keys passed every check.
+- On 14 August 2026, all 11 locally configured keys passed every check: authentication 200, both GPT-OSS models present, parseable 20B JSON, and complete 120B SSE output. The Worker rotation/policy suite passed all 12 tests.
+- A signed-in production probe reproduced the former Counselor failure as an oversized 413 request; an equivalent bounded 16,160-character Counselor stream then completed with HTTP 200 and a terminal SSE event.
 
 ### Quality commands
 
@@ -215,6 +221,9 @@ The August 2026 production audit used a signed-in burner account from onboarding
 - path duration labels and fastest sorting use real route durations;
 - saved paths no longer change length after a completed step;
 - AI counselor counterfactual claims are constrained to computed evidence;
+- the grounded Counselor no longer exceeds Groq's request budget for a rich passport, and its stream parser preserves events split across network chunks;
+- GPT-OSS strict-JSON validation failures receive a single safe prompt-guided retry, while unrelated 4xx failures remain non-retryable;
+- every active AI feature has an explicit model-tier route, including compatibility, roadmap, and market intelligence;
 - guidance results now invalidate stale cached scoring contracts and disclose the engine, assessment, scoring, knowledge-base, and component-source provenance;
 - weak skill evidence is no longer treated like fully supported evidence in the skill-fit component;
 - the recommendation evidence panel restores keyboard focus, has a programmatic dialog title, and exposes source details;

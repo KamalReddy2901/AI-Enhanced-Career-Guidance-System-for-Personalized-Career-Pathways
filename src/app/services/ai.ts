@@ -277,17 +277,30 @@ export async function callGroqStreaming(
     if (!reader) throw new Error('No response stream');
     const decoder = new TextDecoder();
     let accumulated = '';
+    let buffer = '';
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      const chunk = decoder.decode(value, { stream: true });
-      for (const line of chunk.split('\n').filter(l => l.startsWith('data: '))) {
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+      for (const line of lines.filter(l => l.startsWith('data: '))) {
         const json = line.slice(6).trim();
         if (json === '[DONE]') continue;
         try {
           const delta = (JSON.parse(json) as { choices?: Array<{ delta?: { content?: string } }> }).choices?.[0]?.delta?.content;
           if (delta) { accumulated += delta; onProgress?.(accumulated.length); }
         } catch { /* skip */ }
+      }
+    }
+    buffer += decoder.decode();
+    if (buffer.startsWith('data: ')) {
+      const json = buffer.slice(6).trim();
+      if (json && json !== '[DONE]') {
+        try {
+          const delta = (JSON.parse(json) as { choices?: Array<{ delta?: { content?: string } }> }).choices?.[0]?.delta?.content;
+          if (delta) { accumulated += delta; onProgress?.(accumulated.length); }
+        } catch { /* ignore an incomplete terminal event */ }
       }
     }
     return accumulated;
@@ -312,7 +325,7 @@ export async function callGroqStreaming(
   const response = await fetchDirectWithKeyRotation(key => fetch(GROQ_API_URL, {
       method: 'POST', signal,
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-      body: JSON.stringify({ model: FALLBACK_MODEL, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], temperature, max_tokens: maxTokens, stream: true, response_format: { type: 'json_object' } }),
+      body: JSON.stringify({ model: FALLBACK_MODEL, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], temperature, max_tokens: maxTokens, stream: true }),
     }));
   if (!response.ok) { const err = await response.json().catch(() => ({})) as { error?: { message?: string } }; throw new Error(err?.error?.message || `Groq error: ${response.status}`); }
   return readStream(response);
@@ -732,8 +745,15 @@ export async function extractAspiration(statement: string, horizonYears: number,
 }
 
 export async function* streamCounselorChat(messages: { role: 'user' | 'assistant'; text: string }[], groundingContext: string, language = 'English'): AsyncGenerator<string> {
-  const system = `You are an experienced, honest Indian career counselor. Respond in ${language} and stay under 180 words unless asked. Use only the supplied CONTEXT. Cite the specific profile facts or component scores driving each answer. If a requested fact is absent, say exactly what is missing. Never invent salary figures, demand statistics, occupation requirements, course names, institutions, or score changes. A skill may change a score only when CONTEXT contains an explicit computed before/after counterfactual; otherwise say the engine cannot quantify the change. If a component is already 100, never say it can rise further. Distinguish deterministic app evidence from an external-market hypothesis, and distinguish fact, inference, and preference. Treat user-marked pathway evidence as user-reported unless independently verified. Use calibrated language such as “strong option to explore” and “plausible route”; never promise success. Preserve agency and offer alternatives. Recommend a human counselor for distress, family conflict, high-cost decisions, or repeated rejection of all options. CONTEXT:\n${groundingContext}`;
-  const raw = await callGroqStreaming(system, messages.map(m => m.role + ': ' + m.text).join('\n'), { usageType: 'counselor', maxTokens: 700 });
+  // Groq's on-demand tier enforces an 8k token-per-minute request ceiling. Keep
+  // the evidence payload and recent conversation bounded so a rich passport
+  // cannot turn a valid counselor request into a deterministic 413 response.
+  const boundedContext = groundingContext.length > 16_000
+    ? `${groundingContext.slice(0, 16_000)}\n[Additional context omitted to fit the provider request limit.]`
+    : groundingContext;
+  const recentMessages = messages.slice(-6).map(message => `${message.role}: ${message.text.slice(0, 800)}`).join('\n');
+  const system = `You are an experienced, honest Indian career counselor. Respond in ${language} and stay under 180 words unless asked. Use only the supplied CONTEXT. Cite the specific profile facts or component scores driving each answer. If a requested fact is absent, say exactly what is missing. Never invent salary figures, demand statistics, occupation requirements, course names, institutions, or score changes. A skill may change a score only when CONTEXT contains an explicit computed before/after counterfactual; otherwise say the engine cannot quantify the change. If a component is already 100, never say it can rise further. Distinguish deterministic app evidence from an external-market hypothesis, and distinguish fact, inference, and preference. Treat user-marked pathway evidence as user-reported unless independently verified. Use calibrated language such as “strong option to explore” and “plausible route”; never promise success. Preserve agency and offer alternatives. Recommend a human counselor for distress, family conflict, high-cost decisions, or repeated rejection of all options. CONTEXT:\n${boundedContext}`;
+  const raw = await callGroqStreaming(system, recentMessages, { usageType: 'counselor', maxTokens: 450 });
   yield raw;
 }
 
@@ -1243,7 +1263,7 @@ Include 5 stages (Entry, Junior, Mid-level, Senior, Expert/Leadership). Use dist
       const raw = await callGroq(
         'You are a career development strategist. Return ONLY valid JSON. Be specific to this profession.',
         prompt,
-        { temperature: 0.6, maxTokens: 1400, signal, jsonMode: true }
+        { temperature: 0.6, maxTokens: 1400, signal, jsonMode: true, usageType: 'roadmap' }
       );
 
       // Clean the response: remove any markdown formatting
