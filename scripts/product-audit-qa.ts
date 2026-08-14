@@ -105,10 +105,11 @@ assert.match(source('src/app/pages/PathwayPage.tsx'), /setChosenKind\(initial\?\
 assert.match(source('src/app/services/ai.ts'), /explicit computed before\/after counterfactual/, 'the counselor must not invent score changes');
 assert.match(source('src/app/pages/OnboardingPage.tsx'), /_localEventId/, 'local and cloud consent writes must share a deduplication id');
 assert.match(source('src/app/pages/SettingsPage.tsx'), /schemaVersion: 1/, 'guidance exports must declare their schema version');
+assert.match(source('public/_redirects'), /^\/\* \/index\.html 200\s*$/, 'Cloudflare Pages must serve the SPA shell for cold deep links');
 
 console.log(JSON.stringify({
   completenessScenarios: 6,
-  routeContracts: 22,
+  routeContracts: 23,
   sectionWeights: breakdown.map(({ id, maximum }) => ({ id, maximum })),
   failures: [],
 }, null, 2));
