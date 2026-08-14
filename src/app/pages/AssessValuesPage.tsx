@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { StickFigure } from "../components/StickFigure";
 import { VALUE_CHOICES, scoreValues } from "../engine/values";
@@ -31,8 +31,13 @@ export function AssessValuesPage() {
     null,
   );
   const [why, setWhy] = useState<ScoreEvidence | null>(null);
+  const answerLock = useRef(false);
+  const [isAdvancing, setIsAdvancing] = useState(false);
   const choice = VALUE_CHOICES[i];
   const choose = (side: "left" | "right") => {
+    if (answerLock.current || result) return;
+    answerLock.current = true;
+    setIsAdvancing(true);
     const next = { ...answers, [choice.id]: side };
     sounds.pop();
     hapticLight();
@@ -50,7 +55,11 @@ export function AssessValuesPage() {
       hapticSuccess();
     } else {
       setAnswers(next);
-      setI(i + 1);
+      setI((current) => Math.min(current + 1, VALUE_CHOICES.length - 1));
+      window.setTimeout(() => {
+        answerLock.current = false;
+        setIsAdvancing(false);
+      }, 450);
     }
   };
   return (
@@ -100,7 +109,8 @@ export function AssessValuesPage() {
                 <button
                   key={side}
                   onClick={() => choose(side)}
-                  className="card-sketch min-h-36 p-6 text-left transition-[transform,background-color,color] hover:-translate-y-0.5 hover:bg-[var(--ink)] hover:text-[var(--paper)]"
+                  disabled={isAdvancing}
+                  className="card-sketch min-h-36 p-6 text-left transition-[transform,background-color,color] hover:-translate-y-0.5 hover:bg-[var(--ink)] hover:text-[var(--paper)] disabled:pointer-events-none disabled:opacity-50"
                 >
                   <span className="font-[JetBrains_Mono] text-xs uppercase text-black/40">
                     {side}

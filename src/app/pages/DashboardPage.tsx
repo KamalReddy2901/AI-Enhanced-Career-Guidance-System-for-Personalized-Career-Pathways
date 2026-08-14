@@ -33,6 +33,7 @@ export function DashboardPage() {
   const { passport, recommendations, pathways } = useGuidance();
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const completenessSections = passport ? getPassportCompletenessBreakdown(passport) : [];
+  const completedAssessments = completenessSections.filter(section => ['interests', 'aptitude', 'values', 'aspiration'].includes(section.id) && section.complete).length;
 
   const cards: DashboardCard[] = [
     {
@@ -44,7 +45,7 @@ export function DashboardPage() {
       accentColor: 'var(--accent-news)',
       stats: passport ? { 
         label: 'Completed', 
-        value: `${[passport.riasec, passport.aptitude, passport.values, passport.aspiration].filter(Boolean).length}/4` 
+        value: `${completedAssessments}/4`
       } : undefined,
     },
     {

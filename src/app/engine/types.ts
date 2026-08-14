@@ -33,6 +33,8 @@ export interface SkillEvidence {
 
 export interface SkillClaim {
   skillId: string;
+  /** Human-readable label for a user-supplied skill that is not in the KB. */
+  name?: string;
   proficiency: Proficiency;
   confidence: number;           // 0–1 (computed from evidence)
   evidence: SkillEvidence[];
@@ -211,7 +213,7 @@ export interface PathwayStep {
 
 export interface PathwayRoute {
   kind: RouteKind;
-  label: string;                 // "Fastest", "Lower-risk", "Credential route"
+  label: string;                 // "Focused route", "Lower-risk", "Credential route"
   tradeoff: string;              // one-liner explaining the trade-off
   totalMonths: number;
   steps: PathwayStep[];

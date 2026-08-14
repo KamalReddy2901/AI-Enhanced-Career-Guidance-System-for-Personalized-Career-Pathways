@@ -56,7 +56,7 @@ const FAQ_CATEGORIES = [
     questions: [
       {
         q: 'What is a Career Pathway?',
-        a: 'A pathway is a step-by-step plan to reach a target career. It includes skills to learn, qualifications to earn, and experiences to gain. You can choose from three route types: fastest, lower-risk, or credential-based.',
+        a: 'A pathway is a step-by-step plan to reach a target career. It includes skills to learn, qualifications to earn, and experiences to gain. You can compare focused, lower-risk, and credential-based routes by their actual duration and trade-offs.',
       },
       {
         q: 'Can I build multiple pathways?',

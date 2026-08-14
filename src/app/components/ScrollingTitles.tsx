@@ -27,7 +27,7 @@ export function ScrollingTitles({ highlightedJob, paused = false, dimmed = false
   }, []);
 
   return (
-    <div className={`absolute inset-0 overflow-hidden transition-opacity duration-700 ${dimmed ? 'opacity-[0.06]' : 'opacity-[0.12]'}`}>
+    <div aria-hidden="true" className={`pointer-events-none absolute inset-0 overflow-hidden transition-opacity duration-700 ${dimmed ? 'opacity-[0.06]' : 'opacity-[0.12]'}`}>
       <div className="flex flex-col justify-around h-full py-4">
         {rows.map((row, i) => (
           <ScrollRow

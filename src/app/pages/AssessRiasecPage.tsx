@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 import { StickFigure } from "../components/StickFigure";
 import { RiasecHexagon } from "../components/guidance/RiasecHexagon";
@@ -38,6 +38,8 @@ export function AssessRiasecPage() {
     null,
   );
   const [why, setWhy] = useState<ScoreEvidence | null>(null);
+  const answerLock = useRef(false);
+  const [isAdvancing, setIsAdvancing] = useState(false);
   const item = RIASEC_ITEMS[index];
   const itemText = riasecItemText(lang, index, item.text);
   const responseLabels = lang === "hi" ? ["बिल्कुल नहीं", "पसंद नहीं", "तटस्थ", "पसंद", "बहुत पसंद"] : lang === "te" ? ["అస్సలు కాదు", "నచ్చదు", "తటస్థం", "నచ్చుతుంది", "చాలా ఇష్టం"] : ["Not for me", "Dislike", "Neutral", "Like", "Love it"];
@@ -129,14 +131,24 @@ export function AssessRiasecPage() {
                 key={label}
                 aria-label={`${n+1}: ${label}`}
                 onClick={() => {
+                  if (answerLock.current) return;
+                  answerLock.current = true;
+                  setIsAdvancing(true);
                   const next = { ...answers, [item.id]: n + 1 };
                   setAnswers(next);
                   sounds.quizAnswer();
                   hapticLight();
                   if (index === RIASEC_ITEMS.length - 1) finish(next);
-                  else setIndex(index + 1);
+                  else {
+                    setIndex((current) => current + 1);
+                    window.setTimeout(() => {
+                      answerLock.current = false;
+                      setIsAdvancing(false);
+                    }, 450);
+                  }
                 }}
-                className="group flex min-h-20 flex-col items-center gap-2 font-mono-ui text-[10px] uppercase"
+                disabled={isAdvancing}
+                className="group flex min-h-20 flex-col items-center gap-2 font-mono-ui text-[10px] uppercase disabled:pointer-events-none disabled:opacity-50"
               >
                 <motion.span whileTap={{scale:.82}} className="grid size-12 place-items-center rounded-full border-2 border-black text-sm transition-[transform,background-color,color] group-hover:-translate-y-0.5 group-hover:bg-black group-hover:text-white">{n+1}</motion.span><span className={n===0||n===responseLabels.length-1?'block':'sr-only'}>{label}</span>
               </button>

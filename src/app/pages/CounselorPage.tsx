@@ -12,6 +12,7 @@ import { listen, speak, stopSpeaking } from "../utils/voice";
 import { motion, useReducedMotion } from "motion/react";
 import { Mic, Send, Volume2, Square } from "lucide-react";
 import { TextReveal } from '../motion/TextReveal';
+import { skillClaimName } from '../engine/skillProfile';
 
 const escalationPattern =
   /suicid|self.?harm|hopeless|depress|panic|abuse|forced|family conflict|cannot cope|खुदकुशी|आत्महत्या|निराश|जबरदस्ती|కృంగి|ఆత్మహత్య|బలవంత/i;
@@ -50,11 +51,17 @@ export function CounselorPage() {
     setBusy(true);
     setAnswer("");
     setEscalate(false);
-    const mentioned = [...occupationById.values()]
+    const directlyMentioned = [...occupationById.values()]
       .filter((occupation) =>
         question.toLowerCase().includes(occupation.title.toLowerCase()),
       )
       .slice(0, 4);
+    const contextualIds = new Set([
+      ...directlyMentioned.map(occupation => occupation.id),
+      ...(recommendations?.recommendations.slice(0, 5).map(item => item.occupationId) ?? []),
+      ...pathways.map(plan => plan.occupationId),
+    ]);
+    const mentioned = [...contextualIds].map(id => occupationById.get(id)).filter((occupation): occupation is NonNullable<typeof occupation> => Boolean(occupation));
     const relevantSkills = new Set(
       mentioned.flatMap((occupation) =>
         occupation.skills.map((item) => item.skillId),
@@ -73,7 +80,7 @@ export function CounselorPage() {
         education: passport.education,
         experience: passport.experiences,
         skills: passport.skills.map((claim) => ({
-          name: skillById.get(claim.skillId)?.name,
+          name: skillClaimName(claim),
           proficiency: claim.proficiency,
           confidence: claim.confidence,
         })),

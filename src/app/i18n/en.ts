@@ -21,7 +21,7 @@ export const en = {
   homeSubhead: "Turn your aptitude, aspirations, abilities and experience into clear, evidence-led career pathways.",
   homePrimary: "Start your assessment",
   homeSetup: "Create your Career Passport",
-  homeContinue: "Continue your assessment",
+  homeContinue: "Open your dashboard",
   homeExplore: "Explore careers",
   homeProgress: "Your progress",
   homeBegin: "Begin Chapter 1",

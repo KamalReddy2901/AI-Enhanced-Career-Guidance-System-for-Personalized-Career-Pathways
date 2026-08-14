@@ -141,7 +141,7 @@ export function AboutPage() {
                 3. Multi-Route Pathways
               </h3>
               <p className="text-sm text-[var(--ink-soft)]">
-                We don't believe in one-size-fits-all. Each career pathway offers three routes: Fastest (skill-focused), Lower-Risk (stepping-stone role), and Credential Route (formal qualification). You choose based on your constraints and preferences.
+                We don't believe in one-size-fits-all. Each career pathway offers three routes: Focused (skill-and-evidence based), Lower-Risk (stepping-stone role), and Credential Route (formal qualification). Compare their actual time and trade-offs against your constraints.
               </p>
             </div>
             <div className="border-l-4 border-[var(--ink)] pl-6">

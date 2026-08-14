@@ -78,7 +78,7 @@ export function IntegrationPage() {
                 Multi-Route Pathways
               </h3>
               <p className="text-sm text-[var(--ink-soft)] mb-4">
-                CareerCase generates multiple pathway options (fastest, low-risk, credential-based) for each career, helping users choose routes that match their constraints and preferences.
+                CareerCase generates multiple pathway options (focused, low-risk, credential-based) for each career, helping users compare actual durations and choose routes that match their constraints and preferences.
               </p>
             </div>
             <div>

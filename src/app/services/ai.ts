@@ -586,7 +586,16 @@ Each array should have exactly 3 items for good, 3 for bad, and 2 for ugly. Be s
       { temperature: 0.75, maxTokens: 800, jsonMode: true, signal, usageType: 'gbu' }
     );
 
-    const result = JSON.parse(raw) as GoodBadUgly;
+    const parsed = JSON.parse(raw) as Partial<GoodBadUgly>;
+    const validItems = (value: unknown): Array<{ title: string; detail: string }> => Array.isArray(value)
+      ? value.filter((item): item is { title: string; detail: string } => Boolean(item) && typeof item.title === 'string' && typeof item.detail === 'string')
+      : [];
+    const result: GoodBadUgly = {
+      good: validItems(parsed.good),
+      bad: validItems(parsed.bad),
+      ugly: validItems(parsed.ugly),
+      verdict: typeof parsed.verdict === 'string' ? parsed.verdict : 'Use this dossier as a starting point, then validate the role through conversations and real work samples.',
+    };
     setCache(cacheKey, result);
     return result;
   });
@@ -719,7 +728,7 @@ export async function extractAspiration(statement: string, horizonYears: number,
 }
 
 export async function* streamCounselorChat(messages: { role: 'user' | 'assistant'; text: string }[], groundingContext: string, language = 'English'): AsyncGenerator<string> {
-  const system = `You are an experienced, honest Indian career counselor. Respond in ${language} and stay under 180 words unless asked. Use only the supplied CONTEXT. Cite the specific profile facts or component scores driving each answer. If a requested fact is absent, say exactly what is missing. Never invent salary figures, demand statistics, occupation requirements, course names, or institutions. Distinguish fact, inference, and preference. Use calibrated language such as “strong option to explore” and “plausible route”; never promise success. Preserve agency and offer alternatives. Recommend a human counselor for distress, family conflict, high-cost decisions, or repeated rejection of all options. CONTEXT:\n${groundingContext}`;
+  const system = `You are an experienced, honest Indian career counselor. Respond in ${language} and stay under 180 words unless asked. Use only the supplied CONTEXT. Cite the specific profile facts or component scores driving each answer. If a requested fact is absent, say exactly what is missing. Never invent salary figures, demand statistics, occupation requirements, course names, institutions, or score changes. A skill may change a score only when CONTEXT contains an explicit computed before/after counterfactual; otherwise say the engine cannot quantify the change. If a component is already 100, never say it can rise further. Distinguish deterministic app evidence from an external-market hypothesis, and distinguish fact, inference, and preference. Treat user-marked pathway evidence as user-reported unless independently verified. Use calibrated language such as “strong option to explore” and “plausible route”; never promise success. Preserve agency and offer alternatives. Recommend a human counselor for distress, family conflict, high-cost decisions, or repeated rejection of all options. CONTEXT:\n${groundingContext}`;
   const raw = await callGroqStreaming(system, messages.map(m => m.role + ': ' + m.text).join('\n'), { usageType: 'counselor', maxTokens: 700 });
   yield raw;
 }
@@ -831,7 +840,10 @@ Return: {"careers":[{"title":"Career Name","similarity":"One phrase explaining t
     );
 
     const parsed = JSON.parse(raw);
-    return (parsed.careers || parsed.data || Object.values(parsed)[0]) as RelatedCareer[];
+    const candidates = parsed.careers || parsed.data || Object.values(parsed)[0];
+    return Array.isArray(candidates)
+      ? candidates.filter((item): item is RelatedCareer => Boolean(item) && typeof item.title === 'string' && typeof item.similarity === 'string' && typeof item.description === 'string')
+      : [];
   });
 
   setCache(cacheKey, result);
@@ -1098,7 +1110,13 @@ Each array should have 3-4 items. Only include real, verifiable resources.`,
       { temperature: 0.4, maxTokens: 800, jsonMode: true, signal, usageType: 'related' }
     );
 
-    const result = JSON.parse(raw) as LearnMoreResources;
+    const parsed = JSON.parse(raw) as Partial<LearnMoreResources>;
+    const result: LearnMoreResources = {
+      subreddits: Array.isArray(parsed.subreddits) ? parsed.subreddits : [],
+      searchTerms: Array.isArray(parsed.searchTerms) ? parsed.searchTerms : [],
+      certifications: Array.isArray(parsed.certifications) ? parsed.certifications : [],
+      books: Array.isArray(parsed.books) ? parsed.books : [],
+    };
     setCache(cacheKey, result);
     return result;
   });
@@ -1397,7 +1415,14 @@ Return this JSON structure with REAL scores for "${jobTitle}":
       { temperature: 0.7, maxTokens: 900, jsonMode: true, signal, usageType: 'wlb' }
     );
 
-    const result = JSON.parse(raw) as WorkLifeBalance;
+    const parsed = JSON.parse(raw) as Partial<WorkLifeBalance>;
+    const result: WorkLifeBalance = {
+      metrics: Array.isArray(parsed.metrics) ? parsed.metrics.filter(metric => metric && typeof metric.subject === 'string' && typeof metric.score === 'number') : [],
+      overallScore: typeof parsed.overallScore === 'number' ? Math.max(0, Math.min(100, parsed.overallScore)) : 50,
+      summary: typeof parsed.summary === 'string' ? parsed.summary : 'Work-life conditions vary by employer, seniority, and work setting.',
+      bestFor: typeof parsed.bestFor === 'string' ? parsed.bestFor : 'People who validate the day-to-day conditions with practitioners.',
+      worstFor: typeof parsed.worstFor === 'string' ? parsed.worstFor : 'People whose non-negotiables conflict with the role’s actual schedule and pressure.',
+    };
     setCache(cacheKey, result);
     return result;
   });

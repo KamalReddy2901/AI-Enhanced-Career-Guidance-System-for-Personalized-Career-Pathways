@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { StickFigure } from "../components/StickFigure";
 import { scoreAptitude, selectAptitudeForm } from "../engine/aptitude";
@@ -42,6 +42,8 @@ export function AssessAptitudePage() {
   const [completedAnswers, setCompletedAnswers] = useState<Record<string, number>>({});
   const [elapsed, setElapsed] = useState(0);
   const [why, setWhy] = useState<ScoreEvidence | null>(null);
+  const answerLock = useRef(false);
+  const [isAdvancing, setIsAdvancing] = useState(false);
 
   const complete = (
     finalAnswers: Record<string, number>,
@@ -92,14 +94,22 @@ export function AssessAptitudePage() {
   }, [answers, result]);
 
   const answer = (option: number) => {
+    if (answerLock.current || result) return;
     const question = questions[index];
+    if (!question) return;
+    answerLock.current = true;
+    setIsAdvancing(true);
     const next = { ...answers, [question.id]: option };
     sounds.quizAnswer();
     hapticLight();
     if (index === questions.length - 1) complete(next, seconds);
     else {
       setAnswers(next);
-      setIndex((previous) => previous + 1);
+      setIndex((previous) => Math.min(previous + 1, questions.length - 1));
+      window.setTimeout(() => {
+        answerLock.current = false;
+        setIsAdvancing(false);
+      }, 450);
     }
   };
 
@@ -158,7 +168,8 @@ export function AssessAptitudePage() {
               <button
                 key={option}
                 onClick={() => answer(optionIndex)}
-                className="card-sketch min-h-14 w-full p-4 text-left transition-[transform,background-color,color] hover:-translate-y-0.5 hover:bg-[var(--ink)] hover:text-[var(--paper)]"
+                disabled={isAdvancing}
+                className="card-sketch min-h-14 w-full p-4 text-left transition-[transform,background-color,color] hover:-translate-y-0.5 hover:bg-[var(--ink)] hover:text-[var(--paper)] disabled:pointer-events-none disabled:opacity-50"
               >
                 {String.fromCharCode(65 + optionIndex)}. {option}
               </button>

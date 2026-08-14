@@ -24,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Volume2, Star, X, ArrowUpDown, Map } from 'lucide-react';
 import { toast } from 'sonner';
 import { CareerLandscapeScatter } from '../components/guidance/CareerLandscapeScatter';
+import { buildPathwayPlan } from '../engine/pathways';
 
 type LandscapeFilter = 'all' | 'safe' | 'stretch' | 'ambitious';
 type SortOption = 'best_fit' | 'salary' | 'fastest' | 'wlb';
@@ -112,6 +113,7 @@ export function RecommendationsPage() {
       !hiddenCareers.has(item.occupationId) &&
       (filter === 'all' || landscapeGroup(item.group) === filter)
     ) ?? [];
+    if (!passport) return filtered;
 
     // Sort recommendations
     if (sortBy === 'salary') {
@@ -125,10 +127,8 @@ export function RecommendationsPage() {
       });
     } else if (sortBy === 'fastest') {
       filtered = [...filtered].sort((a, b) => {
-        // Sort by easiest transition first, then by score
-        if (a.group === 'easiest_transition' && b.group !== 'easiest_transition') return -1;
-        if (b.group === 'easiest_transition' && a.group !== 'easiest_transition') return 1;
-        return b.totalScore - a.totalScore;
+        const duration = (occupationId: string) => Math.min(...buildPathwayPlan(passport, occupationId).routes.map(route => route.totalMonths));
+        return duration(a.occupationId) - duration(b.occupationId) || b.totalScore - a.totalScore;
       });
     } else if (sortBy === 'wlb') {
       filtered = [...filtered].sort((a, b) => {
@@ -143,7 +143,7 @@ export function RecommendationsPage() {
     // Default 'best_fit' keeps original order (already sorted by score)
 
     return filtered;
-  }, [filter, sortBy, recommendations, hiddenCareers]);
+  }, [filter, sortBy, recommendations, hiddenCareers, passport]);
   if (!passport)
     return (
       <div className="min-h-screen bg-[var(--paper)] p-8 text-center text-[var(--ink)]">

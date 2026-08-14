@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
-import { type JobData } from '../data/jobs';
+import { generateJobData, normalizeJobData, type JobData } from '../data/jobs';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
 
@@ -36,7 +36,10 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const { user, isSupabaseConfigured } = useAuth();
-  const [currentJob, setCurrentJob] = useState<JobData | null>(null);
+  const [currentJob, setCurrentJobState] = useState<JobData | null>(null);
+  const setCurrentJob = useCallback((job: JobData | null) => {
+    setCurrentJobState(job ? normalizeJobData(job.title || 'Career', job) : null);
+  }, []);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [refinementCount, setRefinementCount] = useState(0);
   const [isSearchAnimating, setIsSearchAnimating] = useState(false);
@@ -129,24 +132,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const { generateJobDataAI } = await import('../services/ai');
       const aiData = await generateJobDataAI(title, skipCache, contextDescription);
       const id = title.toLowerCase().replace(/\s+/g, '-');
+      const fallback = generateJobData(title);
       return {
         id,
         title,
-        category: aiData.category || 'Professional Services',
-        shortDescription: aiData.shortDescription,
-        fullDescription: aiData.fullDescription,
-        avgSalary: aiData.avgSalary,
-        education: aiData.education,
-        skills: aiData.skills,
-        dailyRoutine: aiData.dailyRoutine,
-        workEnvironment: aiData.workEnvironment,
-        careerPath: aiData.careerPath,
-        weekOverview: aiData.weekOverview,
-        quarterOverview: aiData.quarterOverview,
-        yearOverview: aiData.yearOverview,
-        funFact: aiData.funFact,
-        topCompanies: aiData.topCompanies,
-        relevantForCompanies: aiData.relevantForCompanies,
+        category: typeof aiData.category === 'string' && aiData.category.trim() ? aiData.category : fallback.category,
+        shortDescription: typeof aiData.shortDescription === 'string' && aiData.shortDescription.trim() ? aiData.shortDescription : fallback.shortDescription,
+        fullDescription: typeof aiData.fullDescription === 'string' && aiData.fullDescription.trim() ? aiData.fullDescription : fallback.fullDescription,
+        avgSalary: typeof aiData.avgSalary === 'string' && aiData.avgSalary.trim() ? aiData.avgSalary : fallback.avgSalary,
+        education: Array.isArray(aiData.education) ? aiData.education.filter((item): item is string => typeof item === 'string') : fallback.education,
+        skills: Array.isArray(aiData.skills) ? aiData.skills.filter((item): item is string => typeof item === 'string') : fallback.skills,
+        dailyRoutine: typeof aiData.dailyRoutine === 'string' && aiData.dailyRoutine.trim() ? aiData.dailyRoutine : fallback.dailyRoutine,
+        workEnvironment: typeof aiData.workEnvironment === 'string' && aiData.workEnvironment.trim() ? aiData.workEnvironment : fallback.workEnvironment,
+        careerPath: typeof aiData.careerPath === 'string' && aiData.careerPath.trim() ? aiData.careerPath : fallback.careerPath,
+        weekOverview: typeof aiData.weekOverview === 'string' && aiData.weekOverview.trim() ? aiData.weekOverview : fallback.weekOverview,
+        quarterOverview: typeof aiData.quarterOverview === 'string' && aiData.quarterOverview.trim() ? aiData.quarterOverview : fallback.quarterOverview,
+        yearOverview: typeof aiData.yearOverview === 'string' && aiData.yearOverview.trim() ? aiData.yearOverview : fallback.yearOverview,
+        funFact: typeof aiData.funFact === 'string' && aiData.funFact.trim() ? aiData.funFact : fallback.funFact,
+        topCompanies: Array.isArray(aiData.topCompanies) ? aiData.topCompanies.filter(company => company && typeof company.name === 'string') : [],
+        relevantForCompanies: Boolean(aiData.relevantForCompanies),
       };
     } catch (error) {
       console.error('AI generation failed:', error);

@@ -14,7 +14,7 @@ export function InterviewPrepPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { currentJob } = useApp();
-  const jobTitle = currentJob?.title ?? searchParams.get('job')?.trim() ?? '';
+  const jobTitle = currentJob?.title?.trim() || searchParams.get('job')?.trim() || '';
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<number | null>(null);

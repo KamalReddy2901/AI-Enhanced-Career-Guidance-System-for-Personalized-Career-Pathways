@@ -143,6 +143,7 @@ export function JobDetailPage() {
     setCurrentJob,
     searchJobAI,
     addToHistory,
+    history,
     setRefinementCount,
     setComparisonJob,
   } = useApp();
@@ -179,6 +180,11 @@ export function JobDetailPage() {
   const [showDossierNav, setShowDossierNav] = useState(false);
   const [compatibility, setCompatibility] = useState('');
   const [checkingCompatibility, setCheckingCompatibility] = useState(false);
+  const requestedLoadRef = useRef<string | null>(null);
+  const params = new URLSearchParams(location.search);
+  const requestedOccupation = occupationById.get(params.get("occupation") ?? "");
+  const requestedTitle = requestedOccupation?.title ?? "";
+  const requestedJobReady = !requestedTitle || currentJob?.title.toLowerCase() === requestedTitle.toLowerCase();
 
   // Section refs for scroll tracking
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -246,7 +252,6 @@ export function JobDetailPage() {
 
   // Decode shared dossier from URL param
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
     const encoded = params.get("d");
     if (encoded) {
       const decoded = decodeDossier(encoded);
@@ -256,6 +261,30 @@ export function JobDetailPage() {
       }
     }
   }, []);
+
+  // Recommendation cards use a durable occupation id. Resolve it here rather
+  // than relying on transient in-memory job state, so deep links and reloads
+  // always open the requested dossier.
+  useEffect(() => {
+    if (!requestedTitle || requestedJobReady || requestedLoadRef.current === requestedTitle) return;
+    requestedLoadRef.current = requestedTitle;
+    const cached = history.find(item => item.jobTitle.toLowerCase() === requestedTitle.toLowerCase())?.jobData;
+    if (cached?.fullDescription) {
+      setCurrentJob(cached);
+      return;
+    }
+    let active = true;
+    void searchJobAI(requestedTitle)
+      .then(job => {
+        if (!active) return;
+        setCurrentJob(job);
+        addToHistory(job);
+      })
+      .catch(() => {
+        if (active) navigate('/job?fresh=1', { replace: true });
+      });
+    return () => { active = false; };
+  }, [requestedTitle, requestedJobReady, history, searchJobAI, setCurrentJob, addToHistory, navigate]);
 
   // Load related careers
   useEffect(() => {
@@ -289,11 +318,11 @@ export function JobDetailPage() {
   }, [currentJob?.title]);
 
   useEffect(() => {
-    if (!currentJob) navigate('/job?fresh=1', { replace: true });
-  }, [currentJob, navigate]);
+    if (!currentJob && !requestedTitle && !params.get("d")) navigate('/job?fresh=1', { replace: true });
+  }, [currentJob, requestedTitle, navigate, location.search]);
 
-  if (!currentJob) {
-    return null;
+  if (!currentJob || !requestedJobReady) {
+    return <div className="flex min-h-[70vh] items-center justify-center px-6 text-center"><div><StickFigure pose="typing" size={80} className="mx-auto"/><h1 className="font-display mt-5 text-3xl">Building the {requestedTitle || 'career'} dossier…</h1><p className="mt-2 text-sm text-[var(--ink-soft)]">Researching the role, market context, and practical next steps.</p></div></div>;
   }
 
   const isFav = isFavorite(currentJob.title);
@@ -794,7 +823,7 @@ export function JobDetailPage() {
                   ✦ The Good
                 </h4>
                 <div className="space-y-2">
-                  {gbuData.good.map((item, i) => (
+                  {(gbuData.good ?? []).map((item, i) => (
                     <div
                       key={i}
                       className="flex items-start gap-2.5 border-l-2 border-emerald-300 pl-3 py-1"
@@ -827,7 +856,7 @@ export function JobDetailPage() {
                   ✦ The Bad
                 </h4>
                 <div className="space-y-2">
-                  {gbuData.bad.map((item, i) => (
+                  {(gbuData.bad ?? []).map((item, i) => (
                     <div
                       key={i}
                       className="flex items-start gap-2.5 border-l-2 border-amber-300 pl-3 py-1"
@@ -860,7 +889,7 @@ export function JobDetailPage() {
                   ✦ The Ugly
                 </h4>
                 <div className="space-y-2">
-                  {gbuData.ugly.map((item, i) => (
+                  {(gbuData.ugly ?? []).map((item, i) => (
                     <div
                       key={i}
                       className="flex items-start gap-2.5 border-l-2 border-red-300 pl-3 py-1"
@@ -1134,7 +1163,7 @@ export function JobDetailPage() {
                   {/* Radar chart */}
                   <div className="w-full md:w-72 shrink-0">
                     <ResponsiveContainer width="100%" height={260}>
-                      <RadarChart data={wlbData.metrics}>
+                      <RadarChart data={wlbData.metrics ?? []}>
                         <PolarGrid stroke="rgba(0,0,0,0.1)" />
                         <PolarAngleAxis
                           dataKey="subject"
@@ -1276,7 +1305,7 @@ export function JobDetailPage() {
                       <Hash size={11} /> Subreddits
                     </h4>
                     <ul className="space-y-2.5">
-                      {learnMore.subreddits.map((sr, i) => (
+                      {(learnMore.subreddits ?? []).map((sr, i) => (
                         <li key={i}>
                           <a
                             href={`https://reddit.com/${sr.name}`}
@@ -1319,7 +1348,7 @@ export function JobDetailPage() {
                       <Award size={11} /> Certifications
                     </h4>
                     <ul className="space-y-2.5">
-                      {learnMore.certifications.map((cert, i) => (
+                      {(learnMore.certifications ?? []).map((cert, i) => (
                         <li key={i}>
                           <a
                             href={`https://www.google.com/search?q=${encodeURIComponent(cert.name + " certification " + cert.provider)}`}
@@ -1362,7 +1391,7 @@ export function JobDetailPage() {
                       <ArrowRight size={11} /> Search Terms
                     </h4>
                     <ul className="space-y-2.5">
-                      {learnMore.searchTerms.map((st, i) => (
+                      {(learnMore.searchTerms ?? []).map((st, i) => (
                         <li key={i}>
                           <a
                             href={`https://www.google.com/search?q=${encodeURIComponent(st.term)}`}
@@ -1399,7 +1428,7 @@ export function JobDetailPage() {
                       <BookOpen size={11} /> Recommended Books
                     </h4>
                     <ul className="space-y-2.5">
-                      {learnMore.books.map((book, i) => (
+                      {(learnMore.books ?? []).map((book, i) => (
                         <li key={i}>
                           <a
                             href={`https://www.google.com/search?q=${encodeURIComponent(book.title + " by " + book.author)}`}

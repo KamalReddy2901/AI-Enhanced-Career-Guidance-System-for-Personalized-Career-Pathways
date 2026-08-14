@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 import { createBrowserRouter } from 'react-router';
 import { RootLayout } from './pages/RootLayout';
+import { RouteErrorPage } from './pages/RouteErrorPage';
 
 const AuthPage = lazy(() => import('./pages/AuthPage').then(m => ({ default: m.AuthPage })));
 const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
@@ -38,7 +39,7 @@ const AboutPage = lazy(() => import('./pages/AboutPage').then(m => ({ default: m
 const IntegrationPage = lazy(() => import('./pages/IntegrationPage').then(m => ({ default: m.IntegrationPage })));
 
 export const router = createBrowserRouter([
-  { path: '/', Component: RootLayout, children: [
+  { path: '/', Component: RootLayout, ErrorBoundary: RouteErrorPage, children: [
     { index: true, Component: HomePage },
     { path: 'auth', Component: AuthPage },
     { path: 'job', Component: JobOverviewPage },

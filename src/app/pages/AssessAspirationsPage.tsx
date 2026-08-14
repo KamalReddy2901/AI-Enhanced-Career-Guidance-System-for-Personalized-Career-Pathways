@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { StickFigure } from "../components/StickFigure";
 import { useGuidance } from "../context/GuidanceContext";
@@ -54,6 +54,8 @@ export function AssessAspirationsPage() {
   const [answers, setAnswers] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const answerLock = useRef(false);
+  const [isAdvancing, setIsAdvancing] = useState(false);
   const prompt = questions[lang][index];
   const finish = async (responses: string[], useAi = true) => {
     setBusy(true);
@@ -110,14 +112,22 @@ export function AssessAspirationsPage() {
     }
   };
   const send = () => {
-    if (!draft.trim()) return;
+    if (!draft.trim() || answerLock.current || busy) return;
+    answerLock.current = true;
+    setIsAdvancing(true);
     const next = [...answers, draft.trim()];
     setAnswers(next);
     setDraft("");
     sounds.click();
     hapticLight();
     if (index === 4) void finish(next);
-    else setIndex(index + 1);
+    else {
+      setIndex((current) => Math.min(current + 1, questions[lang].length - 1));
+      window.setTimeout(() => {
+        answerLock.current = false;
+        setIsAdvancing(false);
+      }, 450);
+    }
   };
   return (
     <div className="assessment-page min-h-screen p-4 md:p-8">
@@ -164,7 +174,7 @@ export function AssessAspirationsPage() {
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 onClick={send}
-                disabled={!draft.trim() || busy}
+                disabled={!draft.trim() || busy || isAdvancing}
                 className="min-h-11 bg-black px-5 py-3 font-[Inter] text-white disabled:opacity-30"
               >
                 {index === 4 ? c.finish : c.send}

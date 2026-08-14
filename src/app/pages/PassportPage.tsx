@@ -7,8 +7,7 @@ import { sounds } from '../utils/sounds';
 import { hapticLight, hapticSuccess } from '../utils/haptic';
 import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 import { extractProfileFromResume, type ResumeExtraction } from '../services/ai';
-import { matchSkillsToKB, mergeSkillClaims, groupSkillsByCategory, estimateNSQFLevel, extractLiteralResumeSkills } from '../engine/skillProfile';
-import { skillById } from '../data/knowledge';
+import { matchSkillsToKB, mergeSkillClaims, groupSkillsByCategory, estimateNSQFLevel, extractLiteralResumeSkills, skillClaimName } from '../engine/skillProfile';
 import { SkillValidationDialog } from '../components/guidance/SkillValidationDialog';
 import { RiasecHexagon } from '../components/guidance/RiasecHexagon';
 import { addSkillEvidence, calculateCompleteness } from '../engine/skillProfile';
@@ -159,6 +158,7 @@ export function PassportPage() {
         // Add as custom skill with a generated ID
         const customClaim: SkillClaim = {
           skillId: `custom_${Date.now()}`,
+          name: manualSkillName.trim(),
           proficiency: manualSkillProficiency,
           confidence: 0.6,
           evidence: [{
@@ -457,8 +457,7 @@ export function PassportPage() {
                   </h3>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {claims.map(claim => {
-                      const skill = skillById.get(claim.skillId);
-                      if (!skill) return null;
+                      const skillName = skillClaimName(claim);
                       
                       return (
                         <motion.div 
@@ -469,7 +468,7 @@ export function PassportPage() {
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold truncate" title={skill.name}>{skill.name}</div>
+                              <div className="text-sm font-semibold truncate" title={skillName}>{skillName}</div>
                               <div className="flex items-center gap-3 mt-2">
                                 {editingSkillProficiency === claim.skillId ? (
                                   <div className="flex gap-1">

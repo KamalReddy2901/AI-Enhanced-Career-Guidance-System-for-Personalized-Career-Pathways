@@ -98,10 +98,14 @@ export function OnboardingPage() {
     
     updatePassport(() => newPassport);
 
+    const consentEntry = (consent_type: 'data_processing' | 'cloud_history' | 'guardian', granted: boolean, detail: Record<string, unknown> = {}) => {
+      const created_at = new Date().toISOString();
+      return { consent_type, granted, detail: { ...detail, _localEventId: `${consent_type}:${created_at}` }, created_at };
+    };
     const localConsentEntries = [
-      { consent_type: 'data_processing', granted: dataConsentGiven, detail: {}, created_at: new Date().toISOString() },
-      { consent_type: 'cloud_history', granted: cloudHistoryConsent, detail: { optional: true }, created_at: new Date().toISOString() },
-      ...(isMinor ? [{ consent_type: 'guardian', granted: guardianConfirmed, detail: { method: 'email_ack_demo', guardianName }, created_at: new Date().toISOString() }] : []),
+      consentEntry('data_processing', dataConsentGiven),
+      consentEntry('cloud_history', cloudHistoryConsent, { optional: true }),
+      ...(isMinor ? [consentEntry('guardian', guardianConfirmed, { method: 'email_ack_demo', guardianName, guardianEmail })] : []),
     ];
     localStorage.setItem('cc_guidance_consents', JSON.stringify(localConsentEntries));
     localStorage.setItem('cc_guidance_minor', isMinor ? 'true' : 'false');
@@ -110,15 +114,7 @@ export function OnboardingPage() {
     // Log consents if user is signed in
     if (user?.id) {
       import('../services/guidanceDb').then(({ logConsent }) => {
-        logConsent(user.id, 'data_processing', dataConsentGiven);
-        logConsent(user.id, 'cloud_history', cloudHistoryConsent, { purpose: 'optional_cloud_history' });
-        if (isMinor && guardianConfirmed) {
-          logConsent(user.id, 'guardian', true, {
-            guardianName,
-            guardianEmail,
-            method: 'manual_confirmation',
-          });
-        }
+        localConsentEntries.forEach(entry => void logConsent(user.id, entry.consent_type, entry.granted, entry.detail));
       });
     }
     

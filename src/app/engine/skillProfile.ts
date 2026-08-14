@@ -19,6 +19,18 @@ export interface SkillMatchResult {
   unmatched: string[];
 }
 
+/** Resolve a stable display label, including claims saved before custom-skill
+ * names became a first-class field. */
+export function skillClaimName(claim: SkillClaim): string {
+  const canonical = skillById.get(claim.skillId)?.name;
+  if (canonical) return canonical;
+  if (claim.name?.trim()) return claim.name.trim();
+  const legacy = claim.evidence
+    .map(item => item.description.match(/^Manually added:\s*(.+)$/i)?.[1]?.trim())
+    .find(Boolean);
+  return legacy || 'Custom skill';
+}
+
 /** Offline fallback that emits only literal canonical-name or alias matches and
  * preserves the exact resume line as evidence. */
 export function extractLiteralResumeSkills(resumeText: string): ExtractedSkill[] {
@@ -245,6 +257,7 @@ export function groupSkillsByCategory(
     domain: [],
     tool: [],
     language: [],
+    custom: [],
   };
 
   claims.forEach(claim => {
@@ -254,6 +267,10 @@ export function groupSkillsByCategory(
         groups[skill.category] = [];
       }
       groups[skill.category].push(claim);
+    } else {
+      // User-supplied skills are still valid profile evidence even when the
+      // canonical taxonomy has no equivalent. Keep them visible and editable.
+      groups.custom.push(claim);
     }
   });
 

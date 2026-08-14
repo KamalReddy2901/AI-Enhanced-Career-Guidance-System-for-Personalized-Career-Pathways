@@ -36,7 +36,7 @@ export function SettingsPage() {
     const localConsents = JSON.parse(localStorage.getItem('cc_guidance_consents') ?? '[]') as unknown[];
     const localAssessments = JSON.parse(localStorage.getItem('cc_guidance_assessment_runs') ?? '[]') as unknown[];
     const localProgress = JSON.parse(localStorage.getItem('cc_guidance_progress_events') ?? '[]') as unknown[];
-    const payload = { exportedAt: new Date().toISOString(), passport, pathways, currentRecommendations: recommendations, assessments: cloud[0].length ? cloud[0] : localAssessments, recommendationHistory: cloud[1], progress: cloud[2].length ? cloud[2] : localProgress, consents: cloud[3].length ? cloud[3] : localConsents };
+    const payload = { schemaVersion: 1, exportedAt: new Date().toISOString(), product: 'CareerCase', passport, pathways, currentRecommendations: recommendations, assessments: cloud[0].length ? cloud[0] : localAssessments, recommendationHistory: cloud[1], progress: cloud[2].length ? cloud[2] : localProgress, consents: cloud[3].length ? cloud[3] : localConsents };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'careercase-guidance-data.json'; anchor.click(); URL.revokeObjectURL(url); toast.success('Complete guidance data exported');
   };

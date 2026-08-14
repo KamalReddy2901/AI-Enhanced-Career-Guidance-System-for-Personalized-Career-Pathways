@@ -38,7 +38,7 @@ function directRoute(passport: CareerPassport, occupationId: string): PathwayRou
     { kind: 'project', label: `Complete a portfolio project demonstrating ${target.title} skills`, estMonths: 1, done: false },
     { kind: 'target', label: `Apply for supervised ${target.title} opportunities`, refId: target.id, nsqfLevel: target.nsqfEntryLevel, estMonths: 0, done: false },
   ];
-  return { kind: 'direct', label: 'Fastest', tradeoff: 'Fastest route, but it relies on self-directed evidence and focused learning.', totalMonths: totalMonths(steps), steps, confidence: passport.completeness >= 75 ? 'high' : 'medium' };
+  return { kind: 'direct', label: 'Focused route', tradeoff: 'A focused skills-and-evidence route; compare its actual duration with the other options.', totalMonths: totalMonths(steps), steps, confidence: passport.completeness >= 75 ? 'high' : 'medium' };
 }
 
 function twoHopCandidate(passport: CareerPassport, targetId: string): { intermediateId: string; first?: TransitionEdge; second: TransitionEdge } | undefined {

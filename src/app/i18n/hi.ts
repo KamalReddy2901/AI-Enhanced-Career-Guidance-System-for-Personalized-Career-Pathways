@@ -22,7 +22,7 @@ export const hi: Record<keyof typeof en, string> = {
   homeSubhead: "अपनी क्षमता, आकांक्षाओं, योग्यताओं और अनुभव को स्पष्ट, प्रमाण-आधारित करियर मार्गों में बदलें।",
   homePrimary: "मूल्यांकन शुरू करें",
   homeSetup: "अपना करियर पासपोर्ट बनाएँ",
-  homeContinue: "मूल्यांकन जारी रखें",
+  homeContinue: "अपना डैशबोर्ड खोलें",
   homeExplore: "करियर खोजें",
   homeProgress: "आपकी प्रगति",
   homeBegin: "अध्याय 1 शुरू करें",

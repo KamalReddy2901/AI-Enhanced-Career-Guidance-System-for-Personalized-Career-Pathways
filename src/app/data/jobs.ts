@@ -102,6 +102,33 @@ export function generateJobData(title: string): JobData {
   };
 }
 
+/** Normalize AI, cached, shared, or remotely persisted job data before UI use. */
+export function normalizeJobData(title: string, value: Partial<JobData>): JobData {
+  const fallback = generateJobData(title);
+  const text = (candidate: unknown, defaultValue: string) => typeof candidate === 'string' && candidate.trim() ? candidate : defaultValue;
+  return {
+    ...fallback,
+    ...value,
+    id: text(value.id, fallback.id),
+    title: text(value.title, title),
+    category: text(value.category, fallback.category),
+    shortDescription: text(value.shortDescription, fallback.shortDescription),
+    fullDescription: text(value.fullDescription, fallback.fullDescription),
+    avgSalary: text(value.avgSalary, fallback.avgSalary),
+    education: Array.isArray(value.education) ? value.education.filter((item): item is string => typeof item === 'string') : fallback.education,
+    skills: Array.isArray(value.skills) ? value.skills.filter((item): item is string => typeof item === 'string') : fallback.skills,
+    dailyRoutine: text(value.dailyRoutine, fallback.dailyRoutine),
+    workEnvironment: text(value.workEnvironment, fallback.workEnvironment),
+    careerPath: text(value.careerPath, fallback.careerPath),
+    weekOverview: text(value.weekOverview, fallback.weekOverview),
+    quarterOverview: text(value.quarterOverview, fallback.quarterOverview),
+    yearOverview: text(value.yearOverview, fallback.yearOverview),
+    funFact: text(value.funFact, fallback.funFact),
+    topCompanies: Array.isArray(value.topCompanies) ? value.topCompanies.filter(company => company && typeof company.name === 'string') : [],
+    relevantForCompanies: Boolean(value.relevantForCompanies),
+  };
+}
+
 function getCategory(title: string): string {
   const t = title.toLowerCase();
   if (['surgeon', 'doctor', 'nurse', 'dentist', 'therapist', 'physician', 'radiologist', 'anesthesiologist', 'dermatologist', 'neurologist', 'orthodontist', 'optometrist', 'podiatrist', 'chiropractor', 'midwife', 'emt', 'paramedic', 'pharmacist', 'veterinarian'].some(k => t.includes(k))) return 'Healthcare';
