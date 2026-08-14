@@ -225,12 +225,6 @@ button, a, [role="button"], [role="link"] {
   min-height: 44px;
   min-width: 44px;
 }
-nav a, nav button {
-  /* Nav items can be smaller — override for tight UI */
-  min-height: unset;
-  min-width: unset;
-}
-
 /* ─── Reduced motion ────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
