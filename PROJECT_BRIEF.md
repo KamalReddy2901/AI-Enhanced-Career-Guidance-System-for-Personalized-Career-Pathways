@@ -183,7 +183,7 @@ All 100 occupations pass structural validation and generate three core routes. T
 - Counselor evidence is compacted and bounded, recent history is capped, and output is limited so a complete passport remains below the provider request budget. SSE parsing buffers split network chunks instead of silently dropping partial events.
 - The repository includes a non-secret diagnostic command: `cd worker && npm run keys:check`.
 - It fingerprints keys rather than printing them, checks authentication/model availability, performs a JSON-mode call, and verifies a complete SSE streaming response.
-- On 14 August 2026, all 11 locally configured keys passed every check: authentication 200, both GPT-OSS models present, parseable 20B JSON, and complete 120B SSE output. The Worker rotation/policy suite passed all 12 tests.
+- On 14 August 2026, all 11 configured keys passed every check: authentication 200, both GPT-OSS models present, parseable 20B JSON, and complete 120B SSE output. The validated set was synchronized to the Worker secret, and a signed-in production response reported a pool size of 11. The Worker rotation/policy suite passed all 12 tests.
 - A signed-in production probe reproduced the former Counselor failure as an oversized 413 request; an equivalent bounded 16,160-character Counselor stream then completed with HTTP 200 and a terminal SSE event.
 
 ### Quality commands
