@@ -88,7 +88,7 @@ export function ShowpieceHero({ hasPassport, showLanding, onNavigate, onFallback
         </h1>
         <p className="mt-6 max-w-[65ch] text-[var(--ink-soft)]">{t('homeSubhead')}</p>
         <div data-hero-actions className="mt-8 flex flex-wrap gap-4">
-          <Button data-testid="hero-primary-cta" onClick={()=>onNavigate(target)}>{hasPassport?t('homeContinue'):t('homePrimary')} <ArrowRight/></Button>
+          <Button data-testid="hero-primary-cta" onClick={()=>onNavigate(target)}>{hasPassport?t('homeContinue'):t(showLanding?'homePrimary':'homeSetup')} <ArrowRight/></Button>
           <Button variant="ghost" data-testid="hero-explore-cta" aria-label={t('homeExplore')} onClick={()=>onNavigate('/job?fresh=1')}>{t('homeExplore')}</Button>
         </div>
       </div>

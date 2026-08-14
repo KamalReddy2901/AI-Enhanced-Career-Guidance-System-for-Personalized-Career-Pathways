@@ -29,7 +29,7 @@ export function StaticMasthead({ passport, showLanding, onNavigate }: StaticMast
               onClick={() => onNavigate(showLanding ? '/onboarding' : passport ? '/dashboard' : '/onboarding')}
               data-testid="home-primary-cta"
             >
-              {passport ? t('homeContinue') : t('homePrimary')}
+              {passport ? t('homeContinue') : t(showLanding ? 'homePrimary' : 'homeSetup')}
               <ArrowRight aria-hidden="true" />
             </Button>
             <Button type="button" variant="ghost" onClick={() => onNavigate('/job')} data-testid="home-explore-cta">

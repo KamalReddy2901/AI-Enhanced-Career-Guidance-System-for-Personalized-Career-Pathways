@@ -20,6 +20,7 @@ export const en = {
   homeHeadline: "Find the work that fits your story.",
   homeSubhead: "Turn your aptitude, aspirations, abilities and experience into clear, evidence-led career pathways.",
   homePrimary: "Start your assessment",
+  homeSetup: "Create your Career Passport",
   homeContinue: "Continue your assessment",
   homeExplore: "Explore careers",
   homeProgress: "Your progress",

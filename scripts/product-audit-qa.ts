@@ -66,6 +66,7 @@ assert.ok(breakdown.every((item) => item.path.startsWith('/')), 'every incomplet
 for (const hero of ['WordCloudMasthead.tsx', 'StaticMasthead.tsx', 'ShowpieceHero.tsx']) {
   const text = source(`src/app/components/hero/${hero}`);
   assert.match(text, /passport \? '\/dashboard'|hasPassport \? '\/dashboard'/, `${hero} must continue an existing case file at the dashboard`);
+  assert.match(text, /homeSetup/, `${hero} must explain passport setup to signed-in users without a profile`);
 }
 assert.doesNotMatch(source('src/app/pages/OnboardingPage.tsx'), /skipped:\s*true|Skip to home/, 'onboarding must never fabricate consent through a skip path');
 assert.match(source('src/app/pages/OnboardingPage.tsx'), /guardianPendingLogged && guardianConfirmed && dataConsentGiven/, 'minor onboarding must require a generated guardian request before confirmation');

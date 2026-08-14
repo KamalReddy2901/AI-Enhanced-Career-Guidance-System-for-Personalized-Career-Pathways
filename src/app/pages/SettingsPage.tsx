@@ -206,10 +206,11 @@ export function SettingsPage() {
         {/* Data Management */}
         <Section title="Data Management">
           <div className="space-y-3">
-            <ActionButton label="View raw Career Passport" description="Inspect the exact profile object used by the deterministic engine" icon={<User size={16}/>} onClick={() => setShowRawPassport(value => !value)} />
+            {!passport && <p className="border border-amber-200 bg-amber-50 p-4 font-[Inter] text-xs leading-relaxed text-amber-900">No Career Passport exists on this account yet. Complete onboarding before inspecting or deleting profile data.</p>}
+            <ActionButton label="View raw Career Passport" description={passport ? "Inspect the exact profile object used by the deterministic engine" : "Available after you create your Career Passport"} icon={<User size={16}/>} onClick={() => setShowRawPassport(value => !value)} disabled={!passport} />
             {showRawPassport && <pre className="max-h-96 overflow-auto border border-black/10 bg-white p-4 font-[JetBrains_Mono] text-[10px]">{JSON.stringify(passport, null, 2)}</pre>}
             <ActionButton label="Export my guidance data" description="Download passport, assessments, pathways, recommendation history, progress and consents" icon={<Download size={16} />} onClick={() => void exportGuidance()} />
-            <ActionButton label="Delete guidance data" description="Delete all six guidance-table records and local guidance data; keep the account" icon={<Trash2 size={16} />} danger onClick={() => void deleteGuidance()} />
+            <ActionButton label="Delete guidance data" description={passport ? "Delete all six guidance-table records and local guidance data; keep the account" : "No Career Passport or guidance journey to delete"} icon={<Trash2 size={16} />} danger onClick={() => void deleteGuidance()} disabled={!passport} />
             <div className="border border-black/10 p-4"><div className="font-[JetBrains_Mono] text-xs uppercase tracking-wide">Consent history</div>{consents.length ? <ul className="mt-3 space-y-2">{consents.map(item => <li key={item.id} className="font-[Inter] text-xs">{item.consent_type} · {item.granted ? 'granted' : 'not granted'} · {new Date(item.created_at).toLocaleString()}</li>)}</ul> : <p className="mt-2 font-[Inter] text-xs text-black/45">No cloud consent entries on this account. Local consent remains on this device.</p>}</div>
             <ActionButton
               label="Clear AI Cache"
@@ -537,18 +538,23 @@ function ActionButton({
   icon,
   onClick,
   danger,
+  disabled,
 }: {
   label: string;
   description: string;
   icon: React.ReactNode;
   onClick: () => void;
   danger?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`w-full border border-black/10 p-4 hover:border-black/20 transition-[color,background-color,border-color,opacity,transform,box-shadow] text-left group ${
-        danger ? 'hover:border-red-200 hover:bg-red-50/30' : ''
+      disabled={disabled}
+      className={`w-full border border-black/10 p-4 transition-[color,background-color,border-color,opacity,transform,box-shadow] text-left group disabled:cursor-not-allowed disabled:opacity-45 ${
+        disabled ? '' : 'hover:border-black/20'
+      } ${
+        danger && !disabled ? 'hover:border-red-200 hover:bg-red-50/30' : ''
       }`}
     >
       <div className="flex items-start gap-3">

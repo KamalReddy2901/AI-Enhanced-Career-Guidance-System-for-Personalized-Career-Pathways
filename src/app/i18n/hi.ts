@@ -21,6 +21,7 @@ export const hi: Record<keyof typeof en, string> = {
   homeHeadline: "वह काम खोजें जो आपकी पूरी कहानी से मेल खाए।",
   homeSubhead: "अपनी क्षमता, आकांक्षाओं, योग्यताओं और अनुभव को स्पष्ट, प्रमाण-आधारित करियर मार्गों में बदलें।",
   homePrimary: "मूल्यांकन शुरू करें",
+  homeSetup: "अपना करियर पासपोर्ट बनाएँ",
   homeContinue: "मूल्यांकन जारी रखें",
   homeExplore: "करियर खोजें",
   homeProgress: "आपकी प्रगति",

@@ -133,7 +133,7 @@ export function WordCloudMasthead({ passport, showLanding, onNavigate }: WordClo
               data-testid="hero-primary-cta"
               onClick={() => onNavigate(primaryPath)}
             >
-              {passport ? t('homeContinue') : t('homePrimary')}
+              {passport ? t('homeContinue') : t(showLanding ? 'homePrimary' : 'homeSetup')}
               <ArrowRight aria-hidden="true" />
             </Button>
             <Button
