@@ -15,6 +15,7 @@ const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 // Fallback model used only when AI_PROXY_URL is not set (dev mode).
 // In production the worker picks the model via worker/src/models.ts.
 const FALLBACK_MODEL = 'openai/gpt-oss-120b';
+const FALLBACK_REASONING = { reasoning_effort: 'low', reasoning_format: 'hidden' } as const;
 
 // Direct keys — only loaded when no proxy is configured (dev fallback).
 // In production, VITE_GROQ_API_KEYS should be left unset so the bundle is clean.
@@ -246,7 +247,7 @@ export async function callGroq(
     const response = await fetchDirectWithKeyRotation(key => fetch(GROQ_API_URL, {
         method: 'POST', signal,
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-        body: JSON.stringify({ model: FALLBACK_MODEL, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], temperature, max_tokens: maxTokens, ...(jsonMode ? { response_format: { type: 'json_object' } } : {}) }),
+        body: JSON.stringify({ model: FALLBACK_MODEL, ...FALLBACK_REASONING, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], temperature, max_tokens: maxTokens, ...(jsonMode ? { response_format: { type: 'json_object' } } : {}) }),
       }));
     if (!response.ok) { const err = await response.json().catch(() => ({})) as { error?: { message?: string } }; throw new Error(err?.error?.message || `Groq API error: ${response.status}`); }
     const data = await response.json() as { choices: Array<{ message: { content: string } }> };
@@ -325,7 +326,7 @@ export async function callGroqStreaming(
   const response = await fetchDirectWithKeyRotation(key => fetch(GROQ_API_URL, {
       method: 'POST', signal,
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-      body: JSON.stringify({ model: FALLBACK_MODEL, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], temperature, max_tokens: maxTokens, stream: true }),
+      body: JSON.stringify({ model: FALLBACK_MODEL, ...FALLBACK_REASONING, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], temperature, max_tokens: maxTokens, stream: true }),
     }));
   if (!response.ok) { const err = await response.json().catch(() => ({})) as { error?: { message?: string } }; throw new Error(err?.error?.message || `Groq error: ${response.status}`); }
   return readStream(response);
@@ -408,7 +409,7 @@ Formatting rules:
   const response = await fetchDirectWithKeyRotation(key => fetch(GROQ_API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-    body: JSON.stringify({ model: FALLBACK_MODEL, messages: apiMessages, temperature: 0.7, max_tokens: 1024, stream: true }),
+    body: JSON.stringify({ model: FALLBACK_MODEL, ...FALLBACK_REASONING, messages: apiMessages, temperature: 0.7, max_tokens: 1024, stream: true }),
   }));
   if (!response.ok) {
     const err = await response.json().catch(() => ({})) as { error?: { message?: string } };
@@ -753,7 +754,8 @@ export async function* streamCounselorChat(messages: { role: 'user' | 'assistant
     : groundingContext;
   const recentMessages = messages.slice(-6).map(message => `${message.role}: ${message.text.slice(0, 800)}`).join('\n');
   const system = `You are an experienced, honest Indian career counselor. Respond in ${language} and stay under 180 words unless asked. Use only the supplied CONTEXT. Cite the specific profile facts or component scores driving each answer. If a requested fact is absent, say exactly what is missing. Never invent salary figures, demand statistics, occupation requirements, course names, institutions, or score changes. A skill may change a score only when CONTEXT contains an explicit computed before/after counterfactual; otherwise say the engine cannot quantify the change. If a component is already 100, never say it can rise further. Distinguish deterministic app evidence from an external-market hypothesis, and distinguish fact, inference, and preference. Treat user-marked pathway evidence as user-reported unless independently verified. Use calibrated language such as “strong option to explore” and “plausible route”; never promise success. Preserve agency and offer alternatives. Recommend a human counselor for distress, family conflict, high-cost decisions, or repeated rejection of all options. CONTEXT:\n${boundedContext}`;
-  const raw = await callGroqStreaming(system, recentMessages, { usageType: 'counselor', maxTokens: 450 });
+  const raw = await callGroqStreaming(system, recentMessages, { usageType: 'counselor', maxTokens: 600 });
+  if (!raw.trim()) throw new Error('AI counselor returned no user-visible content');
   yield raw;
 }
 

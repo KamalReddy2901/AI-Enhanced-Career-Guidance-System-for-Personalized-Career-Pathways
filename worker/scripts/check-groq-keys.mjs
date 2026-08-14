@@ -44,6 +44,8 @@ async function testJson(key) {
       ],
       temperature: 0,
       max_tokens: 64,
+      reasoning_effort: 'low',
+      reasoning_format: 'hidden',
       response_format: { type: 'json_object' },
     }),
   });
@@ -63,6 +65,8 @@ async function testStream(key) {
       messages: [{ role: 'user', content: 'Reply with exactly: key operational' }],
       temperature: 0,
       max_tokens: 192,
+      reasoning_effort: 'low',
+      reasoning_format: 'hidden',
       stream: true,
     }),
   });

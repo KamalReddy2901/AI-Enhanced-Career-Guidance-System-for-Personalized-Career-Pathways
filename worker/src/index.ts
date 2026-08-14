@@ -84,6 +84,12 @@ async function proxyToGroq(
 ): Promise<Response> {
   const payload = body as Record<string, unknown>;
   payload['model'] = MODELS[modelTier];
+  // GPT-OSS defaults to medium reasoning, which can consume a small caller's
+  // entire completion budget before any user-visible content is emitted.
+  // CareerCase requests already supply grounded evidence and need concise UI
+  // answers, so low + hidden preserves reasoning without leaking or starving it.
+  payload['reasoning_effort'] ??= 'low';
+  payload['reasoning_format'] ??= 'hidden';
   sanitizeResponseFormat(payload);
 
   const requestGroq = () => executeWithKeyRotation(keys, groqKeyPool, key => fetch(GROQ_API_URL, {
