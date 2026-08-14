@@ -5,6 +5,7 @@ import { StickFigure } from "../components/StickFigure";
 import { PathwayGraph } from "../components/guidance/PathwayGraph";
 import { ScoreBar } from "../components/guidance/ScoreBar";
 import { WhyPanel, type ScoreEvidence } from "../components/guidance/WhyPanel";
+import { TrustStrip } from "../components/guidance/TrustStrip";
 import { PathwayRouteQuiz } from "../components/guidance/PathwayRouteQuiz";
 import { PathwayGanttChart } from "../components/guidance/PathwayGanttChart";
 import { NCOBadge } from "../components/NCOBadge";
@@ -407,9 +408,7 @@ export function PathwayPage() {
         </section>
 
         {routeComplete && <section className="mt-6 flex items-center gap-4 border-2 border-black bg-white p-5"><StickFigure pose="celebrating" size={72}/><div><h2 className="text-2xl font-[Playfair_Display]">{c.complete}</h2><p className="mt-1 font-[Inter] text-sm text-black/60">{c.completeNote}</p><Link to={`/interview-prep?job=${encodeURIComponent(occupation.title)}`} className="mt-3 inline-block min-h-11 bg-black px-4 py-3 font-[Inter] text-sm text-white">{c.interview} →</Link></div></section>}
-        <p className="mt-6 font-[JetBrains_Mono] text-[10px] uppercase text-[var(--ink-soft)]">
-          {c.footer} · KB kb-2026.06.1 · profile v{passport.version}
-        </p>
+        <TrustStrip />
         <div className="mt-4">
           <NCOBadge variant="footer" />
         </div>

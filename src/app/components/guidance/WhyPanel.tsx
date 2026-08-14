@@ -12,6 +12,7 @@ export interface ScoreEvidence {
   method: string;
   items: Array<{ label: string; value?: number; detail: string }>;
   source: string;
+  footerLink?: { to: string; label: string };
 }
 
 type RecommendationProps = {
@@ -67,7 +68,7 @@ export function WhyPanel(props: RecommendationProps | EvidenceProps) {
         <p className="my-5 font-[Inter] text-sm text-black/65">{generic.summary}</p>
         <div className="border-l-4 border-black bg-white p-4"><div className="font-[JetBrains_Mono] text-[10px] uppercase tracking-widest">{c.method}</div><p className="mt-2 font-[Inter] text-sm text-black/70">{generic.method}</p></div>
         <div className="mt-6">{generic.items.map(item=><div key={item.label} className="rule-top py-4">{item.value === undefined ? <div className="font-mono-ui text-xs uppercase">{item.label}</div> : <ScoreBar label={item.label} value={item.value}/>}<p className="mt-1 text-xs text-[var(--ink-soft)]">{item.detail}</p></div>)}</div>
-        <p className="mt-8 border-t border-black/15 pt-4 font-[JetBrains_Mono] text-[10px] uppercase tracking-wide text-black/45">{c.source} · {generic.source} · {c.noLlm}</p>
+        <p className="mt-8 border-t border-black/15 pt-4 font-[JetBrains_Mono] text-[10px] uppercase tracking-wide text-black/45">{c.source} · {generic.source} · {c.noLlm}</p>{generic.footerLink && <a href={generic.footerLink.to} className="mt-4 inline-flex min-h-11 items-center border border-[var(--ink)] px-3 font-mono-ui text-[10px] uppercase tracking-widest">{generic.footerLink.label}</a>}
       </> : <>
         <p className="my-5 font-[Inter] text-sm text-black/65">{c.ranked} <strong>{props.segment.replace("_", " ")}</strong> {c.rerank}</p>
         <p className="mb-5 border-l-4 border-[var(--accent-news)] bg-white p-3 font-[Inter] text-sm text-black/70"><strong>{c.coverage}:</strong> {props.recommendation.evidenceCoverage ?? 0}%</p>

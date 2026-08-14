@@ -3,6 +3,7 @@ import { animate, motion, useReducedMotion } from 'motion/react';
 import { Link } from "react-router";
 import { StickFigure } from "../components/StickFigure";
 import { WhyPanel } from "../components/guidance/WhyPanel";
+import { TrustStrip } from "../components/guidance/TrustStrip";
 import { StopPress } from "../components/guidance/StopPress";
 import { NCOBadge } from "../components/NCOBadge";
 import { useGuidance } from "../context/GuidanceContext";
@@ -187,6 +188,7 @@ export function RecommendationsPage() {
             </p>
           </div>
         </header>
+        <TrustStrip />
         <StopPress
           changes={recommendationChanges}
           onDismiss={dismissRecommendationChanges}
