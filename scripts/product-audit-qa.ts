@@ -100,13 +100,14 @@ assert.match(source('src/app/pages/JobDetailPage.tsx'), /params\.get\("occupatio
 assert.match(source('src/app/pages/InterviewPrepPage.tsx'), /currentJob\?\.title\?\.trim\(\) \|\| searchParams/, 'interview prep must fall back to its URL career when app state is empty');
 assert.doesNotMatch(source('src/app/engine/pathways.ts'), /label: 'Fastest'/, 'a route must not claim to be fastest without comparing actual durations');
 assert.match(source('src/app/pages/PathwayPage.tsx'), /Keep a saved plan stable/, 'completed pathway steps must not rebuild and lengthen the active plan');
+assert.match(source('src/app/pages/PathwayPage.tsx'), /setChosenKind\(initial\?\.chosenRoute/, 'async pathway hydration must restore the saved selected route');
 assert.match(source('src/app/services/ai.ts'), /explicit computed before\/after counterfactual/, 'the counselor must not invent score changes');
 assert.match(source('src/app/pages/OnboardingPage.tsx'), /_localEventId/, 'local and cloud consent writes must share a deduplication id');
 assert.match(source('src/app/pages/SettingsPage.tsx'), /schemaVersion: 1/, 'guidance exports must declare their schema version');
 
 console.log(JSON.stringify({
   completenessScenarios: 6,
-  routeContracts: 20,
+  routeContracts: 21,
   sectionWeights: breakdown.map(({ id, maximum }) => ({ id, maximum })),
   failures: [],
 }, null, 2));

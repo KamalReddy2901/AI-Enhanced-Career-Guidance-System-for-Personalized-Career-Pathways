@@ -79,7 +79,10 @@ export function PathwayPage() {
   const richVisuals = useRichVisuals();
   const reducedMotion = useReducedMotion();
 
-  useEffect(() => setPlan(initial), [initial]);
+  useEffect(() => {
+    setPlan(initial);
+    setChosenKind(initial?.chosenRoute ?? initial?.routes[0]?.kind);
+  }, [initial]);
   useEffect(() => {
     if (!plan || existing) return;
     savePathwayPlan(plan);
