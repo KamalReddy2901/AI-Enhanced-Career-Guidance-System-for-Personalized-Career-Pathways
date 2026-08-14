@@ -280,10 +280,11 @@ export function CareerLandscapeScatter({
           return (
             <g 
               key={point.id}
-              onMouseEnter={() => setHoveredPoint(point)}
-              onMouseLeave={() => setHoveredPoint(null)}
+              onMouseOver={() => setHoveredPoint(point)}
+              onMouseOut={() => setHoveredPoint(null)}
               onClick={() => onCareerClick?.(point.recommendation)}
               style={{ cursor: 'pointer' }}
+              pointerEvents="all"
             >
               {/* Hover/highlight ring */}
               {(isHighlighted || isHovered) && (
@@ -299,14 +300,14 @@ export function CareerLandscapeScatter({
               )}
 
               {/* Main point */}
-              <motion.circle
+              <circle
                 cx={cx}
                 cy={cy}
                 r={radius}
                 fill={point.color}
                 opacity={isHighlighted || isHovered ? 1 : 0.7}
-                whileHover={{ scale: 1.2 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 15, duration: 0.15 }}
+                stroke="var(--ink)"
+                strokeWidth={isHovered ? "2" : "1"}
               />
             </g>
           );
@@ -325,7 +326,7 @@ export function CareerLandscapeScatter({
       </svg>
 
       {/* Hover tooltip - NO ANIMATION DELAY */}
-      {hoveredPoint && (
+      {hoveredPoint ? (
         <div className="mt-4 rounded border-2 border-[var(--ink)] bg-[var(--paper-raised)] p-4 shadow-md">
           <h4 className="mb-3 font-display text-xl leading-tight border-b-2 border-[var(--ink-faint)] pb-2">
             {occupationById.get(hoveredPoint.recommendation.occupationId)?.title || hoveredPoint.id}
@@ -356,6 +357,10 @@ export function CareerLandscapeScatter({
               {(occupationById.get(hoveredPoint.recommendation.occupationId)?.cluster || 'general').replace('_', ' ')}
             </span>
           </div>
+        </div>
+      ) : (
+        <div className="mt-4 rounded border border-[var(--ink-faint)] bg-[var(--paper)] p-3 text-center text-sm text-[var(--ink-soft)]">
+          Hover over any circle to see career details
         </div>
       )}
 

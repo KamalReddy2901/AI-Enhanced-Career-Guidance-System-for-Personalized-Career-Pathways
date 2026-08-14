@@ -1,0 +1,150 @@
+{"kind":"deck","id":"pr/s9isg2","name":"Deck"}
+{"kind":"layout","layoutId":"6b0431f0-4b56-43c8-b6aa-d25f80aabf49","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"a4ab5530-cf32-4e49-ae55-b280cb3be4a6","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/2e7lfz","slide":1,"title":"CAREER","textShapes":10}
+{"kind":"shape","id":"sh/o3algfep","slide":1,"bbox":[0,0,22,720]}
+{"kind":"textbox","id":"sh/n21k7ax4","slide":1,"text":"CAREER","textPreview":"CAREER","textChars":6,"textLines":1,"bbox":[72,70,220,30]}
+{"kind":"textbox","id":"sh/m183e5wj","slide":1,"text":"CASE","textPreview":"CASE","textChars":4,"textLines":1,"bbox":[225,70,120,30]}
+{"kind":"shape","id":"sh/10z250fy","slide":1,"bbox":[343,77,13,13]}
+{"kind":"textbox","id":"sh/0zqlcved","slide":1,"name":"eyebrow","text":"SMART INDIA HACKATHON 2026 · SMART EDUCATION · SOFTWARE","textPreview":"SMART INDIA HACKATHON 2026 · SMART EDUCATION · SOFTWARE","textChars":55,"textLines":1,"bbox":[72,145,700,20]}
+{"kind":"textbox","id":"sh/zyhk3qxs","slide":1,"name":"title","text":"A career decision\nshould come with\na case.","textPreview":"A career decision | should come with | a case.","textChars":42,"textLines":3,"bbox":[72,185,760,230]}
+{"kind":"shape","id":"sh/ex8jalwn","slide":1,"bbox":[72,443,550,2]}
+{"kind":"textbox","id":"sh/dcz21gf2","slide":1,"text":"CareerCase turns aptitude, aspirations, abilities and experience into explainable, India-grounded career pathways.","textPreview":"CareerCase turns aptitude, aspirations, abilities and experience into explainable, India-grounded career pathways.","textChars":114,"textLines":1,"bbox":[72,470,630,82]}
+{"kind":"shape","id":"sh/cbq18veh","slide":1,"bbox":[880,188,270,250]}
+{"kind":"shape","id":"sh/mx8fytcz","slide":1,"name":"card","bbox":[875,183,270,250]}
+{"kind":"textbox","id":"sh/nyhg7ytk","slide":1,"text":"AI-ENHANCED\nCAREER GUIDANCE","textPreview":"AI-ENHANCED | CAREER GUIDANCE","textChars":27,"textLines":2,"bbox":[905,220,210,55]}
+{"kind":"textbox","id":"sh/ozqh03u5","slide":1,"text":"PS ID","textPreview":"PS ID","textChars":5,"textLines":1,"bbox":[905,307,100,18]}
+{"kind":"textbox","id":"sh/90zy98bq","slide":1,"text":"SIH260480","textPreview":"SIH260480","textChars":9,"textLines":1,"bbox":[905,330,190,35]}
+{"kind":"textbox","id":"sh/etofutc3","slide":1,"text":"TEAM CAREERCASE","textPreview":"TEAM CAREERCASE","textChars":15,"textLines":1,"bbox":[72,636,300,20]}
+{"kind":"textbox","id":"sh/zuxg3yt8","slide":1,"text":"Ministry of Skill Development & Entrepreneurship","textPreview":"Ministry of Skill Development & Entrepreneurship","textChars":48,"textLines":1,"bbox":[765,636,443,20]}
+{"kind":"notes","id":"nt/2e7lfz","slide":1,"text":"[Sources]\nUser-provided: The Problem Statement.md (SIH260480).\nInternal: PROJECT_BRIEF.md."}
+{"kind":"slide","id":"sl/y60vpk","slide":2,"title":"CAREER","textShapes":18}
+{"kind":"textbox","id":"sh/it03a1c3","slide":2,"name":"brand-career","text":"CAREER","textPreview":"CAREER","textChars":6,"textLines":1,"bbox":[72,42,115,20]}
+{"kind":"textbox","id":"sh/5grm5wbu","slide":2,"name":"brand-case","text":"CASE","textPreview":"CASE","textChars":4,"textLines":1,"bbox":[188,42,80,20]}
+{"kind":"shape","id":"sh/kfilwru9","slide":2,"bbox":[268,43,10,10]}
+{"kind":"textbox","id":"sh/ri9476tk","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1140,42,68,20]}
+{"kind":"shape","id":"sh/6h03y1cz","slide":2,"bbox":[72,74,1136,1]}
+{"kind":"textbox","id":"sh/tkbm9gbq","slide":2,"name":"eyebrow","text":"PROPOSED SOLUTION","textPreview":"PROPOSED SOLUTION","textChars":17,"textLines":1,"bbox":[72,108,250,20]}
+{"kind":"textbox","id":"sh/sjil0bu5","slide":2,"text":"Not a chatbot.\nA career case file.","textPreview":"Not a chatbot. | A career case file.","textChars":34,"textLines":2,"bbox":[72,140,560,125]}
+{"kind":"textbox","id":"sh/nmpkv2tg","slide":2,"text":"CareerCase builds a living Career Passport, ranks viable occupations transparently, then maps the next steps to get there.","textPreview":"CareerCase builds a living Career Passport, ranks viable occupations transparently, then maps the next steps to get there.","textChars":122,"textLines":1,"bbox":[72,286,560,70]}
+{"kind":"shape","id":"sh/mlg32hcv","slide":2,"bbox":[156,461,745,2]}
+{"kind":"shape","id":"sh/orix8nm9","slide":2,"bbox":[901,461,55,4]}
+{"kind":"shape","id":"sh/psby1s3u","slide":2,"bbox":[132,437,48,48]}
+{"kind":"textbox","id":"sh/2p0f6d43","slide":2,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[132,451,48,18]}
+{"kind":"textbox","id":"sh/3q9gzilo","slide":2,"text":"PROFILE","textPreview":"PROFILE","textChars":7,"textLines":1,"bbox":[107,510,145,20]}
+{"kind":"textbox","id":"sh/cv2hc725","slide":2,"text":"Aptitude · interests\nvalues · experience","textPreview":"Aptitude · interests | values · experience","textChars":40,"textLines":2,"bbox":[107,541,195,50]}
+{"kind":"shape","id":"sh/xwby5s3q","slide":2,"bbox":[415,437,48,48]}
+{"kind":"textbox","id":"sh/atkfax4z","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[415,451,48,18]}
+{"kind":"textbox","id":"sh/butg32lk","slide":2,"text":"MATCH","textPreview":"MATCH","textChars":5,"textLines":1,"bbox":[390,510,145,20]}
+{"kind":"textbox","id":"sh/szyx03m1","slide":2,"text":"Explainable fit\nacross 11 dimensions","textPreview":"Explainable fit | across 11 dimensions","textChars":36,"textLines":2,"bbox":[390,541,195,50]}
+{"kind":"shape","id":"sh/t0ryt83m","slide":2,"bbox":[698,437,48,48]}
+{"kind":"textbox","id":"sh/9kzmh0ry","slide":2,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[698,451,48,18]}
+{"kind":"textbox","id":"sh/8jq58vad","slide":2,"text":"MOVE","textPreview":"MOVE","textChars":4,"textLines":1,"bbox":[673,510,145,20]}
+{"kind":"textbox","id":"sh/7ix4fq98","slide":2,"text":"Skill gaps · routes\nprogress tracking","textPreview":"Skill gaps · routes | progress tracking","textChars":37,"textLines":2,"bbox":[673,541,195,50]}
+{"kind":"shape","id":"sh/mhon6lsn","slide":2,"bbox":[861,145,280,200]}
+{"kind":"shape","id":"sh/h8zmlkra","slide":2,"name":"card","bbox":[856,140,280,200]}
+{"kind":"textbox","id":"sh/w7q5cfap","slide":2,"text":"THE OUTPUT","textPreview":"THE OUTPUT","textChars":10,"textLines":1,"bbox":[885,171,180,18]}
+{"kind":"textbox","id":"sh/v6h4ja94","slide":2,"text":"Every match\ncomes with\na reason.","textPreview":"Every match | comes with | a reason.","textChars":32,"textLines":3,"bbox":[885,208,210,85]}
+{"kind":"textbox","id":"sh/ul8na5sj","slide":2,"text":"Students · professionals","textPreview":"Students · professionals","textChars":24,"textLines":1,"bbox":[885,315,205,20]}
+{"kind":"notes","id":"nt/y60vpk","slide":2,"text":"[Sources]\nUser-provided: The Problem Statement.md.\nInternal: PROJECT_BRIEF.md — Career Passport, matching engine, pathway engine."}
+{"kind":"slide","id":"sl/pntgvr","slide":3,"title":"CAREER","textShapes":16}
+{"kind":"textbox","id":"sh/relw3ut8","slide":3,"name":"brand-career","text":"CAREER","textPreview":"CAREER","textChars":6,"textLines":1,"bbox":[72,42,115,20]}
+{"kind":"textbox","id":"sh/sfuxwzat","slide":3,"name":"brand-case","text":"CASE","textPreview":"CASE","textChars":4,"textLines":1,"bbox":[188,42,80,20]}
+{"kind":"shape","id":"sh/dg3e54be","slide":3,"bbox":[268,43,10,10]}
+{"kind":"textbox","id":"sh/i9sv6psr","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1140,42,68,20]}
+{"kind":"shape","id":"sh/3a1wzutc","slide":3,"bbox":[72,74,1136,1]}
+{"kind":"textbox","id":"sh/4bad8zax","slide":3,"name":"eyebrow","text":"TECHNICAL APPROACH","textPreview":"TECHNICAL APPROACH","textChars":18,"textLines":1,"bbox":[72,108,260,20]}
+{"kind":"textbox","id":"sh/5cje14bi","slide":3,"text":"Evidence in.\nAction explained.","textPreview":"Evidence in. | Action explained.","textChars":30,"textLines":2,"bbox":[72,140,565,112]}
+{"kind":"textbox","id":"sh/u58v2psv","slide":3,"text":"A hybrid architecture keeps high-stakes decisions deterministic—and uses AI where language and live context add value.","textPreview":"A hybrid architecture keeps high-stakes decisions deterministic—and uses AI where language and live context add value.","textChars":118,"textLines":1,"bbox":[72,275,590,58]}
+{"kind":"shape","id":"sh/v6hwvatg","slide":3,"bbox":[364,448,83,2]}
+{"kind":"shape","id":"sh/3qhcbmxc","slide":3,"bbox":[759,448,83,2]}
+{"kind":"textbox","id":"sh/2p8v2hg7","slide":3,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[430,426,30,31]}
+{"kind":"textbox","id":"sh/pczedcfi","slide":3,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[825,426,30,31]}
+{"kind":"shape","id":"sh/4rqd47yx","slide":3,"bbox":[77,379,292,190]}
+{"kind":"shape","id":"sh/rehwfmxo","slide":3,"name":"card","bbox":[72,374,292,190]}
+{"kind":"shape","id":"sh/qd8v6hg3","slide":3,"bbox":[452,379,312,190]}
+{"kind":"shape","id":"sh/dgjehwfu","slide":3,"name":"card","bbox":[447,374,312,190]}
+{"kind":"shape","id":"sh/cfad8ry9","slide":3,"bbox":[847,379,294,190]}
+{"kind":"shape","id":"sh/7ixc32hk","slide":3,"name":"card","bbox":[842,374,294,190]}
+{"kind":"textbox","id":"sh/6hovuxgz","slide":3,"text":"CAREER PASSPORT","textPreview":"CAREER PASSPORT","textChars":15,"textLines":1,"bbox":[96,404,210,20]}
+{"kind":"textbox","id":"sh/adcf250n","slide":3,"text":"Assessments, resume,\nskills, aspirations,\nconstraints","textPreview":"Assessments, resume, | skills, aspirations, | constraints","textChars":53,"textLines":3,"bbox":[96,442,210,76]}
+{"kind":"textbox","id":"sh/ve5gbahs","slide":3,"text":"DETERMINISTIC CORE","textPreview":"DETERMINISTIC CORE","textChars":18,"textLines":1,"bbox":[471,404,220,20]}
+{"kind":"textbox","id":"sh/wfeh4vid","slide":3,"text":"11-dimension fit\n+ pathway engine","textPreview":"11-dimension fit | + pathway engine","textChars":33,"textLines":2,"bbox":[471,442,252,57]}
+{"kind":"textbox","id":"sh/xgnyd0zy","slide":3,"text":"NCO-2015 · NSQF · skill taxonomy","textPreview":"NCO-2015 · NSQF · skill taxonomy","textChars":32,"textLines":1,"bbox":[471,520,252,18]}
+{"kind":"textbox","id":"sh/m9cfyl0b","slide":3,"text":"GUIDANCE LAYER","textPreview":"GUIDANCE LAYER","textChars":14,"textLines":1,"bbox":[866,404,180,20]}
+{"kind":"textbox","id":"sh/nalg7qhw","slide":3,"text":"Dossiers, market\nsignals & counselor\nconversation","textPreview":"Dossiers, market | signals & counselor | conversation","textChars":49,"textLines":3,"bbox":[866,442,220,76]}
+{"kind":"textbox","id":"sh/8bux0vih","slide":3,"text":"React + TypeScript  /  Supabase + PostgreSQL  /  Cloudflare Worker  /  AI assistance for narrative—not scoring","textPreview":"React + TypeScript  /  Supabase + PostgreSQL  /  Cloudflare Worker  /  AI assistance for narrative—not scoring","textChars":110,"textLines":1,"bbox":[72,638,1064,20]}
+{"kind":"notes","id":"nt/pntgvr","slide":3,"text":"[Sources]\nInternal: PROJECT_BRIEF.md — architecture and technology stack.\nNational Career Service NCO-2015: https://www.ncs.gov.in/Documents/National%20Classification%20of%20Occupations%20_Vol%20I-%202015.pdf\nNational Qualifications Register: https://www.nqr.gov.in"}
+{"kind":"slide","id":"sl/7fvr2k","slide":4,"title":"CAREER","textShapes":16}
+{"kind":"textbox","id":"sh/8bupwfed","slide":4,"name":"brand-career","text":"CAREER","textPreview":"CAREER","textChars":6,"textLines":1,"bbox":[72,42,115,20]}
+{"kind":"textbox","id":"sh/nalonaxs","slide":4,"name":"brand-case","text":"CASE","textPreview":"CASE","textChars":4,"textLines":1,"bbox":[188,42,80,20]}
+{"kind":"shape","id":"sh/m9c7u5w7","slide":4,"bbox":[268,43,10,10]}
+{"kind":"textbox","id":"sh/lo36lkfm","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1140,42,68,20]}
+{"kind":"shape","id":"sh/0nupsfe1","slide":4,"bbox":[72,74,1136,1]}
+{"kind":"textbox","id":"sh/zmlojaxg","slide":4,"name":"eyebrow","text":"FEASIBILITY & VIABILITY","textPreview":"FEASIBILITY & VIABILITY","textChars":23,"textLines":1,"bbox":[72,108,300,20]}
+{"kind":"textbox","id":"sh/yls7q5wv","slide":4,"text":"Built for trust\nwhen choices matter.","textPreview":"Built for trust | when choices matter.","textChars":36,"textLines":2,"bbox":[72,140,590,112]}
+{"kind":"textbox","id":"sh/5knqx4fq","slide":4,"text":"CareerCase is a software-first system with a deployable stack and a deliberate answer to the risks of AI-led guidance.","textPreview":"CareerCase is a software-first system with a deployable stack and a deliberate answer to the risks of AI-led guidance.","textChars":118,"textLines":1,"bbox":[72,274,610,58]}
+{"kind":"shape","id":"sh/kjep4ze5","slide":4,"bbox":[72,366,1064,1]}
+{"kind":"textbox","id":"sh/e5o32tkj","slide":4,"text":"BLACK-BOX ADVICE","textPreview":"BLACK-BOX ADVICE","textChars":16,"textLines":1,"bbox":[92,383,260,20]}
+{"kind":"textbox","id":"sh/f6x4vy14","slide":4,"text":"Deterministic scoring + “Why this?” evidence","textPreview":"Deterministic scoring + “Why this?” evidence","textChars":44,"textLines":1,"bbox":[402,381,675,26]}
+{"kind":"shape","id":"sh/076l432p","slide":4,"bbox":[72,427,1064,1]}
+{"kind":"textbox","id":"sh/18fmx8ju","slide":4,"text":"STALE MARKET SIGNALS","textPreview":"STALE MARKET SIGNALS","textChars":20,"textLines":1,"bbox":[92,444,260,20]}
+{"kind":"textbox","id":"sh/qh43y9k7","slide":4,"text":"Cached, dated intelligence with a visible source trail","textPreview":"Cached, dated intelligence with a visible source trail","textChars":54,"textLines":1,"bbox":[402,442,675,26]}
+{"kind":"shape","id":"sh/rid4rels","slide":4,"bbox":[72,488,1064,1]}
+{"kind":"textbox","id":"sh/sjml0j2d","slide":4,"text":"UNEQUAL ACCESS","textPreview":"UNEQUAL ACCESS","textChars":14,"textLines":1,"bbox":[92,505,260,20]}
+{"kind":"textbox","id":"sh/d4vmtojy","slide":4,"text":"Mobile-first, simple language, multilingual-ready UX","textPreview":"Mobile-first, simple language, multilingual-ready UX","textChars":52,"textLines":1,"bbox":[402,503,675,26]}
+{"kind":"shape","id":"sh/ad83adkr","slide":4,"bbox":[72,549,1064,1]}
+{"kind":"textbox","id":"sh/beh43i1c","slide":4,"text":"SENSITIVE CAREER DATA","textPreview":"SENSITIVE CAREER DATA","textChars":21,"textLines":1,"bbox":[92,566,260,20]}
+{"kind":"textbox","id":"sh/76psf6xc","slide":4,"text":"Consent-led profile; minimal data; secure persistence","textPreview":"Consent-led profile; minimal data; secure persistence","textChars":53,"textLines":1,"bbox":[402,564,675,26]}
+{"kind":"shape","id":"sh/m5gr61wr","slide":4,"bbox":[863,137,278,162]}
+{"kind":"shape","id":"sh/987ahgvi","slide":4,"name":"card","bbox":[858,132,278,162]}
+{"kind":"textbox","id":"sh/87y98bex","slide":4,"text":"VIABLE NOW","textPreview":"VIABLE NOW","textChars":10,"textLines":1,"bbox":[883,159,170,18]}
+{"kind":"textbox","id":"sh/va9sjqd8","slide":4,"text":"Software-first\nprototype.\nReal product logic.","textPreview":"Software-first | prototype. | Real product logic.","textChars":45,"textLines":3,"bbox":[883,191,220,76]}
+{"kind":"notes","id":"nt/7fvr2k","slide":4,"text":"[Sources]\nInternal: PROJECT_BRIEF.md — deterministic core, product architecture, privacy approach."}
+{"kind":"slide","id":"sl/t2hkyi","slide":5,"title":"CAREER","textShapes":13}
+{"kind":"textbox","id":"sh/xgv2p0jq","slide":5,"name":"brand-career","text":"CAREER","textPreview":"CAREER","textChars":6,"textLines":1,"bbox":[72,42,115,20]}
+{"kind":"textbox","id":"sh/ad43elkf","slide":5,"name":"brand-case","text":"CASE","textPreview":"CASE","textChars":4,"textLines":1,"bbox":[188,42,80,20]}
+{"kind":"shape","id":"sh/vedknq1k","slide":5,"bbox":[268,43,10,10]}
+{"kind":"textbox","id":"sh/8b2lcv29","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1140,42,68,20]}
+{"kind":"shape","id":"sh/9cv2lgju","slide":5,"bbox":[72,74,1136,1]}
+{"kind":"textbox","id":"sh/mpk3alk3","slide":5,"name":"eyebrow","text":"IMPACT & BENEFITS","textPreview":"IMPACT & BENEFITS","textChars":17,"textLines":1,"bbox":[72,108,260,20]}
+{"kind":"textbox","id":"sh/nqtkjq1o","slide":5,"text":"A next move\nwith a reason.","textPreview":"A next move | with a reason.","textChars":26,"textLines":2,"bbox":[72,140,500,112]}
+{"kind":"textbox","id":"sh/s76lof2d","slide":5,"text":"CareerCase moves guidance from one-time advice to a living, evidence-backed plan.","textPreview":"CareerCase moves guidance from one-time advice to a living, evidence-backed plan.","textChars":81,"textLines":1,"bbox":[72,274,520,55]}
+{"kind":"shape","id":"sh/t8fmxkjy","slide":5,"bbox":[77,375,300,190]}
+{"kind":"shape","id":"sh/tc3exwv2","slide":5,"name":"card","bbox":[72,370,300,190]}
+{"kind":"shape","id":"sh/sbuxorux","slide":5,"bbox":[443,375,300,190]}
+{"kind":"shape","id":"sh/7alwv6dc","slide":5,"name":"card","bbox":[438,370,300,190]}
+{"kind":"shape","id":"sh/69cfm1cr","slide":5,"bbox":[809,375,332,190]}
+{"kind":"shape","id":"sh/583etwv6","slide":5,"name":"card","bbox":[804,370,332,190]}
+{"kind":"textbox","id":"sh/k7axkrul","slide":5,"text":"FOR LEARNERS","textPreview":"FOR LEARNERS","textChars":12,"textLines":1,"bbox":[98,401,190,18]}
+{"kind":"textbox","id":"sh/j61wrmd0","slide":5,"text":"Clarity before\ntime & money\nare spent.","textPreview":"Clarity before | time & money | are spent.","textChars":38,"textLines":3,"bbox":[98,434,220,73]}
+{"kind":"textbox","id":"sh/i5sfihcf","slide":5,"text":"FOR COUNSELLORS","textPreview":"FOR COUNSELLORS","textChars":15,"textLines":1,"bbox":[464,401,200,18]}
+{"kind":"textbox","id":"sh/p4ny5gba","slide":5,"text":"A shared case file\nfor better\nconversations.","textPreview":"A shared case file | for better | conversations.","textChars":44,"textLines":3,"bbox":[464,434,234,82]}
+{"kind":"textbox","id":"sh/43exwbup","slide":5,"text":"FOR THE ECOSYSTEM","textPreview":"FOR THE ECOSYSTEM","textChars":17,"textLines":1,"bbox":[830,401,240,18]}
+{"kind":"textbox","id":"sh/8j69oj6d","slide":5,"text":"A bridge between\npeople, skills &\nprogression paths.","textPreview":"A bridge between | people, skills & | progression paths.","textChars":52,"textLines":3,"bbox":[830,434,260,82]}
+{"kind":"textbox","id":"sh/9kfqhony","slide":5,"text":"Scales across school, college, job search, career transitions and professional advancement.","textPreview":"Scales across school, college, job search, career transitions and professional advancement.","textChars":91,"textLines":1,"bbox":[72,634,1064,20]}
+{"kind":"notes","id":"nt/t2hkyi","slide":5,"text":"[Sources]\nUser-provided: The Problem Statement.md — expected outcomes.\nInternal: PROJECT_BRIEF.md — supported user segments and user journey."}
+{"kind":"slide","id":"sl/35ynbt","slide":6,"title":"CAREER","textShapes":19}
+{"kind":"textbox","id":"sh/5kvil4zm","slide":6,"text":"CAREER","textPreview":"CAREER","textChars":6,"textLines":1,"bbox":[72,42,115,20]}
+{"kind":"textbox","id":"sh/ihkjqp0b","slide":6,"text":"CASE","textPreview":"CASE","textChars":4,"textLines":1,"bbox":[188,42,80,20]}
+{"kind":"shape","id":"sh/3it0juhg","slide":6,"bbox":[268,43,10,10]}
+{"kind":"textbox","id":"sh/snm1wjid","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1140,42,68,20]}
+{"kind":"shape","id":"sh/dovipozy","slide":6,"bbox":[72,74,1136,1]}
+{"kind":"textbox","id":"sh/ql4ju907","slide":6,"name":"eyebrow","text":"RESEARCH & REFERENCES","textPreview":"RESEARCH & REFERENCES","textChars":21,"textLines":1,"bbox":[72,108,260,20]}
+{"kind":"textbox","id":"sh/rmd0nehs","slide":6,"text":"The guidance must be\npersonal. The case\nmust be credible.","textPreview":"The guidance must be | personal. The case | must be credible.","textChars":57,"textLines":3,"bbox":[72,140,690,160]}
+{"kind":"textbox","id":"sh/0b610ji9","slide":6,"text":"CareerCase combines a user-owned profile with structured occupation and qualification references—so recommendations can be checked, explained and acted on.","textPreview":"CareerCase combines a user-owned profile with structured occupation and qualification references—so recommendations can be checked, expla...","textChars":155,"textLines":1,"bbox":[72,335,640,65]}
+{"kind":"shape","id":"sh/1cf2tozu","slide":6,"bbox":[72,453,1064,1]}
+{"kind":"textbox","id":"sh/p4zypgbu","slide":6,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[72,482,34,18]}
+{"kind":"textbox","id":"sh/o3qxgbu9","slide":6,"text":"SIH260480 problem statement","textPreview":"SIH260480 problem statement","textChars":27,"textLines":1,"bbox":[121,482,350,20]}
+{"kind":"textbox","id":"sh/32hwn6to","slide":6,"text":"AI-Enhanced Career Guidance System for Personalized Career Pathways","textPreview":"AI-Enhanced Career Guidance System for Personalized Career Pathways","textChars":67,"textLines":1,"bbox":[121,507,415,24]}
+{"kind":"textbox","id":"sh/218fe1c3","slide":6,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[620,482,34,18]}
+{"kind":"textbox","id":"sh/d8jyt0bq","slide":6,"text":"NCO-2015 · National Career Service","textPreview":"NCO-2015 · National Career Service","textChars":34,"textLines":1,"bbox":[669,482,350,20]}
+{"kind":"textbox","id":"sh/c7qxkvu5","slide":6,"text":"ncs.gov.in/Documents/National Classification of Occupations","textPreview":"ncs.gov.in/Documents/National Classification of Occupations","textChars":59,"textLines":1,"bbox":[669,507,415,24]}
+{"kind":"textbox","id":"sh/b6hgrqt0","slide":6,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[72,558,34,18]}
+{"kind":"textbox","id":"sh/q58filcf","slide":6,"text":"National Qualifications Register","textPreview":"National Qualifications Register","textChars":32,"textLines":1,"bbox":[121,558,350,20]}
+{"kind":"textbox","id":"sh/tcfehwbm","slide":6,"text":"nqr.gov.in · NSQF-aligned qualifications","textPreview":"nqr.gov.in · NSQF-aligned qualifications","textChars":40,"textLines":1,"bbox":[121,583,415,24]}
+{"kind":"textbox","id":"sh/sb6x8ru1","slide":6,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[620,558,34,18]}
+{"kind":"textbox","id":"sh/kfaxor2x","slide":6,"text":"MSDE / NCVET","textPreview":"MSDE / NCVET","textChars":12,"textLines":1,"bbox":[669,558,350,20]}
+{"kind":"textbox","id":"sh/5gjyxw3i","slide":6,"text":"msde.gov.in · vocational education & skilling ecosystem","textPreview":"msde.gov.in · vocational education & skilling ecosystem","textChars":55,"textLines":1,"bbox":[669,583,415,24]}
+{"kind":"textbox","id":"sh/it8fm1kr","slide":6,"text":"TEAM CAREERCASE  ·  SMART INDIA HACKATHON 2026","textPreview":"TEAM CAREERCASE  ·  SMART INDIA HACKATHON 2026","textChars":46,"textLines":1,"bbox":[72,666,620,16]}
+{"kind":"notes","id":"nt/35ynbt","slide":6,"text":"[Sources]\nUser-provided: The Problem Statement.md.\nNational Career Service (NCO-2015): https://www.ncs.gov.in/Documents/National%20Classification%20of%20Occupations%20_Vol%20I-%202015.pdf\nNational Qualifications Register: https://www.nqr.gov.in\nMSDE / NCVET: https://www.msde.gov.in/ministry/our-organisation/details/national-council-for-vocational-education-and-training-ncvet-YTM1ATMtQWa"}

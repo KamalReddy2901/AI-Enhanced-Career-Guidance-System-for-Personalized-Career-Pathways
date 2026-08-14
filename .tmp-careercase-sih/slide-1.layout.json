@@ -1,0 +1,895 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/2e7lfz",
+    "id": "2e7lfz",
+    "slide": 1,
+    "layoutId": "a4ab5530-cf32-4e49-ae55-b280cb3be4a6",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "6b0431f0-4b56-43c8-b6aa-d25f80aabf49",
+    "masterLayoutName": "Master",
+    "backgroundColor": "#F9F8F6",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "+mn-lt"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "a4ab5530-cf32-4e49-ae55-b280cb3be4a6",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "6b0431f0-4b56-43c8-b6aa-d25f80aabf49",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "6b0431f0-4b56-43c8-b6aa-d25f80aabf49",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/o3algfep",
+      "id": "1",
+      "bbox": [
+        0,
+        0,
+        22,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#E63946",
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/n21k7ax4",
+      "id": "2",
+      "bbox": [
+        72,
+        70,
+        220,
+        30
+      ],
+      "geometry": "rect",
+      "text": "CAREER",
+      "textPreview": "CAREER",
+      "resolvedFontSize": 20,
+      "resolvedTextStyle": {
+        "fontSize": 20,
+        "typeface": "+mn-lt",
+        "color": "#0A0A0A",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "CAREER"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "CAREER",
+          "lineSpacingPercent": 105000,
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "color": "#0A0A0A",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.05
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "CAREER",
+              "fontSize": 20,
+              "color": "#0A0A0A",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.05
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/m183e5wj",
+      "id": "3",
+      "bbox": [
+        225,
+        70,
+        120,
+        30
+      ],
+      "geometry": "rect",
+      "text": "CASE",
+      "textPreview": "CASE",
+      "resolvedFontSize": 20,
+      "resolvedTextStyle": {
+        "fontSize": 20,
+        "typeface": "+mn-lt",
+        "color": "#666662",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "CASE"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "CASE",
+          "lineSpacingPercent": 105000,
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "color": "#666662",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.05
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "CASE",
+              "fontSize": 20,
+              "color": "#666662",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.05
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/10z250fy",
+      "id": "4",
+      "bbox": [
+        343,
+        77,
+        13,
+        13
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#E63946",
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0zqlcved",
+      "id": "5",
+      "name": "eyebrow",
+      "bbox": [
+        72,
+        145,
+        700,
+        20
+      ],
+      "geometry": "rect",
+      "text": "SMART INDIA HACKATHON 2026 · SMART EDUCATION · SOFTWARE",
+      "textPreview": "SMART INDIA HACKATHON 2026 · SMART EDUCATION · SOFTWARE",
+      "resolvedFontSize": 12,
+      "resolvedTextStyle": {
+        "fontSize": 12,
+        "typeface": "+mn-lt",
+        "color": "#E63946",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "SMART INDIA HACKATHON 2026 · SMART EDUCATION · SOFTWARE"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "SMART INDIA HACKATHON 2026 · SMART EDUCATION · SOFTWARE",
+          "lineSpacingPercent": 105000,
+          "resolvedTextStyle": {
+            "fontSize": 12,
+            "color": "#E63946",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.05
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "SMART INDIA HACKATHON 2026 · SMART EDUCATION · SOFTWARE",
+              "fontSize": 12,
+              "color": "#E63946",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.05
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zyhk3qxs",
+      "id": "6",
+      "name": "title",
+      "bbox": [
+        72,
+        185,
+        760,
+        230
+      ],
+      "geometry": "rect",
+      "text": "A career decision\nshould come with\na case.",
+      "textPreview": "A career decision | should come with | a case.",
+      "resolvedFontSize": 67,
+      "resolvedTextStyle": {
+        "fontSize": 67,
+        "typeface": "+mn-lt",
+        "color": "#0A0A0A",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "A career decision"
+          },
+          {
+            "index": 2,
+            "text": "should come with"
+          },
+          {
+            "index": 3,
+            "text": "a case."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "A career decision",
+          "lineSpacingPercent": 91000,
+          "resolvedTextStyle": {
+            "fontSize": 67,
+            "color": "#0A0A0A",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 0.91
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "A career decision",
+              "fontSize": 67,
+              "color": "#0A0A0A",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 0.91
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "should come with",
+          "lineSpacingPercent": 91000,
+          "resolvedTextStyle": {
+            "fontSize": 67,
+            "color": "#0A0A0A",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 0.91
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "should come with",
+              "fontSize": 67,
+              "color": "#0A0A0A",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 0.91
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "a case.",
+          "lineSpacingPercent": 91000,
+          "resolvedTextStyle": {
+            "fontSize": 67,
+            "color": "#0A0A0A",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 0.91
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "a case.",
+              "fontSize": 67,
+              "color": "#0A0A0A",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 0.91
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ex8jalwn",
+      "id": "7",
+      "bbox": [
+        72,
+        443,
+        550,
+        2
+      ],
+      "geometry": "rect",
+      "fillColor": "#0A0A0A",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/dcz21gf2",
+      "id": "8",
+      "bbox": [
+        72,
+        470,
+        630,
+        82
+      ],
+      "geometry": "rect",
+      "text": "CareerCase turns aptitude, aspirations, abilities and experience into explainable, India-grounded career pathways.",
+      "textPreview": "CareerCase turns aptitude, aspirations, abilities and experience into explainable, India-grounded career pathways.",
+      "resolvedFontSize": 23,
+      "resolvedTextStyle": {
+        "fontSize": 23,
+        "typeface": "+mn-lt",
+        "color": "#4A4A4A",
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "CareerCase turns aptitude, aspirations, abilities and"
+          },
+          {
+            "index": 2,
+            "text": "experience into explainable, India-grounded career"
+          },
+          {
+            "index": 3,
+            "text": "pathways."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "CareerCase turns aptitude, aspirations, abilities and experience into explainable, India-grounded career pathways.",
+          "lineSpacingPercent": 122000,
+          "resolvedTextStyle": {
+            "fontSize": 23,
+            "color": "#4A4A4A",
+            "alignment": "left",
+            "lineSpacing": 1.22
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "CareerCase turns aptitude, aspirations, abilities and experience into explainable, India-grounded career pathways.",
+              "fontSize": 23,
+              "color": "#4A4A4A",
+              "alignment": "left",
+              "lineSpacing": 1.22
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cbq18veh",
+      "id": "9",
+      "bbox": [
+        880,
+        188,
+        270,
+        250
+      ],
+      "geometry": "rect",
+      "fillColor": "#0A0A0A",
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/mx8fytcz",
+      "id": "10",
+      "name": "card",
+      "bbox": [
+        875,
+        183,
+        270,
+        250
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFD166",
+      "lineColor": "#0A0A0A",
+      "lineWidth": 1.25
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nyhg7ytk",
+      "id": "11",
+      "bbox": [
+        905,
+        220,
+        210,
+        55
+      ],
+      "geometry": "rect",
+      "text": "AI-ENHANCED\nCAREER GUIDANCE",
+      "textPreview": "AI-ENHANCED | CAREER GUIDANCE",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "fontSize": 17,
+        "typeface": "+mn-lt",
+        "color": "#0A0A0A",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "AI-ENHANCED"
+          },
+          {
+            "index": 2,
+            "text": "CAREER GUIDANCE"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "AI-ENHANCED",
+          "lineSpacingPercent": 105000,
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "color": "#0A0A0A",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.05
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "AI-ENHANCED",
+              "fontSize": 17,
+              "color": "#0A0A0A",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.05
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "CAREER GUIDANCE",
+          "lineSpacingPercent": 105000,
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "color": "#0A0A0A",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.05
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "CAREER GUIDANCE",
+              "fontSize": 17,
+              "color": "#0A0A0A",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.05
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ozqh03u5",
+      "id": "12",
+      "bbox": [
+        905,
+        307,
+        100,
+        18
+      ],
+      "geometry": "rect",
+      "text": "PS ID",
+      "textPreview": "PS ID",
+      "resolvedFontSize": 12,
+      "resolvedTextStyle": {
+        "fontSize": 12,
+        "typeface": "+mn-lt",
+        "color": "#666662",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "PS ID"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "PS ID",
+          "lineSpacingPercent": 105000,
+          "resolvedTextStyle": {
+            "fontSize": 12,
+            "color": "#666662",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.05
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "PS ID",
+              "fontSize": 12,
+              "color": "#666662",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.05
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/90zy98bq",
+      "id": "13",
+      "bbox": [
+        905,
+        330,
+        190,
+        35
+      ],
+      "geometry": "rect",
+      "text": "SIH260480",
+      "textPreview": "SIH260480",
+      "resolvedFontSize": 29,
+      "resolvedTextStyle": {
+        "fontSize": 29,
+        "typeface": "+mn-lt",
+        "color": "#0A0A0A",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "SIH260480"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "SIH260480",
+          "lineSpacingPercent": 105000,
+          "resolvedTextStyle": {
+            "fontSize": 29,
+            "color": "#0A0A0A",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.05
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "SIH260480",
+              "fontSize": 29,
+              "color": "#0A0A0A",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.05
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/etofutc3",
+      "id": "14",
+      "bbox": [
+        72,
+        636,
+        300,
+        20
+      ],
+      "geometry": "rect",
+      "text": "TEAM CAREERCASE",
+      "textPreview": "TEAM CAREERCASE",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "+mn-lt",
+        "color": "#0A0A0A",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "TEAM CAREERCASE"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "TEAM CAREERCASE",
+          "lineSpacingPercent": 105000,
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "color": "#0A0A0A",
+            "bold": true,
+            "alignment": "left",
+            "lineSpacing": 1.05
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "TEAM CAREERCASE",
+              "fontSize": 13,
+              "color": "#0A0A0A",
+              "bold": true,
+              "alignment": "left",
+              "lineSpacing": 1.05
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zuxg3yt8",
+      "id": "15",
+      "bbox": [
+        765,
+        636,
+        443,
+        20
+      ],
+      "geometry": "rect",
+      "text": "Ministry of Skill Development & Entrepreneurship",
+      "textPreview": "Ministry of Skill Development & Entrepreneurship",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "fontSize": 13,
+        "typeface": "+mn-lt",
+        "color": "#666662",
+        "alignment": "right",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Ministry of Skill Development & Entrepreneurship"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Ministry of Skill Development & Entrepreneurship",
+          "lineSpacingPercent": 105000,
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "color": "#666662",
+            "alignment": "right",
+            "lineSpacing": 1.05
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Ministry of Skill Development & Entrepreneurship",
+              "fontSize": 13,
+              "color": "#666662",
+              "alignment": "right",
+              "lineSpacing": 1.05
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}
