@@ -3,6 +3,8 @@ import { motion } from 'motion/react';
 import { TrendingUp, DollarSign, Target, Zap } from 'lucide-react';
 import type { CareerRecommendation } from '../../engine/types';
 import { occupationById } from '../../data/knowledge';
+import { useT } from '../../i18n';
+import { occupationName } from '../../i18n/occupationNames';
 
 interface CareerLandscapeScatterProps {
   recommendations: CareerRecommendation[];
@@ -36,7 +38,13 @@ export function CareerLandscapeScatter({
   highlightedId,
   className = '',
 }: CareerLandscapeScatterProps) {
+  const { lang } = useT();
   const [hoveredPoint, setHoveredPoint] = useState<ScatterPoint | null>(null);
+  const c = lang === 'hi'
+    ? {title:'करियर परिदृश्य', instructions:'इस दृश्य का उपयोग कैसे करें', hover:'किसी वृत्त पर होवर या फ़ोकस करके विवरण देखें', click:'विवरण देखने के लिए क्लिक या Enter दबाएँ', size:'बड़े वृत्त = बेहतर समग्र मेल स्कोर', sweet:'ऊपरी-दायाँ भाग = अधिक लाभ + आसान बदलाव', match:'मेल स्कोर', access:'बदलाव की सुगमता', reward:'लाभ की संभावना', compensation:'प्रतिफल', cluster:'समूह', empty:'विवरण देखने के लिए किसी वृत्त पर होवर या फ़ोकस करें', read:'इस चार्ट को कैसे पढ़ें', highEasy:'अधिक लाभ + आसान बदलाव = आदर्श लक्ष्य', highHard:'अधिक लाभ, कठिन बदलाव = दीर्घकालिक लक्ष्य', lowEasy:'कम लाभ, आसान बदलाव = त्वरित अवसर', larger:'बड़े वृत्त = आपकी प्रोफ़ाइल के आधार पर अधिक समग्र मेल', point:'विवरण खोलें', yAxis:'लाभ की संभावना (अधिक = बेहतर)', xAxis:'बदलाव की सुगमता (अधिक = आसान)', highReward:'अधिक लाभ', challenging:'चुनौतीपूर्ण मार्ग', sweetSpot:'बेहतरीन अवसर', sweetSub:'अधिक लाभ + आसान बदलाव', lowerReward:'कम लाभ', quickWins:'त्वरित अवसर'}
+    : lang === 'te'
+      ? {title:'కెరీర్ దృశ్యం', instructions:'ఈ దృశ్యాన్ని ఎలా ఉపయోగించాలి', hover:'వివరాలు చూడటానికి వృత్తంపై హోవర్ చేయండి లేదా ఫోకస్ చేయండి', click:'వివరాలు చూడటానికి క్లిక్ చేయండి లేదా Enter నొక్కండి', size:'పెద్ద వృత్తాలు = మెరుగైన మొత్తం సరిపోలిక స్కోరు', sweet:'ఎగువ కుడి భాగం = అధిక ప్రతిఫలం + సులభ మార్పు', match:'సరిపోలిక స్కోరు', access:'మార్పు సౌలభ్యం', reward:'ప్రతిఫల అవకాశం', compensation:'ప్రతిఫలం', cluster:'సమూహం', empty:'వివరాలు చూడటానికి వృత్తంపై హోవర్ చేయండి లేదా ఫోకస్ చేయండి', read:'ఈ చార్ట్‌ను ఎలా చదవాలి', highEasy:'అధిక ప్రతిఫలం + సులభ మార్పు = అనుకూల లక్ష్యాలు', highHard:'అధిక ప్రతిఫలం, కఠిన మార్పు = దీర్ఘకాలిక లక్ష్యాలు', lowEasy:'తక్కువ ప్రతిఫలం, సులభ మార్పు = త్వరిత అవకాశాలు', larger:'పెద్ద వృత్తాలు = మీ ప్రొఫైల్ ఆధారంగా అధిక మొత్తం సరిపోలిక', point:'వివరాలు తెరవండి', yAxis:'ప్రతిఫల అవకాశం (ఎక్కువ = మెరుగైనది)', xAxis:'మార్పు సౌలభ్యం (ఎక్కువ = సులభం)', highReward:'అధిక ప్రతిఫలం', challenging:'సవాలైన మార్గం', sweetSpot:'అనుకూల అవకాశం', sweetSub:'అధిక ప్రతిఫలం + సులభ మార్పు', lowerReward:'తక్కువ ప్రతిఫలం', quickWins:'త్వరిత అవకాశాలు'}
+      : {title:'Career landscape', instructions:'How to use this visualization', hover:'Hover over or focus any circle to see career details', click:'Click or press Enter to view the full career details', size:'Larger circles = better overall match score', sweet:'Top-right = high reward + easier transition', match:'Match score', access:'Ease of transition', reward:'Reward potential', compensation:'Compensation', cluster:'Cluster', empty:'Hover over or focus any circle to see career details', read:'How to read this chart', highEasy:'High reward + easy transition = ideal targets', highHard:'High reward but harder transition = long-term goals', lowEasy:'Lower reward but easy transition = quick wins', larger:'Larger circles = higher overall match score based on your profile', point:'Open details for', yAxis:'REWARD POTENTIAL (Higher = Better)', xAxis:'EASE OF TRANSITION (Higher = Easier)', highReward:'HIGH REWARD', challenging:'CHALLENGING PATH', sweetSpot:'★ SWEET SPOT ★', sweetSub:'High Reward + Easy Access', lowerReward:'Lower Reward', quickWins:'QUICK WINS'};
 
   const scatterPoints = useMemo<ScatterPoint[]>(() => {
     return recommendations.map(rec => {
@@ -80,17 +88,17 @@ export function CareerLandscapeScatter({
   const midY = padding.top + chartHeight / 2;
 
   return (
-    <div className={`relative ${className}`}>
+    <section className={`relative ${className}`} aria-label={c.title}>
       {/* Instructions */}
       <div className="mb-4 rounded-sm border-2 border-[var(--accent-news)] bg-[var(--paper)] p-4">
         <h4 className="mb-2 font-mono-ui text-sm font-semibold uppercase tracking-wide">
-          📊 How to Use This Visualization
+          {c.instructions}
         </h4>
         <ul className="space-y-1 text-sm text-[var(--ink-soft)]">
-          <li>• <strong>Hover</strong> over any circle to see detailed career information</li>
-          <li>• <strong>Click</strong> a circle to view full career details</li>
-          <li>• <strong>Larger circles</strong> = Better overall match score</li>
-          <li>• <strong>Look for the ★ SWEET SPOT ★</strong> quadrant (top-right) = High reward + Easy transition</li>
+          <li>• {c.hover}</li>
+          <li>• {c.click}</li>
+          <li>• {c.size}</li>
+          <li>• {c.sweet}</li>
         </ul>
       </div>
 
@@ -98,11 +106,11 @@ export function CareerLandscapeScatter({
       <div className="mb-4 flex flex-wrap gap-4 text-sm">
         <div className="flex items-center gap-2">
           <Target size={16} className="text-[var(--ink-soft)]" />
-          <span className="text-[var(--ink-soft)]">Size = Match Score</span>
+          <span className="text-[var(--ink-soft)]">{c.size}</span>
         </div>
         <div className="flex items-center gap-2">
           <Zap size={16} className="text-[var(--ink-soft)]" />
-          <span className="text-[var(--ink-soft)]">Color = Career Cluster</span>
+          <span className="text-[var(--ink-soft)]">{c.cluster}</span>
         </div>
       </div>
 
@@ -111,8 +119,8 @@ export function CareerLandscapeScatter({
         width={width}
         height={height}
         className="mx-auto border-2 border-[var(--ink)] bg-[var(--paper-raised)] shadow-lg"
-        role="img"
-        aria-label="Career landscape scatter plot"
+        role="group"
+        aria-label={c.title}
       >
         {/* Y-axis label */}
         <text
@@ -123,7 +131,7 @@ export function CareerLandscapeScatter({
           style={{ fontSize: '13px', fontFamily: 'var(--font-mono-ui)', fontWeight: 600 }}
           transform={`rotate(-90 30 ${height / 2})`}
         >
-          REWARD POTENTIAL (Higher = Better) →
+          {c.yAxis} →
         </text>
 
         {/* X-axis label */}
@@ -134,7 +142,7 @@ export function CareerLandscapeScatter({
           className="fill-[var(--ink)]"
           style={{ fontSize: '13px', fontFamily: 'var(--font-mono-ui)', fontWeight: 600 }}
         >
-          ACCESSIBILITY / EASE OF TRANSITION (Higher = Easier) →
+          {c.xAxis} →
         </text>
 
         {/* Grid lines */}
@@ -176,7 +184,7 @@ export function CareerLandscapeScatter({
             className="fill-[var(--ink)]"
             opacity="0.6"
           >
-            HIGH REWARD
+            {c.highReward}
           </text>
           <text
             x={padding.left + chartWidth * 0.25}
@@ -185,7 +193,7 @@ export function CareerLandscapeScatter({
             className="fill-[var(--ink)]"
             opacity="0.6"
           >
-            CHALLENGING PATH
+            {c.challenging}
           </text>
 
           <text
@@ -196,7 +204,7 @@ export function CareerLandscapeScatter({
             opacity="0.8"
             style={{ fontSize: '14px', fontWeight: 700 }}
           >
-            ★ SWEET SPOT ★
+            {c.sweetSpot}
           </text>
           <text
             x={padding.left + chartWidth * 0.75}
@@ -205,7 +213,7 @@ export function CareerLandscapeScatter({
             className="fill-[var(--accent-news)]"
             opacity="0.8"
           >
-            High Reward + Easy Access
+            {c.sweetSub}
           </text>
 
           <text
@@ -215,7 +223,7 @@ export function CareerLandscapeScatter({
             className="fill-[var(--ink-soft)]"
             opacity="0.5"
           >
-            Lower Reward
+            {c.lowerReward}
           </text>
           <text
             x={padding.left + chartWidth * 0.25}
@@ -224,7 +232,7 @@ export function CareerLandscapeScatter({
             className="fill-[var(--ink-soft)]"
             opacity="0.5"
           >
-            Challenging Path
+            {c.challenging}
           </text>
 
           <text
@@ -234,7 +242,7 @@ export function CareerLandscapeScatter({
             className="fill-[var(--ink)]"
             opacity="0.6"
           >
-            QUICK WINS
+            {c.quickWins}
           </text>
           <text
             x={padding.left + chartWidth * 0.75}
@@ -243,7 +251,7 @@ export function CareerLandscapeScatter({
             className="fill-[var(--ink)]"
             opacity="0.6"
           >
-            Lower Reward + Easy Access
+            {c.lowEasy}
           </text>
         </g>
 
@@ -280,8 +288,15 @@ export function CareerLandscapeScatter({
           return (
             <g 
               key={point.id}
+              className="career-landscape-point"
+              role="button"
+              tabIndex={0}
+              aria-label={`${c.point}: ${occupationName(point.id, occupationById.get(point.id)?.title ?? point.id, lang)}. ${c.match} ${Math.round(point.size)}. ${c.access} ${Math.round(point.x)}. ${c.reward} ${Math.round(point.y)}.`}
               onMouseOver={() => setHoveredPoint(point)}
               onMouseOut={() => setHoveredPoint(null)}
+              onFocus={() => setHoveredPoint(point)}
+              onBlur={() => setHoveredPoint(null)}
+              onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onCareerClick?.(point.recommendation); } }}
               onClick={() => onCareerClick?.(point.recommendation)}
               style={{ cursor: 'pointer' }}
               pointerEvents="all"
@@ -329,30 +344,30 @@ export function CareerLandscapeScatter({
       {hoveredPoint ? (
         <div className="mt-4 rounded border-2 border-[var(--ink)] bg-[var(--paper-raised)] p-4 shadow-md">
           <h4 className="mb-3 font-display text-xl leading-tight border-b-2 border-[var(--ink-faint)] pb-2">
-            {occupationById.get(hoveredPoint.recommendation.occupationId)?.title || hoveredPoint.id}
+            {occupationName(hoveredPoint.id, occupationById.get(hoveredPoint.recommendation.occupationId)?.title ?? hoveredPoint.id, lang)}
           </h4>
           <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div className="flex items-center justify-between border-b border-[var(--ink-faint)] pb-2">
-              <span className="font-mono-ui text-xs uppercase text-[var(--ink-soft)] tracking-wide">Match Score</span>
+              <span className="font-mono-ui text-xs uppercase text-[var(--ink-soft)] tracking-wide">{c.match}</span>
               <span className="font-display text-lg font-bold">{Math.round(hoveredPoint.size)}<span className="text-xs text-[var(--ink-soft)]">/100</span></span>
             </div>
             <div className="flex items-center justify-between border-b border-[var(--ink-faint)] pb-2">
-              <span className="font-mono-ui text-xs uppercase text-[var(--ink-soft)] tracking-wide">Accessibility</span>
+              <span className="font-mono-ui text-xs uppercase text-[var(--ink-soft)] tracking-wide">{c.access}</span>
               <span className="font-display text-lg font-bold">{Math.round(hoveredPoint.x)}<span className="text-xs text-[var(--ink-soft)]">/100</span></span>
             </div>
             <div className="flex items-center justify-between border-b border-[var(--ink-faint)] pb-2">
-              <span className="font-mono-ui text-xs uppercase text-[var(--ink-soft)] tracking-wide">Reward</span>
+              <span className="font-mono-ui text-xs uppercase text-[var(--ink-soft)] tracking-wide">{c.reward}</span>
               <span className="font-display text-lg font-bold">{Math.round(hoveredPoint.y)}<span className="text-xs text-[var(--ink-soft)]">/100</span></span>
             </div>
             <div className="flex items-center justify-between border-b border-[var(--ink-faint)] pb-2">
-              <span className="font-mono-ui text-xs uppercase text-[var(--ink-soft)] tracking-wide">Compensation</span>
+              <span className="font-mono-ui text-xs uppercase text-[var(--ink-soft)] tracking-wide">{c.compensation}</span>
               <span className="font-display text-lg font-bold">
                 {occupationById.get(hoveredPoint.recommendation.occupationId)?.valuesProfile.compensation || 0}<span className="text-xs text-[var(--ink-soft)]">/100</span>
               </span>
             </div>
           </div>
           <div className="mt-3 pt-3 border-t-2 border-[var(--ink-faint)]">
-            <span className="font-mono-ui text-[10px] uppercase tracking-widest text-[var(--ink-soft)]">Cluster: </span>
+            <span className="font-mono-ui text-[10px] uppercase tracking-widest text-[var(--ink-soft)]">{c.cluster}: </span>
             <span className="font-semibold text-sm capitalize">
               {(occupationById.get(hoveredPoint.recommendation.occupationId)?.cluster || 'general').replace('_', ' ')}
             </span>
@@ -360,30 +375,30 @@ export function CareerLandscapeScatter({
         </div>
       ) : (
         <div className="mt-4 rounded border border-[var(--ink-faint)] bg-[var(--paper)] p-3 text-center text-sm text-[var(--ink-soft)]">
-          Hover over any circle to see career details
+          {c.empty}
         </div>
       )}
 
       {/* Interpretation guide */}
       <div className="mt-4 rounded-sm border border-[var(--ink-faint)] bg-[var(--paper)] p-4 text-xs">
         <h4 className="mb-2 font-mono-ui text-[10px] uppercase tracking-wide text-[var(--ink-soft)]">
-          How to Read This Chart
+          {c.read}
         </h4>
         <ul className="space-y-1 text-[var(--ink-soft)]">
           <li>
-            <strong>Top-right quadrant (★)</strong>: High reward + Easy transition = Ideal targets
+            <strong>↗</strong>: {c.highEasy}
           </li>
           <li>
-            <strong>Top-left quadrant</strong>: High reward but harder transition = Long-term goals
+            <strong>↖</strong>: {c.highHard}
           </li>
           <li>
-            <strong>Bottom-right quadrant</strong>: Lower reward but easy transition = Quick wins
+            <strong>↘</strong>: {c.lowEasy}
           </li>
           <li>
-            <strong>Larger circles</strong>: Higher overall match score based on your profile
+            <strong>●</strong>: {c.larger}
           </li>
         </ul>
       </div>
-    </div>
+    </section>
   );
 }

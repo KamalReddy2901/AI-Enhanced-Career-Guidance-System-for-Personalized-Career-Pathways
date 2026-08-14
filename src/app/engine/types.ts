@@ -143,6 +143,10 @@ export interface ComponentScore {
   weight: number;                // from segment weight profile
   note: string;                  // deterministic explanation
   dataAvailable: boolean;        // false → neutral 50, prompt to complete
+  /** Where the input for this component came from. Never an LLM judgement. */
+  source: 'assessment' | 'career_passport' | 'knowledge_base' | 'market_snapshot' | 'computed';
+  /** A short, user-readable qualifier about scope or freshness. */
+  sourceDetail: string;
 }
 
 export type RecommendationGroup = 
@@ -162,12 +166,18 @@ export interface CareerRecommendation {
   topReasons: string[];          // deterministic, from explain.ts
   whyNotHigher: string[];        // counterfactual levers
   skillGapPreview: Array<{ skillId: string; severity: number }>;  // top 3
+  /** Proportion of weighted components backed by completed user inputs. */
+  evidenceCoverage: number;
 }
 
 export interface RecommendationSet {
   generatedAt: string;           // ISO timestamp
   passportVersion: number;
   kbVersion: string;
+  /** Immutable release identifiers so results can be reproduced and reviewed. */
+  engineVersion: string;
+  assessmentVersion: string;
+  scoringVersion: string;
   segment: Segment;
   weightsUsed: Record<FitDimension, number>;
   recommendations: CareerRecommendation[];

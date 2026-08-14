@@ -347,6 +347,14 @@ nav a, nav button {
   border-radius: 999px;
 }
 
+/* SVG points are interactive controls as well as a visual chart. */
+.career-landscape-point:focus { outline: none; }
+.career-landscape-point:focus circle:last-child {
+  stroke: var(--accent-news);
+  stroke-width: 4px;
+  opacity: 1;
+}
+
 /* Phase 6: pathway and long-form career tools read as one casefile. */
 .editorial-workflow,
 .editorial-article { background: var(--paper); color: var(--ink); }

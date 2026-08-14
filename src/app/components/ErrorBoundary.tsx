@@ -65,7 +65,7 @@ export class ErrorBoundary extends Component<Props, State> {
             An unexpected error interrupted your investigation.
           </p>
 
-          {this.state.error && (
+          {import.meta.env.DEV && this.state.error && (
             <details className="mb-6 text-left">
               <summary
                 className="font-[Inter] text-black/30 cursor-pointer hover:text-black/50 transition-colors"

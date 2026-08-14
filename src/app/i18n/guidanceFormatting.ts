@@ -36,6 +36,26 @@ export function localizedReason(reason: string, lang: Language): string {
   return `${localizedDimension(match[1], lang)} ${match[2]}/100 ${join} — ${localizedNote(match[3], lang)}`;
 }
 
+/** Translate the deterministic counterfactual templates shown in the evidence
+ * panel. Unknown content is deliberately returned unchanged rather than being
+ * guessed by an LLM. */
+export function localizedWhyNotHigher(reason: string, lang: Language): string {
+  if (lang === 'en') return reason;
+  const score = reason.match(/^(.+) is currently (\d+)\/100; strengthening this evidence could lift the overall fit\.$/);
+  if (score) return lang === 'hi'
+    ? `${localizedDimension(score[1], lang)} अभी ${score[2]}/100 है; इस प्रमाण को मजबूत करने से समग्र मेल बेहतर हो सकता है।`
+    : `${localizedDimension(score[1], lang)} ప్రస్తుతం ${score[2]}/100 ఉంది; ఈ ఆధారాన్ని బలపరిస్తే మొత్తం సరిపోలిక మెరుగవుతుంది.`;
+  const missing = reason.match(/^Complete the (.+) module to replace the neutral score and sharpen this recommendation\.$/);
+  if (missing) return lang === 'hi'
+    ? `तटस्थ स्कोर बदलने और इस सुझाव को स्पष्ट करने के लिए ${localizedDimension(missing[1], lang)} पूरा करें।`
+    : `తటస్థ స్కోరును మార్చి ఈ సూచనను స్పష్టం చేయడానికి ${localizedDimension(missing[1], lang)} పూర్తి చేయండి.`;
+  const skill = reason.match(/^If (.+) reaches level (\d+), the skill component improves enough to move overall fit roughly (\d+) → (\d+)\.$/);
+  if (skill) return lang === 'hi'
+    ? `यदि ${skill[1]} स्तर ${skill[2]} तक पहुँचता है, तो कौशल घटक से समग्र मेल लगभग ${skill[3]} → ${skill[4]} हो सकता है।`
+    : `${skill[1]} స్థాయి ${skill[2]}కి చేరితే, నైపుణ్య భాగం మొత్తం సరిపోలికను సుమారు ${skill[3]} → ${skill[4]}కి తీసుకెళ్లవచ్చు.`;
+  return reason;
+}
+
 export function localizedConfidence(value: string, lang: Language): string {
   if (lang === 'hi') return ({low:'कम',medium:'मध्यम',high:'उच्च'} as Record<string,string>)[value] ?? value;
   if (lang === 'te') return ({low:'తక్కువ',medium:'మధ్యస్థం',high:'అధికం'} as Record<string,string>)[value] ?? value;

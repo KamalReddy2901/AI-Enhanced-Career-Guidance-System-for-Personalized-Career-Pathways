@@ -56,6 +56,11 @@ export function RecommendationsPage() {
   } = useGuidance();
   const { locale, lang, t } = useT();
   const c = lang === "hi" ? { start:"आपका करियर परिदृश्य पासपोर्ट से शुरू होता है", onboarding:"ऑनबोर्डिंग शुरू करें", preparing:"आपका नियम-आधारित परिदृश्य तैयार हो रहा है…", header:"करियर परिदृश्य", title:"खोजने योग्य मज़बूत विकल्प", intro:"आपकी मौजूदा प्रोफ़ाइल पर आधारित। स्कोर प्रमाण-आधारित संकेत हैं, अंतिम निर्णय नहीं।", ask:"क्यों पूछें · अगर ऐसा हो तो पूछें", confidence:"विश्वसनीयता", demand:"माँग", why:"यह क्यों?", build:"मार्ग बनाएँ", dossier:"पूरा विवरण पढ़ें", footer:"संस्करणित ज्ञान-आधार पर नियम-आधारित स्कोरिंग · अंकों के लिए LLM का उपयोग नहीं" } : lang === "te" ? { start:"మీ కెరీర్ దృశ్యం పాస్‌పోర్ట్‌తో మొదలవుతుంది", onboarding:"ఆన్‌బోర్డింగ్ ప్రారంభించండి", preparing:"మీ నియమ-ఆధారిత దృశ్యం సిద్ధమవుతోంది…", header:"కెరీర్ దృశ్యం", title:"అన్వేషించదగిన బలమైన ఎంపికలు", intro:"మీ ప్రస్తుత ప్రొఫైల్ ఆధారంగా. స్కోర్లు ఆధారాలతో కూడిన సంకేతాలు మాత్రమే, తీర్పు కాదు.", ask:"ఎందుకో అడగండి · పరిస్థితి మారితే అడగండి", confidence:"నమ్మకం", demand:"డిమాండ్", why:"ఇది ఎందుకు?", build:"మార్గం నిర్మించండి", dossier:"పూర్తి వివరాలు చదవండి", footer:"వెర్షన్ చేసిన జ్ఞాన భాండాగారంపై నియమ-ఆధారిత స్కోరింగ్ · స్కోర్లకు LLM ఉపయోగించలేదు" } : { start:"Your career landscape starts with a passport", onboarding:"Start onboarding", preparing:"Preparing your deterministic landscape…", header:"The Career Landscape", title:"Strong options to explore", intro:"Based on your current profile. Scores are evidence-led signals, never a verdict.", ask:"Ask why · Ask what-if", confidence:"confidence", demand:"Demand", why:"Why this?", build:"Build pathway", dossier:"Read the full dossier", footer:"Deterministic scoring over the versioned knowledge base · LLM not used for scores" };
+  const ui = lang === 'hi'
+    ? {cards:'कार्ड', landscape:'परिदृश्य', cardView:'कार्ड दृश्य', landscapeView:'परिदृश्य दृश्य', sort:'क्रमबद्ध करें', bestFit:'सर्वोत्तम मेल', salary:'माँग के अनुसार', fastest:'सबसे तेज़ मार्ग', wlb:'कार्य-जीवन संतुलन', dismiss:'इस करियर को छिपाएँ', read:'को ज़ोर से पढ़ें', stars:'5 में से स्टार', hidden:'करियर छिपे हैं', showAll:'सभी दिखाएँ', restored:'सभी छिपे करियर फिर से दिखाए गए', hiddenToast:'करियर सुझावों से छिपाया गया'}
+    : lang === 'te'
+      ? {cards:'కార్డులు', landscape:'దృశ్యం', cardView:'కార్డ్ వీక్షణ', landscapeView:'దృశ్య వీక్షణ', sort:'క్రమబద్ధీకరించు', bestFit:'ఉత్తమ సరిపోలిక', salary:'డిమాండ్ ప్రకారం', fastest:'వేగవంతమైన మార్గం', wlb:'పని-జీవిత సమతుల్యత', dismiss:'ఈ కెరీర్‌ను దాచు', read:'ను చదివి వినిపించు', stars:'5లో స్టార్‌లు', hidden:'కెరీర్లు దాచబడ్డాయి', showAll:'అన్నీ చూపించు', restored:'దాచిన కెరీర్లు మళ్లీ చూపించబడ్డాయి', hiddenToast:'సూచనల నుండి కెరీర్ దాచబడింది'}
+      : {cards:'Cards', landscape:'Landscape', cardView:'Card view', landscapeView:'Landscape view', sort:'Sort recommendations', bestFit:'Best fit', salary:'By demand', fastest:'Fastest path', wlb:'Work-life balance', dismiss:'Hide this career', read:'Read aloud', stars:'stars out of 5', hidden:'careers hidden', showAll:'Show all', restored:'All hidden careers restored', hiddenToast:'Career hidden from recommendations'};
   const [explanation, setExplanation] = useState<CareerRecommendation | null>(
     null,
   );
@@ -82,10 +87,10 @@ export function RecommendationsPage() {
   };
 
   const sortLabels: Record<SortOption, string> = {
-    best_fit: 'Best Fit',
-    salary: 'Highest Salary',
-    fastest: 'Fastest Path',
-    wlb: 'Best Work-Life Balance',
+    best_fit: ui.bestFit,
+    salary: ui.salary,
+    fastest: ui.fastest,
+    wlb: ui.wlb,
   };
 
   const reveal = useReveal<HTMLDivElement>();
@@ -105,7 +110,7 @@ export function RecommendationsPage() {
   const handleDismissCareer = (occupationId: string) => {
     setHiddenCareers(prev => new Set([...prev, occupationId]));
     sounds.click();
-    toast.success('Career hidden from recommendations');
+    toast.success(ui.hiddenToast);
   };
 
   const visibleRecommendations = useMemo(() => {
@@ -200,22 +205,26 @@ export function RecommendationsPage() {
             <div className="flex items-center gap-1 border border-[var(--ink-faint)] rounded-sm overflow-hidden">
               <button
                 onClick={() => setViewMode('cards')}
+                aria-label={ui.cardView}
+                aria-pressed={viewMode === 'cards'}
                 className={`px-3 py-2 text-xs font-mono-ui uppercase transition-colors ${
                   viewMode === 'cards' ? 'bg-[var(--ink)] text-[var(--paper)]' : 'bg-[var(--paper)] text-[var(--ink-soft)] hover:text-[var(--ink)]'
                 }`}
-                title="Card view"
+                title={ui.cardView}
               >
-                Cards
+                {ui.cards}
               </button>
               <button
                 onClick={() => setViewMode('scatter')}
+                aria-label={ui.landscapeView}
+                aria-pressed={viewMode === 'scatter'}
                 className={`px-3 py-2 text-xs font-mono-ui uppercase transition-colors flex items-center gap-1 ${
                   viewMode === 'scatter' ? 'bg-[var(--ink)] text-[var(--paper)]' : 'bg-[var(--paper)] text-[var(--ink-soft)] hover:text-[var(--ink)]'
                 }`}
-                title="Scatter plot view"
+                title={ui.landscapeView}
               >
                 <Map size={12} />
-                Landscape
+                {ui.landscape}
               </button>
             </div>
 
@@ -225,6 +234,7 @@ export function RecommendationsPage() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
+                aria-label={ui.sort}
                 className="border border-[var(--ink-faint)] bg-[var(--paper)] px-3 py-2 text-sm font-mono-ui uppercase hover:border-[var(--ink)]"
               >
                 {Object.entries(sortLabels).map(([value, label]) => (
@@ -278,6 +288,7 @@ export function RecommendationsPage() {
                   locale={locale} 
                   lang={lang} 
                   copy={c} 
+                  ui={ui}
                   onExplain={() => setExplanation(recommendation)} 
                   onDismiss={() => handleDismissCareer(recommendation.occupationId)} 
                 />
@@ -290,16 +301,16 @@ export function RecommendationsPage() {
           <div className="mb-8 border border-[var(--ink-faint)] bg-[var(--paper-raised)] p-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-[var(--ink-soft)]">
-                {hiddenCareers.size} career{hiddenCareers.size !== 1 ? 's' : ''} hidden
+                {hiddenCareers.size} {ui.hidden}
               </span>
               <button
                 onClick={() => {
                   setHiddenCareers(new Set());
-                  toast.success('All hidden careers restored');
+                  toast.success(ui.restored);
                 }}
                 className="text-sm underline hover:no-underline"
               >
-                Show all
+                {ui.showAll}
               </button>
             </div>
           </div>
@@ -333,6 +344,7 @@ function RecommendationCard({
   locale,
   lang,
   copy,
+  ui,
   onExplain,
   onDismiss,
 }: {
@@ -340,6 +352,7 @@ function RecommendationCard({
   locale: string;
   lang: "en" | "hi" | "te";
   copy: { confidence:string; demand:string; why:string; build:string; dossier:string };
+  ui: { dismiss:string; read:string; stars:string };
   onExplain: () => void;
   onDismiss: () => void;
 }) {
@@ -360,8 +373,9 @@ function RecommendationCard({
     <article className="card-sketch group h-full p-6 transition-[transform,box-shadow] hover:-translate-y-[3px] hover:shadow-[6px_6px_0_var(--ink)] md:p-8 relative">
       <button
         onClick={onDismiss}
-        className="absolute top-4 right-4 p-1 text-[var(--ink-faint)] hover:text-[var(--ink)] opacity-0 group-hover:opacity-100 transition-opacity"
-        title="Not interested"
+        className="absolute top-4 right-4 min-h-11 min-w-11 p-1 text-[var(--ink-faint)] hover:text-[var(--ink)] opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
+        title={ui.dismiss}
+        aria-label={ui.dismiss}
       >
         <X size={18} />
       </button>
@@ -386,7 +400,7 @@ function RecommendationCard({
             )
           }
           className="min-h-11 min-w-11"
-          aria-label={`Read ${occupation.title} aloud`}
+          aria-label={`${ui.read}: ${occupationName(occupation.id, occupation.title, lang)}`}
         >
           <Volume2 size={16} aria-hidden="true" />
         </button>
@@ -394,11 +408,12 @@ function RecommendationCard({
       
       {/* Visual Star Rating */}
       <div className="mt-4 flex items-center gap-2">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" role="img" aria-label={`${starRating} ${ui.stars}`}>
           {[1, 2, 3, 4, 5].map((star) => (
             <Star
               key={star}
               size={18}
+              aria-hidden="true"
               className={star <= starRating ? 'fill-[var(--ink)] text-[var(--ink)]' : 'text-[var(--ink-faint)]'}
             />
           ))}

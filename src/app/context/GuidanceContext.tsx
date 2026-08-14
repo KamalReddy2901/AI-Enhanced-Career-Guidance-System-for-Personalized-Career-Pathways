@@ -18,6 +18,7 @@ import type {
 } from "../engine/types";
 import { useAuth } from "./AuthContext";
 import { calculateCompleteness } from "../engine/skillProfile";
+import { GUIDANCE_ENGINE_VERSION } from "../engine/matching";
 
 // ─── Context Types ────────────────────────────────────────────────────────────
 
@@ -376,7 +377,11 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
     const raw = localStorage.getItem("cc_guidance_recommendations");
     if (raw) {
       try {
-        setRecommendations(JSON.parse(raw) as RecommendationSet);
+        const cached = JSON.parse(raw) as RecommendationSet;
+        // Scores from an older contract must never masquerade as results from
+        // the current reviewed engine. Recompute from the durable passport.
+        if (cached.engineVersion === GUIDANCE_ENGINE_VERSION) setRecommendations(cached);
+        else localStorage.removeItem("cc_guidance_recommendations");
       } catch {
         /* stale cache */
       }

@@ -99,7 +99,7 @@ The total is the weighted sum of 11 0–100 components:
 10. learning feasibility;
 11. geographic fit.
 
-Weights vary by segment and sum to 100%. The language model does not assign these scores. The UI exposes each raw component, its weight, its evidence note, missing-data neutrality, and bounded skill counterfactuals.
+Weights vary by segment and sum to 100%. The language model does not assign these scores. Each generated landscape now records an explicit guidance-engine, assessment-bank, scoring, and knowledge-base release identifier. The UI exposes each raw component, its weight, source category, source/freshness note, missing-data neutrality, completed-user-input coverage, and bounded skill counterfactuals.
 
 The landscape returns 13 diverse recommendations across safe, stretch, and ambitious groupings. “Best fit” preserves the engine’s diversified order. “Fastest path” compares the minimum calculated duration across each occupation’s routes instead of using a proxy.
 
@@ -213,6 +213,10 @@ The August 2026 production audit used a signed-in burner account from onboarding
 - path duration labels and fastest sorting use real route durations;
 - saved paths no longer change length after a completed step;
 - AI counselor counterfactual claims are constrained to computed evidence;
+- guidance results now invalidate stale cached scoring contracts and disclose the engine, assessment, scoring, knowledge-base, and component-source provenance;
+- weak skill evidence is no longer treated like fully supported evidence in the skill-fit component;
+- the recommendation evidence panel restores keyboard focus, has a programmatic dialog title, and exposes source details;
+- card and landscape controls are localized in English, Hindi, and Telugu; landscape points support keyboard focus, Enter, and Space;
 - export declares a schema version;
 - duplicate consent migration writes are prevented.
 

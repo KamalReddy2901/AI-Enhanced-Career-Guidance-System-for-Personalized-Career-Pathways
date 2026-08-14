@@ -11,6 +11,11 @@ import { buildTopReasons, buildWhyNotHigher, counterfactualText } from './explai
 import { weightsFor } from './weights';
 import { buildPathwayPlan } from './pathways';
 
+/** Bump these only when the corresponding reviewed guidance contract changes. */
+export const GUIDANCE_ENGINE_VERSION = 'guidance-engine-v1';
+export const ASSESSMENT_VERSION = 'assessment-bank-v1';
+export const SCORING_VERSION = 'weighted-match-v1';
+
 const clamp = (value: number): number => Math.max(0, Math.min(100, value));
 const rounded = (value: number): number => Math.round(clamp(value));
 
@@ -43,13 +48,18 @@ function valuesScore(passport: CareerPassport, occupation: Occupation): [number,
   return [100 - dimensions.reduce((sum, dimension) => sum + Math.abs(passport.values![dimension] - occupation.valuesProfile[dimension]), 0) / dimensions.length, true];
 }
 
-function skillScore(passport: CareerPassport, occupation: Occupation): number {
+function skillScore(passport: CareerPassport, occupation: Occupation): [number, boolean] {
+  if (!passport.skills.length) return [50, false];
   const totalImportance = occupation.skills.reduce((sum, requirement) => sum + requirement.importance, 0);
   const coverage = occupation.skills.reduce((sum, requirement) => {
-    const current = passport.skills.find(claim => claim.skillId === requirement.skillId)?.proficiency ?? 0;
-    return sum + Math.min(current, requirement.requiredProficiency) / requirement.requiredProficiency * requirement.importance;
+    const claim = passport.skills.find(item => item.skillId === requirement.skillId);
+    const current = claim?.proficiency ?? 0;
+    // A self-report or weak resume match is useful, but should not carry the
+    // same force as independently supported evidence.
+    const evidenceConfidence = claim?.confidence ?? 0;
+    return sum + Math.min(current, requirement.requiredProficiency) / requirement.requiredProficiency * evidenceConfidence * requirement.importance;
   }, 0);
-  return totalImportance ? 100 * coverage / totalImportance : 0;
+  return [totalImportance ? 100 * coverage / totalImportance : 50, true];
 }
 
 function transferableScore(passport: CareerPassport, occupation: Occupation): [number, boolean] {
@@ -122,8 +132,16 @@ function geographicScore(passport: CareerPassport, occupation: Occupation): numb
   return passport.constraints.canRelocate ? 70 : 55;
 }
 
-function component(dimension: FitDimension, score: number, weight: number, note: string, dataAvailable = true): ComponentScore {
-  return { dimension, score: rounded(score), weight, note, dataAvailable };
+function component(
+  dimension: FitDimension,
+  score: number,
+  weight: number,
+  note: string,
+  dataAvailable: boolean,
+  source: ComponentScore['source'],
+  sourceDetail: string,
+): ComponentScore {
+  return { dimension, score: rounded(score), weight, note, dataAvailable, source, sourceDetail };
 }
 
 function scoreOccupation(passport: CareerPassport, occupation: Occupation): CareerRecommendation {
@@ -131,6 +149,7 @@ function scoreOccupation(passport: CareerPassport, occupation: Occupation): Care
   const [interest, hasInterest] = interestScore(passport, occupation);
   const [aptitude, hasAptitude] = aptitudeScore(passport, occupation);
   const [values, hasValues] = valuesScore(passport, occupation);
+  const [skill, hasSkills] = skillScore(passport, occupation);
   const [transferable, hasTransferable] = transferableScore(passport, occupation);
   const [experience, hasExperience] = experienceScore(passport, occupation);
   const [aspiration, hasAspiration] = aspirationScore(passport, occupation);
@@ -140,30 +159,34 @@ function scoreOccupation(passport: CareerPassport, occupation: Occupation): Care
   if (directMonths * 4 > passport.constraints.weeklyLearningHours * 40) feasibility -= 15;
 
   const components = [
-    component('interest', interest, weights.interest, hasInterest ? 'RIASEC cosine similarity with this occupation profile' : 'neutral until the interest inventory is complete', hasInterest),
-    component('aptitude', aptitude, weights.aptitude, hasAptitude ? 'weighted against this role’s numerical, verbal, logical and spatial demands' : 'neutral until the aptitude screener is complete', hasAptitude),
-    component('values', values, weights.values, hasValues ? 'mean distance from the work values this role typically offers' : 'neutral until the values sorter is complete', hasValues),
-    component('skill', skillScore(passport, occupation), weights.skill, 'proficiency-weighted coverage of required skills'),
-    component('transferable', transferable, weights.transferable, hasTransferable ? 'strongest evidence-backed transition from prior experience' : 'neutral because no mapped experience is available', hasTransferable),
-    component('experience', experience, weights.experience, hasExperience ? 'years in the same occupational cluster' : 'neutral because no experience is recorded', hasExperience),
-    component('aspiration', aspiration, weights.aspiration, hasAspiration ? 'dream roles and themes in your stated aspiration' : 'neutral until an aspiration is recorded', hasAspiration),
-    component('market', marketScore(occupation), weights.market, 'timestamped indicative demand signal with trend adjustment'),
-    component('progression', progressionScore(occupation), weights.progression, 'number and strength of grounded outgoing transitions'),
-    component('learningFeasibility', feasibility, weights.learningFeasibility, 'skill-gap readiness adjusted for weekly learning time'),
-    component('geographic', geographicScore(passport, occupation), weights.geographic, 'location and relocation preference compared with signal regions'),
+    component('interest', interest, weights.interest, hasInterest ? 'RIASEC cosine similarity with this occupation profile' : 'neutral until the interest inventory is complete', hasInterest, 'assessment', hasInterest ? ASSESSMENT_VERSION : 'Assessment not yet completed'),
+    component('aptitude', aptitude, weights.aptitude, hasAptitude ? 'weighted against this role’s numerical, verbal, logical and spatial demands' : 'neutral until the aptitude screener is complete', hasAptitude, 'assessment', hasAptitude ? ASSESSMENT_VERSION : 'Assessment not yet completed'),
+    component('values', values, weights.values, hasValues ? 'mean distance from the work values this role typically offers' : 'neutral until the values sorter is complete', hasValues, 'assessment', hasValues ? ASSESSMENT_VERSION : 'Assessment not yet completed'),
+    component('skill', skill, weights.skill, hasSkills ? 'proficiency-weighted coverage, moderated by evidence confidence' : 'neutral until skills are added', hasSkills, 'career_passport', hasSkills ? 'Skills and supporting evidence in your Career Passport' : 'No skill evidence recorded'),
+    component('transferable', transferable, weights.transferable, hasTransferable ? 'strongest evidence-backed transition from prior experience' : 'neutral because no mapped experience is available', hasTransferable, 'career_passport', hasTransferable ? 'Mapped work experience and supporting skill evidence' : 'No mapped work experience recorded'),
+    component('experience', experience, weights.experience, hasExperience ? 'years in the same occupational cluster' : 'neutral because no experience is recorded', hasExperience, 'career_passport', hasExperience ? 'Work history in your Career Passport' : 'No work experience recorded'),
+    component('aspiration', aspiration, weights.aspiration, hasAspiration ? 'dream roles and themes in your stated aspiration' : 'neutral until an aspiration is recorded', hasAspiration, 'career_passport', hasAspiration ? 'Your recorded aspiration and timeframe' : 'No aspiration recorded'),
+    component('market', marketScore(occupation), weights.market, 'timestamped indicative demand signal with trend adjustment', true, 'market_snapshot', (() => { const signal = marketFor(occupation.id); return signal ? `${signal.observedPeriod} · ${signal.source}` : 'No market snapshot available; neutral score used'; })()),
+    component('progression', progressionScore(occupation), weights.progression, 'number and strength of grounded outgoing transitions', true, 'knowledge_base', `Transition map in ${KB_VERSION}`),
+    component('learningFeasibility', feasibility, weights.learningFeasibility, 'skill-gap readiness adjusted for weekly learning time', hasSkills, 'computed', hasSkills ? 'Computed from skill gaps and stated weekly learning time' : 'Neutral until skill evidence is recorded'),
+    component('geographic', geographicScore(passport, occupation), weights.geographic, 'location and relocation preference compared with signal regions', Boolean(passport.constraints.location), 'market_snapshot', passport.constraints.location ? 'Your stated location and relocation preference compared with indicative regions' : 'No location recorded; neutral score used'),
   ];
   const totalScore = rounded(components.reduce((sum, item) => sum + item.score * item.weight, 0));
   const evidenceConfidences = passport.skills.map(claim => claim.confidence);
   const meanEvidence = evidenceConfidences.length ? evidenceConfidences.reduce((sum, value) => sum + value, 0) / evidenceConfidences.length : 0;
   const confidence: CareerRecommendation['confidence'] = passport.completeness >= 75 && meanEvidence >= .7 ? 'high' : passport.completeness < 40 ? 'low' : 'medium';
   const preview = gapReport.gaps.slice(0, 3).map(gap => ({ skillId: gap.skillId, severity: gap.severity }));
+  const userEvidenceComponents = components.filter(item => item.source === 'assessment' || item.source === 'career_passport');
+  const availableWeight = userEvidenceComponents.filter(item => item.dataAvailable).reduce((sum, item) => sum + item.weight, 0);
+  const possibleWeight = userEvidenceComponents.reduce((sum, item) => sum + item.weight, 0);
+  const evidenceCoverage = possibleWeight ? rounded(100 * availableWeight / possibleWeight) : 100;
   const whyNotHigher = buildWhyNotHigher(components);
   if (preview[0]) whyNotHigher.unshift(counterfactualText(passport, occupation.id, totalScore, preview[0].skillId, occupation.skills.find(req => req.skillId === preview[0].skillId)?.requiredProficiency ?? 2));
-  return { occupationId: occupation.id, totalScore, confidence, group: 'best_fit', components, topReasons: buildTopReasons(components), whyNotHigher: whyNotHigher.slice(0, 3), skillGapPreview: preview };
+  return { occupationId: occupation.id, totalScore, confidence, group: 'best_fit', components, topReasons: buildTopReasons(components), whyNotHigher: whyNotHigher.slice(0, 3), skillGapPreview: preview, evidenceCoverage };
 }
 
 function candidateOccupations(passport: CareerPassport): Occupation[] {
-  const scored = OCCUPATIONS.map(occupation => ({ occupation, interest: interestScore(passport, occupation)[0], skill: skillScore(passport, occupation) }));
+  const scored = OCCUPATIONS.map(occupation => ({ occupation, interest: interestScore(passport, occupation)[0], skill: skillScore(passport, occupation)[0] }));
   const ids = new Set<string>();
   scored.sort((a, b) => b.interest - a.interest).slice(0, 40).forEach(item => ids.add(item.occupation.id));
   scored.sort((a, b) => b.skill - a.skill).slice(0, 30).forEach(item => ids.add(item.occupation.id));
@@ -207,5 +230,5 @@ export function matchCareers(passport: CareerPassport): RecommendationSet {
   all.filter(rec => { const occupation = occupationById.get(rec.occupationId)!; return occupation.isVocational || occupation.entrepreneurialFit >= 70; }).forEach(rec => { if (selected.filter(item => item.group === 'vocational_entrepreneurial').length < 2) add(rec, 'vocational_entrepreneurial'); });
   all.forEach(rec => { if (selected.length < 13) add(rec, 'exploration'); });
 
-  return { generatedAt: new Date().toISOString(), passportVersion: passport.version, kbVersion: KB_VERSION, segment: passport.segment, weightsUsed: weightsFor(passport.segment), recommendations: selected };
+  return { generatedAt: new Date().toISOString(), passportVersion: passport.version, kbVersion: KB_VERSION, engineVersion: GUIDANCE_ENGINE_VERSION, assessmentVersion: ASSESSMENT_VERSION, scoringVersion: SCORING_VERSION, segment: passport.segment, weightsUsed: weightsFor(passport.segment), recommendations: selected };
 }
