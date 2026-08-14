@@ -1,5 +1,8 @@
 import { toast } from 'sonner';
 import { supabase } from './supabase';
+import { normalizeTrendingCareers, type TrendingCareers } from './trendingSchemas';
+
+export { normalizeTrendingCareers, type TrendingCareers } from './trendingSchemas';
 
 // ─── Proxy / Direct config ─────────────────────────────────────
 // In production, set VITE_AI_PROXY_URL to the Cloudflare Worker URL.
@@ -1022,19 +1025,13 @@ Return: {"suggestions": ["Title 1", "Title 2", "Title 3", "Title 4", "Title 5", 
 
 // ─── Trending Careers ──────────────────────────────────────────
 
-export interface TrendingCareers {
-  rising: Array<{ title: string; reason: string }>;
-  declining: Array<{ title: string; reason: string }>;
-  emerging: Array<{ title: string; reason: string }>;
-}
-
 export async function getTrendingCareers(signal?: AbortSignal): Promise<TrendingCareers> {
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
   const localCacheKey = `trending_careers_${today}`;
 
   // 1. Check localStorage (fast path — avoids Supabase round-trip on same-session revisit)
   const localCached = getCached<TrendingCareers>(localCacheKey);
-  if (localCached) return localCached;
+  if (localCached) return normalizeTrendingCareers(localCached);
 
   // 2. Check Supabase shared daily cache — no AI call needed if populated by any earlier visitor
   if (supabase) {
@@ -1045,8 +1042,9 @@ export async function getTrendingCareers(signal?: AbortSignal): Promise<Trending
         .eq('cache_date', today)
         .single();
       if (data?.data) {
-        setCache(localCacheKey, data.data as TrendingCareers);
-        return data.data as TrendingCareers;
+        const normalized = normalizeTrendingCareers(data.data);
+        setCache(localCacheKey, normalized);
+        return normalized;
       }
     } catch {
       // Supabase unavailable — fall through to AI call
@@ -1067,7 +1065,7 @@ Each array should have exactly 5 items. Be specific and accurate.`,
       { temperature: 0.5, maxTokens: 800, jsonMode: true, signal, usageType: 'trending' }
     );
 
-    const result = JSON.parse(raw) as TrendingCareers;
+    const result = normalizeTrendingCareers(JSON.parse(raw));
     setCache(localCacheKey, result);
 
     // Persist to Supabase — upsert so concurrent first-visitors don't cause duplicate errors

@@ -10,7 +10,8 @@
     "kb:validate": "tsx src/app/data/knowledge/validate.ts",
     "qa:guidance": "tsx scripts/guidance-qa.ts",
     "qa:guidance-regression": "tsx scripts/guidance-regression.ts",
-    "qa:product": "tsx scripts/product-audit-qa.ts"
+    "qa:product": "tsx scripts/product-audit-qa.ts",
+    "qa:trending": "tsx scripts/trending-normalization-qa.ts"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

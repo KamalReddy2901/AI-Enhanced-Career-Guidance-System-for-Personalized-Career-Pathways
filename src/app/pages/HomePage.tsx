@@ -371,7 +371,7 @@ export function HomePage() {
                     <span className="label-caps text-[var(--ink)]">{t('homeRising')}</span>
                   </div>
                   <ul className="space-y-3">
-                    {trending.rising.map((item, i) => (
+                    {(trending.rising ?? []).map((item, i) => (
                       <motion.li key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}>
                         <div className="flex items-start gap-2 group/item">
                         <button
@@ -407,7 +407,7 @@ export function HomePage() {
                     <span className="label-caps text-[var(--accent-news)]">{t('homeEmerging')}</span>
                   </div>
                   <ul className="space-y-3">
-                    {trending.emerging.map((item, i) => (
+                    {(trending.emerging ?? []).map((item, i) => (
                       <motion.li key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 + i * 0.06 }}>
                         <div className="flex items-start gap-2 group/item">
                         <button
@@ -443,7 +443,7 @@ export function HomePage() {
                     <span className="label-caps text-[var(--ink-soft)]">{t('homeDeclining')}</span>
                   </div>
                   <ul className="space-y-3">
-                    {trending.declining.map((item, i) => (
+                    {(trending.declining ?? []).map((item, i) => (
                       <motion.li key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + i * 0.06 }}>
                         <div className="flex items-start gap-2 group/item">
                         <button

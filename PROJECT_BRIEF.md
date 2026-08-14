@@ -208,6 +208,8 @@ The August 2026 production audit used a signed-in burner account from onboarding
 - custom/manual skills no longer disappear;
 - recommendation dossier links use durable occupation IDs and survive reloads;
 - incomplete/malformed AI dossier payloads receive safe typed fallbacks;
+- cached or AI-supplied trend data is normalized before rendering, so an incomplete list cannot crash the homepage;
+- production recovery pages no longer expose raw runtime diagnostics;
 - decorative scrolling career titles are removed from the accessibility tree;
 - interview preparation honors its URL career when transient job state is empty;
 - path duration labels and fastest sorting use real route durations;

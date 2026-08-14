@@ -111,6 +111,9 @@ assert.match(source('src/app/components/guidance/WhyPanel.tsx'), /returnFocus\?\
 assert.match(source('src/app/components/guidance/WhyPanel.tsx'), /aria-labelledby="why-panel-title"/, 'the evidence dialog needs a programmatic title');
 assert.match(source('src/app/components/guidance/WhyPanel.tsx'), /event\.stopPropagation\(\)/, 'dismissing the evidence dialog must not trigger global Escape navigation');
 assert.match(source('src/app/pages/RootLayout.tsx'), /e\.defaultPrevented/, 'global shortcuts must respect events consumed by components');
+assert.match(source('src/app/services/ai.ts'), /normalizeTrendingCareers/, 'cached or AI-supplied trends must be normalized before the home page uses them');
+assert.match(source('src/app/pages/HomePage.tsx'), /\(trending\.rising \?\? \[\]\)\.map/, 'the home page must tolerate a legacy trend cache missing a list');
+assert.match(source('src/app/pages/RouteErrorPage.tsx'), /import\.meta\.env\.DEV/, 'production recovery pages must not expose raw runtime diagnostics');
 assert.match(source('src/app/components/guidance/CareerLandscapeScatter.tsx'), /onKeyDown=\{\(event\)/, 'career landscape points must be keyboard-operable');
 assert.match(source('src/app/pages/RecommendationsPage.tsx'), /aria-pressed=\{viewMode === 'cards'\}/, 'recommendation view-mode controls must expose their state');
 

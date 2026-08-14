@@ -8,6 +8,7 @@ export function RouteErrorPage() {
     : error instanceof Error
       ? error.message
       : 'An unexpected error interrupted this page.';
+  const diagnostic = import.meta.env.DEV ? message : null;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[var(--paper)] px-6 text-[var(--ink)]">
@@ -18,10 +19,10 @@ export function RouteErrorPage() {
         <p className="mt-4 text-sm leading-relaxed text-[var(--ink-soft)]">
           Your saved Career Passport is safe. Reload this page, or return to your dashboard and continue from the next recommended step.
         </p>
-        <details className="mt-5 text-left text-xs text-[var(--ink-soft)]">
+        {diagnostic && <details className="mt-5 text-left text-xs text-[var(--ink-soft)]">
           <summary className="cursor-pointer font-mono-ui uppercase">Technical detail</summary>
-          <p className="mt-2 break-words border border-[var(--ink-faint)] p-3">{message}</p>
-        </details>
+          <p className="mt-2 break-words border border-[var(--ink-faint)] p-3">{diagnostic}</p>
+        </details>}
         <div className="mt-7 flex flex-wrap justify-center gap-3">
           <button type="button" onClick={() => window.location.reload()} className="min-h-11 border-2 border-[var(--ink)] px-5 font-mono-ui text-xs uppercase">Reload page</button>
           <a href="/dashboard" className="inline-flex min-h-11 items-center bg-[var(--ink)] px-5 font-mono-ui text-xs uppercase text-[var(--paper)]">Go to dashboard</a>
