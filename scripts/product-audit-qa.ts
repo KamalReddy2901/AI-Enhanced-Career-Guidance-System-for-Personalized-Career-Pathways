@@ -109,6 +109,8 @@ assert.match(source('public/_redirects'), /^\/\* \/index\.html 200\s*$/, 'Cloudf
 assert.match(source('src/app/context/GuidanceContext.tsx'), /cached\.engineVersion === GUIDANCE_ENGINE_VERSION/, 'stale scoring-engine results must be recomputed instead of presented as current');
 assert.match(source('src/app/components/guidance/WhyPanel.tsx'), /returnFocus\?\.focus\(\)/, 'the evidence dialog must return keyboard focus to its trigger');
 assert.match(source('src/app/components/guidance/WhyPanel.tsx'), /aria-labelledby="why-panel-title"/, 'the evidence dialog needs a programmatic title');
+assert.match(source('src/app/components/guidance/WhyPanel.tsx'), /event\.stopPropagation\(\)/, 'dismissing the evidence dialog must not trigger global Escape navigation');
+assert.match(source('src/app/pages/RootLayout.tsx'), /e\.defaultPrevented/, 'global shortcuts must respect events consumed by components');
 assert.match(source('src/app/components/guidance/CareerLandscapeScatter.tsx'), /onKeyDown=\{\(event\)/, 'career landscape points must be keyboard-operable');
 assert.match(source('src/app/pages/RecommendationsPage.tsx'), /aria-pressed=\{viewMode === 'cards'\}/, 'recommendation view-mode controls must expose their state');
 

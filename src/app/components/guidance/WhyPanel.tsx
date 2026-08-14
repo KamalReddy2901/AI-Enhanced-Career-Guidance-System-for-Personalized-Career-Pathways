@@ -37,7 +37,15 @@ export function WhyPanel(props: RecommendationProps | EvidenceProps) {
     const returnFocus=document.activeElement instanceof HTMLElement ? document.activeElement : null;
     panel?.querySelector<HTMLElement>('button,[href],[tabindex]:not([tabindex="-1"])')?.focus();
     const handle=(event:KeyboardEvent)=>{
-      if(event.key==='Escape'){onClose();return;}
+      if(event.key==='Escape'){
+        // Keep this dismissal local. Without stopping propagation, the global
+        // Escape shortcut can observe the dialog after it unmounts and navigate
+        // away from the current page.
+        event.preventDefault();
+        event.stopPropagation();
+        onClose();
+        return;
+      }
       if(event.key!=='Tab'||!panel)return;
       const items=[...panel.querySelectorAll<HTMLElement>('button,[href],[tabindex]:not([tabindex="-1"])')].filter(item=>!item.hasAttribute('disabled'));
       if(!items.length)return;

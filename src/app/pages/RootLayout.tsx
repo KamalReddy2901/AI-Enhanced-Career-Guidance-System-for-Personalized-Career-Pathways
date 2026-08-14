@@ -19,6 +19,9 @@ export function RootLayout() {
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Components such as dialogs may deliberately consume a shortcut.
+      if (e.defaultPrevented) return;
+
       // Ctrl/Cmd + K: Focus search
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
