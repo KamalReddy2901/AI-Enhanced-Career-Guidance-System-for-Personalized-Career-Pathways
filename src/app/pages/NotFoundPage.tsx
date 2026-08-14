@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { ArrowRight, Home } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { TextReveal } from '../motion/TextReveal';
+import { sounds } from '../utils/sounds';
 
 export function NotFoundPage() {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ export function NotFoundPage() {
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <motion.button
-            onClick={() => navigate('/')}
+            onClick={() => { sounds.click(); navigate('/'); }}
             className="flex items-center justify-center gap-2 bg-black text-white py-3 px-6 font-[Inter] hover:bg-black/85 transition-colors"
             style={{ fontSize: '0.88rem' }}
             whileHover={{ scale: 1.02 }}
@@ -43,7 +44,7 @@ export function NotFoundPage() {
             Go Home
           </motion.button>
           <motion.button
-            onClick={() => navigate('/history')}
+            onClick={() => { sounds.click(); navigate('/history'); }}
             className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-6 font-[Inter] hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow]"
             style={{ fontSize: '0.88rem' }}
             whileHover={{ scale: 1.02 }}

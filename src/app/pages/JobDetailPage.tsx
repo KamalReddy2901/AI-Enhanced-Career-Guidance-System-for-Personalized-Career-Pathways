@@ -68,6 +68,7 @@ import { marketFor, occupationById } from "../data/knowledge";
 import { WhyPanel } from "../components/guidance/WhyPanel";
 import { hapticLight } from '../utils/haptic';
 import { TrustStrip } from "../components/guidance/TrustStrip";
+import { GapLearningRoutes } from '../components/guidance/GapLearningRoutes';
 import type { CareerRecommendation } from "../engine/types";
 
 /**
@@ -2036,7 +2037,7 @@ export function JobDetailPage() {
           </span>
         </button>
       </div>
-      <div className="mx-auto max-w-6xl px-6 print:hidden"><TrustStrip /></div>
+      <div className="mx-auto max-w-6xl px-6 print:hidden">{passport && knowledgeOccupation && <GapLearningRoutes passport={passport} occupationId={knowledgeOccupation.id} />}<TrustStrip /></div>
       {fitExplanation && passport && (
         <WhyPanel
           recommendation={fitExplanation}

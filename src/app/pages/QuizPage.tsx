@@ -8,6 +8,8 @@ import { getQuizResults, getQuizFromScratch, type QuizResult } from '../services
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
 import { hapticLight } from '../utils/haptic';
+import { EvidenceButton } from '../components/guidance/EvidenceButton';
+import { useT } from '../i18n';
 import { TextReveal } from '../motion/TextReveal';
 
 const QUESTIONS = [
@@ -85,6 +87,7 @@ const QUESTIONS = [
 
 export function QuizPage() {
   const navigate = useNavigate();
+  const { lang } = useT();
   const { searchJobPreliminary, setCurrentJob, setRefinementCount } = useApp();
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -369,6 +372,7 @@ export function QuizPage() {
                     </p>
                   </div>
                 </div>
+                <EvidenceButton testId="quiz-result-why-btn" label={lang === 'hi' ? 'यह परिणाम क्यों?' : lang === 'te' ? 'ఈ ఫలితం ఎందుకు?' : 'Why this result?'} evidence={{title:lang === 'hi' ? 'क्विज़ परिणाम प्रमाण' : lang === 'te' ? 'క్విజ్ ఫలిత ఆధారం' : 'Quiz-result evidence',eyebrow:lang === 'hi' ? 'अभ्यास परिणाम' : lang === 'te' ? 'ప్రాక్టీస్ ఫలితం' : 'Practice result',summary:lang === 'hi' ? `${Object.keys(answers).length}/${QUESTIONS.length} उत्तरों ने यह चिंतन संकेत बनाया।` : lang === 'te' ? `${Object.keys(answers).length}/${QUESTIONS.length} సమాధానాలు ఈ ప్రతిబింబ సూచనను రూపొందించాయి.` : `${Object.keys(answers).length}/${QUESTIONS.length} responses produced this reflection signal.`,method:lang === 'hi' ? 'यह अभ्यास-केवल चिंतन है। यह आपकी नियम-आधारित सिफारिशों या अंकों को नहीं बदलता।' : lang === 'te' ? 'ఇది ప్రాక్టీస్-మాత్రమే ప్రతిబింబం. ఇది మీ నియమ-ఆధారిత సిఫార్సులు లేదా స్కోర్లను మార్చదు.' : 'This is practice-only reflection. It does not change your deterministic recommendations or scores.',items:QUESTIONS.map(question=>({label:question.id,detail:answers[question.question] ?? (lang === 'hi' ? 'मुक्त-वर्णन उत्तर' : lang === 'te' ? 'స్వేచ్ఛా వివరణ సమాధానం' : 'Free-description response')})),source:'Practice quiz · no scoring-engine input'}} />
               </div>
 
               {/* Career Matches */}
@@ -413,10 +417,7 @@ export function QuizPage() {
                               {career.title}
                             </h3>
                             <div className={`flex items-center gap-1 px-2 py-0.5 ${scoreClass}`}>
-                              <span className="font-[JetBrains_Mono]" style={{ fontSize: '0.75rem' }}>
-                                {career.matchScore}%
-                              </span>
-                              <span className="font-[Inter] opacity-60" style={{ fontSize: '0.65rem' }}>match</span>
+                              <span className="font-[Inter] opacity-60" style={{ fontSize: '0.65rem' }}>{lang === 'hi' ? 'सुझाया गया' : lang === 'te' ? 'సూచించబడింది' : 'suggested'}</span>
                             </div>
                           </div>
                           <p className="font-[Inter] text-black/50" style={{ fontSize: '0.85rem' }}>
@@ -441,14 +442,6 @@ export function QuizPage() {
                       </div>
 
                       {/* Match bar */}
-                      <div className="mt-3 h-1 bg-black/8 rounded-full overflow-hidden">
-                        <motion.div
-                          className={`h-full rounded-full ${matchPct >= 80 ? 'bg-emerald-500' : matchPct >= 60 ? 'bg-violet-500' : 'bg-amber-500'}`}
-                          initial={{ width: 0 }}
-                          animate={{ width: `${career.matchScore}%` }}
-                          transition={{ delay: 0.3 + i * 0.1, duration: 0.6 }}
-                        />
-                      </div>
                     </motion.div>
                     );
                   })}

@@ -2,6 +2,7 @@ import { motion } from 'motion/react';
 import { ArrowRight, KeyRound, ShieldCheck, Sparkles, Workflow, Orbit } from 'lucide-react';
 import { Link } from 'react-router';
 import { TextReveal } from '../motion/TextReveal';
+import { sounds } from '../utils/sounds';
 
 const HIGHLIGHTS = [
   {
@@ -109,6 +110,7 @@ export function PricingPage() {
             </div>
             <Link
               to="/"
+              onClick={() => sounds.click()}
               className="inline-flex items-center gap-2 mt-6 px-4 py-2.5 bg-white text-black font-[Inter] transition-transform hover:translate-x-0.5"
               style={{ fontSize: '0.86rem' }}
             >

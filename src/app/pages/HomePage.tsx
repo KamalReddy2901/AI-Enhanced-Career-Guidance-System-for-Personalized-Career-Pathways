@@ -16,6 +16,7 @@ import type { TrendingCareers } from '../services/ai';
 import { toast } from 'sonner';
 import { useT } from '../i18n';
 import { TrustStrip } from '../components/guidance/TrustStrip';
+import { sounds } from '../utils/sounds';
 
 const EditorialHomeHero = lazy(() => import('../components/home/EditorialHomeHero').then(module => ({ default: module.EditorialHomeHero })));
 const WhyPanel = lazy(() => import('../components/guidance/WhyPanel').then(module => ({ default: module.WhyPanel })));
@@ -291,7 +292,7 @@ export function HomePage() {
                 <p className="mt-3 text-sm leading-relaxed text-[var(--ink-soft)]">{step.body}</p>
                 <button 
                   type="button" 
-                  onClick={() => navigate(step.path)} 
+                  onClick={() => { sounds.navigate(); navigate(step.path); }} 
                   className="mt-auto inline-flex min-h-11 items-center gap-2 self-start pt-6 font-mono-ui text-xs uppercase tracking-wider underline decoration-[var(--accent-news)] decoration-2 underline-offset-4 hover:text-[var(--accent-news)] transition-colors"
                 >
                   {step.action} <ArrowRight size={14} strokeWidth={2} aria-hidden="true" />
@@ -545,7 +546,7 @@ export function HomePage() {
               viewport={{ once: true }}
             >
               <button
-                onClick={() => navigate('/auth?mode=signup')}
+                onClick={() => { sounds.navigate(); navigate('/auth?mode=signup'); }}
                 className="inline-flex items-center gap-2 bg-black text-white px-7 py-3 font-[Inter] hover:bg-black/80 transition-colors"
                 style={{ fontSize: '0.88rem' }}
               >

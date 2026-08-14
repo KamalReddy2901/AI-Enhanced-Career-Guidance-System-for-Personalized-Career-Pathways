@@ -1,11 +1,15 @@
-// FavoritesPage redirects to HistoryPage's "saved" tab
-import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
+import { motion, useReducedMotion } from 'motion/react';
+import { ArrowRight, Star } from 'lucide-react';
+import { StickFigure } from '../components/StickFigure';
+import { useFavorites } from '../hooks/useFavorites';
+import { sounds } from '../utils/sounds';
+import { hapticLight, hapticTap } from '../utils/haptic';
+import { useT } from '../i18n';
+import { useApp } from '../context/AppContext';
 
 export function FavoritesPage() {
-  const navigate = useNavigate();
-  useEffect(() => {
-    navigate('/history?tab=saved', { replace: true });
-  }, [navigate]);
-  return null;
+  const { lang } = useT(); const navigate = useNavigate(); const reduced = useReducedMotion(); const { favorites, removeFavorite } = useFavorites(); const { setCurrentJob } = useApp();
+  const c=lang==='hi'?{desk:'सहेजे केस',title:'पसंदीदा',empty:'अभी कोई सहेजा करियर नहीं',note:'किसी करियर को बाद में देखने के लिए सहेजें।',explore:'करियर खोजें',remove:'पसंदीदा से हटाएँ'}:lang==='te'?{desk:'సేవ్ చేసిన కేసులు',title:'ఇష్టాలు',empty:'ఇంకా సేవ్ చేసిన కెరీర్లు లేవు',note:'తరువాత చూడడానికి కెరీర్‌ను సేవ్ చేయండి.',explore:'కెరీర్లు అన్వేషించండి',remove:'ఇష్టాల నుండి తొలగించు'}:{desk:'saved cases',title:'Favorites',empty:'No saved careers yet',note:'Save a career to build a short list you can revisit.',explore:'Explore careers',remove:'Remove from favorites'};
+  return <div className="editorial-utility min-h-screen bg-[var(--paper)] px-6 pb-16 pt-24"><div className="mx-auto max-w-4xl"><header className="mb-10 border-b-2 border-[var(--ink)] pb-6"><div className="label-caps">CareerCase · {c.desk}</div><h1 className="mt-2 font-display text-5xl">{c.title}</h1></header>{favorites.length === 0 ? <motion.section initial={reduced?false:{opacity:0,y:12}} animate={{opacity:1,y:0}} className="border border-black/10 bg-white p-8 text-center"><StickFigure pose="searching" size={76} className="mx-auto"/><h2 className="mt-4 font-display text-2xl">{c.empty}</h2><p className="mx-auto mt-2 max-w-md font-[Inter] text-sm text-[var(--ink-soft)]">{c.note}</p><button data-testid="favorites-explore-btn" onClick={()=>{sounds.navigate();hapticTap();navigate('/job?fresh=1');}} className="mt-6 inline-flex min-h-11 items-center gap-2 bg-[var(--ink)] px-4 font-[Inter] text-white">{c.explore} <ArrowRight size={14}/></button></motion.section> : <div className="space-y-3">{favorites.map((favorite,index)=><motion.article key={favorite.jobTitle} initial={reduced?false:{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:reduced?0:index*.05}} className="card-sketch flex items-center justify-between gap-4 p-5"><button data-testid={`favorite-open-${index + 1}-btn`} onClick={()=>{sounds.click();hapticTap();setCurrentJob(favorite.jobData);navigate('/job/detail');}} className="min-h-11 text-left"><h2 className="font-display text-xl">{favorite.jobTitle}</h2><p className="font-[Inter] text-xs text-[var(--ink-soft)]">{favorite.jobData.category}</p></button><button data-testid={`favorite-remove-${index + 1}-btn`} onClick={()=>{removeFavorite(favorite.jobTitle);sounds.unfavorite();hapticLight();}} className="grid min-h-11 min-w-11 place-items-center border border-[var(--ink)]" aria-label={`${c.remove} ${favorite.jobTitle}`}><Star size={16} fill="currentColor"/></button></motion.article>)}</div>}</div></div>;
 }

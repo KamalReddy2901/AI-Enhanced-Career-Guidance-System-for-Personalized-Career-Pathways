@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { TextReveal } from '../motion/TextReveal';
 import { ScrollingTitles } from '../components/ScrollingTitles';
 import { useGuidance } from '../context/GuidanceContext';
+import { sounds } from '../utils/sounds';
 
 function JobSearchEmptyState() {
   const { searchJobPreliminary, setCurrentJob, setIsSearchAnimating, isSearchAnimating } = useApp();
@@ -53,7 +54,7 @@ function JobSearchEmptyState() {
             ].map(tool => <button 
               key={tool.label} 
               type="button" 
-              onClick={() => navigate(tool.path)} 
+              onClick={() => { sounds.click(); navigate(tool.path); }} 
               className="group flex flex-col items-center justify-center gap-2 border-2 border-black/10 bg-[var(--paper)] p-4 text-center transition-all hover:border-[var(--accent-news)] hover:bg-black/[.015] focus-visible:border-[var(--accent-news)] focus-visible:outline-none"
             >
               <span className="text-[var(--accent-news)] transition-transform group-hover:scale-110">{tool.icon}</span>
@@ -96,6 +97,7 @@ export function JobOverviewPage() {
 
   const handleConfirm = async () => {
     if (!currentJob) return;
+    sounds.click();
     // If this is already a full dossier (has fullDescription), go straight to detail
     if (currentJob.fullDescription) {
       addToHistory(currentJob);
