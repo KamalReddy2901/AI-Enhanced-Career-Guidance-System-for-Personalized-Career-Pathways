@@ -3,8 +3,8 @@
 // without touching any other code.
 
 export const MODELS = {
-  premium: 'llama-3.3-70b-versatile',
-  standard: 'llama-3.1-8b-instant',
+  premium: 'openai/gpt-oss-120b',
+  standard: 'openai/gpt-oss-20b',
 } as const;
 
 export type ModelTier = keyof typeof MODELS;
