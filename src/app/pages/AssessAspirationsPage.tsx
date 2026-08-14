@@ -6,6 +6,8 @@ import { useAuth } from "../context/AuthContext";
 import { saveAssessment } from "../services/guidanceDb";
 import { extractAspiration } from "../services/ai";
 import { occupationById } from "../data/knowledge";
+import { weightsFor } from '../engine/weights';
+import { WhyPanel, type ScoreEvidence } from '../components/guidance/WhyPanel';
 import { calculateCompleteness } from "../engine/skillProfile";
 import { useT } from "../i18n";
 import { sounds } from "../utils/sounds";
@@ -44,16 +46,17 @@ const questions = {
 
 export function AssessAspirationsPage() {
   const navigate = useNavigate();
-  const { updatePassport } = useGuidance();
+  const { updatePassport, passport } = useGuidance();
   const { user } = useAuth();
   const { lang, locale } = useT();
   const voiceStatus = useVoiceStatus();
-  const c = lang === "hi" ? { interview:"आकांक्षा संवाद", title:"आप किस दिशा में जाना चाहते हैं—उस पर एक छोटी बातचीत", finish:"चिंतन पूरा करें", send:"उत्तर भेजें", dictate:"बोलकर लिखें", unavailable:"संवाद सेवा उपलब्ध नहीं है। यही चिंतन AI के बिना स्थानीय रूप से सहेजें।", voice:"इस ब्राउज़र में वॉइस इनपुट उपलब्ध नहीं है।", save:"स्थानीय रूप से सहेजें", typesetting:"संकलन जारी", note:"एक बार में एक प्रश्न, अधिकतम पाँच। परिणाम को आप बाद में पासपोर्ट में बदल सकते हैं।" } : lang === "te" ? { interview:"ఆకాంక్షల సంభాషణ", title:"మీరు ఏ దిశలో వెళ్లాలనుకుంటున్నారో తెలిపే చిన్న సంభాషణ", finish:"ఆలోచన పూర్తి చేయండి", send:"సమాధానం పంపండి", dictate:"మాట్లాడి నమోదు చేయండి", unavailable:"సంభాషణ సేవ అందుబాటులో లేదు. ఇదే ఆలోచనను AI లేకుండా స్థానికంగా భద్రపరచండి.", voice:"ఈ బ్రౌజర్‌లో వాయిస్ ఇన్‌పుట్‌కు మద్దతు లేదు.", save:"స్థానికంగా భద్రపరచండి", typesetting:"అక్షరరూపం సిద్ధమవుతోంది", note:"ఒక్కసారి ఒక ప్రశ్న, గరిష్ఠంగా ఐదు. ఫలితాన్ని తరువాత పాస్‌పోర్ట్‌లో మార్చవచ్చు." } : { interview:"aspiration interview", title:"A short conversation about where you want to head", finish:"Finish reflection", send:"Send answer", dictate:"Dictate", unavailable:"The conversation service is unavailable. Save the same reflection locally without AI.", voice:"Voice input is not supported on this browser.", save:"Save locally", typesetting:"Typesetting", note:"One question at a time, never more than five. You can edit the result later in your Passport." };
+  const c = lang === "hi" ? { interview:"आकांक्षा संवाद", title:"आप किस दिशा में जाना चाहते हैं—उस पर एक छोटी बातचीत", finish:"चिंतन पूरा करें", send:"उत्तर भेजें", dictate:"बोलकर लिखें", unavailable:"संवाद सेवा उपलब्ध नहीं है। यही चिंतन AI के बिना स्थानीय रूप से सहेजें।", voice:"इस ब्राउज़र में वॉइस इनपुट उपलब्ध नहीं है।", save:"स्थानीय रूप से सहेजें", typesetting:"संकलन जारी", note:"एक बार में एक प्रश्न, अधिकतम पाँच। परिणाम को आप बाद में पासपोर्ट में बदल सकते हैं।", why:"इसका उपयोग कैसे होता है?", evidenceTitle:"आकांक्षा का उपयोग", evidenceSummary:"आपका कथन करियर पासपोर्ट में सहेजा और संपादित किया जाता है।", method:"विषय/कीवर्ड को व्यवसाय क्लस्टर से नियम-आधारित तरीके से मिलाया जाता है। सहायक AI पार्सिंग कभी भी अंकीय स्कोर में योगदान नहीं देती।", aspirationLabel:"आकांक्षा घटक", passportLabel:"करियर पासपोर्ट", passportDetail:"मूल कथन सहेजा जाता है और संपादित किया जा सकता है।" } : lang === "te" ? { interview:"ఆకాంక్షల సంభాషణ", title:"మీరు ఏ దిశలో వెళ్లాలనుకుంటున్నారో తెలిపే చిన్న సంభాషణ", finish:"ఆలోచన పూర్తి చేయండి", send:"సమాధానం పంపండి", dictate:"మాట్లాడి నమోదు చేయండి", unavailable:"సంభాషణ సేవ అందుబాటులో లేదు. ఇదే ఆలోచనను AI లేకుండా స్థానికంగా భద్రపరచండి.", voice:"ఈ బ్రౌజర్‌లో వాయిస్ ఇన్‌పుట్‌కు మద్దతు లేదు.", save:"స్థానికంగా భద్రపరచండి", typesetting:"అక్షరరూపం సిద్ధమవుతోంది", note:"ఒక్కసారి ఒక ప్రశ్న, గరిష్ఠంగా ఐదు. ఫలితాన్ని తరువాత పాస్‌పోర్ట్‌లో మార్చవచ్చు.", why:"దీన్ని ఎలా ఉపయోగిస్తారు?", evidenceTitle:"ఆకాంక్ష వినియోగం", evidenceSummary:"మీ ప్రకటన కెరీర్ పాస్‌పోర్ట్‌లో భద్రపరచబడి సవరించవచ్చు.", method:"థీమ్/కీవర్డ్‌లను వృత్తి క్లస్టర్‌లతో నియమ-ఆధారంగా సరిపోలుస్తారు. సహాయక AI పార్సింగ్ అంకె స్కోర్‌కు ఎప్పుడూ తోడ్పడదు.", aspirationLabel:"ఆకాంక్ష భాగం", passportLabel:"కెరీర్ పాస్‌పోర్ట్", passportDetail:"మూల ప్రకటన భద్రపరచబడి సవరించవచ్చు." } : { interview:"aspiration interview", title:"A short conversation about where you want to head", finish:"Finish reflection", send:"Send answer", dictate:"Dictate", unavailable:"The conversation service is unavailable. Save the same reflection locally without AI.", voice:"Voice input is not supported on this browser.", save:"Save locally", typesetting:"Typesetting", note:"One question at a time, never more than five. You can edit the result later in your Passport.", why:"How is this used?", evidenceTitle:"Aspiration use", evidenceSummary:"Your statement is stored in the Career Passport and remains editable.", method:"Themes and keywords are matched deterministically against occupation clusters. Any assistive AI parsing never contributes to a numeric score.", aspirationLabel:"Aspiration component", passportLabel:"Career Passport", passportDetail:"Raw statement is saved and can be edited." };
   const [index, setIndex] = useState(0);
   const [draft, setDraft] = useState("");
   const [answers, setAnswers] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [why, setWhy] = useState<ScoreEvidence | null>(null);
   const answerLock = useRef(false);
   const [isAdvancing, setIsAdvancing] = useState(false);
   const prompt = questions[lang][index];
@@ -215,8 +218,10 @@ export function AssessAspirationsPage() {
           <p className="mt-5 font-[Inter] text-xs text-black/45">
             {c.note}
           </p>
+          <button data-testid="aspirations-why-btn" onClick={() => { const weight = Math.round(weightsFor(passport?.segment ?? 'school_student').aspiration * 100); setWhy({ title:c.evidenceTitle, eyebrow:c.why, summary:c.evidenceSummary, method:c.method, items:[{label:c.aspirationLabel,value:weight,detail:`${weight}% segment weight.`},{label:c.passportLabel,detail:c.passportDetail}], source:'Deterministic engine · Career Passport' }); }} className="mt-4 min-h-11 border border-[var(--ink)] px-3 font-mono-ui text-[10px] uppercase tracking-widest">{c.why}</button>
         </div>
       </GuidanceEntrance>
+      {why && <WhyPanel evidence={why} onClose={() => setWhy(null)} />}
     </div>
   );
 }

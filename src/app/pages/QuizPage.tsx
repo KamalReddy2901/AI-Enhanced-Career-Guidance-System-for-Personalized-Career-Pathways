@@ -7,6 +7,7 @@ import { useApp } from '../context/AppContext';
 import { getQuizResults, getQuizFromScratch, type QuizResult } from '../services/ai';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
+import { hapticLight } from '../utils/haptic';
 import { TextReveal } from '../motion/TextReveal';
 
 const QUESTIONS = [
@@ -97,6 +98,7 @@ export function QuizPage() {
 
   const handleAnswer = (answer: string) => {
     sounds.quizAnswer();
+    hapticLight();
     const q = QUESTIONS[currentQ];
     const newAnswers = { ...answers, [q.question]: answer };
     setAnswers(newAnswers);
