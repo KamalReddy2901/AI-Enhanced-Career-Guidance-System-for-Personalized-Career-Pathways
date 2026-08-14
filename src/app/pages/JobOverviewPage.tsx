@@ -12,6 +12,7 @@ import { ScrollingTitles } from '../components/ScrollingTitles';
 import { useGuidance } from '../context/GuidanceContext';
 import { sounds } from '../utils/sounds';
 import { hapticTap } from '../utils/haptic';
+import { useT } from '../i18n';
 
 function JobSearchEmptyState() {
   const { searchJobPreliminary, setCurrentJob, setIsSearchAnimating, isSearchAnimating } = useApp();
@@ -75,6 +76,7 @@ export function JobOverviewPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { currentJob, setCurrentJob, refinementCount, setRefinementCount, searchJobAI, addToHistory } = useApp();
+  const { lang } = useT();
   const [showRefinement, setShowRefinement] = useState(false);
   const [refinementText, setRefinementText] = useState('');
   const [isRefining, setIsRefining] = useState(false);
@@ -95,6 +97,7 @@ export function JobOverviewPage() {
 
   // Show search state when no career selected (no more silent redirect)
   if (isFreshSearch || !currentJob) return <JobSearchEmptyState />;
+  const isGroundedSnapshot = currentJob.shortDescription.includes('NCO-2015 occupation');
 
   const handleConfirm = async () => {
     if (!currentJob) return;
@@ -203,7 +206,9 @@ export function JobOverviewPage() {
         >
           <div className="absolute -top-3 left-6 bg-background px-3">
             <span className="font-[Inter] text-black/40 uppercase tracking-[0.15em]" style={{ fontSize: '0.65rem' }}>
-              Preliminary Assessment
+              {isGroundedSnapshot
+                ? (lang === 'hi' ? 'ज्ञान-आधार स्नैपशॉट' : lang === 'te' ? 'నాలెడ్జ్-బేస్ స్నాప్‌షాట్' : 'Knowledge-base snapshot')
+                : 'Preliminary assessment'}
             </span>
           </div>
 
@@ -213,7 +218,15 @@ export function JobOverviewPage() {
 
           <div className="mt-5 pt-4 border-t border-black/8">
             <p className="font-[Inter] text-black/40 leading-relaxed" style={{ fontSize: '0.8rem' }}>
-              <strong className="text-black/50">Important:</strong> This is a preliminary AI assessment. If this description doesn't quite match the specific role you have in mind — perhaps it's a different specialization, industry, or work setting — use the <em>"Not quite right"</em> button below to refine it before generating your full dossier. The more accurately this description reflects your intended role, the better your dossier will be.
+              {isGroundedSnapshot ? (
+                lang === 'hi'
+                  ? <>यह NCO-2015/NSQF ज्ञान-आधार से बना ऑफ़लाइन स्नैपशॉट है। यदि आपका आशय किसी अलग विशेषज्ञता या कार्य-परिवेश से है, तो आगे बढ़ने से पहले <em>“Not quite right”</em> से उसे स्पष्ट करें।</>
+                  : lang === 'te'
+                    ? <>ఇది NCO-2015/NSQF నాలెడ్జ్-బేస్ నుండి రూపొందిన ఆఫ్‌లైన్ స్నాప్‌షాట్. మీరు వేరే ప్రత్యేకత లేదా పని సందర్భాన్ని ఉద్దేశిస్తే, కొనసాగించే ముందు <em>“Not quite right”</em> ద్వారా స్పష్టం చేయండి.</>
+                    : <>This is a grounded offline snapshot from the NCO-2015/NSQF knowledge base. If you mean a different specialization or work setting, use <em>“Not quite right”</em> to clarify it before continuing.</>
+              ) : (
+                <><strong className="text-black/50">Important:</strong> This is a preliminary AI-assisted assessment. If this description doesn't quite match the specific role you have in mind, use <em>"Not quite right"</em> to refine it before generating your full dossier.</>
+              )}
             </p>
           </div>
 
