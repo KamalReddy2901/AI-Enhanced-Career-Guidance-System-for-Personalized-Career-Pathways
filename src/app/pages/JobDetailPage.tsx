@@ -288,8 +288,11 @@ export function JobDetailPage() {
       .finally(() => setGbuLoading(false));
   }, [currentJob?.title]);
 
+  useEffect(() => {
+    if (!currentJob) navigate('/job?fresh=1', { replace: true });
+  }, [currentJob, navigate]);
+
   if (!currentJob) {
-    navigate("/job?fresh=1");
     return null;
   }
 

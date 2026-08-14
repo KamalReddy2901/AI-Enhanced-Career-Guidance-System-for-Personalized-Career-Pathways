@@ -72,7 +72,7 @@ export function ShowpieceHero({ hasPassport, showLanding, onNavigate, onFallback
     return () => { hero.removeEventListener('pointermove', move);hero.removeEventListener('pointerenter',enter);hero.removeEventListener('pointerleave',leave); gsap.ticker.remove(fpsFuse); load.kill(); timeline.scrollTrigger?.kill(); timeline.kill(); };
   }, { scope: heroRef, dependencies: [lang] });
 
-  const target = showLanding ? '/onboarding' : hasPassport ? '/assess' : '/onboarding';
+  const target = showLanding ? '/onboarding' : hasPassport ? '/dashboard' : '/onboarding';
   const words = t('homeHeadline').split(/\s+/);
   const kicker=t('homeKicker');
   const labels=lang==='hi'?['योग्यता','आकांक्षा','क्षमता']:lang==='te'?['ప్రతిభ','ఆకాంక్ష','సామర్థ్యం']:['aptitude','aspiration','ability'];

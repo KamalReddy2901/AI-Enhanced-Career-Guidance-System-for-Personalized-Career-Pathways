@@ -22,7 +22,10 @@ export function AuthPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [signUpSuccess, setSignUpSuccess] = useState(false);
 
-  const redirect = searchParams.get('redirect') ?? '/';
+  const requestedRedirect = searchParams.get('redirect');
+  const redirect = requestedRedirect?.startsWith('/') && !requestedRedirect.startsWith('//')
+    ? requestedRedirect
+    : '/dashboard';
 
   // Already logged in - redirect
   useEffect(() => {

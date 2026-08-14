@@ -75,10 +75,47 @@ function ScrollSectionNav({ sections }: { sections: Array<{ id: string; label: s
 
 export function HomePage() {
   const navigate = useNavigate();
-  const { t } = useT();
-  const { searchJob, searchJobAI, searchJobPreliminary, setCurrentJob, addToHistory, isSearchAnimating, setIsSearchAnimating, setRefinementCount, setComparisonJob } = useApp();
+  const { t, lang } = useT();
+  const { searchJobAI, searchJobPreliminary, setCurrentJob, addToHistory, isSearchAnimating, setIsSearchAnimating, setRefinementCount, setComparisonJob } = useApp();
   const { user } = useAuth();
-  const { passport, recommendations, recommendationChanges, pathways, dismissRecommendationChanges } = useGuidance();
+  const { passport, recommendations, recommendationChanges, dismissRecommendationChanges } = useGuidance();
+  const howTo = lang === 'hi' ? {
+    kicker: 'यहाँ से शुरू करें', title: 'CareerCase का उपयोग कैसे करें',
+    intro: 'एक सरल क्रम है: अपनी स्थिति बताएँ, अपने मेल देखें, फिर किसी मार्ग पर कार्रवाई करें। आपकी प्रगति आपके खाते में सुरक्षित रहती है।',
+    review: 'अपना पासपोर्ट देखें', build: 'अपना पासपोर्ट बनाएँ', account: 'अपना खाता बनाएँ',
+    reviewBody: 'जब भी कुछ बदले, अपना रिज़्यूमे, कौशल, अनुभव और सीमाएँ अपडेट करें।',
+    buildBody: 'कुछ मूल प्रश्नों के उत्तर दें ताकि सुझाव आपकी स्थिति के अनुरूप हों।',
+    accountBody: 'ईमेल या Google खाते का उपयोग करें ताकि आपका करियर कार्य निजी रहे और हर डिवाइस पर मिले।',
+    openPassport: 'पासपोर्ट खोलें', startOnboarding: 'सेटअप शुरू करें', createAccount: 'खाता बनाएँ',
+    essentials: 'ज़रूरी चरण पूरे करें', assessmentsBody: 'छोटे रुचि, योग्यता और कार्य-मूल्य आकलन पूरे करें। हर एक आपके मेल बेहतर बनाता है।',
+    onboardingBody: 'पहले छोटा परिचय प्रोफ़ाइल पूरा करें। यह आकलन और सुझावों के लिए ज़रूरी संदर्भ दर्ज करता है।',
+    openAssessments: 'आकलन खोलें', finishOnboarding: 'सेटअप पूरा करें', signIn: 'जारी रखने के लिए साइन इन करें',
+    nextMove: 'अपना अगला कदम चुनें', nextBody: 'जानें कि कोई भूमिका क्यों मेल खाती है, मार्गों की तुलना करें और आगे बढ़ते हुए चरण पूरे करें।',
+    recommendations: 'सुझाव देखें', explorePrefix: 'आप ', explore: 'Explore टैब', counselorPrefix: ' में कोई भी करियर देख सकते हैं। या ', counselor: 'Counselor टैब', counselorSuffix: ' में AI काउंसलर से बात करें।', step: 'चरण',
+  } : lang === 'te' ? {
+    kicker: 'ఇక్కడ ప్రారంభించండి', title: 'CareerCase ఎలా ఉపయోగించాలి',
+    intro: 'ఒక సులభమైన క్రమం ఉంది: మీ పరిస్థితిని చెప్పండి, మీ సరిపోలికలను చూడండి, ఆపై ఒక మార్గంపై చర్య తీసుకోండి. మీ పురోగతి మీ ఖాతాలో భద్రంగా ఉంటుంది.',
+    review: 'మీ పాస్‌పోర్ట్‌ను చూడండి', build: 'మీ పాస్‌పోర్ట్‌ను రూపొందించండి', account: 'మీ ఖాతాను సృష్టించండి',
+    reviewBody: 'మార్పులు వచ్చినప్పుడు మీ రెజ్యూమే, నైపుణ్యాలు, అనుభవం మరియు పరిమితులను నవీకరించండి.',
+    buildBody: 'సూచనలు మీ పరిస్థితికి సరిపోవడానికి కొన్ని ప్రాథమిక ప్రశ్నలకు సమాధానం ఇవ్వండి.',
+    accountBody: 'మీ కెరీర్ పని గోప్యంగా ఉండి ప్రతి పరికరంలో అందుబాటులో ఉండేందుకు ఇమెయిల్ లేదా Google ఖాతాను ఉపయోగించండి.',
+    openPassport: 'పాస్‌పోర్ట్ తెరవండి', startOnboarding: 'సెటప్ ప్రారంభించండి', createAccount: 'ఖాతా సృష్టించండి',
+    essentials: 'అవసరమైన దశలను పూర్తి చేయండి', assessmentsBody: 'చిన్న ఆసక్తులు, సామర్థ్యం మరియు పని విలువల అంచనాలను పూర్తి చేయండి. ప్రతి ఒక్కటి మీ సరిపోలికలను మెరుగుపరుస్తుంది.',
+    onboardingBody: 'ముందుగా చిన్న పరిచయ ప్రొఫైల్‌ను పూర్తి చేయండి. ఇది అంచనాలు మరియు సూచనలకు అవసరమైన సందర్భాన్ని నమోదు చేస్తుంది.',
+    openAssessments: 'అంచనాలు తెరవండి', finishOnboarding: 'సెటప్ పూర్తి చేయండి', signIn: 'కొనసాగడానికి సైన్ ఇన్ చేయండి',
+    nextMove: 'మీ తదుపరి అడుగును ఎంచుకోండి', nextBody: 'ఒక పాత్ర ఎందుకు సరిపోతుందో చదవండి, మార్గాలను పోల్చండి, ముందుకు సాగుతూ దశలను పూర్తి చేయండి.',
+    recommendations: 'సూచనలు చూడండి', explorePrefix: 'మీరు ', explore: 'Explore ట్యాబ్', counselorPrefix: 'లో ఏ కెరీర్‌నైనా చూడవచ్చు. లేదా ', counselor: 'Counselor ట్యాబ్', counselorSuffix: 'లో AI కౌన్సలర్‌తో మాట్లాడండి.', step: 'దశ',
+  } : {
+    kicker: 'Start here', title: 'How to use CareerCase',
+    intro: 'There is one simple loop: tell us where you are, review your matches, then act on a pathway. Your progress is saved to your account as you go.',
+    review: 'Review your passport', build: 'Build your passport', account: 'Create your account',
+    reviewBody: 'Add your resume, skills, experience and constraints whenever they change.', buildBody: 'Answer a few basics so recommendations can reflect your situation.', accountBody: 'Use an email or Google account so your career work is private and available on every device.',
+    openPassport: 'Open passport', startOnboarding: 'Start onboarding', createAccount: 'Create account', essentials: 'Complete the essentials',
+    assessmentsBody: 'Take the short interests, aptitude and work-values assessments. Each one makes your matches more useful.', onboardingBody: 'Finish the short onboarding profile first. It records the context the assessments and recommendations need.',
+    openAssessments: 'Open assessments', finishOnboarding: 'Finish onboarding', signIn: 'Sign in to continue', nextMove: 'Choose your next move',
+    nextBody: 'Read why a role fits, compare routes, and tick off pathway steps as you build evidence and confidence.', recommendations: 'See recommendations',
+    explorePrefix: 'Feel free to explore any career in the ', explore: 'Explore tab', counselorPrefix: '. Or talk to an AI counselor in the ', counselor: 'Counselor tab', counselorSuffix: '.', step: 'STEP',
+  };
 
   const [trending, setTrending] = useState<TrendingCareers | null>(null);
   const [trendingLoading, setTrendingLoading] = useState(false);
@@ -212,40 +249,40 @@ export function HomePage() {
       <section id="how-to-use" className="border-t border-black/8 bg-[var(--paper-raised)] px-6 py-16 md:py-20">
         <div className="mx-auto max-w-4xl">
           <div className="max-w-2xl">
-            <p className="label-caps text-[var(--ink-soft)]">Start here</p>
-            <h2 className="mt-3 font-display text-3xl leading-tight md:text-4xl">How to use CareerCase</h2>
-            <p className="mt-4 text-sm leading-relaxed text-[var(--ink-soft)] md:text-base">There is one simple loop: tell us where you are, review your matches, then act on a pathway. Your progress is saved to your account as you go.</p>
+            <p className="label-caps text-[var(--ink-soft)]">{howTo.kicker}</p>
+            <h2 className="mt-3 font-display text-3xl leading-tight md:text-4xl">{howTo.title}</h2>
+            <p className="mt-4 text-sm leading-relaxed text-[var(--ink-soft)] md:text-base">{howTo.intro}</p>
           </div>
           <ol className="mt-10 grid gap-px border border-[var(--ink-faint)] bg-[var(--ink-faint)] md:grid-cols-3">
             {[
               {
                 number: '01',
                 pose: 'reading' as const,
-                title: user ? (passport ? 'Review your passport' : 'Build your passport') : 'Create your account',
-                body: user ? (passport ? 'Add your resume, skills, experience and constraints whenever they change.' : 'Answer a few basics so recommendations can reflect your situation.') : 'Use an email or Google account so your career work is private and available on every device.',
-                action: user ? (passport ? 'Open passport' : 'Start onboarding') : 'Create account',
+                title: user ? (passport ? howTo.review : howTo.build) : howTo.account,
+                body: user ? (passport ? howTo.reviewBody : howTo.buildBody) : howTo.accountBody,
+                action: user ? (passport ? howTo.openPassport : howTo.startOnboarding) : howTo.createAccount,
                 path: user ? (passport ? '/passport' : '/onboarding') : '/auth?mode=signup',
               },
               {
                 number: '02',
                 pose: 'mapping' as const,
-                title: 'Complete the essentials',
-                body: passport ? 'Take the short interests, aptitude and work-values assessments. Each one makes your matches more useful.' : 'Finish the short onboarding profile first. It records the context the assessments and recommendations need.',
-                action: user ? (passport ? 'Open assessments' : 'Finish onboarding') : 'Sign in to continue',
+                title: howTo.essentials,
+                body: passport ? howTo.assessmentsBody : howTo.onboardingBody,
+                action: user ? (passport ? howTo.openAssessments : howTo.finishOnboarding) : howTo.signIn,
                 path: user ? (passport ? '/assess' : '/onboarding') : '/auth?mode=signup',
               },
               {
                 number: '03',
                 pose: 'climbing' as const,
-                title: 'Choose your next move',
-                body: 'Read why a role fits, compare routes, and tick off pathway steps as you build evidence and confidence.',
-                action: user ? 'See recommendations' : 'Create account',
+                title: howTo.nextMove,
+                body: howTo.nextBody,
+                action: user ? howTo.recommendations : howTo.createAccount,
                 path: user ? '/recommendations' : '/auth?mode=signup',
               },
             ].map((step) => (
               <li key={step.number} className="flex min-h-64 flex-col bg-[var(--paper-raised)] p-6 md:p-8">
                 <div className="flex items-start justify-between gap-4 mb-4">
-                  <span className="font-mono-ui text-xs text-[var(--accent-news)] tracking-wider">STEP {step.number}</span>
+                  <span className="font-mono-ui text-xs text-[var(--accent-news)] tracking-wider">{howTo.step} {step.number}</span>
                   <StickFigure pose={step.pose} size={48} />
                 </div>
                 <h3 className="font-display text-2xl leading-tight">{step.title}</h3>
@@ -261,8 +298,8 @@ export function HomePage() {
             ))}
           </ol>
           <p className="mx-auto mt-10 max-w-2xl text-center font-[Inter] text-sm leading-relaxed text-[var(--ink-soft)] md:text-base">
-            Or feel free to explore any career you want in the <Link to="/job?fresh=1" className="font-semibold text-[var(--ink)] underline decoration-[var(--accent-news)] decoration-2 underline-offset-2 hover:decoration-[var(--ink)] transition-colors">Explore tab</Link>.<br />
-            Or talk to an AI counselor — open the <Link to="/counselor" className="font-semibold text-[var(--ink)] underline decoration-[var(--accent-news)] decoration-2 underline-offset-2 hover:decoration-[var(--ink)] transition-colors">Counselor tab</Link>.
+            {howTo.explorePrefix}<Link to="/job?fresh=1" className="font-semibold text-[var(--ink)] underline decoration-[var(--accent-news)] decoration-2 underline-offset-2 hover:decoration-[var(--ink)] transition-colors">{howTo.explore}</Link>
+            {howTo.counselorPrefix}<Link to={user ? '/counselor' : '/auth?redirect=%2Fcounselor'} className="font-semibold text-[var(--ink)] underline decoration-[var(--accent-news)] decoration-2 underline-offset-2 hover:decoration-[var(--ink)] transition-colors">{howTo.counselor}</Link>{howTo.counselorSuffix}
           </p>
         </div>
       </section>

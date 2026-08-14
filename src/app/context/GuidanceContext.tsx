@@ -17,6 +17,7 @@ import type {
   PathwayPlan,
 } from "../engine/types";
 import { useAuth } from "./AuthContext";
+import { calculateCompleteness } from "../engine/skillProfile";
 
 // ─── Context Types ────────────────────────────────────────────────────────────
 
@@ -58,7 +59,7 @@ const PATHWAYS_STORAGE_KEY = "cc_guidance_pathways";
  * Fill only structurally-required collection/default fields here so a stale
  * browser record never takes down recommendations or pathways.
  */
-function normalizeStoredPassport(value: CareerPassport): CareerPassport {
+export function normalizeStoredPassport(value: CareerPassport): CareerPassport {
   const legacy = value as CareerPassport & {
     values?: CareerPassport["values"] & {
       achievement?: number;
@@ -72,7 +73,7 @@ function normalizeStoredPassport(value: CareerPassport): CareerPassport {
   };
   const numberOr = (candidate: number | undefined, fallback: number) =>
     Number.isFinite(candidate) ? candidate! : fallback;
-  return {
+  const normalized: CareerPassport = {
     ...value,
     experiences: Array.isArray(value.experiences) ? value.experiences : [],
     skills: Array.isArray(value.skills) ? value.skills : [],
@@ -110,6 +111,8 @@ function normalizeStoredPassport(value: CareerPassport): CareerPassport {
         value.constraints?.needsIncomeContinuity ?? legacy.constraints?.mustMaintainIncome ?? false,
     },
   };
+  normalized.completeness = calculateCompleteness(normalized);
+  return normalized;
 }
 
 export function GuidanceProvider({ children }: { children: ReactNode }) {
@@ -190,9 +193,12 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
   const updatePassport = useCallback(
     (mutator: (prev: CareerPassport | null) => CareerPassport) => {
       setPassport((prev) => {
-        const updated = mutator(prev);
-        updated.updatedAt = new Date().toISOString();
-        updated.version = (prev?.version ?? 0) + 1;
+        const mutated = mutator(prev);
+        const updated = normalizeStoredPassport({
+          ...mutated,
+          updatedAt: new Date().toISOString(),
+          version: (prev?.version ?? 0) + 1,
+        });
 
         // Save to localStorage immediately
         try {

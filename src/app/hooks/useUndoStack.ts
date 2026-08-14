@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { CareerPassport } from '../engine/types';
 
-const UNDO_STACK_KEY = 'cc_passport_undo_stack';
+const UNDO_STACK_KEY = 'cc_guidance_passport_undo_stack';
 const MAX_UNDO_HISTORY = 20;
 
 interface UndoStack {
@@ -13,7 +13,10 @@ interface UndoStack {
 export function useUndoStack(initialPassport: CareerPassport | null) {
   const [stack, setStack] = useState<UndoStack>(() => {
     try {
-      const stored = localStorage.getItem(UNDO_STACK_KEY);
+      const legacyKey = 'cc_passport_undo_stack';
+      const stored = localStorage.getItem(UNDO_STACK_KEY) ?? localStorage.getItem(legacyKey);
+      if (stored && !localStorage.getItem(UNDO_STACK_KEY)) localStorage.setItem(UNDO_STACK_KEY, stored);
+      localStorage.removeItem(legacyKey);
       if (stored) {
         const parsed = JSON.parse(stored) as UndoStack;
         return {

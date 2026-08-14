@@ -8,7 +8,8 @@
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "kb:validate": "tsx src/app/data/knowledge/validate.ts",
-    "qa:guidance": "tsx scripts/guidance-qa.ts"
+    "qa:guidance": "tsx scripts/guidance-qa.ts",
+    "qa:product": "tsx scripts/product-audit-qa.ts"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

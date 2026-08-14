@@ -25,7 +25,7 @@ export function WordCloudMasthead({ passport, showLanding, onNavigate }: WordClo
   const leftLabel =
     lang === 'hi' ? 'अनुभव' : lang === 'te' ? 'అనుభవం' : 'experience';
 
-  const primaryPath = showLanding ? '/onboarding' : passport ? '/assess' : '/onboarding';
+  const primaryPath = showLanding ? '/onboarding' : passport ? '/dashboard' : '/onboarding';
 
   return (
     <section id="hero" className="relative min-h-screen overflow-hidden bg-[var(--paper)]" data-testid="hero-section">

@@ -10,11 +10,11 @@ import { useAuth } from '../context/AuthContext';
 export function BottomNav() {
   const { t } = useT();
   const navItems = [
-    { path: '/', icon: Home, label: t('home') },
-    { path: '/job', icon: Compass, label: t('explore') },
-    { path: '/passport', icon: UserRound, label: 'Personal' },
-    { path: '/counselor', icon: MessageCircle, label: t('counselor') },
-    { path: '/settings', icon: Settings, label: t('settings') },
+    { path: '/', href: '/', icon: Home, label: t('home') },
+    { path: '/job', href: '/job?fresh=1', icon: Compass, label: t('explore') },
+    { path: '/dashboard', href: '/dashboard', icon: UserRound, label: t('personal') },
+    { path: '/counselor', href: '/counselor', icon: MessageCircle, label: t('counselor') },
+    { path: '/settings', href: '/settings', icon: Settings, label: t('settings') },
   ];
   const location = useLocation();
   const navigate = useNavigate();
@@ -56,16 +56,16 @@ export function BottomNav() {
           aria-label="Bottom navigation"
         >
           <div className="flex items-center justify-around h-14 px-2">
-            {navItems.map(({ path, icon: Icon, label }) => {
+            {navItems.map(({ path, href, icon: Icon, label }) => {
               const isActive = location.pathname === path ||
                 (path === '/' && location.pathname === '/') ||
-                (path === '/passport' && ['/passport', '/assess', '/recommendations', '/pathways'].some(personalPath => location.pathname.startsWith(personalPath))) ||
+                (path === '/dashboard' && ['/dashboard', '/passport', '/assess', '/recommendations', '/pathways', '/pathway/'].some(personalPath => location.pathname.startsWith(personalPath))) ||
                 (path !== '/' && location.pathname.startsWith(path));
 
               return (
                 <button
                   key={path}
-                  onClick={() => handleNav(path)}
+                  onClick={() => handleNav(href)}
                   className={`font-mono-ui flex h-full w-full flex-col items-center justify-center gap-1 transition-colors min-w-0 ${
                     isActive ? 'text-[var(--ink)]' : 'text-[var(--ink-faint)]'
                   }`}

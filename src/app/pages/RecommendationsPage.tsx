@@ -32,7 +32,7 @@ const landscapeGroup = (group: RecommendationGroup): Exclude<LandscapeFilter, 'a
   group === 'best_fit' || group === 'easiest_transition' ? 'safe' :
     group === 'growth' ? 'stretch' : 'ambitious';
 
-const HIDDEN_CAREERS_KEY = 'cc_hidden_recommendations';
+const HIDDEN_CAREERS_KEY = 'cc_guidance_hidden_recommendations';
 
 function CountUp({value}:{value:number}) {
   const reduced=useReducedMotion();
@@ -63,7 +63,10 @@ export function RecommendationsPage() {
   const [viewMode, setViewMode] = useState<'cards' | 'scatter'>('cards');
   const [hiddenCareers, setHiddenCareers] = useState<Set<string>>(() => {
     try {
-      const stored = localStorage.getItem(HIDDEN_CAREERS_KEY);
+      const legacyKey = 'cc_hidden_recommendations';
+      const stored = localStorage.getItem(HIDDEN_CAREERS_KEY) ?? localStorage.getItem(legacyKey);
+      if (stored && !localStorage.getItem(HIDDEN_CAREERS_KEY)) localStorage.setItem(HIDDEN_CAREERS_KEY, stored);
+      localStorage.removeItem(legacyKey);
       return stored ? new Set(JSON.parse(stored)) : new Set();
     } catch {
       return new Set();

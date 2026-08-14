@@ -85,14 +85,14 @@ export function SettingsPage() {
       <div className="max-w-2xl mx-auto px-6">
         {/* Back */}
         <motion.button
-          onClick={() => navigate('/')}
+          onClick={() => navigate(user ? '/dashboard' : '/')}
           className="flex min-h-11 items-center gap-1.5 text-black/40 hover:text-black transition-colors mb-8 font-[Inter]"
           style={{ fontSize: '0.82rem' }}
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
         >
           <ChevronLeft size={16} />
-          Home
+          {user ? 'Dashboard' : 'Home'}
         </motion.button>
 
         {/* Header */}

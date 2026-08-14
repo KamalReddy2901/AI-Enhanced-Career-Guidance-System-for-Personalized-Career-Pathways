@@ -160,4 +160,8 @@ export const en = {
   breadcrumbPricing: "Pricing",
   breadcrumbOnboarding: "Onboarding",
   breadcrumbHowItWorks: "How it works",
+  dashboard: "Dashboard",
+  personal: "Personal",
+  signIn: "Sign in",
+  tailoredWorkspace: "Your tailored workspace",
 } as const;

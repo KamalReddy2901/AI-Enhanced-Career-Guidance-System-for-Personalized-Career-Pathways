@@ -42,7 +42,7 @@ export function Navbar() {
     ] : [{ to: '/settings', icon: <Settings size={12} />, label: t('settings'), active: location.pathname === '/settings' }],
   ];
   const personalLinks = [
-    { to: '/dashboard', icon: <Home size={13} />, label: 'Dashboard', active: location.pathname === '/dashboard' },
+    { to: '/dashboard', icon: <Home size={13} />, label: t('dashboard'), active: location.pathname === '/dashboard' },
     { to: '/assess', icon: <ClipboardCheck size={13} />, label: t('assess'), active: location.pathname.startsWith('/assess') },
     { to: '/recommendations', icon: <Map size={13} />, label: t('recommendations'), active: location.pathname === '/recommendations' },
     { to: '/pathways', icon: <Route size={13} />, label: t('pathways'), active: location.pathname.startsWith('/pathway') || location.pathname === '/pathways' },
@@ -97,7 +97,7 @@ export function Navbar() {
               {menuOpen ? <X size={20} strokeWidth={1.5} /> : <Menu size={20} strokeWidth={1.5} />}
             </button>
           </div>
-          </> : <Link to="/auth?mode=signup" className="flex min-h-11 items-center gap-2 bg-black px-5 rounded-full font-mono-ui text-xs uppercase text-white transition-all hover:bg-black/85 hover:-translate-y-0.5 active:translate-y-0"><LogIn size={14} strokeWidth={2} />Sign in</Link>}
+          </> : <Link to="/auth?mode=signup" className="flex min-h-11 items-center gap-2 bg-black px-5 rounded-full font-mono-ui text-xs uppercase text-white transition-all hover:bg-black/85 hover:-translate-y-0.5 active:translate-y-0"><LogIn size={14} strokeWidth={2} />{t('signIn')}</Link>}
         </div>
 
         {/* Keyboard shortcut hint */}
@@ -122,7 +122,7 @@ export function Navbar() {
               <div className="mb-2 flex justify-end"><LanguageSwitcher compact /></div>
               {navLinks.map(link => (
                 link.to === '/counselor' ? <><div key="mobile-personal" className="border-y border-black/8 py-1">
-                  <div className="px-4 py-2 font-mono-ui text-[0.7rem] uppercase tracking-wide text-black/40">Personal</div>
+                  <div className="px-4 py-2 font-mono-ui text-[0.7rem] uppercase tracking-wide text-black/40">{t('personal')}</div>
                   {personalLinks.map(personal => <Link key={personal.to} to={personal.to} onClick={() => sounds.navigate()} className={`font-mono-ui flex items-center gap-3 px-5 py-3 text-xs uppercase tracking-wide ${personal.active ? 'bg-black text-white' : 'text-black/60 hover:bg-black/5 hover:text-black'}`}>{personal.icon}{personal.label}</Link>)}
                 </div><Link key={link.to}
                   to={link.to}
@@ -154,12 +154,13 @@ export function Navbar() {
 }
 
 function PersonalMenu({ links, open, setOpen, active }: { links: Array<{ to: string; icon: React.ReactNode; label: string; active: boolean }>; open: boolean; setOpen: (open: boolean) => void; active: boolean }) {
+  const { t } = useT();
   return <div className="relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
     <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className={`label-caps flex shrink-0 items-center gap-1 px-2 py-2 transition-colors ${active ? 'bg-black text-white' : 'text-black/55 hover:text-black hover:bg-black/5'}`} style={{ fontSize: '0.62rem' }}>
-      <UserRound size={12} /><span>Personal</span><ChevronDown size={11} className={open ? 'rotate-180 transition-transform' : 'transition-transform'} />
+      <UserRound size={12} /><span>{t('personal')}</span><ChevronDown size={11} className={open ? 'rotate-180 transition-transform' : 'transition-transform'} />
     </button>
     <AnimatePresence>{open && <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="absolute right-0 top-full mt-1 w-56 border border-black/15 bg-[var(--paper)] p-1 shadow-lg">
-      <p className="px-3 py-2 font-mono-ui text-[0.58rem] uppercase tracking-[.14em] text-black/40">Your tailored workspace</p>
+      <p className="px-3 py-2 font-mono-ui text-[0.58rem] uppercase tracking-[.14em] text-black/40">{t('tailoredWorkspace')}</p>
       {links.map(link => <Link key={link.to} to={link.to} onClick={() => sounds.navigate()} className={`flex items-center gap-2 px-3 py-2.5 font-mono-ui text-[0.68rem] uppercase tracking-wide ${link.active ? 'bg-black text-white' : 'text-black/65 hover:bg-black/5 hover:text-black'}`}>{link.icon}{link.label}</Link>)}
     </motion.div>}</AnimatePresence>
   </div>;

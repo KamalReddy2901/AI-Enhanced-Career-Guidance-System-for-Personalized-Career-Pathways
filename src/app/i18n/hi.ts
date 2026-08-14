@@ -161,4 +161,8 @@ export const hi: Record<keyof typeof en, string> = {
   breadcrumbPricing: "मूल्य",
   breadcrumbOnboarding: "ऑनबोर्डिंग",
   breadcrumbHowItWorks: "यह कैसे काम करता है",
+  dashboard: "डैशबोर्ड",
+  personal: "व्यक्तिगत",
+  signIn: "साइन इन",
+  tailoredWorkspace: "आपका व्यक्तिगत कार्यक्षेत्र",
 };

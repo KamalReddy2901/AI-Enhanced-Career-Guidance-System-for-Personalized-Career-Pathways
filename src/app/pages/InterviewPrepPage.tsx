@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, Sparkles, Loader2, RefreshCw, CheckCircle, Circle, Download, Zap, Search } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
@@ -12,22 +12,24 @@ import { TextReveal } from '../motion/TextReveal';
 
 export function InterviewPrepPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { currentJob } = useApp();
+  const jobTitle = currentJob?.title ?? searchParams.get('job')?.trim() ?? '';
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<number | null>(null);
   const [preparedQuestions, setPreparedQuestions] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    if (!currentJob) return;
+    if (!jobTitle) return;
     loadQuestions();
-  }, [currentJob]);
+  }, [jobTitle]);
 
   const loadQuestions = async () => {
-    if (!currentJob) return;
+    if (!jobTitle) return;
     setIsLoading(true);
     try {
-      const qs = await generateInterviewQuestions(currentJob.title);
+      const qs = await generateInterviewQuestions(jobTitle);
       setQuestions(qs);
     } catch (error) {
       toast.error('Failed to generate interview questions');
@@ -42,7 +44,7 @@ export function InterviewPrepPage() {
     setPreparedQuestions(new Set());
     setSelectedQuestion(null);
     try {
-      const qs = await generateInterviewQuestions(currentJob!.title, true);
+      const qs = await generateInterviewQuestions(jobTitle, true);
       setQuestions(qs);
       toast.success('New questions generated!');
     } catch {
@@ -63,7 +65,7 @@ export function InterviewPrepPage() {
     setPreparedQuestions(newSet);
   };
 
-  if (!currentJob) return (
+  if (!jobTitle) return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center px-6 text-center" data-testid="interview-no-career">
       <StickFigure pose="confused" size={80} />
       <p className="label-caps mt-6 mb-3 text-[var(--ink-soft)]">No career selected</p>
@@ -90,14 +92,14 @@ export function InterviewPrepPage() {
       <div className="max-w-4xl mx-auto px-6">
         {/* Back */}
         <motion.button
-          onClick={() => navigate('/job/detail')}
+          onClick={() => navigate(currentJob ? '/job/detail' : '/job?fresh=1')}
           className="flex items-center gap-1.5 text-black/40 hover:text-black transition-colors mb-8 font-[Inter]"
           style={{ fontSize: '0.82rem' }}
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
         >
           <ChevronLeft size={16} />
-          Back to Job Info
+          {currentJob ? 'Back to Job Info' : 'Explore careers'}
         </motion.button>
 
         {/* Header */}
@@ -113,7 +115,7 @@ export function InterviewPrepPage() {
                 <h1 className="font-display text-5xl leading-[1.25] text-black"><TextReveal text="Interview Preparation" /></h1>
                 <p className="font-[Inter] text-black/40 flex items-center gap-1.5" style={{ fontSize: '0.82rem' }}>
                   <Sparkles size={12} />
-                  for {currentJob.title}
+                  for {jobTitle}
                 </p>
               </div>
             </div>
@@ -123,7 +125,7 @@ export function InterviewPrepPage() {
                 <motion.button
                   onClick={() => {
                     downloadInterviewPDF({
-                      jobTitle: currentJob.title,
+                      jobTitle,
                       questions,
                       preparedCount: preparedQuestions.size,
                     });
@@ -152,7 +154,7 @@ export function InterviewPrepPage() {
 
           <div className="border-l-2 border-black/10 pl-4">
             <p className="font-[Inter] text-black/50 leading-relaxed" style={{ fontSize: '0.88rem' }}>
-              AI-generated interview questions tailored to {currentJob.title} positions. Click any question to see the suggested answer strategy and key points to mention.
+              AI-generated interview questions tailored to {jobTitle} positions. Click any question to see the suggested answer strategy and key points to mention.
             </p>
           </div>
         </motion.div>

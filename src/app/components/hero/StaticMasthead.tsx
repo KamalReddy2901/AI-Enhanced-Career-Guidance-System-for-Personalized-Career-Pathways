@@ -26,7 +26,7 @@ export function StaticMasthead({ passport, showLanding, onNavigate }: StaticMast
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <Button
               type="button"
-              onClick={() => onNavigate(showLanding ? '/onboarding' : passport ? '/assess' : '/onboarding')}
+              onClick={() => onNavigate(showLanding ? '/onboarding' : passport ? '/dashboard' : '/onboarding')}
               data-testid="home-primary-cta"
             >
               {passport ? t('homeContinue') : t('homePrimary')}

@@ -51,10 +51,11 @@ export function PathwayPage() {
   const { user } = useAuth();
   const streak = useStreak();
   const { lang } = useT();
+  const occupation = occupationById.get(occupationId);
   const c = lang === "hi" ? { start:"पहले ऑनबोर्डिंग शुरू करें", missing:"यह व्यवसाय मौजूदा ज्ञान-आधार में नहीं है।", demand:"माँग", unavailable:"माँग का सांकेतिक डेटा उपलब्ध नहीं", gaps:"कौशल-अंतर रिपोर्ट · दक्षता और विश्वसनीयता के अनुसार", evidence:"प्रमाण की विश्वसनीयता", readiness:"तैयारी", bring:"आपके मौजूदा उपयोगी कौशल", validate:"स्थानांतरित होने वाले प्रमाण दिखाने के लिए पूर्व सीख को सत्यापित करें।", routes:"तीन व्यावहारिक मार्ग", months:"महीने", confidence:"विश्वसनीयता", map:"इंटरैक्टिव मार्ग मानचित्र", checklist:"जाँच-सूची", streak:"विकास क्रम", day:"दिन", find:"यहाँ खोजें", complete:"मार्ग पूरा—बातचीत की तैयारी करें", completeNote:"आपके प्रमाण और तैयारी की दोबारा गणना हुई है। आवेदन से पहले भूमिका-विशिष्ट प्रश्नों का अभ्यास करें।", interview:"साक्षात्कार अभ्यास खोलें", ask:"क्यों पूछें · अगर ऐसा हो तो पूछें", whyGap:"यह अंतर क्यों?", whyScores:"ये स्कोर क्यों?", footer:"संस्करणित ज्ञान-आधार पर नियम-आधारित स्कोरिंग · अंकों के लिए LLM का उपयोग नहीं", labels:{direct:"सबसे तेज़",stepping_stone:"कम जोखिम",qualification_first:"प्रमाणपत्र मार्ग"} } : lang === "te" ? { start:"ముందుగా ఆన్‌బోర్డింగ్ ప్రారంభించండి", missing:"ఈ వృత్తి ప్రస్తుత జ్ఞాన భాండాగారంలో లేదు.", demand:"డిమాండ్", unavailable:"సూచనాత్మక డిమాండ్ సమాచారం అందుబాటులో లేదు", gaps:"నైపుణ్య లోటు నివేదిక · ప్రావీణ్యం, నమ్మకం ప్రకారం", evidence:"ఆధారాల నమ్మకం", readiness:"సిద్ధత", bring:"మీరు ఇప్పటికే తీసుకువచ్చేవి", validate:"బదిలీ చేయగల ఆధారాలను చూపడానికి గత అభ్యాసాన్ని ధృవీకరించండి.", routes:"మూడు ఆచరణీయ మార్గాలు", months:"నెలలు", confidence:"నమ్మకం", map:"ఇంటరాక్టివ్ మార్గ పటం", checklist:"తనిఖీ జాబితా", streak:"ఎదుగుదల పరంపర", day:"రోజు", find:"ఇక్కడ కనుగొనండి", complete:"మార్గం పూర్తి—సంభాషణకు సిద్ధం కండి", completeNote:"మీ ఆధారాలు, సిద్ధత మళ్లీ లెక్కించబడ్డాయి. దరఖాస్తుకు ముందు పాత్ర-నిర్దిష్ట ప్రశ్నలను సాధన చేయండి.", interview:"ఇంటర్వ్యూ సాధన తెరవండి", ask:"ఎందుకో అడగండి · పరిస్థితి మారితే అడగండి", whyGap:"ఈ లోటు ఎందుకు?", whyScores:"ఈ స్కోర్లు ఎందుకు?", footer:"వెర్షన్ చేసిన జ్ఞాన భాండాగారంపై నియమ-ఆధారిత స్కోరింగ్ · స్కోర్లకు LLM ఉపయోగించలేదు", labels:{direct:"అత్యంత వేగవంతం",stepping_stone:"తక్కువ ప్రమాదం",qualification_first:"అర్హత మార్గం"} } : { start:"Start onboarding first", missing:"This occupation is not in the current knowledge base.", demand:"Demand", unavailable:"Indicative demand signal unavailable", gaps:"Skill gap report · proficiency & confidence adjusted", evidence:"Evidence confidence", readiness:"Readiness", bring:"What you already bring", validate:"Validate prior learning to surface transferable evidence.", routes:"Three plausible routes", months:"months", confidence:"confidence", map:"Interactive pathway map", checklist:"checklist", streak:"growth streak", day:"day", find:"Find via", complete:"Route complete—prepare for the conversation", completeNote:"Your evidence and readiness have been recomputed. Practice role-specific questions before applying.", interview:"Open interview prep", ask:"Ask why · Ask what-if", whyGap:"Why this gap?", whyScores:"Why these scores?", footer:"Deterministic scoring over the versioned knowledge base · LLM not used for scores", labels:{direct:"Fastest",stepping_stone:"Lower-risk",qualification_first:"Credential route"} };
   const existing = pathways.find((plan) => plan.occupationId === occupationId);
   const initial = useMemo(() => {
-    if (!passport) return null;
+    if (!passport || !occupation) return null;
     const refreshed = buildPathwayPlan(passport, occupationId);
     if (!existing) return refreshed;
     return {
@@ -71,7 +72,7 @@ export function PathwayPage() {
         };
       }),
     };
-  }, [passport, existing, occupationId]);
+  }, [passport, existing, occupationId, occupation]);
   const [plan, setPlan] = useState(initial);
   const [chosenKind, setChosenKind] = useState(
     initial?.chosenRoute ?? initial?.routes[0]?.kind,
@@ -95,7 +96,7 @@ export function PathwayPage() {
     gsap.fromTo(fill, { scaleY: 0 }, { scaleY: 1, ease: 'none', scrollTrigger: { trigger: timelineRef.current, start: 'top 70%', end: 'bottom 75%', scrub: 0.8 } });
   }, { scope: timelineRef, dependencies: [chosenKind] });
 
-  if (!passport || !plan)
+  if (!passport)
     return (
       <div className="min-h-screen p-8 text-center">
         <Link to="/onboarding" className="underline">
@@ -103,13 +104,14 @@ export function PathwayPage() {
         </Link>
       </div>
     );
-  const occupation = occupationById.get(occupationId);
   if (!occupation)
     return (
       <div className="min-h-screen p-8 text-center font-[Inter]">
         {c.missing}
       </div>
     );
+  if (!plan)
+    return <div className="min-h-screen p-8 text-center font-[Inter]">Unable to prepare this pathway. Return to your recommendations and try again.</div>;
   const market = marketFor(occupationId);
   const route =
     plan.routes.find((item) => item.kind === chosenKind) ?? plan.routes[0];

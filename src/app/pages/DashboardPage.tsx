@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import { motion } from 'motion/react';
 import { 
   ClipboardCheck, 
@@ -15,10 +15,9 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useGuidance } from '../context/GuidanceContext';
-import { useAuth } from '../context/AuthContext';
 import { StickFigure } from '../components/StickFigure';
 import type { StickFigurePose } from '../components/StickFigure';
-import { useT } from '../i18n';
+import { getPassportCompletenessBreakdown } from '../engine/skillProfile';
 
 interface DashboardCard {
   title: string;
@@ -31,16 +30,9 @@ interface DashboardCard {
 }
 
 export function DashboardPage() {
-  const { t } = useT();
-  const navigate = useNavigate();
-  const { user } = useAuth();
   const { passport, recommendations, pathways } = useGuidance();
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
-
-  if (!user) {
-    navigate('/auth?redirect=/dashboard');
-    return null;
-  }
+  const completenessSections = passport ? getPassportCompletenessBreakdown(passport) : [];
 
   const cards: DashboardCard[] = [
     {
@@ -84,31 +76,37 @@ export function DashboardPage() {
     },
   ];
 
-  const progressItems = [
-    { label: 'Career Passport created', done: !!passport, path: '/passport' },
-    { label: 'Interests assessment', done: !!passport?.riasec, path: '/assess/interests' },
-    { label: 'Aptitude assessment', done: !!passport?.aptitude, path: '/assess/aptitude' },
-    { label: 'Work values assessment', done: !!passport?.values, path: '/assess/values' },
-    { label: 'Skills added', done: (passport?.skills.length ?? 0) > 0, path: '/passport' },
-    { label: 'Career pathway built', done: pathways.length > 0, path: '/recommendations' },
-  ];
-
-  const completedCount = progressItems.filter(item => item.done).length;
-  const progressPercentage = Math.round((completedCount / progressItems.length) * 100);
+  const sectionLabels = {
+    basics: 'Background and constraints',
+    skills: 'Skills evidence',
+    interests: 'Interests assessment',
+    aptitude: 'Aptitude assessment',
+    values: 'Work values assessment',
+    aspiration: 'Career aspiration',
+  } as const;
+  const progressItems = passport
+    ? completenessSections.map((item) => ({
+        label: sectionLabels[item.id],
+        done: item.complete,
+        path: item.path,
+        detail: `${item.score}/${item.maximum} points`,
+      }))
+    : [{
+        label: 'Create your Career Passport',
+        done: false,
+        path: '/onboarding',
+        detail: 'Required before assessments',
+      }];
+  const progressPercentage = passport?.completeness ?? 0;
 
   const getNextStep = () => {
-    if (!passport?.riasec) {
-      return { text: 'Take the interests assessment to get personalized career matches', path: '/assess/interests', label: 'interests assessment' };
-    }
-    if (!passport?.aptitude) {
-      return { text: 'Complete the aptitude assessment to refine your recommendations', path: '/assess/aptitude', label: 'aptitude assessment' };
-    }
-    if (!passport?.values) {
-      return { text: 'Take the work values assessment to improve matching accuracy', path: '/assess/values', label: 'work values assessment' };
-    }
-    if ((passport?.skills.length ?? 0) === 0) {
-      return { text: 'Add your skills to your passport by uploading a resume', path: '/passport', label: 'passport' };
-    }
+    if (!passport) return { text: 'Create your Career Passport so CareerCase can guide your next steps', path: '/onboarding', label: 'Career Passport' };
+    const nextSection = completenessSections.find((item) => !item.complete);
+    if (nextSection) return {
+      text: `Complete ${sectionLabels[nextSection.id].toLowerCase()} to improve your passport readiness`,
+      path: nextSection.path,
+      label: sectionLabels[nextSection.id].toLowerCase(),
+    };
     if (pathways.length === 0) {
       return { text: 'View your career recommendations and build your first pathway', path: '/recommendations', label: 'career recommendations' };
     }
@@ -268,7 +266,7 @@ export function DashboardPage() {
                   Your Journey
                 </h2>
                 <p className="text-sm text-[var(--ink-soft)] leading-relaxed">
-                  Track your progress as you build your complete career profile
+                  Passport readiness uses the same profile score everywhere in CareerCase
                 </p>
               </div>
               
@@ -277,7 +275,7 @@ export function DashboardPage() {
                   {progressPercentage}%
                 </div>
                 <div className="font-mono-ui text-xs uppercase tracking-wider text-[var(--ink-soft)] mt-1.5">
-                  Complete
+                  Passport ready
                 </div>
               </div>
             </div>
@@ -312,6 +310,9 @@ export function DashboardPage() {
                     )}
                     <span className={`flex-1 text-sm ${item.done ? 'text-[var(--ink)] font-medium' : 'text-[var(--ink-soft)]'}`}>
                       {item.label}
+                    </span>
+                    <span className="hidden font-mono-ui text-[10px] uppercase tracking-wider text-[var(--ink-soft)] sm:inline">
+                      {item.detail}
                     </span>
                     {!item.done && (
                       <span className="font-mono-ui text-xs uppercase text-[var(--ink-soft)] tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">

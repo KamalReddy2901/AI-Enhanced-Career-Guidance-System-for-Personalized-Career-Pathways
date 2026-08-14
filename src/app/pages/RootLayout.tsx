@@ -87,10 +87,16 @@ export function RootLayout() {
     const redirect = `${location.pathname}${location.search}${location.hash}`;
     return <Navigate to={`/auth?redirect=${encodeURIComponent(redirect)}`} replace />;
   }
-  // Individual assessment URLs are easy to bookmark or paste. They require an
-  // onboarding profile, so send a new user to the one place that creates it
-  // instead of letting a later submit handler throw an error.
-  if (user && !guidanceLoading && location.pathname.startsWith('/assess/') && !passport) {
+  const requiresPassport = [
+    '/assess',
+    '/passport',
+    '/recommendations',
+    '/pathways',
+    '/pathway/',
+  ].some((path) => location.pathname === path || location.pathname.startsWith(`${path}/`) || (path.endsWith('/') && location.pathname.startsWith(path)));
+  // All profile-dependent entry points share the same guard. The dashboard is
+  // intentionally left accessible so it can explain the first required step.
+  if (user && !guidanceLoading && requiresPassport && !passport) {
     return <Navigate to="/onboarding" replace />;
   }
 

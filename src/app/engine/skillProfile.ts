@@ -150,45 +150,71 @@ export function addSkillEvidence(
 
 // ─── Passport Completeness Calculation ───────────────────────────────────────
 
+export type PassportCompletenessSectionId =
+  | 'basics'
+  | 'skills'
+  | 'interests'
+  | 'aptitude'
+  | 'values'
+  | 'aspiration';
+
+export interface PassportCompletenessSection {
+  id: PassportCompletenessSectionId;
+  score: number;
+  maximum: number;
+  complete: boolean;
+  path: string;
+}
+
 /**
- * Calculate passport completeness score (0-100)
- * Formula: basics 20% + skills 20% + riasec 20% + aptitude 15% + values 10% + aspiration 15%
+ * The single source of truth for passport readiness. Keep the breakdown and
+ * total together so every surface shows the same number and next action.
  */
+export function getPassportCompletenessBreakdown(
+  passport: CareerPassport,
+): PassportCompletenessSection[] {
+  const constraints = passport.constraints;
+  const basicsScore =
+    (passport.segment ? 5 : 0) +
+    (passport.education?.level ? 5 : 0) +
+    (constraints?.location.trim() ? 2 : 0) +
+    (constraints?.languages.length ? 3 : 0) +
+    (constraints?.weeklyLearningHours > 0 ? 5 : 0);
+  const skillCount = passport.skills.length;
+  const skillsScore = skillCount >= 10 ? 20 : skillCount >= 5 ? 15 : skillCount > 0 ? 10 : 0;
+  const aspirationScore = passport.aspiration
+    ? 10 + (passport.aspiration.dreamOccupationIds.length > 0 ? 5 : 0)
+    : 0;
+
+  const section = (
+    id: PassportCompletenessSectionId,
+    score: number,
+    maximum: number,
+    path: string,
+  ): PassportCompletenessSection => ({
+    id,
+    score,
+    maximum,
+    complete: score === maximum,
+    path,
+  });
+
+  return [
+    section('basics', basicsScore, 20, '/passport'),
+    section('skills', skillsScore, 20, '/passport'),
+    section('interests', passport.riasec ? 20 : 0, 20, '/assess/interests'),
+    section('aptitude', passport.aptitude ? 15 : 0, 15, '/assess/aptitude'),
+    section('values', passport.values ? 10 : 0, 10, '/assess/values'),
+    section('aspiration', aspirationScore, 15, '/assess/aspirations'),
+  ];
+}
+
+/** Calculate passport completeness (0-100) from the canonical breakdown. */
 export function calculateCompleteness(passport: CareerPassport): number {
-  let score = 0;
-
-  // Basics (20%): segment + education + constraints
-  if (passport.segment) score += 5;
-  if (passport.education.level !== 'below_10') score += 5;
-  if (passport.constraints.location) score += 2;
-  if (passport.constraints.languages.length > 0) score += 3;
-  if (passport.constraints.weeklyLearningHours > 0) score += 5;
-
-  // Skills (20%)
-  if (passport.skills.length >= 10) {
-    score += 20;
-  } else if (passport.skills.length >= 5) {
-    score += 15;
-  } else if (passport.skills.length > 0) {
-    score += 10;
-  }
-
-  // RIASEC (20%)
-  if (passport.riasec) score += 20;
-
-  // Aptitude (15%)
-  if (passport.aptitude) score += 15;
-
-  // Values (10%)
-  if (passport.values) score += 10;
-
-  // Aspiration (15%)
-  if (passport.aspiration) {
-    score += 10;
-    if (passport.aspiration.dreamOccupationIds.length > 0) score += 5;
-  }
-
-  return Math.min(100, score);
+  return getPassportCompletenessBreakdown(passport).reduce(
+    (total, item) => total + item.score,
+    0,
+  );
 }
 
 /**

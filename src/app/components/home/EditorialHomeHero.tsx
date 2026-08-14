@@ -39,11 +39,11 @@ export function EditorialHomeHero({
               <h2 id="home-progress-title" className="font-display text-2xl">{t('homeProgress')}</h2>
               <span className="font-mono-ui text-sm">{Math.round(progress)}%</span>
             </div>
-            <div className="mt-4 h-1 overflow-hidden bg-[var(--ink)]/15" role="progressbar" aria-label="Assessment completion" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}>
+            <div className="mt-4 h-1 overflow-hidden bg-[var(--ink)]/15" role="progressbar" aria-label="Career Passport readiness" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}>
               <motion.div className="h-full origin-left bg-[var(--ink)]" initial={{ scaleX: 0 }} whileInView={{ scaleX: progress / 100 }} viewport={{ once: true }} transition={{ duration: 0.8 }} />
             </div>
           </div>
-          <Button type="button" variant="outline" onClick={() => onNavigate(passport ? '/assess' : '/onboarding')} data-testid="home-progress-cta">
+          <Button type="button" variant="outline" onClick={() => onNavigate(passport ? '/dashboard' : '/onboarding')} data-testid="home-progress-cta">
             {passport ? t('homeNext') : t('homeBegin')}
           </Button>
         </div>

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { toast } from 'sonner';
 import { StickFigure, type StickFigurePose } from '../components/StickFigure';
 import { logConsent } from '../services/guidanceDb';
 import { useGuidance } from '../context/GuidanceContext';
@@ -44,48 +43,10 @@ export function OnboardingPage() {
   const [cloudHistoryConsent, setCloudHistoryConsent] = useState(false);
   const [guardianPendingLogged, setGuardianPendingLogged] = useState(false);
 
-  const handleSkip = () => {
-    if (!segment) {
-      toast.error(lang === 'hi' ? 'कृपया अपनी स्थिति चुनें' : lang === 'te' ? 'దయచేసి మీ స్థితిని ఎంచుకోండి' : 'Please select your segment first');
-      return;
-    }
-    
-    // Create minimal passport
-    const minimalPassport: CareerPassport = {
-      segment,
-      education: { level: 'class_12' },
-      experiences: [],
-      skills: [],
-      constraints: {
-        location: '',
-        canRelocate: true,
-        weeklyLearningHours: 5,
-        budgetLevel: 'medium',
-        languages: ['English'],
-        needsIncomeContinuity: false,
-      },
-      completeness: 0,
-      version: 1,
-      updatedAt: new Date().toISOString(),
-    };
-    
-    minimalPassport.completeness = calculateCompleteness(minimalPassport);
-    updatePassport(() => minimalPassport);
-    
-    // Log minimal consent
-    const consentEntries = [
-      { consent_type: 'data_processing', granted: true, detail: { skipped: true }, created_at: new Date().toISOString() },
-    ];
-    localStorage.setItem('cc_guidance_consents', JSON.stringify(consentEntries));
-    
-    sounds.click();
-    navigate('/');
-  };
-
   // Redirect if already onboarded
   useEffect(() => {
     if (passport && passport.segment) {
-      navigate('/');
+      navigate('/dashboard', { replace: true });
     }
   }, [passport, navigate]);
 
@@ -164,7 +125,7 @@ export function OnboardingPage() {
     sounds.success();
     hapticSuccess();
     
-    navigate('/');
+    navigate('/dashboard', { replace: true });
   };
 
   const canProceed = () => {
@@ -172,9 +133,9 @@ export function OnboardingPage() {
       case 'language': return true;
       case 'segment': return segment !== null;
       case 'goals': return true; // optional
-      case 'background': return education.level !== 'below_10' || experiences.length === 0;
-      case 'constraints': return constraints.location.length > 0 && constraints.weeklyLearningHours > 0;
-      case 'consent': return isMinor === false ? dataConsentGiven : (isMinor && guardianConfirmed && dataConsentGiven);
+      case 'background': return Boolean(education.level);
+      case 'constraints': return constraints.location.trim().length > 0 && constraints.weeklyLearningHours > 0;
+      case 'consent': return isMinor === false ? dataConsentGiven : (isMinor && guardianPendingLogged && guardianConfirmed && dataConsentGiven);
       case 'finish': return true;
       default: return false;
     }
@@ -188,14 +149,6 @@ export function OnboardingPage() {
       <div className="max-w-2xl mx-auto mb-8">
         <div className="mb-4 flex justify-between items-center">
           <LanguageSwitcher />
-          {currentStep !== 'language' && currentStep !== 'finish' && (
-            <button
-              onClick={handleSkip}
-              className="text-black/40 hover:text-black font-[Inter] text-sm underline transition-colors"
-            >
-              {lang === 'hi' ? 'छोड़ें और घर जाएँ' : lang === 'te' ? 'దాటవేసి హోమ్‌కి వెళ్ళండి' : 'Skip to home'}
-            </button>
-          )}
         </div>
         <div className="flex items-center justify-between">
           {STEPS.map((step, idx) => (
@@ -553,8 +506,9 @@ interface ConsentStepProps {
 function ConsentStep({ isMinor, setIsMinor, guardianName, setGuardianName, guardianEmail, setGuardianEmail, guardianConfirmed, setGuardianConfirmed, dataConsentGiven, setDataConsentGiven, cloudHistoryConsent, setCloudHistoryConsent, userId, guardianPendingLogged, setGuardianPendingLogged }: ConsentStepProps) {
   const { t,lang } = useT();
   const c=lang==='hi'?{title:'सहमति और गोपनीयता',age:'आयु घोषणा',adult:'मेरी आयु 18 वर्ष या अधिक है',minor:'मेरी आयु 18 वर्ष से कम है',guardianName:'अभिभावक का नाम',guardianEmail:'अभिभावक का ईमेल',generate:'अभिभावक पुष्टि अनुरोध बनाएँ',pending:'अभिभावक की सहमति लंबित है—पुष्टि अनुरोध बनाया गया है।',confirmed:'पुष्टि हुई मानें (प्रदर्शन प्रवाह—अभिभावक ने स्वीकृति दी है)',demo:'प्रदर्शन प्रवाह—वास्तविक सेवा DigiLocker-सत्यापित अभिभावक सहमति का उपयोग करेगी।',dataTitle:'हम कौन-सा डेटा क्यों उपयोग करते हैं',data:'डेटा',purpose:'उद्देश्य',storage:'भंडारण',profile:'प्रोफ़ाइल और आकलन',matching:'करियर मिलान',browser:'ब्राउज़र + वैकल्पिक क्लाउड',usage:'उपयोग का तरीका',improve:'सुझाव बेहतर करना',aggregate:'केवल समेकित'}:lang==='te'?{title:'సమ్మతి మరియు గోప్యత',age:'వయస్సు ప్రకటన',adult:'నా వయస్సు 18 సంవత్సరాలు లేదా అంతకంటే ఎక్కువ',minor:'నా వయస్సు 18 సంవత్సరాల కంటే తక్కువ',guardianName:'సంరక్షకుని పేరు',guardianEmail:'సంరక్షకుని ఇమెయిల్',generate:'సంరక్షకుని నిర్ధారణ అభ్యర్థన రూపొందించండి',pending:'సంరక్షకుని సమ్మతి పెండింగ్‌లో ఉంది—నిర్ధారణ అభ్యర్థన రూపొందించబడింది.',confirmed:'నిర్ధారించబడినట్లు గుర్తించండి (ప్రదర్శన ప్రవాహం—సంరక్షకుడు ఆమోదించారు)',demo:'ప్రదర్శన ప్రవాహం—అసలు సేవ DigiLocker ధృవీకరించిన సంరక్షక సమ్మతిని ఉపయోగిస్తుంది.',dataTitle:'మేము ఏ డేటాను ఎందుకు ఉపయోగిస్తాము',data:'డేటా',purpose:'ఉద్దేశ్యం',storage:'నిల్వ',profile:'ప్రొఫైల్ మరియు అంచనాలు',matching:'కెరీర్ సరిపోలిక',browser:'బ్రౌజర్ + ఐచ్ఛిక క్లౌడ్',usage:'వినియోగ నమూనాలు',improve:'సిఫార్సులను మెరుగుపరచడం',aggregate:'సమగ్ర రూపంలో మాత్రమే'}:{title:'Consent & Privacy',age:'Age Declaration',adult:'I am 18 years or older',minor:'I am under 18 years old',guardianName:'Guardian name',guardianEmail:'Guardian email',generate:'Generate guardian confirmation request',pending:'Guardian consent pending — a confirmation request has been generated.',confirmed:'Mark as confirmed (demonstration flow — guardian has approved)',demo:'Demonstration flow — production uses DigiLocker-verified guardian consent.',dataTitle:'What data we use and why',data:'Data',purpose:'Purpose',storage:'Storage',profile:'Profile & assessments',matching:'Career matching',browser:'Browser + optional cloud',usage:'Usage patterns',improve:'Improve recommendations',aggregate:'Aggregated only'};
+  const guardianEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guardianEmail.trim());
   const requestGuardianConsent = () => {
-    if (!guardianName.trim() || !guardianEmail.trim()) return;
+    if (!guardianName.trim() || !guardianEmailValid) return;
     setGuardianPendingLogged(true);
     if (userId) void logConsent(userId, 'guardian', false, { method: 'email_ack_pending', guardian_name: guardianName });
     sounds.notification();
@@ -569,13 +523,13 @@ function ConsentStep({ isMinor, setIsMinor, guardianName, setGuardianName, guard
           <label className="block font-[Inter] text-sm font-semibold mb-2">{c.age}</label>
           <div className="space-y-2">
             <button
-              onClick={() => { setIsMinor(false); sounds.click(); }}
+              onClick={() => { setIsMinor(false); setGuardianConfirmed(false); setGuardianPendingLogged(false); sounds.click(); }}
               className={`w-full p-3 border rounded-sm text-left font-[Inter] text-sm ${isMinor === false ? 'border-black bg-black/5' : 'border-black/20'}`}
             >
               {c.adult}
             </button>
             <button
-              onClick={() => { setIsMinor(true); sounds.click(); }}
+              onClick={() => { setIsMinor(true); setGuardianConfirmed(false); setGuardianPendingLogged(false); sounds.click(); }}
               className={`w-full p-3 border rounded-sm text-left font-[Inter] text-sm ${isMinor === true ? 'border-black bg-black/5' : 'border-black/20'}`}
             >
               {c.minor}
@@ -592,19 +546,19 @@ function ConsentStep({ isMinor, setIsMinor, guardianName, setGuardianName, guard
               <input
                 type="text"
                 value={guardianName}
-                onChange={(e) => setGuardianName(e.target.value)}
+                onChange={(e) => { setGuardianName(e.target.value); setGuardianPendingLogged(false); setGuardianConfirmed(false); }}
                 placeholder={c.guardianName}
                 className="w-full p-2 border border-black/20 rounded-sm font-[Inter] text-sm"
               />
               <input
                 type="email"
                 value={guardianEmail}
-                onChange={(e) => setGuardianEmail(e.target.value)}
+                onChange={(e) => { setGuardianEmail(e.target.value); setGuardianPendingLogged(false); setGuardianConfirmed(false); }}
                 placeholder={c.guardianEmail}
                 className="w-full p-2 border border-black/20 rounded-sm font-[Inter] text-sm"
               />
               {!guardianPendingLogged ? (
-                <button type="button" onClick={requestGuardianConsent} disabled={!guardianName.trim() || !guardianEmail.trim()} className="min-h-11 w-full border border-black/20 bg-white px-3 py-2 font-[Inter] text-sm disabled:opacity-40">
+                <button type="button" onClick={requestGuardianConsent} disabled={!guardianName.trim() || !guardianEmailValid} className="min-h-11 w-full border border-black/20 bg-white px-3 py-2 font-[Inter] text-sm disabled:opacity-40">
                   {c.generate}
                 </button>
               ) : (
@@ -615,9 +569,10 @@ function ConsentStep({ isMinor, setIsMinor, guardianName, setGuardianName, guard
                   type="checkbox"
                   id="guardian-confirm"
                   checked={guardianConfirmed}
+                  disabled={!guardianPendingLogged}
                   onChange={(e) => {
                     setGuardianConfirmed(e.target.checked);
-                    if (e.target.checked && userId) void logConsent(userId, 'guardian', true, { method: 'email_ack_demo_confirmed', guardian_name: guardianName });
+                    if (e.target.checked && userId) void logConsent(userId, 'guardian', true, { method: 'manual_self_attested', guardian_name: guardianName });
                   }}
                   className="w-4 h-4"
                 />

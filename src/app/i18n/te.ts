@@ -161,4 +161,8 @@ export const te: Record<keyof typeof en, string> = {
   breadcrumbPricing: "ధరలు",
   breadcrumbOnboarding: "ఆన్‌బోర్డింగ్",
   breadcrumbHowItWorks: "ఇది ఎలా పనిచేస్తుంది",
+  dashboard: "డ్యాష్‌బోర్డ్",
+  personal: "వ్యక్తిగతం",
+  signIn: "సైన్ ఇన్",
+  tailoredWorkspace: "మీ వ్యక్తిగత కార్యస్థలం",
 };
