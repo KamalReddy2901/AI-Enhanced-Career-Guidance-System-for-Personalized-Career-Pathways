@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, Clock, ArrowRight, RotateCcw, CheckCircle2, XCircle, Sparkles, Loader2, Download, TrendingUp, Zap, Search } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
 import { useApp } from '../context/AppContext';
 import { generateSimulation, type SimulationScenario } from '../data/simulations';
+import { generateJobData } from '../data/jobs';
 import { assessCareerCompatibility, generateSimulationAI, generateSimulationSummary } from '../services/ai';
 import { downloadAssessmentPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
@@ -51,7 +52,9 @@ type StickFigurePose = 'waking' | 'walking' | 'sitting' | 'presenting' | 'thinki
 
 export function SimulationPage() {
   const navigate = useNavigate();
-  const { currentJob } = useApp();
+  const [searchParams] = useSearchParams();
+  const { currentJob, setCurrentJob } = useApp();
+  const requestedJobTitle = searchParams.get('job')?.trim() ?? '';
   const { passport } = useGuidance();
   const [scenarios, setScenarios] = useState<SimulationScenario[]>([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
@@ -68,6 +71,10 @@ export function SimulationPage() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const simResultKey = (title: string) => `sim_result_${title.toLowerCase().replace(/\s+/g, '_')}`;
+
+  useEffect(() => {
+    if (!currentJob && requestedJobTitle) setCurrentJob(generateJobData(requestedJobTitle));
+  }, [currentJob, requestedJobTitle, setCurrentJob]);
 
   useEffect(() => {
     if (!currentJob) return;
