@@ -345,9 +345,13 @@ export function JobDetailPage() {
   const toggleFavorite = () => {
     if (isFav) {
       removeFavorite(currentJob.title);
+      sounds.unfavorite();
+      hapticLight();
       toast.success("Removed from favorites");
     } else {
       addFavorite(currentJob);
+      sounds.favorite();
+      hapticLight();
       toast.success("Added to favorites");
     }
   };

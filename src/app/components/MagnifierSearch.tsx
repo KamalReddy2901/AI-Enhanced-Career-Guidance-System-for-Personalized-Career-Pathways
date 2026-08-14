@@ -226,6 +226,7 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
               setSelectedSuggestion(-1);
             }}
             onFocus={() => {
+              sounds.search();
               setInputFocused(true);
               query.length >= 2 && setShowSuggestions(true);
             }}

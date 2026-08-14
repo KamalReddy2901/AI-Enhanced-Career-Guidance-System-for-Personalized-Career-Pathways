@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
 import { TextReveal } from '../motion/TextReveal';
 import { KB_VERSION } from '../data/knowledge';
-import { hapticTap } from '../utils/haptic';
+import { hapticLight, hapticTap } from '../utils/haptic';
 import { useT } from '../i18n';
 
 type Tab = 'history' | 'saved';
@@ -38,6 +38,8 @@ export function HistoryPage() {
   };
 
   const handleAddToCompare = (jobData: typeof history[0]['jobData'], jobTitle: string) => {
+    sounds.addCompare();
+    hapticLight();
     if (!comparisonJobs[0]) {
       setComparisonJob(0, jobData);
       toast.success(`"${jobTitle}" set as Career A`);
@@ -309,10 +311,12 @@ export function HistoryPage() {
                                 if (isFavorite(entry.jobTitle)) {
                                   removeFavorite(entry.jobTitle);
                                   sounds.unfavorite();
+                                  hapticLight();
                                   toast.success(`Removed "${entry.jobTitle}" from saved`);
                                 } else {
                                   addFavorite(entry.jobData);
                                   sounds.favorite();
+                                  hapticLight();
                                   toast.success(`Saved "${entry.jobTitle}"`);
                                 }
                               }}
@@ -413,6 +417,7 @@ export function HistoryPage() {
                       >
                         <button
                           onClick={() => {
+                            hapticTap();
                             setCurrentJob(entry.jobData);
                             setRefinementCount(0);
                             navigate('/job');
@@ -510,6 +515,8 @@ export function HistoryPage() {
                             onClick={e => {
                               e.stopPropagation();
                               removeFavorite(entry.jobTitle);
+                              sounds.unfavorite();
+                              hapticLight();
                               toast.success('Removed from saved');
                             }}
                             className="flex items-center gap-1 text-black/20 hover:text-red-400 transition-colors font-[Inter]"

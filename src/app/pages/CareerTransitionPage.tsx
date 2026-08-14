@@ -111,6 +111,7 @@ export function CareerTransitionPage() {
 
   const handleGenerate = async () => {
     if (!fromCareer.trim() || !toCareer.trim()) return;
+    hapticTap();
     // Cancel any existing request
     abortRef.current?.abort();
     abortRef.current = new AbortController();

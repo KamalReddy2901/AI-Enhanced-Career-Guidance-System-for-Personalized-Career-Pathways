@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { useT } from '../i18n';
 import { TrustStrip } from '../components/guidance/TrustStrip';
 import { sounds } from '../utils/sounds';
+import { hapticLight, hapticTap } from '../utils/haptic';
 
 const EditorialHomeHero = lazy(() => import('../components/home/EditorialHomeHero').then(module => ({ default: module.EditorialHomeHero })));
 const WhyPanel = lazy(() => import('../components/guidance/WhyPanel').then(module => ({ default: module.WhyPanel })));
@@ -130,6 +131,8 @@ export function HomePage() {
   const trendingFetched = useRef(false);
 
   const handleQuickCompare = (title: string) => {
+    sounds.addCompare();
+    hapticLight();
     setCompareQueue(prev => {
       if (prev.includes(title)) return prev.filter(t => t !== title);
       if (prev.length >= 2) return [prev[1], title];
@@ -147,6 +150,8 @@ export function HomePage() {
       ]);
       setComparisonJob(0, jA);
       setComparisonJob(1, jB);
+      sounds.navigate();
+      hapticTap();
       navigate('/compare');
     } catch (err) {
       toast.error('Failed to load careers for comparison');
@@ -207,6 +212,8 @@ export function HomePage() {
     // Guard: prevent concurrent searches
     if (searchingCareer) return;
     if (!user) {
+      sounds.navigate();
+      hapticTap();
       navigate(`/auth?redirect=${encodeURIComponent('/job')}`);
       return;
     }
@@ -217,6 +224,8 @@ export function HomePage() {
       setCurrentJob(jobData);
       setRefinementCount(0);
       toast.dismiss('dossier-load');
+      sounds.navigate();
+      hapticTap();
       navigate('/job');
     } finally {
       setSearchingCareer(null);
@@ -232,7 +241,7 @@ export function HomePage() {
         </div>
       )}
       
-      <WordCloudMasthead passport={passport} showLanding={showLanding} onNavigate={navigate} />
+      <WordCloudMasthead passport={passport} showLanding={showLanding} onNavigate={(to) => { sounds.navigate(); hapticTap(); navigate(to); }} />
       {!showLanding && <Suspense fallback={null}><EditorialHomeHero
           passport={passport}
           recommendations={recommendations}
@@ -292,7 +301,7 @@ export function HomePage() {
                 <p className="mt-3 text-sm leading-relaxed text-[var(--ink-soft)]">{step.body}</p>
                 <button 
                   type="button" 
-                  onClick={() => { sounds.navigate(); navigate(step.path); }} 
+                  onClick={() => { sounds.navigate(); hapticTap(); navigate(step.path); }}
                   className="mt-auto inline-flex min-h-11 items-center gap-2 self-start pt-6 font-mono-ui text-xs uppercase tracking-wider underline decoration-[var(--accent-news)] decoration-2 underline-offset-4 hover:text-[var(--accent-news)] transition-colors"
                 >
                   {step.action} <ArrowRight size={14} strokeWidth={2} aria-hidden="true" />
@@ -301,8 +310,8 @@ export function HomePage() {
             ))}
           </ol>
           <p className="mx-auto mt-10 max-w-2xl text-center font-[Inter] text-sm leading-relaxed text-[var(--ink-soft)] md:text-base">
-            {howTo.explorePrefix}<Link to="/job?fresh=1" className="font-semibold text-[var(--ink)] underline decoration-[var(--accent-news)] decoration-2 underline-offset-2 hover:decoration-[var(--ink)] transition-colors">{howTo.explore}</Link>
-            {howTo.counselorPrefix}<Link to={user ? '/counselor' : '/auth?redirect=%2Fcounselor'} className="font-semibold text-[var(--ink)] underline decoration-[var(--accent-news)] decoration-2 underline-offset-2 hover:decoration-[var(--ink)] transition-colors">{howTo.counselor}</Link>{howTo.counselorSuffix}
+            {howTo.explorePrefix}<Link to="/job?fresh=1" onClick={() => { sounds.navigate(); hapticTap(); }} className="font-semibold text-[var(--ink)] underline decoration-[var(--accent-news)] decoration-2 underline-offset-2 hover:decoration-[var(--ink)] transition-colors">{howTo.explore}</Link>
+            {howTo.counselorPrefix}<Link to={user ? '/counselor' : '/auth?redirect=%2Fcounselor'} onClick={() => { sounds.navigate(); hapticTap(); }} className="font-semibold text-[var(--ink)] underline decoration-[var(--accent-news)] decoration-2 underline-offset-2 hover:decoration-[var(--ink)] transition-colors">{howTo.counselor}</Link>{howTo.counselorSuffix}
           </p>
         </div>
       </section>
@@ -355,7 +364,7 @@ export function HomePage() {
           {trendingError && !trendingLoading && (
             <div className="border border-[var(--accent-news)] bg-[var(--paper-raised)] p-5 text-center">
               <p className="text-sm text-[var(--ink-soft)]">Live trends are unavailable right now. You can still explore any career from the Explore section.</p>
-              <button type="button" onClick={loadTrending} className="mt-3 min-h-11 font-mono-ui text-xs uppercase underline underline-offset-4">Try again</button>
+              <button type="button" onClick={() => { sounds.click(); loadTrending(); }} className="mt-3 min-h-11 font-mono-ui text-xs uppercase underline underline-offset-4">Try again</button>
             </div>
           )}
 
@@ -546,7 +555,7 @@ export function HomePage() {
               viewport={{ once: true }}
             >
               <button
-                onClick={() => { sounds.navigate(); navigate('/auth?mode=signup'); }}
+                onClick={() => { sounds.navigate(); hapticTap(); navigate('/auth?mode=signup'); }}
                 className="inline-flex items-center gap-2 bg-black text-white px-7 py-3 font-[Inter] hover:bg-black/80 transition-colors"
                 style={{ fontSize: '0.88rem' }}
               >
@@ -666,11 +675,11 @@ export function HomePage() {
             <BrandMark compact />
           </div>
           <div className="flex items-center gap-4 font-[Inter] text-[var(--ink-soft)]" style={{ fontSize: '0.72rem' }}>
-            <button onClick={() => document.getElementById('how-to-use')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-black transition-colors">How to use</button>
+            <button onClick={() => { sounds.click(); document.getElementById('how-to-use')?.scrollIntoView({ behavior: 'smooth' }); }} className="hover:text-black transition-colors">How to use</button>
             {user ? <>
-              <button onClick={() => navigate('/settings')} className="hover:text-black transition-colors">Settings</button>
-              <button onClick={() => navigate('/history')} className="hover:text-black transition-colors">History</button>
-            </> : <button onClick={() => navigate('/auth?mode=signup')} className="hover:text-black transition-colors">Create account</button>}
+              <button onClick={() => { sounds.navigate(); hapticTap(); navigate('/settings'); }} className="hover:text-black transition-colors">Settings</button>
+              <button onClick={() => { sounds.navigate(); hapticTap(); navigate('/history'); }} className="hover:text-black transition-colors">History</button>
+            </> : <button onClick={() => { sounds.navigate(); hapticTap(); navigate('/auth?mode=signup'); }} className="hover:text-black transition-colors">Create account</button>}
           </div>
         </div>
       </footer>

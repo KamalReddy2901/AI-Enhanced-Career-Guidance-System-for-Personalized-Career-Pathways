@@ -51,6 +51,7 @@ export function InterviewPrepPage() {
     try {
       const qs = await generateInterviewQuestions(jobTitle, true);
       setQuestions(qs);
+      hapticLight();
       toast.success('New questions generated!');
     } catch {
       toast.error('Failed to generate questions');

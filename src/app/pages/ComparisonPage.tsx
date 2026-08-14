@@ -250,6 +250,8 @@ export function ComparisonPage() {
 
   const handlePickFromHistory = (entry: { jobData: JobData }, slot: 0 | 1) => {
     setComparisonJob(slot, entry.jobData);
+    sounds.addCompare();
+    hapticLight();
     setShowPicker(null);
   };
 
@@ -262,6 +264,7 @@ export function ComparisonPage() {
       setComparisonJob(slot, jobData);
       addToHistory(jobData);
       sounds.addCompare();
+      hapticLight();
       setCustomTitle('');
     } catch (err) {
       toast.error('Failed to load career');
@@ -763,7 +766,7 @@ export function ComparisonPage() {
                             setLoadingSlot(slot);
                             setShowPicker(null);
                             searchJobAI(s)
-                              .then(jobData => { setComparisonJob(slot, jobData); addToHistory(jobData); setCustomTitle(''); })
+                              .then(jobData => { setComparisonJob(slot, jobData); addToHistory(jobData); setCustomTitle(''); sounds.addCompare(); hapticLight(); })
                               .catch(() => toast.error('Failed to load career'))
                               .finally(() => setLoadingSlot(null));
                           }}

@@ -91,6 +91,7 @@ export function CareerRoadmapPage() {
 
   const handleGenerate = async () => {
     if (!jobTitle.trim()) return;
+    hapticTap();
     abortRef.current?.abort();
     abortRef.current = new AbortController();
 

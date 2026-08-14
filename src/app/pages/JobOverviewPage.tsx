@@ -11,6 +11,7 @@ import { TextReveal } from '../motion/TextReveal';
 import { ScrollingTitles } from '../components/ScrollingTitles';
 import { useGuidance } from '../context/GuidanceContext';
 import { sounds } from '../utils/sounds';
+import { hapticTap } from '../utils/haptic';
 
 function JobSearchEmptyState() {
   const { searchJobPreliminary, setCurrentJob, setIsSearchAnimating, isSearchAnimating } = useApp();
@@ -98,6 +99,7 @@ export function JobOverviewPage() {
   const handleConfirm = async () => {
     if (!currentJob) return;
     sounds.click();
+    hapticTap();
     // If this is already a full dossier (has fullDescription), go straight to detail
     if (currentJob.fullDescription) {
       addToHistory(currentJob);
