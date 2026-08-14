@@ -2,6 +2,12 @@
   "name": "career-simulation",
   "private": true,
   "version": "1.0.0",
+  "description": "AI-assisted, evidence-led career guidance platform for India - SIH260480",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KamalReddy2901/AI-Enhanced-Career-Guidance-System-for-Personalized-Career-Pathways.git"
+  },
   "type": "module",
   "scripts": {
     "build": "npm run typecheck && vite build",
