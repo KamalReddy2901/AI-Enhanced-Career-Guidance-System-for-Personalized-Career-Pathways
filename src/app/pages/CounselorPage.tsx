@@ -13,6 +13,8 @@ import { motion, useReducedMotion } from "motion/react";
 import { Mic, Send, Volume2, Square } from "lucide-react";
 import { TextReveal } from '../motion/TextReveal';
 import { skillClaimName } from '../engine/skillProfile';
+import { sounds } from '../utils/sounds';
+import { hapticTap } from '../utils/haptic';
 
 const escalationPattern =
   /suicid|self.?harm|hopeless|depress|panic|abuse|forced|family conflict|cannot cope|खुदकुशी|आत्महत्या|निराश|जबरदस्ती|కృంగి|ఆత్మహత్య|బలవంత/i;
@@ -41,6 +43,7 @@ export function CounselorPage() {
     if (!question) return;
     const priorHistory = history;
     setHistory(previous => [...previous, { role: "user", text: question }]);
+    hapticTap();
     setInput("");
     if (escalationPattern.test(question)) {
       setEscalate(true);
@@ -116,6 +119,7 @@ export function CounselorPage() {
         lang === "hi" ? "Hindi" : lang === "te" ? "Telugu" : "English",
       )) { response = chunk; setAnswer(chunk); }
       setHistory(previous => [...previous, { role: "assistant", text: response }]);
+      sounds.notification();
       setAnswer("");
     } catch {
       const top = recommendations?.recommendations[0];
@@ -126,6 +130,7 @@ export function CounselorPage() {
         : lang === 'hi' ? `मैं लाइव काउंसलर के बिना भी मदद कर सकता हूँ। पहले आकलन पूरे करें, फिर मैं आपकी रुचियों, शक्तियों, मूल्यों और सीमाओं से व्यावहारिक अगले कदमों पर बात करूँगा।` : lang === 'te' ? `ప్రత్యక్ష కౌన్సిలర్ లేకపోయినా నేను సహాయం చేయగలను. ముందుగా మీ అంచనాలను పూర్తి చేయండి; ఆపై మీ ఆసక్తులు, బలాలు, విలువలు, పరిమితుల ఆధారంగా ఆచరణాత్మక తదుపరి దశలను చర్చిస్తాను.` : `I can still help without the live counselor. Complete your assessments first, then I’ll use your interests, strengths, values, and constraints to discuss practical next steps.`;
       setAnswer(fallback);
       setHistory(previous => [...previous, { role: "assistant", text: fallback }]);
+      sounds.notification();
       setAnswer("");
     } finally {
       setBusy(false);

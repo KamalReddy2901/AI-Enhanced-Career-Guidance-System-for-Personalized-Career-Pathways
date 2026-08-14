@@ -9,9 +9,13 @@ import { downloadInterviewPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
 import { TextReveal } from '../motion/TextReveal';
+import { hapticLight, hapticTap } from '../utils/haptic';
+import { EvidenceButton } from '../components/guidance/EvidenceButton';
+import { useT } from '../i18n';
 
 export function InterviewPrepPage() {
   const navigate = useNavigate();
+  const { lang } = useT();
   const [searchParams] = useSearchParams();
   const { currentJob } = useApp();
   const jobTitle = currentJob?.title?.trim() || searchParams.get('job')?.trim() || '';
@@ -31,6 +35,7 @@ export function InterviewPrepPage() {
     try {
       const qs = await generateInterviewQuestions(jobTitle);
       setQuestions(qs);
+      hapticLight();
     } catch (error) {
       toast.error('Failed to generate interview questions');
       console.error(error);
@@ -56,6 +61,7 @@ export function InterviewPrepPage() {
 
   const togglePrepared = (index: number) => {
     sounds.toggle();
+    hapticTap();
     const newSet = new Set(preparedQuestions);
     if (newSet.has(index)) {
       newSet.delete(index);
@@ -217,7 +223,7 @@ export function InterviewPrepPage() {
                       transition={{ delay: i * 0.05 }}
                     >
                       <div
-                        onClick={() => { setSelectedQuestion(isOpen ? null : i); isOpen ? sounds.collapse() : sounds.expand(); }}
+                        onClick={() => { setSelectedQuestion(isOpen ? null : i); hapticTap(); isOpen ? sounds.collapse() : sounds.expand(); }}
                         className="w-full text-left p-5 hover:bg-black/2 transition-colors cursor-pointer"
                       >
                         <div className="flex items-start gap-3">
@@ -271,6 +277,7 @@ export function InterviewPrepPage() {
                                     <p className="font-[Inter] text-black/60 leading-relaxed mb-4 whitespace-pre-line" style={{ fontSize: '0.85rem' }}>
                                       {q.approach}
                                     </p>
+                                    <EvidenceButton testId={`interview-feedback-${i + 1}-why-btn`} label={lang === 'hi' ? 'फीडबैक कैसे बनता है?' : lang === 'te' ? 'ఫీడ్‌బ్యాక్ ఎలా రూపొందుతుంది?' : 'How is feedback generated?'} evidence={{title:lang === 'hi' ? 'साक्षात्कार प्रमाण' : lang === 'te' ? 'ఇంటర్వ్యూ ఆధారం' : 'Interview evidence',eyebrow:q.category,summary:lang === 'hi' ? 'प्रश्न इस भूमिका और उसकी तैयारी के संदर्भ से आता है।' : lang === 'te' ? 'ప్రశ్న ఈ పాత్ర, దాని ప్రిపరేషన్ సందర్భం నుండి వచ్చింది.' : 'This question comes from the role and its preparation context.',method:lang === 'hi' ? 'प्रश्नों और तैयारी पाठ के लिए सुरक्षित सेवा इस्तेमाल हो सकती है; कोई LLM अंक नहीं बनाता।' : lang === 'te' ? 'ప్రశ్నలు, తయారీ వచనం కోసం సురక్షిత సేవ ఉపయోగించవచ్చు; LLM ఎటువంటి స్కోర్ ఇవ్వదు.' : 'A secure service may supply question and preparation text; no numeric score is LLM-derived.',items:[{label:lang === 'hi' ? 'प्रश्न' : lang === 'te' ? 'ప్రశ్న' : 'Question',detail:q.question},{label:lang === 'hi' ? 'तैयारी विधि' : lang === 'te' ? 'సిద్ధత విధానం' : 'Preparation approach',detail:q.approach}],source:'Interview preparation · no score' }} />
 
                                     <p className="font-[Inter] text-black/40 uppercase tracking-[0.1em] mb-2" style={{ fontSize: '0.65rem' }}>
                                       Key Points to Mention

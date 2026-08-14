@@ -15,6 +15,8 @@ import { downloadComparisonPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
 import { TextReveal } from '../motion/TextReveal';
+import { EvidenceButton } from '../components/guidance/EvidenceButton';
+import { hapticLight } from '../utils/haptic';
 
 function WinnerCircle() {
   return <svg className="pointer-events-none absolute inset-1 h-[calc(100%-8px)] w-[calc(100%-8px)] text-[var(--accent-news)]" viewBox="0 0 200 80" preserveAspectRatio="none" aria-hidden="true"><ellipse cx="100" cy="40" rx="94" ry="34" fill="none" stroke="currentColor" strokeWidth="2" /></svg>;
@@ -305,6 +307,7 @@ export function ComparisonPage() {
           <p className="font-[Inter] text-black/40" style={{ fontSize: '0.85rem' }}>
             Compare two careers side by side
           </p>
+          {(comparisonJobs[0] || comparisonJobs[1]) && <EvidenceButton testId="comparison-numbers-why-btn" evidence={{title:'Comparison evidence',eyebrow:'Comparison dimensions',summary:'The table places the two selected dossiers side by side; it does not create a new match score.',method:'Displayed values are the source fields already recorded in each career dossier.',items:[comparisonJobs[0],comparisonJobs[1]].filter(Boolean).map((job,index)=>({label:index===0?'Career A':'Career B',detail:`${job!.title} · ${job!.category ?? 'career dossier'}`})),source:'Selected career dossiers · no generated score'}} />}
           {compareHistory.length > 0 && (
             <button
               onClick={() => setShowCompareHistory(true)}
@@ -324,7 +327,7 @@ export function ComparisonPage() {
             slot={0}
             job={comparisonJobs[0]}
             isLoading={loadingSlot === 0}
-            onClear={() => setComparisonJob(0, null)}
+            onClear={() => { hapticLight(); setComparisonJob(0, null); }}
             onOpen={() => { setShowPicker(0); setCustomTitle(''); }}
           />
 
@@ -338,7 +341,7 @@ export function ComparisonPage() {
             slot={1}
             job={comparisonJobs[1]}
             isLoading={loadingSlot === 1}
-            onClear={() => setComparisonJob(1, null)}
+            onClear={() => { hapticLight(); setComparisonJob(1, null); }}
             onOpen={() => { setShowPicker(1); setCustomTitle(''); }}
           />
         </div>

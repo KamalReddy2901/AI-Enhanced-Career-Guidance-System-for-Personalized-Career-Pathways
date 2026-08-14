@@ -13,6 +13,8 @@ import { sounds } from '../utils/sounds';
 import { hapticLight, hapticWarn, hapticSuccess } from '../utils/haptic';
 import { TextReveal } from '../motion/TextReveal';
 import { useGuidance } from '../context/GuidanceContext';
+import { EvidenceButton } from '../components/guidance/EvidenceButton';
+import { useT } from '../i18n';
 
 // Black confetti particles that fall on simulation completion
 function BlackConfetti({ active }: { active: boolean }) {
@@ -52,6 +54,7 @@ type StickFigurePose = 'waking' | 'walking' | 'sitting' | 'presenting' | 'thinki
 
 export function SimulationPage() {
   const navigate = useNavigate();
+  const { lang } = useT();
   const [searchParams] = useSearchParams();
   const { currentJob, setCurrentJob } = useApp();
   const requestedJobTitle = searchParams.get('job')?.trim() ?? '';
@@ -616,6 +619,7 @@ export function SimulationPage() {
                   <div className="font-[Inter] text-black/40" style={{ fontSize: '0.75rem' }}>Alignment</div>
                 </div>
               </div>
+              <EvidenceButton testId="simulation-score-why-btn" label={lang === 'hi' ? 'मुझे कैसे अंक मिले?' : lang === 'te' ? 'నాకు ఎలా స్కోర్ ఇచ్చారు?' : 'How was I scored?'} evidence={{title:lang === 'hi' ? 'सिमुलेशन प्रमाण' : lang === 'te' ? 'సిమ్యులేషన్ ఆధారం' : 'Simulation evidence',eyebrow:currentJob.title,summary:lang === 'hi' ? 'संरेखण प्रत्येक परिदृश्य में सही विकल्पों का अनुपात है।' : lang === 'te' ? 'అలైన్‌మెంట్ ప్రతి సన్నివేశంలో సరైన ఎంపికల నిష్పత్తి.' : 'Alignment is the proportion of correct choices across the scenarios.',method:lang === 'hi' ? 'स्कोर = सही विकल्प ÷ कुल परिदृश्य × 100। AI सारांश वर्णनात्मक है और इस अंक को नहीं बदलता।' : lang === 'te' ? 'స్కోర్ = సరైన ఎంపికలు ÷ మొత్తం సన్నివేశాలు × 100. AI సారాంశం వివరణాత్మకమే, స్కోర్‌ను మార్చదు.' : 'score = correct choices ÷ total scenarios × 100. The AI summary is descriptive and does not change this score.',items:scenarios.map((scenario,index)=>({label:scenario.title,detail:completedScenarios.find(item=>item.index===index)?.wasCorrect ? (lang === 'hi' ? 'आपका विकल्प: सर्वोत्तम विकल्प' : lang === 'te' ? 'మీ ఎంపిక: ఉత్తమ ఎంపిక' : 'Your choice: optimal option') : (lang === 'hi' ? 'आपका विकल्प: दूसरा विकल्प' : lang === 'te' ? 'మీ ఎంపిక: వేరే ఎంపిక' : 'Your choice: a different option')})),source:'Curated scenario rubric · deterministic' }} />
 
               {/* AI Summary */}
               {(aiSummary || loadingSummary) && (

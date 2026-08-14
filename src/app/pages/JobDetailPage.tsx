@@ -66,6 +66,7 @@ import { usePreferences } from "../hooks/usePreferences";
 import { useGuidance } from "../context/GuidanceContext";
 import { marketFor, occupationById } from "../data/knowledge";
 import { WhyPanel } from "../components/guidance/WhyPanel";
+import { hapticLight } from '../utils/haptic';
 import { TrustStrip } from "../components/guidance/TrustStrip";
 import type { CareerRecommendation } from "../engine/types";
 
@@ -375,6 +376,7 @@ export function JobDetailPage() {
       .writeText(url)
       .then(() => {
         sounds.share();
+        hapticLight();
         toast.success("Share link copied to clipboard!", {
           description: "Anyone with this link can view this career dossier",
         });
@@ -403,6 +405,7 @@ export function JobDetailPage() {
       yearOverview: currentJob.yearOverview,
     });
     sounds.download();
+    hapticLight();
     toast.success("Downloading dossier PDF…");
   };
 
@@ -425,6 +428,8 @@ export function JobDetailPage() {
   };
 
   const handleCompare = () => {
+    sounds.addCompare();
+    hapticLight();
     setComparisonJob(0, currentJob);
     navigate("/compare");
     toast.info("Career A set - pick Career B to compare");

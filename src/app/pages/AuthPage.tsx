@@ -7,6 +7,8 @@ import { BrandMark } from '../components/BrandMark';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { TextReveal } from '../motion/TextReveal';
+import { sounds } from '../utils/sounds';
+import { hapticSuccess } from '../utils/haptic';
 
 export function AuthPage() {
   const navigate = useNavigate();
@@ -42,15 +44,19 @@ export function AuthPage() {
     if (mode === 'signup') {
       const { error } = await signUp(email.trim(), password);
       if (error) {
+        sounds.error();
         toast.error(error);
       } else {
+        sounds.success(); hapticSuccess();
         setSignUpSuccess(true);
       }
     } else {
       const { error } = await signIn(email.trim(), password);
       if (error) {
+        sounds.error();
         toast.error(error);
       } else {
+        sounds.success(); hapticSuccess();
         toast.success('Welcome back!');
         navigate(redirect, { replace: true });
       }

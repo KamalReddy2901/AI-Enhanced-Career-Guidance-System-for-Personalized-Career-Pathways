@@ -10,6 +10,8 @@ import { downloadTransitionPDF } from '../utils/pdfExport';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
 import { TextReveal } from '../motion/TextReveal';
+import { hapticTap } from '../utils/haptic';
+import { EvidenceButton } from '../components/guidance/EvidenceButton';
 
 const DIFFICULTY_COLOR: Record<string, string> = {
   Easy: 'text-emerald-700 bg-emerald-50 border-emerald-200',
@@ -459,7 +461,7 @@ export function CareerTransitionPage() {
                   {plan.steps.map((step, i) => (
                     <div key={i} className="border border-black/10">
                       <button
-                        onClick={() => { setExpandedPhase(expandedPhase === i ? null : i); expandedPhase === i ? sounds.collapse() : sounds.expand(); }}
+                        onClick={() => { setExpandedPhase(expandedPhase === i ? null : i); hapticTap(); expandedPhase === i ? sounds.collapse() : sounds.expand(); }}
                         className="w-full flex items-center justify-between p-5 text-left hover:bg-black/2 transition-colors"
                         aria-expanded={expandedPhase === i}
                       >
@@ -470,6 +472,7 @@ export function CareerTransitionPage() {
                           <div>
                             <p className="font-[Playfair_Display] text-black" style={{ fontSize: '1rem' }}>{step.phase}</p>
                             <p className="font-[Inter] text-black/35" style={{ fontSize: '0.72rem' }}>{step.duration}</p>
+                            <EvidenceButton testId={`transition-step-${i + 1}-why-btn`} evidence={{title:'Transition step evidence',eyebrow:step.phase,summary:plan.overview,method:'This planning step is explanatory guidance for the selected source and target careers, not a numeric plausibility score.',items:[{label:'Typical duration',detail:step.duration},{label:'Actions',detail:step.actions.join(' · ')}],source:'Transition plan · no score'}} />
                           </div>
                         </div>
                         {expandedPhase === i ? (

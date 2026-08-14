@@ -8,6 +8,8 @@ import { useFavorites } from '../hooks/useFavorites';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
 import { TextReveal } from '../motion/TextReveal';
+import { KB_VERSION } from '../data/knowledge';
+import { hapticTap } from '../utils/haptic';
 
 type Tab = 'history' | 'saved';
 
@@ -269,7 +271,7 @@ export function HistoryPage() {
                       transition={{ delay: i * 0.04 }}
                     >
                       <button
-                        onClick={() => handleSelectJob(entry.jobData, entry.jobTitle)}
+                        onClick={() => { hapticTap(); handleSelectJob(entry.jobData, entry.jobTitle); }}
                         className="w-full text-left p-4 pb-2"
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -295,6 +297,7 @@ export function HistoryPage() {
                                   {formatTime(entry.timestamp)}
                                 </span>
                               </div>
+                              <p className="mt-2 font-mono-ui text-[10px] uppercase text-black/30">{new Date(entry.timestamp).toLocaleString()} · KB {KB_VERSION} · saved dossier method</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">

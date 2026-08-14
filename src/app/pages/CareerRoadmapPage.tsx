@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
 import { JOB_TITLES } from '../data/jobs';
 import { TextReveal } from '../motion/TextReveal';
+import { hapticTap } from '../utils/haptic';
+import { EvidenceButton } from '../components/guidance/EvidenceButton';
 import { useGuidance } from '../context/GuidanceContext';
 
 const STAGE_COLORS: Record<string, { dot: string; bg: string; border: string }> = {
@@ -304,7 +306,7 @@ export function CareerRoadmapPage() {
                         {/* Card */}
                         <div className={`flex-1 border ${colors.border} ${colors.bg} mb-1`}>
                           <button
-                            onClick={() => { setExpandedStage(isExpanded ? null : i); isExpanded ? sounds.collapse() : sounds.expand(); }}
+                            onClick={() => { setExpandedStage(isExpanded ? null : i); hapticTap(); isExpanded ? sounds.collapse() : sounds.expand(); }}
                             className="w-full flex items-center justify-between p-4 text-left"
                             aria-expanded={isExpanded}
                           >
@@ -323,6 +325,7 @@ export function CareerRoadmapPage() {
                               <p className="font-[Inter] text-black/40 mt-0.5" style={{ fontSize: '0.75rem' }}>
                                 {stage.salary}
                               </p>
+                              <EvidenceButton testId={`roadmap-stage-${i + 1}-why-btn`} evidence={{title:'Roadmap step evidence',eyebrow:stage.stage,summary:`This stage is part of the saved ${roadmap.title} roadmap.`,method:'This planning step is explanatory guidance and never creates or changes a numeric career score.',items:[{label:'Role',detail:stage.role},{label:'Milestones',detail:stage.milestones.join(' · ')},{label:'Skills',detail:stage.skills.join(' · ')}],source:'Career roadmap plan · no score'}} />
                             </div>
                             {isExpanded ? (
                               <ChevronUp size={15} className="text-black/30 shrink-0 ml-3" />

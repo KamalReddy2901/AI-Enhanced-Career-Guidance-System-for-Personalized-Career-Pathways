@@ -8,9 +8,13 @@ import { getMoodMatches, type MoodMatch } from '../services/ai';
 import { toast } from 'sonner';
 import { sounds } from '../utils/sounds';
 import { TextReveal } from '../motion/TextReveal';
+import { EvidenceButton } from '../components/guidance/EvidenceButton';
+import { hapticLight, hapticSuccess } from '../utils/haptic';
+import { useT } from '../i18n';
 
 export function MoodMatchPage() {
   const navigate = useNavigate();
+  const { lang } = useT();
   const { searchJobAI, setCurrentJob, addToHistory, setRefinementCount } = useApp();
   const [mood, setMood] = useState('');
   const [matches, setMatches] = useState<MoodMatch[]>([]);
@@ -27,6 +31,7 @@ export function MoodMatchPage() {
       const result = await getMoodMatches(mood.trim());
       setMatches(result);
       sounds.reveal();
+      hapticSuccess();
     } catch {
       toast.error('Could not generate matches. Try again.');
     } finally {
@@ -130,7 +135,7 @@ export function MoodMatchPage() {
               {moodPrompts.map(p => (
                 <button
                   key={p}
-                  onClick={() => { setMood(p); sounds.select(); }}
+                  onClick={() => { setMood(p); sounds.select(); hapticLight(); }}
                   className="font-[Inter] text-black/45 border border-black/10 px-3 py-1.5 hover:border-black/30 hover:text-black/65 transition-[color,background-color,border-color,opacity,transform,box-shadow] text-left"
                   style={{ fontSize: '0.78rem' }}
                 >
@@ -209,6 +214,7 @@ export function MoodMatchPage() {
                       <p className="font-[Inter] text-black/55 leading-relaxed" style={{ fontSize: '0.88rem' }}>
                         {match.reason}
                       </p>
+                      <EvidenceButton testId={`mood-match-${i + 1}-why-btn`} label={lang === 'hi' ? 'यह मेल क्यों?' : lang === 'te' ? 'ఈ మ్యాచ్ ఎందుకు?' : 'Why matched?'} evidence={{ title:lang === 'hi' ? 'मूड मेल प्रमाण' : lang === 'te' ? 'మూడ్ మ్యాచ్ ఆధారం' : 'Mood-match evidence', eyebrow:match.vibe, summary:match.reason, method:lang === 'hi' ? 'आपके दर्ज किए गए मूड के शब्दों को मिलान सेवा द्वारा लौटाए गए भूमिका-लक्षणों से जोड़ा गया। यह निर्धारित इंजन स्कोर नहीं है।' : lang === 'te' ? 'మీ మూడ్ పదాలను మ్యాచింగ్ సేవ అందించిన పాత్ర లక్షణాలతో జత చేశారు. ఇది నిర్ణీత ఇంజిన్ స్కోర్ కాదు.' : 'Your mood words were paired with the role attributes returned by the matching service. This is not a deterministic engine score.', items:[{label:lang === 'hi' ? 'आपका मूड' : lang === 'te' ? 'మీ మూడ్' : 'Your mood',detail:mood},{label:lang === 'hi' ? 'मेल संकेत' : lang === 'te' ? 'మ్యాచ్ సంకేతం' : 'Match signal',detail:match.vibe}], source:'Mood-match attributes · no score' }} />
                     </div>
                     <motion.button
                       onClick={() => handleExplore(match.title)}
