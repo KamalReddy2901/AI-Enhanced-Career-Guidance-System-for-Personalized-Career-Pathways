@@ -1,14 +1,14 @@
 import type { ProviderLink, Qualification } from './schema';
 
 export const PROVIDER_PORTALS = {
-  skillIndia: { label: 'Skill India Digital Hub', url: 'https://www.skillindiadigital.gov.in/courses' },
+  skillIndia: { label: 'Skill India Digital Hub', url: 'https://courses.skillindiadigital.gov.in/courses/' },
   swayam: { label: 'SWAYAM', urlFor: (q: string) => `https://swayam.gov.in/explorer?searchText=${encodeURIComponent(q)}` },
   nptel: { label: 'NPTEL', url: 'https://nptel.ac.in/courses' },
   ncs: { label: 'National Career Service', url: 'https://www.ncs.gov.in/' },
-  pmkvy: { label: 'PMKVY', url: 'https://www.pmkvyofficial.org/' },
-  eSkillIndia: { label: 'eSkill India (NSDC)', url: 'https://eskillindia.org/' },
+  pmkvy: { label: 'PMKVY via Skill India', url: 'https://www.skillindiadigital.gov.in/home' },
+  eSkillIndia: { label: 'eSkill India (NSDC)', url: 'https://nsdcindia.org/node/33593' },
   nielit: { label: 'NIELIT', url: 'https://www.nielit.gov.in/' },
-  iti: { label: 'NCVT MIS (ITI)', url: 'https://www.ncvtmis.gov.in/' },
+  iti: { label: 'DGT Skill India (ITI)', url: 'https://dgt.skillindiadigital.gov.in/' },
   ugc: { label: 'UGC DEB (Degrees)', url: 'https://deb.ugc.ac.in/' },
   apprenticeship: { label: 'Apprenticeship India', url: 'https://www.apprenticeshipindia.gov.in/' },
 } as const;

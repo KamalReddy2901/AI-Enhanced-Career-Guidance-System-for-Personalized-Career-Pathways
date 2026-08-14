@@ -3,7 +3,7 @@ import { generateJobData, normalizeJobData, type JobData } from '../data/jobs';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
 import { useGuidance } from './GuidanceContext';
-import { KB_VERSION } from '../data/knowledge';
+import { KB_VERSION, OCCUPATIONS, qualificationsForOccupation, skillById } from '../data/knowledge';
 import type { Segment } from '../engine/types';
 
 interface HistoryEntry {
@@ -38,6 +38,53 @@ interface AppContextType {
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
+
+const normalizedWords = (value: string) => value
+  .toLowerCase()
+  .replace(/engineer/g, 'developer')
+  .replace(/[^a-z0-9]+/g, ' ')
+  .trim()
+  .split(/\s+/)
+  .filter(Boolean);
+
+/**
+ * Keep career exploration useful when the optional live enrichment service is
+ * unavailable. Known roles are grounded in the versioned NCO/NSQF knowledge
+ * base; unknown roles still receive the deterministic local dossier.
+ */
+function groundedJobFallback(title: string): JobData {
+  const fallback = generateJobData(title);
+  const queryWords = new Set(normalizedWords(title));
+  const match = OCCUPATIONS
+    .map(candidate => {
+      const candidateWords = new Set(normalizedWords(`${candidate.id} ${candidate.title}`));
+      const overlap = [...queryWords].filter(word => candidateWords.has(word)).length;
+      return { candidate, score: overlap / Math.max(queryWords.size, candidateWords.size, 1) };
+    })
+    .sort((a, b) => b.score - a.score)[0];
+
+  if (!match || match.score < 0.25) return fallback;
+
+  const role = match.candidate;
+  const skills = role.skills
+    .map(requirement => skillById.get(requirement.skillId)?.name)
+    .filter((name): name is string => Boolean(name));
+  const qualifications = qualificationsForOccupation(role.id)
+    .sort((a, b) => a.typicalMonths - b.typicalMonths)
+    .slice(0, 5)
+    .map(qualification => `${qualification.name} (NSQF ${qualification.nsqfLevel})`);
+  const primarySkills = skills.slice(0, 4).join(', ');
+
+  return normalizeJobData(title, {
+    ...fallback,
+    category: role.sector,
+    shortDescription: `${title} is represented by NCO-2015 occupation ${role.ncoCode} in the ${role.sector} sector. The role's strongest knowledge-base requirements are ${primarySkills}. This is a grounded offline snapshot; live AI enrichment is optional and never changes CareerCase recommendation scores.`,
+    fullDescription: `${title} sits in CareerCase's ${role.cluster.replace('_', ' ')} occupation cluster and typically begins around NSQF level ${role.nsqfEntryLevel}. Its evidence profile is grounded in NCO-2015 occupation ${role.ncoCode}.\n\nCore requirements in the current knowledge base include ${skills.slice(0, 6).join(', ')}. These requirements are used to explain skill gaps and learning routes; they are not inferred from generated text.\n\nThe role is ${role.isEmerging ? 'marked as emerging' : 'an established occupation'} in the current knowledge base. Treat salary and market ranges as indicative, because location, employer, qualification and experience materially change outcomes.\n\nUse the Career Passport, gap report and linked NSQF learning routes to validate fit before investing time or money. Live AI enrichment can add narrative detail when available, but deterministic TypeScript rules remain the source of every score.`,
+    education: qualifications.length ? qualifications : fallback.education,
+    skills: skills.length ? skills : fallback.skills,
+    funFact: `CareerCase maps this role to NCO-2015 code ${role.ncoCode} and an NSQF entry level of ${role.nsqfEntryLevel}.`,
+  });
+}
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const { passport } = useGuidance();
@@ -92,25 +139,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const searchJobPreliminary = useCallback(async (title: string): Promise<JobData> => {
-    const { generatePreliminaryAssessmentAI } = await import('../services/ai');
-    const prelim = await generatePreliminaryAssessmentAI(title);
-    const id = title.toLowerCase().replace(/\s+/g, '-');
-    return {
-      id, title,
-      category: prelim.category || 'Professional Services',
-      shortDescription: prelim.shortDescription,
-      fullDescription: '',
-      avgSalary: prelim.avgSalary,
-      education: [],
-      skills: [],
-      dailyRoutine: '',
-      workEnvironment: '',
-      careerPath: '',
-      weekOverview: '',
-      quarterOverview: '',
-      yearOverview: '',
-      funFact: '',
-    };
+    const grounded = groundedJobFallback(title);
+    if (grounded.shortDescription.includes('NCO-2015 occupation')) return grounded;
+    try {
+      const { generatePreliminaryAssessmentAI } = await import('../services/ai');
+      const prelim = await generatePreliminaryAssessmentAI(title);
+      const id = title.toLowerCase().replace(/\s+/g, '-');
+      return {
+        id, title,
+        category: prelim.category || 'Professional Services',
+        shortDescription: prelim.shortDescription,
+        fullDescription: '',
+        avgSalary: prelim.avgSalary,
+        education: [],
+        skills: [],
+        dailyRoutine: '',
+        workEnvironment: '',
+        careerPath: '',
+        weekOverview: '',
+        quarterOverview: '',
+        yearOverview: '',
+        funFact: '',
+      };
+    } catch {
+      return groundedJobFallback(title);
+    }
   }, []);
 
   const searchJob = useCallback((title: string): JobData => {
@@ -158,12 +211,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         topCompanies: Array.isArray(aiData.topCompanies) ? aiData.topCompanies.filter(company => company && typeof company.name === 'string') : [],
         relevantForCompanies: Boolean(aiData.relevantForCompanies),
       };
-    } catch (error) {
-      console.error('AI generation failed:', error);
-      toast.error('AI generation failed — please try again', {
-        description: error instanceof Error ? error.message : 'Unknown error',
-      });
-      throw error;
+    } catch {
+      return groundedJobFallback(title);
     }
   }, []);
 

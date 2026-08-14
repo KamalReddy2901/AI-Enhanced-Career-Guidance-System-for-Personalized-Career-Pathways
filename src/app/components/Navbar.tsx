@@ -156,7 +156,7 @@ export function Navbar() {
 function PersonalMenu({ links, open, setOpen, active }: { links: Array<{ to: string; icon: React.ReactNode; label: string; active: boolean }>; open: boolean; setOpen: (open: boolean) => void; active: boolean }) {
   const { t } = useT();
   return <div className="relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
-    <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className={`label-caps flex shrink-0 items-center gap-1 px-2 py-2 transition-colors ${active ? 'bg-black text-white' : 'text-black/55 hover:text-black hover:bg-black/5'}`} style={{ fontSize: '0.62rem' }}>
+    <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className={`label-caps flex min-h-11 shrink-0 items-center gap-1 px-2 py-2 transition-colors ${active ? 'bg-black text-white' : 'text-black/55 hover:text-black hover:bg-black/5'}`} style={{ fontSize: '0.62rem' }}>
       <UserRound size={12} /><span>{t('personal')}</span><ChevronDown size={11} className={open ? 'rotate-180 transition-transform' : 'transition-transform'} />
     </button>
     <AnimatePresence>{open && <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="absolute right-0 top-full mt-1 w-56 border border-black/15 bg-[var(--paper)] p-1 shadow-lg">
@@ -182,7 +182,7 @@ function NavLink({
       to={to}
       aria-label={label}
       onClick={() => sounds.navigate()}
-      className={`label-caps group relative flex shrink-0 items-center gap-1 px-2 py-2 transition-colors ${
+      className={`label-caps group relative flex min-h-11 shrink-0 items-center gap-1 px-2 py-2 transition-colors ${
         active
           ? 'bg-black text-white'
           : 'text-black/55 hover:text-black hover:bg-black/5'

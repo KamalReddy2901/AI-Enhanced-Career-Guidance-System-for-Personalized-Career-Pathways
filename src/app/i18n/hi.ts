@@ -67,7 +67,7 @@ export const hi: Record<keyof typeof en, string> = {
   counselorOpenNcs: "राष्ट्रीय करियर सेवा खोलें",
   recommendationFilterAll: "सभी",
   recommendationFilterSafe: "सुरक्षित",
-  recommendationFilterStretch: "महत्त्वाकांक्षी",
+  recommendationFilterStretch: "चुनौतीपूर्ण",
   recommendationFilterAmbitious: "महत्त्वाकांक्षी",
   recommendationShowing: "दिखाए जा रहे करियर सुझाव:",
   recommendationLandscapeNote: "हर परिदृश्य में व्यावहारिक, महत्त्वाकांक्षी और खोजपरक मार्ग साथ दिखाई देते हैं।",

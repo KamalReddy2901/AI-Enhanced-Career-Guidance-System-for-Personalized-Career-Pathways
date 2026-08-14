@@ -140,13 +140,6 @@ const FAQ_CATEGORIES = [
   },
 ];
 
-const VIDEO_TUTORIALS = [
-  { title: 'Getting Started with CareerCase', duration: '3:45', url: '#' },
-  { title: 'Building Your First Pathway', duration: '5:20', url: '#' },
-  { title: 'Understanding Recommendations', duration: '4:10', url: '#' },
-  { title: 'Using the Day Simulation', duration: '6:30', url: '#' },
-];
-
 export function HelpCenterPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -257,39 +250,6 @@ export function HelpCenterPage() {
               </div>
             </div>
           </button>
-        </motion.div>
-
-        {/* Video Tutorials */}
-        <motion.div
-          className="mb-12"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <h2 className="font-[Playfair_Display] text-2xl mb-4">Video Tutorials</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {VIDEO_TUTORIALS.map((video, i) => (
-              <a
-                key={i}
-                href={video.url}
-                className="border border-black/10 p-4 hover:border-black/30 transition-colors group"
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-black/5 border border-black/10 flex items-center justify-center">
-                    <Video size={18} className="text-black/40" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-[Inter] text-black/70 font-medium" style={{ fontSize: '0.85rem' }}>
-                      {video.title}
-                    </div>
-                    <div className="font-[JetBrains_Mono] text-black/40" style={{ fontSize: '0.7rem' }}>
-                      {video.duration}
-                    </div>
-                  </div>
-                </div>
-              </a>
-            ))}
-          </div>
         </motion.div>
 
         {/* FAQs */}

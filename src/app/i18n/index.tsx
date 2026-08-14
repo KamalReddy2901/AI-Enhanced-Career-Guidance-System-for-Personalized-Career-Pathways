@@ -62,7 +62,7 @@ export function useT() {
 }
 export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   const { lang, setLang } = useT();
-  if (compact) return <div className="font-mono-ui ml-2 flex h-9 items-center rounded-full border border-[var(--ink)] px-1" role="group" aria-label="Language">{([['en','EN'],['hi','हि'],['te','తె']] as const).map(([value,label])=><button key={value} type="button" onClick={()=>setLang(value)} data-testid={`language-${value}`} aria-label={`Use ${value==='en'?'English':value==='hi'?'Hindi':'Telugu'}`} aria-pressed={lang===value} className={`grid min-h-7 min-w-8 place-items-center rounded-full px-1 text-[10px] ${lang===value?'bg-[var(--ink)] text-[var(--paper)]':''}`}>{label}</button>)}</div>;
+  if (compact) return <div className="font-mono-ui ml-2 flex min-h-11 items-center rounded-full border border-[var(--ink)] px-1" role="group" aria-label="Language">{([['en','EN'],['hi','हि'],['te','తె']] as const).map(([value,label])=><button key={value} type="button" onClick={()=>setLang(value)} data-testid={`language-${value}`} aria-label={`Use ${value==='en'?'English':value==='hi'?'Hindi':'Telugu'}`} aria-pressed={lang===value} className={`grid min-h-9 min-w-9 place-items-center rounded-full px-1 text-[10px] ${lang===value?'bg-[var(--ink)] text-[var(--paper)]':''}`}>{label}</button>)}</div>;
   return (
     <label className="font-[JetBrains_Mono] text-[10px] uppercase tracking-wide">
       <span className="mr-2">Language</span>

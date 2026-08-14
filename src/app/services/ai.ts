@@ -444,7 +444,7 @@ Return this JSON:
       { temperature: 0.6, maxTokens: 400, jsonMode: true, usageType: 'preliminary' }
     );
     return JSON.parse(raw) as AIJobPreliminary;
-  });
+  }, 0);
 
   setCache(cacheKey, result);
   return result;
@@ -542,7 +542,7 @@ Return this exact JSON structure:
     });
 
     return JSON.parse(raw) as AIJobData;
-  });
+  }, 1);
 
   setCache(cacheKey, result);
   return result;
@@ -1285,6 +1285,21 @@ export interface WorkLifeBalance {
   worstFor: string;
 }
 
+function normalizeOccupationTitle(value: string): string[] {
+  return value.toLowerCase().replace(/engineer/g, 'developer').replace(/[^a-z0-9]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+}
+
+function occupationForTitle(title: string) {
+  const query = new Set(normalizeOccupationTitle(title));
+  return OCCUPATIONS
+    .map(occupation => {
+      const candidate = new Set(normalizeOccupationTitle(`${occupation.id} ${occupation.title}`));
+      const overlap = [...query].filter(word => candidate.has(word)).length;
+      return { occupation, score: overlap / Math.max(query.size, candidate.size, 1) };
+    })
+    .sort((a, b) => b.score - a.score)[0];
+}
+
 // ─── Interview Difficulty ──────────────────────────────────────
 
 export interface InterviewDifficulty {
@@ -1294,27 +1309,23 @@ export interface InterviewDifficulty {
 }
 
 export async function getInterviewDifficulty(jobTitle: string, signal?: AbortSignal): Promise<InterviewDifficulty> {
-  const cacheKey = `interview_diff_${jobTitle.toLowerCase().replace(/\s+/g, '_')}`;
+  signal?.throwIfAborted();
+  const cacheKey = `interview_diff2_${jobTitle.toLowerCase().replace(/\s+/g, '_')}`;
   const cached = getCached<InterviewDifficulty>(cacheKey);
   if (cached) return cached;
-
-  return withRetry(async () => {
-    const raw = await callGroq(
-      'You are a recruiting expert. Return ONLY valid JSON.',
-      `Rate the typical interview difficulty for "${jobTitle}" on a 1-5 scale. Return this exact JSON:
-{
-  "score": 3,
-  "label": "Moderately Hard",
-  "notes": "One sentence on what makes interviews challenging or easy for this role."
-}
-Score: 1 = Very Easy, 2 = Easy, 3 = Moderate, 4 = Hard, 5 = Very Hard.`,
-      { temperature: 0.4, maxTokens: 200, jsonMode: true, signal, usageType: 'interview' }
-    );
-
-    const result = JSON.parse(raw) as InterviewDifficulty;
-    setCache(cacheKey, result);
-    return result;
-  });
+  const matched = occupationForTitle(jobTitle);
+  const role = matched?.score >= 0.25 ? matched.occupation : undefined;
+  const score = role ? Math.max(1, Math.min(5, Math.ceil(role.nsqfEntryLevel / 2))) : 3;
+  const labels = ['Very Easy', 'Easy', 'Moderate', 'Hard', 'Very Hard'];
+  const result: InterviewDifficulty = {
+    score,
+    label: labels[score - 1],
+    notes: role
+      ? `Deterministic preparation indicator mapped from NSQF entry level ${role.nsqfEntryLevel}; it is not an employer-specific prediction.`
+      : 'Moderate is shown as a neutral default because this title has no direct knowledge-base occupation match.',
+  };
+  setCache(cacheKey, result);
+  return result;
 }
 
 // ─── Growth Outlook ────────────────────────────────────────────
@@ -1348,70 +1359,60 @@ export async function getComparisonInsight(
 ): Promise<string> {
   const prefs = (() => { try { return JSON.parse(localStorage.getItem('careersim_preferences') || '{}') as Record<string, string>; } catch { return {} as Record<string, string>; } })();
   const isIndia = ((prefs.currency as string) || 'INR') === 'INR';
-  return withRetry(async () => {
-    const raw = await callGroq(
-      'You are a career counsellor. Return ONLY valid JSON.',
-      `Compare these two careers and give a sharp 2-3 sentence verdict covering: which suits which type of person, the key tradeoff, and which has better long-term prospects${isIndia ? ' in India' : ''}.
+  try {
+    return await withRetry(async () => {
+      const raw = await callGroq(
+        'You are a career counsellor. Return ONLY valid JSON.',
+        `Compare these two careers and give a sharp 2-3 sentence verdict covering: which suits which type of person, the key tradeoff, and which has better long-term prospects${isIndia ? ' in India' : ''}.
 Career A: "${titleA}"${descA ? ` — ${descA}` : ''}
 Career B: "${titleB}"${descB ? ` — ${descB}` : ''}
 Return JSON: {"insight": "2-3 sentence comparison and verdict"}`,
-      { temperature: 0.6, maxTokens: 220, jsonMode: true, signal, usageType: 'compare' }
-    );
-    const parsed = JSON.parse(raw) as { insight: string };
-    return parsed.insight || '';
-  });
+        { temperature: 0.6, maxTokens: 220, jsonMode: true, signal, usageType: 'compare' }
+      );
+      const parsed = JSON.parse(raw) as { insight: string };
+      return parsed.insight || '';
+    });
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    const a = occupationForTitle(titleA);
+    const b = occupationForTitle(titleB);
+    if (a?.score >= 0.25 && b?.score >= 0.25) {
+      const roleA = a.occupation;
+      const roleB = b.occupation;
+      const growthLeader = roleA.valuesProfile.growth === roleB.valuesProfile.growth ? 'Both have the same curated growth profile' : roleA.valuesProfile.growth > roleB.valuesProfile.growth ? `${titleA} has the higher curated growth profile` : `${titleB} has the higher curated growth profile`;
+      return `${titleA} is a ${roleA.cluster.replace('_', ' ')} role in ${roleA.sector}; ${titleB} is a ${roleB.cluster.replace('_', ' ')} role in ${roleB.sector}. ${growthLeader}, while the better personal fit depends on the displayed skill gaps, balance and autonomy values. This fallback is deterministic knowledge-base context, not an AI verdict.`;
+    }
+    return `Compare the recorded skills, education, salary range and work-life indicators side by side. CareerCase could not ground both titles to a knowledge-base occupation, so it does not invent a winner.`;
+  }
 }
 
 // ─── Work-Life Balance Radar ────────────────────────────────────
 
 export async function getWorkLifeBalance(jobTitle: string, signal?: AbortSignal): Promise<WorkLifeBalance> {
-  const cacheKey = `wlb2_${jobTitle.toLowerCase().replace(/\s+/g, '_')}`;
+  signal?.throwIfAborted();
+  const cacheKey = `wlb3_${jobTitle.toLowerCase().replace(/\s+/g, '_')}`;
   const cached = getCached<WorkLifeBalance>(cacheKey);
   if (cached) return cached;
-
-  return withRetry(async () => {
-    const raw = await callGroq(
-      'You are a workplace wellness researcher with deep knowledge of different professions. Return ONLY valid JSON. Every score MUST be based on real, profession-specific data — do NOT copy the example placeholder values.',
-      `Evaluate the realistic work-life balance for a "${jobTitle}" based on what professionals in this field commonly report.
-
-IMPORTANT: Replace ALL placeholder numbers below with real, accurate scores for "${jobTitle}". The example numbers (42, 37, etc.) are just JSON structure guides — replace every single one.
-
-Score scale: 0-100 where higher = BETTER quality of life in that dimension.
-Research-based examples to guide you (NOT to copy):
-- Surgeon: Work Hours ~25 (extremely long), Stress ~20 (very high stress), Flexibility ~15
-- Software Engineer: Work Hours ~62, Flexibility ~78, Stress ~55
-- Elementary Teacher: Social Life ~72, Work Hours ~55, Mental Health ~48
-- Investment Banker: Work Hours ~18, Social Life ~22, Flexibility ~20
-- Yoga Instructor: Work Hours ~70, Flexibility ~85, Social Life ~78
-
-Return this JSON structure with REAL scores for "${jobTitle}":
-{
-  "metrics": [
-    {"subject": "Work Hours", "score": 42, "description": "Typical weekly hours and schedule demands for ${jobTitle}"},
-    {"subject": "Flexibility", "score": 37, "description": "Remote/hybrid work options and schedule autonomy"},
-    {"subject": "Stress Level", "score": 51, "description": "Typical pressure, deadlines, emotional load (higher = lower stress)"},
-    {"subject": "Job Security", "score": 63, "description": "Employment stability and demand outlook"},
-    {"subject": "Social Life", "score": 58, "description": "Impact on personal relationships and personal time"},
-    {"subject": "Physical Health", "score": 44, "description": "Physical demands, ergonomics, and health impact"},
-    {"subject": "Mental Health", "score": 47, "description": "Cognitive load, burnout risk, emotional demands"}
-  ],
-  "overallScore": 49,
-  "summary": "Write 2-3 specific, honest sentences about work-life balance for ${jobTitle} based on real professional reports",
-  "bestFor": "Describe the type of person whose lifestyle suits this career",
-  "worstFor": "Describe the type of person who would find this career's lifestyle difficult"
-}`,
-      { temperature: 0.7, maxTokens: 900, jsonMode: true, signal, usageType: 'wlb' }
-    );
-
-    const parsed = JSON.parse(raw) as Partial<WorkLifeBalance>;
-    const result: WorkLifeBalance = {
-      metrics: Array.isArray(parsed.metrics) ? parsed.metrics.filter(metric => metric && typeof metric.subject === 'string' && typeof metric.score === 'number') : [],
-      overallScore: typeof parsed.overallScore === 'number' ? Math.max(0, Math.min(100, parsed.overallScore)) : 50,
-      summary: typeof parsed.summary === 'string' ? parsed.summary : 'Work-life conditions vary by employer, seniority, and work setting.',
-      bestFor: typeof parsed.bestFor === 'string' ? parsed.bestFor : 'People who validate the day-to-day conditions with practitioners.',
-      worstFor: typeof parsed.worstFor === 'string' ? parsed.worstFor : 'People whose non-negotiables conflict with the role’s actual schedule and pressure.',
-    };
-    setCache(cacheKey, result);
-    return result;
-  });
+  const matched = occupationForTitle(jobTitle);
+  const role = matched?.score >= 0.25 ? matched.occupation : undefined;
+  const values = role?.valuesProfile ?? { stability: 50, growth: 50, autonomy: 50, impact: 50, balance: 50, compensation: 50 };
+  const metrics = [
+    { subject: 'Stability', score: values.stability, description: 'Curated occupation work-value profile: stability.' },
+    { subject: 'Growth', score: values.growth, description: 'Curated occupation work-value profile: growth.' },
+    { subject: 'Autonomy', score: values.autonomy, description: 'Curated occupation work-value profile: autonomy.' },
+    { subject: 'Impact', score: values.impact, description: 'Curated occupation work-value profile: impact.' },
+    { subject: 'Balance', score: values.balance, description: 'Curated occupation work-value profile: balance.' },
+    { subject: 'Compensation', score: values.compensation, description: 'Curated occupation work-value profile: compensation.' },
+  ];
+  const result: WorkLifeBalance = {
+    metrics,
+    overallScore: Math.round(metrics.reduce((sum, metric) => sum + metric.score, 0) / metrics.length),
+    summary: role
+      ? `Indicative work-values profile from CareerCase's curated knowledge-base entry for ${role.title}. Employer, seniority, location and team culture can change the lived experience substantially.`
+      : 'A neutral profile is shown because this title has no direct knowledge-base match. Validate schedule and pressure with people doing the role.',
+    bestFor: 'People whose non-negotiables align with the displayed balance, autonomy and stability profile.',
+    worstFor: 'People who need conditions the profile cannot confirm without employer-specific evidence.',
+  };
+  setCache(cacheKey, result);
+  return result;
 }

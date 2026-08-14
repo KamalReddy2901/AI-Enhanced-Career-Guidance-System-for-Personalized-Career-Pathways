@@ -64,9 +64,10 @@ import { generateShareUrl, decodeDossier } from "../utils/share";
 import { sounds } from "../utils/sounds";
 import { usePreferences } from "../hooks/usePreferences";
 import { useGuidance } from "../context/GuidanceContext";
-import { marketFor, occupationById } from "../data/knowledge";
-import { WhyPanel } from "../components/guidance/WhyPanel";
-import { hapticLight } from '../utils/haptic';
+import { KB_VERSION, marketFor, occupationById } from "../data/knowledge";
+import { WhyPanel, type ScoreEvidence } from "../components/guidance/WhyPanel";
+import { hapticLight, hapticTap } from '../utils/haptic';
+import { useT } from '../i18n';
 import { TrustStrip } from "../components/guidance/TrustStrip";
 import { GapLearningRoutes } from '../components/guidance/GapLearningRoutes';
 import type { CareerRecommendation } from "../engine/types";
@@ -153,8 +154,10 @@ export function JobDetailPage() {
   const { addFavorite, removeFavorite, isFavorite } = useFavorites();
   const { preferences } = usePreferences();
   const { passport, recommendations } = useGuidance();
+  const { lang } = useT();
   const [fitExplanation, setFitExplanation] =
     useState<CareerRecommendation | null>(null);
+  const [scoreEvidence, setScoreEvidence] = useState<ScoreEvidence | null>(null);
   const [activeTimeline, setActiveTimeline] = useState<
     "week" | "quarter" | "year"
   >(preferences.defaultView);
@@ -1155,7 +1158,7 @@ export function JobDetailPage() {
                 className="font-[Playfair_Display] text-black flex items-center gap-2"
                 style={{ fontSize: "1.15rem" }}
               >
-                Work-Life Balance
+                Work-Life &amp; Values Profile
                 <Activity size={14} className="text-black/25" />
               </span>
               <div className="h-px flex-1 bg-black/10" />
@@ -1217,7 +1220,7 @@ export function JobDetailPage() {
                             letterSpacing: "0.1em",
                           }}
                         >
-                          OVERALL SCORE /100
+                          INDICATIVE PROFILE /100
                         </p>
                         <div className="w-32 h-1.5 bg-black/10 mt-1">
                           <div
@@ -1226,6 +1229,25 @@ export function JobDetailPage() {
                           />
                         </div>
                       </div>
+                      <button
+                        type="button"
+                        data-testid="job-wlb-score-why-btn"
+                        onClick={() => {
+                          sounds.expand();
+                          hapticTap();
+                          setScoreEvidence({
+                            title: lang === 'hi' ? 'कार्य-जीवन संकेतक' : lang === 'te' ? 'పని-జీవిత సూచిక' : 'Work-life indicator',
+                            eyebrow: currentJob.title,
+                            summary: lang === 'hi' ? 'यह नियोक्ता-विशिष्ट भविष्यवाणी नहीं, बल्कि ज्ञान-आधार के कार्य-मूल्यों से बना सांकेतिक प्रोफ़ाइल है।' : lang === 'te' ? 'ఇది యజమాని-నిర్దిష్ట అంచనా కాదు; నాలెడ్జ్-బేస్ పని విలువల నుండి రూపొందిన సూచిక ప్రొఫైల్.' : 'This is an indicative profile from knowledge-base work values, not an employer-specific prediction.',
+                            method: lang === 'hi' ? 'समग्र संकेतक छह दिखाए गए नियम-आधारित कार्य-मूल्य आयामों का साधारण औसत है। LLM किसी संख्या की आपूर्ति या बदलाव नहीं करता।' : lang === 'te' ? 'మొత్తం సూచిక చూపిన ఆరు నియమ-ఆధారిత పని-విలువ కొలతల సాధారణ సగటు. LLM ఏ సంఖ్యను ఇవ్వదు లేదా మార్చదు.' : 'The overall indicator is the simple average of the six displayed rule-based work-value dimensions. No LLM supplies or changes a number.',
+                            items: wlbData.metrics.map(metric => ({ label: metric.subject, value: metric.score, detail: metric.description })),
+                            source: `Deterministic work-values proxy · ${KB_VERSION}`,
+                          });
+                        }}
+                        className="min-h-11 border border-[var(--ink)] px-3 font-mono-ui text-[10px] uppercase tracking-widest"
+                      >
+                        {lang === 'hi' ? 'यह संख्या क्यों?' : lang === 'te' ? 'ఈ సంఖ్య ఎందుకు?' : 'Why this number?'}
+                      </button>
                     </div>
                     <p
                       className="font-[Inter] text-black/60 mb-4 leading-relaxed"
@@ -2047,6 +2069,12 @@ export function JobDetailPage() {
           recommendation={fitExplanation}
           segment={passport.segment}
           onClose={() => setFitExplanation(null)}
+        />
+      )}
+      {scoreEvidence && (
+        <WhyPanel
+          evidence={scoreEvidence}
+          onClose={() => { sounds.collapse(); setScoreEvidence(null); }}
         />
       )}
     </div>

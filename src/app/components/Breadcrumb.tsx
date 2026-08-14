@@ -114,7 +114,7 @@ export function Breadcrumb() {
         exit={{ opacity: 0, y: -4 }}
         transition={{ duration: 0.18 }}
       >
-        <div className="max-w-5xl mx-auto px-6 py-1.5 flex items-center gap-1">
+        <div className="max-w-5xl mx-auto px-6 flex min-h-11 items-center gap-1 overflow-x-auto">
           {crumbs.map((path, i) => {
             const isLast = i === crumbs.length - 1;
             const label = getLabel(path);
@@ -131,7 +131,7 @@ export function Breadcrumb() {
                 ) : (
                   <button
                     onClick={() => navigate(path)}
-                    className="label-caps !text-[var(--ink-faint)] transition-colors hover:!text-[var(--ink)]"
+                    className="label-caps min-h-11 shrink-0 !text-[var(--ink-faint)] transition-colors hover:!text-[var(--ink)]"
                   >
                     {label}
                   </button>
