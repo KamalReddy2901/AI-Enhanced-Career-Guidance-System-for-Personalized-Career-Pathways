@@ -429,6 +429,17 @@ function RecommendationCard({
         {copy.confidence} · {localizedConfidence(recommendation.confidence, lang)}
       </div>
       
+      {/* Descriptive tagline */}
+      <p className="mt-3 font-[Inter] text-sm italic text-[var(--ink-soft)] leading-relaxed">
+        {occupation.valuesProfile.balance > 70 
+          ? lang === 'hi' ? 'संतुलित कार्य-जीवन के साथ स्थिर करियर' : lang === 'te' ? 'సమతుల్య పని-జీవితంతో స్థిరమైన వృత్తి' : 'Balanced work-life with stable growth trajectory'
+          : occupation.valuesProfile.autonomy > 70
+            ? lang === 'hi' ? 'स्वतंत्र कार्य और रचनात्मकता के अवसर' : lang === 'te' ? 'స్వతంత్ర పని మరియు సృజనాత్మక అవకాశాలు' : 'Independent work with creative opportunities'
+            : occupation.valuesProfile.compensation > 70
+              ? lang === 'hi' ? 'उच्च आय क्षमता और तेजी से विकास' : lang === 'te' ? 'అధిక ఆదాయ సంభావ్యత మరియు వేగవంతమైన అభివృద్ధి' : 'High earning potential with rapid advancement'
+              : lang === 'hi' ? 'आपके कौशल और रुचियों के लिए मजबूत मेल' : lang === 'te' ? 'మీ నైపుణ్యాలు మరియు ఆసక్తులకు బలమైన సరిపోలిక' : 'Strong match for your skills and interests'}
+      </p>
+      
       <ul className="mt-4 space-y-2">
         {recommendation.topReasons.slice(0, 2).map((reason) => (
           <li key={reason} className="text-sm text-[var(--ink-soft)]">
