@@ -121,7 +121,59 @@ export function CareerTransitionPage() {
     setPlan(null);
 
     try {
-      const result = await getCareerTransition(fromCareer.trim(), toCareer.trim(), abortRef.current.signal, fromDesc.trim() || undefined, toDesc.trim() || undefined);
+      // Ensure context is generated before transition plan
+      const contextPromises: Promise<void>[] = [];
+      
+      if (!fromDesc.trim() && fromCareer.trim()) {
+        contextPromises.push(
+          (async () => {
+            setFromDescLoading(true);
+            try {
+              const desc = await getQuickDescription(fromCareer.trim());
+              setFromDesc(desc);
+            } catch {
+              // Silent failure, will proceed without context
+            } finally {
+              setFromDescLoading(false);
+            }
+          })()
+        );
+      }
+      
+      if (!toDesc.trim() && toCareer.trim()) {
+        contextPromises.push(
+          (async () => {
+            setToDescLoading(true);
+            try {
+              const desc = await getQuickDescription(toCareer.trim());
+              setToDesc(desc);
+            } catch {
+              // Silent failure, will proceed without context
+            } finally {
+              setToDescLoading(false);
+            }
+          })()
+        );
+      }
+      
+      // Wait for context generation (or timeout after 3s)
+      if (contextPromises.length > 0) {
+        await Promise.race([
+          Promise.all(contextPromises),
+          new Promise(resolve => setTimeout(resolve, 3000))
+        ]);
+      }
+      
+      // Small delay to ensure state updates
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const result = await getCareerTransition(
+        fromCareer.trim(), 
+        toCareer.trim(), 
+        abortRef.current.signal, 
+        fromDesc.trim() || undefined, 
+        toDesc.trim() || undefined
+      );
       setPlan(result);
       // Save to transition history
       setTransitionHistory(prev => {
