@@ -1,0 +1,11 @@
+{
+  "outputSlides": [
+    {"outputSlide":1,"sourceSlide":1,"narrativeRole":"title and required SIH metadata","reuseMode":"duplicate-slide","editTargets":[{"shapeId":"sh/fu94fe98","action":"rewrite"},{"shapeId":"sh/7qp4be9c","action":"rewrite"},{"shapeId":"sh/wn6dc7eh","action":"rewrite"}]},
+    {"outputSlide":2,"sourceSlide":2,"narrativeRole":"proposed solution","reuseMode":"duplicate-slide","editTargets":[{"shapeId":"sh/dkvmpszm","action":"rewrite"},{"shapeId":"sh/qx4nud0b","action":"rewrite"},{"shapeId":"sh/ove9o7yd","action":"rewrite"}]},
+    {"outputSlide":3,"sourceSlide":3,"narrativeRole":"technical approach","reuseMode":"duplicate-slide","editTargets":[{"shapeId":"sh/j6dgf6tk","action":"rewrite"},{"shapeId":"sh/1k3214v2","action":"rewrite"},{"shapeId":"sh/m1c3mlsn","action":"rewrite"}]},
+    {"outputSlide":4,"sourceSlide":4,"narrativeRole":"feasibility and viability","reuseMode":"duplicate-slide","editTargets":[{"shapeId":"sh/ud8fyt4z","action":"rewrite"},{"shapeId":"sh/sjad83id","action":"rewrite"},{"shapeId":"sh/i94r6xgz","action":"rewrite"}]},
+    {"outputSlide":5,"sourceSlide":5,"narrativeRole":"impact and benefits","reuseMode":"duplicate-slide","editTargets":[{"shapeId":"sh/y1g7ylcj","action":"rewrite"},{"shapeId":"sh/g7alsnu1","action":"rewrite"},{"shapeId":"sh/ahkvi1cb","action":"rewrite"}]},
+    {"outputSlide":6,"sourceSlide":6,"narrativeRole":"research and references","reuseMode":"duplicate-slide","editTargets":[{"shapeId":"sh/1kj2p0ve","action":"rewrite"},{"shapeId":"sh/vq5cve1s","action":"rewrite"},{"shapeId":"sh/pc76hkr2","action":"rewrite"}]}
+  ],
+  "omittedSourceSlides":[{"sourceSlide":7,"reason":"official instructions specify deletion before submission"}]
+}

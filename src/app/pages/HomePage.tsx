@@ -234,7 +234,12 @@ export function HomePage() {
 
   return (
     <div className="relative bg-background">
-      {/* FixedRibbon removed from homepage per user request - shown on other pages only */}
+      {/* Fixed Ribbon - keep on homepage when logged in */}
+      {!showLanding && (
+        <div className="sticky top-14 z-40 print:hidden">
+          <FixedRibbon />
+        </div>
+      )}
       
       <WordCloudMasthead passport={passport} showLanding={showLanding} onNavigate={(to) => { sounds.navigate(); hapticTap(); navigate(to); }} />
       {!showLanding && <Suspense fallback={null}><EditorialHomeHero

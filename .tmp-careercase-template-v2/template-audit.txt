@@ -1,0 +1,14 @@
+Official SIH 2026 source template audit
+
+Source: /Users/kamal/Downloads/SIH2026-IDEA-Presentation-Format (3).pptx
+Slides 1–6 form the required deck; slide 7 is instructions and is omitted.
+Recurring fixtures on slides 2–6:
+- Team-name oval: upper-left (source text: "Your Team Name")
+- Official SIH 2026 image: upper-right
+- Section-title header
+- Official footer bar
+
+Revision intent:
+- Preserve the official fixtures and section sequence.
+- Replace placeholder body copy with CareerCase content.
+- Add one CareerCase AI visual per content slide in a bounded body zone.

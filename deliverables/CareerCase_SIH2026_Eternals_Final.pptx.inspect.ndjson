@@ -1,0 +1,239 @@
+{"kind":"deck","id":"pr/qtra9c","name":"Deck"}
+{"kind":"layout","layoutId":"04c30392-aa39-4f15-ac4e-388f5b23419b","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"838284b7-6118-4015-85c0-9f9da969fda1","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/0b7pv3","slide":1,"title":"SMART INDIA HACKATHON 2026","textShapes":11}
+{"kind":"shape","id":"sh/72x0b29o","slide":1,"bbox":[0,0,630,720]}
+{"kind":"shape","id":"sh/m14z2h83","slide":1,"bbox":[0,0,630,720]}
+{"kind":"shape","id":"sh/lgvi9cri","slide":1,"bbox":[56,44,78,8]}
+{"kind":"textbox","id":"sh/kfmh07qx","slide":1,"text":"SMART INDIA HACKATHON 2026","textPreview":"SMART INDIA HACKATHON 2026","textChars":26,"textLines":1,"bbox":[56,66,330,18]}
+{"kind":"textbox","id":"sh/zed0729c","slide":1,"text":"CareerCase","textPreview":"CareerCase","textChars":10,"textLines":1,"bbox":[56,126,500,70]}
+{"kind":"textbox","id":"sh/yd4zyx8r","slide":1,"text":"A career decision\nshould show its work.","textPreview":"A career decision | should show its work.","textChars":39,"textLines":2,"bbox":[56,202,540,110]}
+{"kind":"shape","id":"sh/5czi5wrm","slide":1,"bbox":[56,329,156,5]}
+{"kind":"textbox","id":"sh/4bqhcrq1","slide":1,"text":"Turn aptitude, aspirations, abilities and experience into an explainable career pathway.","textPreview":"Turn aptitude, aspirations, abilities and experience into an explainable career pathway.","textChars":88,"textLines":1,"bbox":[56,355,490,57]}
+{"kind":"shape","id":"sh/qx4jupgf","slide":1,"bbox":[56,454,122,25]}
+{"kind":"textbox","id":"sh/bydknuh0","slide":1,"text":"SIH260480","textPreview":"SIH260480","textChars":9,"textLines":1,"bbox":[66,459,102,15]}
+{"kind":"shape","id":"sh/czm1wfyl","slide":1,"bbox":[188,454,170,25]}
+{"kind":"textbox","id":"sh/dkv2pkzq","slide":1,"text":"SMART EDUCATION","textPreview":"SMART EDUCATION","textChars":15,"textLines":1,"bbox":[198,459,150,15]}
+{"kind":"shape","id":"sh/2tkjq503","slide":1,"bbox":[368,454,110,25]}
+{"kind":"textbox","id":"sh/3utkjaho","slide":1,"text":"SOFTWARE","textPreview":"SOFTWARE","textChars":8,"textLines":1,"bbox":[378,459,90,15]}
+{"kind":"shape","id":"sh/ov21sfy9","slide":1,"bbox":[56,518,490,1]}
+{"kind":"textbox","id":"sh/pwb2lkzu","slide":1,"text":"Problem Statement","textPreview":"Problem Statement","textChars":17,"textLines":1,"bbox":[56,535,170,15]}
+{"kind":"textbox","id":"sh/mpoj29gn","slide":1,"text":"AI-Enhanced Career Guidance System for Personalized Career Pathways","textPreview":"AI-Enhanced Career Guidance System for Personalized Career Pathways","textChars":67,"textLines":1,"bbox":[56,555,510,42]}
+{"kind":"textbox","id":"sh/7qxkveh8","slide":1,"text":"TEAM ETERNALS","textPreview":"TEAM ETERNALS","textChars":13,"textLines":1,"bbox":[56,638,170,14]}
+{"kind":"textbox","id":"sh/japgn6xk","slide":1,"text":"TEAM ID — NOT ALLOTTED","textPreview":"TEAM ID — NOT ALLOTTED","textChars":22,"textLines":1,"bbox":[270,638,230,14]}
+{"kind":"image","id":"im/lorudwjm","slide":1,"name":"","geometry":"rect","alt":"CareerCase editorial illustration","bbox":[0,0,1280,720]}
+{"kind":"notes","id":"nt/0b7pv3","slide":1,"text":"[Sources]\nOfficial SIH 2026 Problem Statement: SIH260480 — AI-Enhanced Career Guidance System for Personalized Career Pathways.\nSIH2026 IDEA Presentation Format (slides 1–6)."}
+{"kind":"slide","id":"sl/tqhm9m","slide":2,"title":"02 / PROPOSED SOLUTION","textShapes":28}
+{"kind":"textbox","id":"sh/kre50zax","slide":2,"text":"02 / PROPOSED SOLUTION","textPreview":"02 / PROPOSED SOLUTION","textChars":22,"textLines":1,"bbox":[56,44,520,20]}
+{"kind":"textbox","id":"sh/jq5o7utc","slide":2,"text":"One profile becomes a career decision you can defend.","textPreview":"One profile becomes a career decision you can defend.","textChars":53,"textLines":1,"bbox":[56,72,1120,78]}
+{"kind":"shape","id":"sh/ypwnypsr","slide":2,"bbox":[56,152,1168,1]}
+{"kind":"textbox","id":"sh/xo365kb6","slide":2,"text":"SMART INDIA HACKATHON 2026  /  ETERNALS  /  02","textPreview":"SMART INDIA HACKATHON 2026  /  ETERNALS  /  02","textChars":46,"textLines":1,"bbox":[56,676,600,16]}
+{"kind":"textbox","id":"sh/w3u5wfa1","slide":2,"text":"CAREERCASE","textPreview":"CAREERCASE","textChars":10,"textLines":1,"bbox":[1090,676,134,16]}
+{"kind":"textbox","id":"sh/b2lo3atg","slide":2,"text":"Generic guidance overlooks the whole person. CareerCase turns four signals into a living, explainable case file.","textPreview":"Generic guidance overlooks the whole person. CareerCase turns four signals into a living, explainable case file.","textChars":112,"textLines":1,"bbox":[56,165,880,30]}
+{"kind":"shape","id":"sh/a1cnu5sv","slide":2,"bbox":[56,222,204,130]}
+{"kind":"shape","id":"sh/hk76horq","slide":2,"bbox":[70,236,29,29]}
+{"kind":"textbox","id":"sh/gzyp8ja5","slide":2,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[70,241,29,18]}
+{"kind":"textbox","id":"sh/2903y1cz","slide":2,"text":"Discover","textPreview":"Discover","textChars":8,"textLines":1,"bbox":[110,236,138,26]}
+{"kind":"textbox","id":"sh/3a9kr6dk","slide":2,"text":"Aptitude, interests\n& values","textPreview":"Aptitude, interests | & values","textChars":28,"textLines":2,"bbox":[72,278,172,58]}
+{"kind":"shape","id":"sh/4bil0bu5","slide":2,"bbox":[260,286,19,2]}
+{"kind":"shape","id":"sh/pcr2twva","slide":2,"bbox":[275,281,8,12]}
+{"kind":"shape","id":"sh/ul03uhcn","slide":2,"bbox":[282,222,204,130]}
+{"kind":"shape","id":"sh/fm9knmd8","slide":2,"bbox":[296,236,29,29]}
+{"kind":"textbox","id":"sh/g7ilwrut","slide":2,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[296,241,29,18]}
+{"kind":"textbox","id":"sh/h8r2pwve","slide":2,"text":"Build","textPreview":"Build","textChars":5,"textLines":1,"bbox":[336,236,138,26]}
+{"kind":"textbox","id":"sh/ehk36lc7","slide":2,"text":"Skills, experience\n& aspirations","textPreview":"Skills, experience | & aspirations","textChars":32,"textLines":2,"bbox":[298,278,172,58]}
+{"kind":"shape","id":"sh/z2t4zqds","slide":2,"bbox":[486,286,19,2]}
+{"kind":"shape","id":"sh/bm50rit4","slide":2,"bbox":[501,281,8,12]}
+{"kind":"shape","id":"sh/alczidsj","slide":2,"bbox":[508,222,204,130]}
+{"kind":"shape","id":"sh/xonitsbu","slide":2,"bbox":[522,236,29,29]}
+{"kind":"textbox","id":"sh/wnehknap","slide":2,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[522,241,29,18]}
+{"kind":"textbox","id":"sh/jq50vit0","slide":2,"text":"Match","textPreview":"Match","textChars":5,"textLines":1,"bbox":[562,236,138,26]}
+{"kind":"textbox","id":"sh/ipwzmdsf","slide":2,"text":"13 diversified\ncareer options","textPreview":"13 diversified | career options","textChars":29,"textLines":2,"bbox":[524,278,172,58]}
+{"kind":"shape","id":"sh/5snixsb6","slide":2,"bbox":[712,286,19,2]}
+{"kind":"shape","id":"sh/krehonal","slide":2,"bbox":[727,281,8,12]}
+{"kind":"shape","id":"sh/7ep0z2tc","slide":2,"bbox":[734,222,204,130]}
+{"kind":"shape","id":"sh/6dgzqxsr","slide":2,"bbox":[748,236,29,29]}
+{"kind":"textbox","id":"sh/4jyhg7qp","slide":2,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[748,241,29,18]}
+{"kind":"textbox","id":"sh/pkrypc7a","slide":2,"text":"Explain","textPreview":"Explain","textChars":7,"textLines":1,"bbox":[788,236,138,26]}
+{"kind":"textbox","id":"sh/2hgzex8z","slide":2,"text":"Why this fits —\nand what changes it","textPreview":"Why this fits — | and what changes it","textChars":35,"textLines":2,"bbox":[750,278,172,58]}
+{"kind":"shape","id":"sh/3ipgn2p4","slide":2,"bbox":[938,286,19,2]}
+{"kind":"shape","id":"sh/gfyhcnqt","slide":2,"bbox":[953,281,8,12]}
+{"kind":"shape","id":"sh/hg7ylsre","slide":2,"bbox":[960,222,204,130]}
+{"kind":"shape","id":"sh/utgzax8n","slide":2,"bbox":[974,236,29,29]}
+{"kind":"textbox","id":"sh/fepgji98","slide":2,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[974,241,29,18]}
+{"kind":"textbox","id":"sh/sreh8nqh","slide":2,"text":"Advance","textPreview":"Advance","textChars":7,"textLines":1,"bbox":[1014,236,138,26]}
+{"kind":"textbox","id":"sh/tsnyhsr2","slide":2,"text":"Close gaps; track\nprogression","textPreview":"Close gaps; track | progression","textChars":29,"textLines":2,"bbox":[976,278,172,58]}
+{"kind":"textbox","id":"sh/xw3epo7u","slide":2,"text":"THE CAREERCASE LOOP","textPreview":"THE CAREERCASE LOOP","textChars":19,"textLines":1,"bbox":[56,410,240,16]}
+{"kind":"shape","id":"sh/wvudgj69","slide":2,"bbox":[56,435,1168,1]}
+{"kind":"shape","id":"sh/bulwnep4","slide":2,"bbox":[61,478,14,14]}
+{"kind":"textbox","id":"sh/atsve9oj","slide":2,"text":"WHOLE-PERSON PROFILE","textPreview":"WHOLE-PERSON PROFILE","textChars":20,"textLines":1,"bbox":[88,469,335,17]}
+{"kind":"textbox","id":"sh/5k3eton6","slide":2,"text":"Interests, aptitude, skills, experience and constraints in one case file.","textPreview":"Interests, aptitude, skills, experience and constraints in one case file.","textChars":73,"textLines":1,"bbox":[88,493,335,48]}
+{"kind":"shape","id":"sh/kzudkj6l","slide":2,"bbox":[451,478,14,14]}
+{"kind":"textbox","id":"sh/jylwryp0","slide":2,"text":"AI, NOT A BLACK BOX","textPreview":"AI, NOT A BLACK BOX","textChars":19,"textLines":1,"bbox":[478,469,335,17]}
+{"kind":"textbox","id":"sh/yxcvitof","slide":2,"text":"AI extracts and explains evidence; the core career score remains deterministic.","textPreview":"AI extracts and explains evidence; the core career score remains deterministic.","textChars":79,"textLines":1,"bbox":[478,493,335,48]}
+{"kind":"shape","id":"sh/14jeh47m","slide":2,"bbox":[841,478,14,14]}
+{"kind":"textbox","id":"sh/03ad8z6h","slide":2,"text":"MULTIPLE, ACTIONABLE ROUTES","textPreview":"MULTIPLE, ACTIONABLE ROUTES","textChars":27,"textLines":1,"bbox":[868,469,335,17]}
+{"kind":"textbox","id":"sh/qxoj210n","slide":2,"text":"Focused, lower-risk and credential-led paths—not a single opaque answer.","textPreview":"Focused, lower-risk and credential-led paths—not a single opaque answer.","textChars":72,"textLines":1,"bbox":[868,493,335,48]}
+{"kind":"shape","id":"sh/ryxkv618","slide":2,"bbox":[56,603,410,25]}
+{"kind":"textbox","id":"sh/sj614bit","slide":2,"text":"DISCOVER → BUILD → MATCH → EXPLAIN → ADVANCE","textPreview":"DISCOVER → BUILD → MATCH → EXPLAIN → ADVANCE","textChars":44,"textLines":1,"bbox":[66,608,390,15]}
+{"kind":"notes","id":"nt/tqhm9m","slide":2,"text":"[Sources]\nThe Problem Statement.md — scope requirements: aptitude, aspirations, abilities/experience, progression and skill gaps.\nPROJECT_BRIEF.md — CareerCase user journey and deterministic/AI boundary.\nDesigning a Six-Slide Smart India Hackathon Presentation… — consistent journey vocabulary."}
+{"kind":"slide","id":"sl/heag4e","slide":3,"title":"03 / TECHNICAL APPROACH","textShapes":22}
+{"kind":"textbox","id":"sh/2xcjqhgr","slide":3,"text":"03 / TECHNICAL APPROACH","textPreview":"03 / TECHNICAL APPROACH","textChars":23,"textLines":1,"bbox":[56,44,520,20]}
+{"kind":"textbox","id":"sh/p03ilwzi","slide":3,"text":"The same journey runs through one traceable system.","textPreview":"The same journey runs through one traceable system.","textChars":51,"textLines":1,"bbox":[56,72,1120,78]}
+{"kind":"shape","id":"sh/4zu1sryx","slide":3,"bbox":[56,152,1168,1]}
+{"kind":"textbox","id":"sh/fa10fmhg","slide":3,"text":"SMART INDIA HACKATHON 2026  /  ETERNALS  /  03","textPreview":"SMART INDIA HACKATHON 2026  /  ETERNALS  /  03","textChars":46,"textLines":1,"bbox":[56,676,600,16]}
+{"kind":"textbox","id":"sh/u9sjmhgv","slide":3,"text":"CAREERCASE","textPreview":"CAREERCASE","textChars":10,"textLines":1,"bbox":[1090,676,134,16]}
+{"kind":"textbox","id":"sh/hwjihwz6","slide":3,"text":"Every recommendation has a visible input, a reproducible decision layer and a route the learner can act on.","textPreview":"Every recommendation has a visible input, a reproducible decision layer and a route the learner can act on.","textChars":107,"textLines":1,"bbox":[56,165,840,30]}
+{"kind":"shape","id":"sh/gba1oryl","slide":3,"bbox":[56,221,205,210]}
+{"kind":"shape","id":"sh/7610b2h4","slide":3,"bbox":[56,221,205,9]}
+{"kind":"textbox","id":"sh/658zixgj","slide":3,"text":"U1 / CAPTURE","textPreview":"U1 / CAPTURE","textChars":12,"textLines":1,"bbox":[72,245,172,18]}
+{"kind":"textbox","id":"sh/43itsr2d","slide":3,"text":"Assessments\nAspirations\nSkills + experience","textPreview":"Assessments | Aspirations | Skills + experience","textChars":43,"textLines":3,"bbox":[72,280,170,105]}
+{"kind":"shape","id":"sh/5orulw3i","slide":3,"bbox":[261,323,28,2]}
+{"kind":"shape","id":"sh/i10bqhk7","slide":3,"bbox":[283,318,8,12]}
+{"kind":"shape","id":"sh/j29cjmls","slide":3,"bbox":[289,221,205,210]}
+{"kind":"shape","id":"sh/wzito721","slide":3,"bbox":[289,221,205,9]}
+{"kind":"textbox","id":"sh/h0rahc3m","slide":3,"text":"U2 / STRUCTURE","textPreview":"U2 / STRUCTURE","textChars":14,"textLines":1,"bbox":[305,245,172,18]}
+{"kind":"textbox","id":"sh/uxgbmx4v","slide":3,"text":"Career Passport\nEvidence provenance\nConsent + constraints","textPreview":"Career Passport | Evidence provenance | Consent + constraints","textChars":57,"textLines":3,"bbox":[305,280,170,105]}
+{"kind":"shape","id":"sh/vypsf2lg","slide":3,"bbox":[494,323,28,2]}
+{"kind":"shape","id":"sh/0v2t0b25","slide":3,"bbox":[516,318,8,12]}
+{"kind":"shape","id":"sh/1wbutg3q","slide":3,"bbox":[522,221,205,210]}
+{"kind":"shape","id":"sh/9c7udwvu","slide":3,"bbox":[522,221,205,9]}
+{"kind":"textbox","id":"sh/obyt4bup","slide":3,"text":"U3 / MATCH","textPreview":"U3 / MATCH","textChars":10,"textLines":1,"bbox":[538,245,172,18]}
+{"kind":"textbox","id":"sh/napcb6d4","slide":3,"text":"11-factor deterministic engine\n13 diversified recommendations\nConfidence + counterfactual","textPreview":"11-factor deterministic engine | 13 diversified recommendations | Confidence + counterfactual","textChars":89,"textLines":3,"bbox":[538,280,170,105]}
+{"kind":"shape","id":"sh/m9gb21cj","slide":3,"bbox":[727,323,28,2]}
+{"kind":"shape","id":"sh/187a9wvy","slide":3,"bbox":[749,318,8,12]}
+{"kind":"shape","id":"sh/0nyt0rud","slide":3,"bbox":[755,221,205,210]}
+{"kind":"shape","id":"sh/zmps7mds","slide":3,"bbox":[755,221,205,9]}
+{"kind":"textbox","id":"sh/elgbyhc7","slide":3,"text":"U4 / PLAN","textPreview":"U4 / PLAN","textChars":9,"textLines":1,"bbox":[771,245,172,18]}
+{"kind":"textbox","id":"sh/dkna5cv2","slide":3,"text":"Skill Gap Index\n3 core routes per role\nLearning actions","textPreview":"Skill Gap Index | 3 core routes per role | Learning actions","textChars":55,"textLines":3,"bbox":[771,280,170,105]}
+{"kind":"shape","id":"sh/cjetwruh","slide":3,"bbox":[960,323,28,2]}
+{"kind":"shape","id":"sh/idszqto3","slide":3,"bbox":[982,318,8,12]}
+{"kind":"shape","id":"sh/je10jyp8","slide":3,"bbox":[988,221,205,210]}
+{"kind":"shape","id":"sh/4fahs36t","slide":3,"bbox":[988,221,205,9]}
+{"kind":"textbox","id":"sh/5g3il87e","slide":3,"text":"U5 / REFRESH","textPreview":"U5 / REFRESH","textChars":12,"textLines":1,"bbox":[1004,245,172,18]}
+{"kind":"textbox","id":"sh/u9szm9or","slide":3,"text":"Completed actions\nMomentum signal\nUpdated explanation","textPreview":"Completed actions | Momentum signal | Updated explanation","textChars":53,"textLines":3,"bbox":[1004,280,170,105]}
+{"kind":"textbox","id":"sh/va1gfepc","slide":3,"text":"AI ASSIST LAYER","textPreview":"AI ASSIST LAYER","textChars":15,"textLines":1,"bbox":[56,476,190,16]}
+{"kind":"shape","id":"sh/wbahoj6x","slide":3,"bbox":[56,499,1168,1]}
+{"kind":"textbox","id":"sh/hcjiho7i","slide":3,"text":"Resume / aspiration extraction","textPreview":"Resume / aspiration extraction","textChars":30,"textLines":1,"bbox":[72,526,215,20]}
+{"kind":"textbox","id":"sh/ml8zi9ov","slide":3,"text":"Skill discovery","textPreview":"Skill discovery","textChars":15,"textLines":1,"bbox":[330,526,150,20]}
+{"kind":"textbox","id":"sh/7mhgbepg","slide":3,"text":"Grounded counsellor + dossiers","textPreview":"Grounded counsellor + dossiers","textChars":30,"textLines":1,"bbox":[525,526,225,20]}
+{"kind":"textbox","id":"sh/zy1wnatw","slide":3,"text":"Trajectory / interview practice","textPreview":"Trajectory / interview practice","textChars":31,"textLines":1,"bbox":[805,526,230,20]}
+{"kind":"textbox","id":"sh/yxsvu5sb","slide":3,"text":"AI clarifies the case; it never assigns the final match score.","textPreview":"AI clarifies the case; it never assigns the final match score.","textChars":62,"textLines":1,"bbox":[56,572,700,26]}
+{"kind":"shape","id":"sh/l0jepkb2","slide":3,"bbox":[56,620,730,25]}
+{"kind":"textbox","id":"sh/0zadwfah","slide":3,"text":"REACT + TYPESCRIPT  •  SUPABASE  •  CLOUDFLARE WORKER  •  VERSIONED KNOWLEDGE BASE","textPreview":"REACT + TYPESCRIPT  •  SUPABASE  •  CLOUDFLARE WORKER  •  VERSIONED KNOWLEDGE BASE","textChars":82,"textLines":1,"bbox":[66,625,710,15]}
+{"kind":"notes","id":"nt/heag4e","slide":3,"text":"[Sources]\nPROJECT_BRIEF.md — architecture, 11-factor matching, AI boundary, technology stack and route engine.\nCareerCase source audit — deterministic engine, evidence provenance and applied AI surfaces."}
+{"kind":"slide","id":"sl/jdv4qz","slide":4,"title":"04 / FEASIBILITY & VIABILITY","textShapes":21}
+{"kind":"textbox","id":"sh/vq98vu9w","slide":4,"text":"04 / FEASIBILITY & VIABILITY","textPreview":"04 / FEASIBILITY & VIABILITY","textChars":28,"textLines":1,"bbox":[56,44,520,20]}
+{"kind":"textbox","id":"sh/gripozq1","slide":4,"text":"Built for trust where choices matter.","textPreview":"Built for trust where choices matter.","textChars":37,"textLines":1,"bbox":[56,72,1120,78]}
+{"kind":"shape","id":"sh/hcrqx4rm","slide":4,"bbox":[56,152,1168,1]}
+{"kind":"textbox","id":"sh/id07q987","slide":4,"text":"SMART INDIA HACKATHON 2026  /  ETERNALS  /  04","textPreview":"SMART INDIA HACKATHON 2026  /  ETERNALS  /  04","textChars":46,"textLines":1,"bbox":[56,676,600,16]}
+{"kind":"textbox","id":"sh/3e98ze9s","slide":4,"text":"CAREERCASE","textPreview":"CAREERCASE","textChars":10,"textLines":1,"bbox":[1090,676,134,16]}
+{"kind":"textbox","id":"sh/5gbq14ry","slide":4,"text":"A functional prototype for demo and controlled pilots — with risks surfaced, not hidden.","textPreview":"A functional prototype for demo and controlled pilots — with risks surfaced, not hidden.","textChars":88,"textLines":1,"bbox":[56,165,660,30]}
+{"kind":"textbox","id":"sh/yhg7e583","slide":4,"text":"RISK","textPreview":"RISK","textChars":4,"textLines":1,"bbox":[56,220,150,15]}
+{"kind":"textbox","id":"sh/jip8na9o","slide":4,"text":"HOW WE REDUCE IT","textPreview":"HOW WE REDUCE IT","textChars":16,"textLines":1,"bbox":[220,220,470,15]}
+{"kind":"shape","id":"sh/7q1ony58","slide":4,"bbox":[56,247,650,1]}
+{"kind":"textbox","id":"sh/mps7udon","slide":4,"text":"BLACK-BOX ADVICE","textPreview":"BLACK-BOX ADVICE","textChars":16,"textLines":1,"bbox":[56,261,145,40]}
+{"kind":"textbox","id":"sh/9sj6p8ne","slide":4,"text":"Deterministic 11-factor matching; “Why this?” reveals inputs, weights and gaps.","textPreview":"Deterministic 11-factor matching; “Why this?” reveals inputs, weights and gaps.","textChars":79,"textLines":1,"bbox":[220,259,430,48]}
+{"kind":"shape","id":"sh/8rapw36t","slide":4,"bbox":[566,303,120,20]}
+{"kind":"textbox","id":"sh/zm1ojy5c","slide":4,"text":"IMPLEMENTED","textPreview":"IMPLEMENTED","textChars":11,"textLines":1,"bbox":[572,307,108,13]}
+{"kind":"shape","id":"sh/yl8nqtor","slide":4,"bbox":[56,332,650,1]}
+{"kind":"textbox","id":"sh/loj6l8ni","slide":4,"text":"ASSESSMENT BIAS","textPreview":"ASSESSMENT BIAS","textChars":15,"textLines":1,"bbox":[56,346,145,40]}
+{"kind":"textbox","id":"sh/kna5s36x","slide":4,"text":"Exploratory screeners; preserved baseline; capped, disclosed AI evidence adjustment.","textPreview":"Exploratory screeners; preserved baseline; capped, disclosed AI evidence adjustment.","textChars":84,"textLines":1,"bbox":[220,344,430,48]}
+{"kind":"shape","id":"sh/byhofe50","slide":4,"bbox":[566,388,120,20]}
+{"kind":"textbox","id":"sh/qx8nmtov","slide":4,"text":"PROTOTYPE","textPreview":"PROTOTYPE","textChars":9,"textLines":1,"bbox":[572,392,108,13]}
+{"kind":"shape","id":"sh/eto7y98n","slide":4,"bbox":[56,417,650,1]}
+{"kind":"textbox","id":"sh/fuxore98","slide":4,"text":"STALE / LOCAL CONTEXT","textPreview":"STALE / LOCAL CONTEXT","textChars":21,"textLines":1,"bbox":[56,431,145,40]}
+{"kind":"textbox","id":"sh/gvqp0jqt","slide":4,"text":"Versioned NCO / NSQF-grounded knowledge base; source and freshness disclosures.","textPreview":"Versioned NCO / NSQF-grounded knowledge base; source and freshness disclosures.","textChars":79,"textLines":1,"bbox":[220,429,430,48]}
+{"kind":"shape","id":"sh/1wzqtory","slide":4,"bbox":[566,473,120,20]}
+{"kind":"textbox","id":"sh/2x872t8j","slide":4,"text":"IMPLEMENTED","textPreview":"IMPLEMENTED","textChars":11,"textLines":1,"bbox":[572,477,108,13]}
+{"kind":"shape","id":"sh/3ih8vy94","slide":4,"bbox":[56,502,650,1]}
+{"kind":"textbox","id":"sh/ojqp43qp","slide":4,"text":"DATA + ACCESS","textPreview":"DATA + ACCESS","textChars":13,"textLines":1,"bbox":[56,516,145,40]}
+{"kind":"textbox","id":"sh/pkzqx87a","slide":4,"text":"Consent, export/delete controls, local continuity and EN / HI / TE core guidance.","textPreview":"Consent, export/delete controls, local continuity and EN / HI / TE core guidance.","textChars":81,"textLines":1,"bbox":[220,514,430,48]}
+{"kind":"shape","id":"sh/ql876t8v","slide":4,"bbox":[566,558,120,20]}
+{"kind":"textbox","id":"sh/bm18zypg","slide":4,"text":"IMPLEMENTED","textPreview":"IMPLEMENTED","textChars":11,"textLines":1,"bbox":[572,562,108,13]}
+{"kind":"shape","id":"sh/lsnilwfu","slide":4,"bbox":[56,587,650,1]}
+{"kind":"textbox","id":"sh/kre1cre9","slide":4,"text":"BOUNDARY FOR JUDGES","textPreview":"BOUNDARY FOR JUDGES","textChars":19,"textLines":1,"bbox":[56,605,150,16]}
+{"kind":"textbox","id":"sh/jql0jmxo","slide":4,"text":"Not a validated psychometric or government-certified production system yet.","textPreview":"Not a validated psychometric or government-certified production system yet.","textChars":75,"textLines":1,"bbox":[220,599,470,25]}
+{"kind":"image","id":"im/dsnyp07y","slide":4,"name":"","geometry":"rect","alt":"CareerCase editorial illustration","bbox":[750,135,474,492]}
+{"kind":"notes","id":"nt/jdv4qz","slide":4,"text":"[Sources]\nPROJECT_BRIEF.md — product constraints and non-overclaim boundaries.\nCareerCase source audit — consent, local continuity, multilingual scope, assessment and knowledge-base limitations."}
+{"kind":"slide","id":"sl/54zwv2","slide":5,"title":"05 / IMPACT & BENEFITS","textShapes":29}
+{"kind":"textbox","id":"sh/kbm1ojqt","slide":5,"text":"05 / IMPACT & BENEFITS","textPreview":"05 / IMPACT & BENEFITS","textChars":22,"textLines":1,"bbox":[56,44,520,20]}
+{"kind":"textbox","id":"sh/jad0fe98","slide":5,"text":"Career clarity becomes measurable progression.","textPreview":"Career clarity becomes measurable progression.","textChars":46,"textLines":1,"bbox":[56,72,1120,78]}
+{"kind":"shape","id":"sh/i94jm98n","slide":5,"bbox":[56,152,1168,1]}
+{"kind":"textbox","id":"sh/x8vid4r2","slide":5,"text":"SMART INDIA HACKATHON 2026  /  ETERNALS  /  05","textPreview":"SMART INDIA HACKATHON 2026  /  ETERNALS  /  05","textChars":46,"textLines":1,"bbox":[56,676,600,16]}
+{"kind":"textbox","id":"sh/w721kzqh","slide":5,"text":"CAREERCASE","textPreview":"CAREERCASE","textChars":10,"textLines":1,"bbox":[1090,676,134,16]}
+{"kind":"textbox","id":"sh/b6t0bu9w","slide":5,"text":"CareerCase makes the next move visible for learners—and measurable for the people supporting them.","textPreview":"CareerCase makes the next move visible for learners—and measurable for the people supporting them.","textChars":98,"textLines":1,"bbox":[56,165,860,30]}
+{"kind":"textbox","id":"sh/alkjip8b","slide":5,"text":"BEFORE","textPreview":"BEFORE","textChars":6,"textLines":1,"bbox":[56,216,190,18]}
+{"kind":"textbox","id":"sh/h4f2p8r6","slide":5,"text":"WITH CAREERCASE","textPreview":"WITH CAREERCASE","textChars":15,"textLines":1,"bbox":[542,216,250,18]}
+{"kind":"shape","id":"sh/g361w3q1","slide":5,"bbox":[56,254,420,78]}
+{"kind":"shape","id":"sh/69k7a1k3","slide":5,"bbox":[542,254,420,78]}
+{"kind":"textbox","id":"sh/7ato361o","slide":5,"text":"Learners","textPreview":"Learners","textChars":8,"textLines":1,"bbox":[56,266,160,20]}
+{"kind":"textbox","id":"sh/8b2pcb29","slide":5,"text":"Scattered advice\nand unclear next steps","textPreview":"Scattered advice | and unclear next steps","textChars":39,"textLines":2,"bbox":[225,266,235,46]}
+{"kind":"shape","id":"sh/tcbq5gju","slide":5,"bbox":[489,292,32,2]}
+{"kind":"shape","id":"sh/yl0761k7","slide":5,"bbox":[516,287,8,12]}
+{"kind":"textbox","id":"sh/j69oz61s","slide":5,"text":"An explainable fit, a route\nand a skill-gap action","textPreview":"An explainable fit, a route | and a skill-gap action","textChars":50,"textLines":2,"bbox":[558,266,385,46]}
+{"kind":"shape","id":"sh/k7ip8b2d","slide":5,"bbox":[56,358,420,78]}
+{"kind":"shape","id":"sh/l8r61gjy","slide":5,"bbox":[542,358,420,78]}
+{"kind":"textbox","id":"sh/ih47ilkb","slide":5,"text":"Professionals","textPreview":"Professionals","textChars":13,"textLines":1,"bbox":[56,370,160,20]}
+{"kind":"textbox","id":"sh/32d8bq1w","slide":5,"text":"Transferable skills\nstay invisible","textPreview":"Transferable skills | stay invisible","textChars":34,"textLines":2,"bbox":[225,370,235,46]}
+{"kind":"shape","id":"sh/zm543ih8","slide":5,"bbox":[489,396,32,2]}
+{"kind":"shape","id":"sh/elw3ad03","slide":5,"bbox":[516,391,8,12]}
+{"kind":"textbox","id":"sh/1onm5sze","slide":5,"text":"Viable transition routes\nwith trade-offs","textPreview":"Viable transition routes | with trade-offs","textChars":40,"textLines":2,"bbox":[558,370,385,46]}
+{"kind":"shape","id":"sh/0nelcnit","slide":5,"bbox":[56,462,420,78]}
+{"kind":"shape","id":"sh/nqp472hk","slide":5,"bbox":[542,462,420,78]}
+{"kind":"textbox","id":"sh/mpwnex0z","slide":5,"text":"Counsellors + institutions","textPreview":"Counsellors + institutions","textChars":26,"textLines":1,"bbox":[56,474,160,20]}
+{"kind":"textbox","id":"sh/9c7m9czq","slide":5,"text":"Fragmented, one-size-\nfits-all guidance","textPreview":"Fragmented, one-size- | fits-all guidance","textChars":39,"textLines":2,"bbox":[225,474,235,46]}
+{"kind":"shape","id":"sh/ory5g7i5","slide":5,"bbox":[489,500,32,2]}
+{"kind":"shape","id":"sh/bep4b2hg","slide":5,"bbox":[516,495,8,12]}
+{"kind":"textbox","id":"sh/adgnih0v","slide":5,"text":"A structured case file\nand follow-through signal","textPreview":"A structured case file | and follow-through signal","textChars":48,"textLines":2,"bbox":[558,474,385,46]}
+{"kind":"shape","id":"sh/8jil87e9","slide":5,"bbox":[1004,216,220,396]}
+{"kind":"textbox","id":"sh/tkrm1cfu","slide":5,"text":"PILOT SCORECARD","textPreview":"PILOT SCORECARD","textChars":15,"textLines":1,"bbox":[1026,240,172,18]}
+{"kind":"shape","id":"sh/6h036hw3","slide":5,"bbox":[1026,271,172,1]}
+{"kind":"shape","id":"sh/7i94zmxo","slide":5,"bbox":[1030,296,20,20]}
+{"kind":"textbox","id":"sh/kfyl47ex","slide":5,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[1031,300,18,14]}
+{"kind":"textbox","id":"sh/lg72xcfi","slide":5,"text":"Decision clarity","textPreview":"Decision clarity","textChars":16,"textLines":1,"bbox":[1062,297,130,25]}
+{"kind":"shape","id":"sh/ytg32xw7","slide":5,"bbox":[1030,350,20,20]}
+{"kind":"textbox","id":"sh/jepkv2xs","slide":5,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[1031,354,18,14]}
+{"kind":"textbox","id":"sh/wryl0ny1","slide":5,"text":"Routes started","textPreview":"Routes started","textChars":14,"textLines":1,"bbox":[1062,351,130,25]}
+{"kind":"shape","id":"sh/xs72tsfm","slide":5,"bbox":[1030,404,20,20]}
+{"kind":"textbox","id":"sh/1k3al4r2","slide":5,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[1031,408,18,14]}
+{"kind":"textbox","id":"sh/0ja9czqh","slide":5,"text":"Skill evidence gained","textPreview":"Skill evidence gained","textChars":21,"textLines":1,"bbox":[1062,405,130,25]}
+{"kind":"shape","id":"sh/fi1sju9w","slide":5,"bbox":[1030,458,20,20]}
+{"kind":"textbox","id":"sh/ehsrap8r","slide":5,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[1031,462,18,14]}
+{"kind":"textbox","id":"sh/po3ap4re","slide":5,"text":"Recommendation stability","textPreview":"Recommendation stability","textChars":24,"textLines":1,"bbox":[1062,459,130,25]}
+{"kind":"shape","id":"sh/onu9gzqt","slide":5,"bbox":[1030,512,20,20]}
+{"kind":"textbox","id":"sh/nmlsne98","slide":5,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[1031,516,18,14]}
+{"kind":"textbox","id":"sh/2lcre98n","slide":5,"text":"Pathway completion","textPreview":"Pathway completion","textChars":18,"textLines":1,"bbox":[1062,513,130,25]}
+{"kind":"textbox","id":"sh/5szqdkru","slide":5,"text":"Validation plan — outcomes are not claimed as achieved.","textPreview":"Validation plan — outcomes are not claimed as achieved.","textChars":55,"textLines":1,"bbox":[1026,574,170,28]}
+{"kind":"shape","id":"sh/4rq94fa9","slide":5,"bbox":[56,626,688,25]}
+{"kind":"textbox","id":"sh/uxo7elo7","slide":5,"text":"5 USER SEGMENTS  •  3 CORE GUIDANCE LANGUAGES  •  3 ROUTES PER OCCUPATION","textPreview":"5 USER SEGMENTS  •  3 CORE GUIDANCE LANGUAGES  •  3 ROUTES PER OCCUPATION","textChars":73,"textLines":1,"bbox":[66,631,668,15]}
+{"kind":"notes","id":"nt/54zwv2","slide":5,"text":"[Sources]\nThe Problem Statement.md — target range from students to mid-career professionals, scalability/adaptability and expected outcomes.\nPROJECT_BRIEF.md — five learner segments, three core routes and multilingual core guidance.\nDeep Research Report… — label pilot KPIs as validation plan, not achieved impact."}
+{"kind":"slide","id":"sl/hk690i","slide":6,"title":"06 / RESEARCH & REFERENCES","textShapes":18}
+{"kind":"textbox","id":"sh/zal0v6h4","slide":6,"text":"06 / RESEARCH & REFERENCES","textPreview":"06 / RESEARCH & REFERENCES","textChars":26,"textLines":1,"bbox":[56,44,520,20]}
+{"kind":"textbox","id":"sh/0bu1obyp","slide":6,"text":"Every recommendation carries its evidence forward.","textPreview":"Every recommendation carries its evidence forward.","textChars":50,"textLines":1,"bbox":[56,72,1120,78]}
+{"kind":"shape","id":"sh/lc3ixgza","slide":6,"bbox":[56,152,1168,1]}
+{"kind":"textbox","id":"sh/mxcjqlgv","slide":6,"text":"SMART INDIA HACKATHON 2026  /  ETERNALS  /  06","textPreview":"SMART INDIA HACKATHON 2026  /  ETERNALS  /  06","textChars":46,"textLines":1,"bbox":[56,676,600,16]}
+{"kind":"textbox","id":"sh/nyl0zqhg","slide":6,"text":"CAREERCASE","textPreview":"CAREERCASE","textChars":10,"textLines":1,"bbox":[1090,676,134,16]}
+{"kind":"textbox","id":"sh/8ze1svy1","slide":6,"text":"Our proof is a case file: the problem is traceable, the decision is inspectable, and the demo follows the same path.","textPreview":"Our proof is a case file: the problem is traceable, the decision is inspectable, and the demo follows the same path.","textChars":116,"textLines":1,"bbox":[56,165,860,31]}
+{"kind":"shape","id":"sh/u1wjulgr","slide":6,"bbox":[722,206,502,282]}
+{"kind":"shape","id":"sh/v2503qhc","slide":6,"bbox":[742,458,210,25]}
+{"kind":"textbox","id":"sh/72pcvedo","slide":6,"text":"LIVE PROTOTYPE / CAREERCASE","textPreview":"LIVE PROTOTYPE / CAREERCASE","textChars":27,"textLines":1,"bbox":[752,463,190,15]}
+{"kind":"shape","id":"sh/6hwvm9wj","slide":6,"bbox":[56,223,282,112]}
+{"kind":"textbox","id":"sh/t47uhovu","slide":6,"text":"PROBLEM BASIS","textPreview":"PROBLEM BASIS","textChars":13,"textLines":1,"bbox":[72,239,245,16]}
+{"kind":"textbox","id":"sh/s3ydoje9","slide":6,"text":"MSDE / SIH 2026\nSIH260480 problem statement","textPreview":"MSDE / SIH 2026 | SIH260480 problem statement","textChars":43,"textLines":2,"bbox":[72,266,245,48]}
+{"kind":"shape","id":"sh/je5cruds","slide":6,"bbox":[368,223,282,112]}
+{"kind":"textbox","id":"sh/idwvi9w7","slide":6,"text":"CAREER KNOWLEDGE","textPreview":"CAREER KNOWLEDGE","textChars":16,"textLines":1,"bbox":[384,239,245,16]}
+{"kind":"textbox","id":"sh/5gnut4vy","slide":6,"text":"NCO-2015 roles\nNQR / NSQF levels","textPreview":"NCO-2015 roles | NQR / NSQF levels","textChars":32,"textLines":2,"bbox":[384,266,245,48]}
+{"kind":"shape","id":"sh/kfedkzed","slide":6,"bbox":[56,365,282,112]}
+{"kind":"textbox","id":"sh/3a9wnydw","slide":6,"text":"PRODUCT PROOF","textPreview":"PRODUCT PROOF","textChars":13,"textLines":1,"bbox":[72,381,245,16]}
+{"kind":"textbox","id":"sh/290vutwr","slide":6,"text":"100 roles · 178 skills\n105 qualifications · 300 transitions","textPreview":"100 roles · 178 skills | 105 qualifications · 300 transitions","textChars":59,"textLines":2,"bbox":[72,408,245,48]}
+{"kind":"shape","id":"sh/e5kfmxgz","slide":6,"bbox":[368,365,282,112]}
+{"kind":"textbox","id":"sh/z6tgv2x4","slide":6,"text":"QUALITY + LIMITS","textPreview":"QUALITY + LIMITS","textChars":16,"textLines":1,"bbox":[384,381,245,16]}
+{"kind":"textbox","id":"sh/072xo7yp","slide":6,"text":"Deterministic checks\nPrototype; pilot next","textPreview":"Deterministic checks | Prototype; pilot next","textChars":42,"textLines":2,"bbox":[384,408,245,48]}
+{"kind":"textbox","id":"sh/1svyxcfa","slide":6,"text":"Demo sequence","textPreview":"Demo sequence","textChars":13,"textLines":1,"bbox":[56,524,140,16]}
+{"kind":"textbox","id":"sh/mt4zqhgv","slide":6,"text":"Discover  →  Build  →  Match  →  Explain  →  Advance","textPreview":"Discover  →  Build  →  Match  →  Explain  →  Advance","textChars":52,"textLines":1,"bbox":[56,549,630,28]}
+{"kind":"shape","id":"sh/nudgz2xg","slide":6,"bbox":[56,594,610,1]}
+{"kind":"textbox","id":"sh/ovmhs7y1","slide":6,"text":"Repository: github.com/KamalReddy2901/AI-Enhanced-Career-Guidance-System-for-Personalized-Career-Pathways","textPreview":"Repository: github.com/KamalReddy2901/AI-Enhanced-Career-Guidance-System-for-Personalized-Career-Pathways","textChars":105,"textLines":1,"bbox":[56,608,610,22]}
+{"kind":"textbox","id":"sh/9wvy1cfm","slide":6,"text":"The guidance must be personal.\nThe case must be credible.","textPreview":"The guidance must be personal. | The case must be credible.","textChars":57,"textLines":2,"bbox":[722,533,460,67]}
+{"kind":"image","id":"im/43ed4ri5","slide":6,"name":"","geometry":"rect","alt":"CareerCase editorial illustration","bbox":[722,206,502,282]}
+{"kind":"notes","id":"nt/hk690i","slide":6,"text":"[Sources]\nOfficial SIH 2026 Problem Statement: SIH260480.\nNational Classification of Occupations (NCO-2015): https://www.ncs.gov.in/Documents/National%20Classification%20of%20Occupations%20_Vol%20I-%202015.pdf\nNational Qualifications Register: https://www.nqr.gov.in\nCareerCase PROJECT_BRIEF.md and implementation audit — knowledge-base counts and prototype status.\nRepository: https://github.com/KamalReddy2901/AI-Enhanced-Career-Guidance-System-for-Personalized-Career-Pathways"}

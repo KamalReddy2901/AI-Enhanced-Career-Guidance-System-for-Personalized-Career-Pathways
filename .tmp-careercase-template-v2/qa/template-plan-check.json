@@ -1,0 +1,111 @@
+{
+  "status": "fail",
+  "checkedAt": "2026-08-15T17:50:56.353Z",
+  "workspace": "/Users/kamal/Desktop/My projects/Career Simulation/.tmp-careercase-template-v2",
+  "mapPath": "/Users/kamal/Desktop/My projects/Career Simulation/.tmp-careercase-template-v2/template-frame-map.json",
+  "inspectPath": "/Users/kamal/Desktop/My projects/Career Simulation/.tmp-careercase-template-v2/template-inspect/template-inspect.ndjson",
+  "sourceSlideCount": 7,
+  "issueCount": 10,
+  "issues": [
+    {
+      "severity": "fail",
+      "id": "unhandled-placeholder",
+      "message": "source text \"2\" must be assigned rewrite/rewrite-and-reposition/replace/delete/fill-placeholder in editTargets; keep and add do not satisfy inherited placeholder handling.",
+      "outputSlide": 2,
+      "sourceSlide": 2,
+      "shapeIds": [
+        "sh/x4r21kru"
+      ]
+    },
+    {
+      "severity": "fail",
+      "id": "unhandled-placeholder",
+      "message": "source text \"@SIH Idea submission- Template\" must be assigned rewrite/rewrite-and-reposition/replace/delete/fill-placeholder in editTargets; keep and add do not satisfy inherited placeholder handling.",
+      "outputSlide": 2,
+      "sourceSlide": 2,
+      "shapeIds": [
+        "sh/w3i1sfa9"
+      ]
+    },
+    {
+      "severity": "fail",
+      "id": "unhandled-placeholder",
+      "message": "source text \"3\" must be assigned rewrite/rewrite-and-reposition/replace/delete/fill-placeholder in editTargets; keep and add do not satisfy inherited placeholder handling.",
+      "outputSlide": 3,
+      "sourceSlide": 3,
+      "shapeIds": [
+        "sh/obq90bml"
+      ]
+    },
+    {
+      "severity": "fail",
+      "id": "unhandled-placeholder",
+      "message": "source text \"@SIH Idea submission- Template\" must be assigned rewrite/rewrite-and-reposition/replace/delete/fill-placeholder in editTargets; keep and add do not satisfy inherited placeholder handling.",
+      "outputSlide": 3,
+      "sourceSlide": 3,
+      "shapeIds": [
+        "sh/pcjqtg36"
+      ]
+    },
+    {
+      "severity": "fail",
+      "id": "unhandled-placeholder",
+      "message": "source text \"4\" must be assigned rewrite/rewrite-and-reposition/replace/delete/fill-placeholder in editTargets; keep and add do not satisfy inherited placeholder handling.",
+      "outputSlide": 4,
+      "sourceSlide": 4,
+      "shapeIds": [
+        "sh/doj29oba"
+      ]
+    },
+    {
+      "severity": "fail",
+      "id": "unhandled-placeholder",
+      "message": "source text \"@SIH Idea submission- Template\" must be assigned rewrite/rewrite-and-reposition/replace/delete/fill-placeholder in editTargets; keep and add do not satisfy inherited placeholder handling.",
+      "outputSlide": 4,
+      "sourceSlide": 4,
+      "shapeIds": [
+        "sh/sna103ap"
+      ]
+    },
+    {
+      "severity": "fail",
+      "id": "unhandled-placeholder",
+      "message": "source text \"5\" must be assigned rewrite/rewrite-and-reposition/replace/delete/fill-placeholder in editTargets; keep and add do not satisfy inherited placeholder handling.",
+      "outputSlide": 5,
+      "sourceSlide": 5,
+      "shapeIds": [
+        "sh/l4bupwny"
+      ]
+    },
+    {
+      "severity": "fail",
+      "id": "unhandled-placeholder",
+      "message": "source text \"@SIH Idea submission- Template\" must be assigned rewrite/rewrite-and-reposition/replace/delete/fill-placeholder in editTargets; keep and add do not satisfy inherited placeholder handling.",
+      "outputSlide": 5,
+      "sourceSlide": 5,
+      "shapeIds": [
+        "sh/032tgr6d"
+      ]
+    },
+    {
+      "severity": "fail",
+      "id": "unhandled-placeholder",
+      "message": "source text \"6\" must be assigned rewrite/rewrite-and-reposition/replace/delete/fill-placeholder in editTargets; keep and add do not satisfy inherited placeholder handling.",
+      "outputSlide": 6,
+      "sourceSlide": 6,
+      "shapeIds": [
+        "sh/ml07i9sv"
+      ]
+    },
+    {
+      "severity": "fail",
+      "id": "unhandled-placeholder",
+      "message": "source text \"@SIH Idea submission- Template\" must be assigned rewrite/rewrite-and-reposition/replace/delete/fill-placeholder in editTargets; keep and add do not satisfy inherited placeholder handling.",
+      "outputSlide": 6,
+      "sourceSlide": 6,
+      "shapeIds": [
+        "sh/7m98ru9g"
+      ]
+    }
+  ]
+}

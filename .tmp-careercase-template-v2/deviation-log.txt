@@ -1,0 +1,2 @@
+The supplied template's upper-left team-name fixture and upper-right SIH logo remain on slides 2–6.
+CareerCase illustrations are inserted only in body zones below the official header and above the official footer.
