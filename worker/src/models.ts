@@ -35,4 +35,7 @@ export const USAGE_MODEL_TIER: Record<string, ModelTier> = {
   gap_advice: 'standard',     // skill-gap learning tips
   compatibility: 'premium',  // passport + dossier compatibility narrative
   'market-intelligence': 'premium', // structured market narrative with stronger JSON adherence
+  'skill-discovery': 'premium',      // conversational skill extraction from work-experience chat
+  'trajectory-projection': 'premium', // 3-year career trajectory speculative reasoning
+  'aptitude-interpretation': 'standard', // short 2-sentence screener interpretation
 };

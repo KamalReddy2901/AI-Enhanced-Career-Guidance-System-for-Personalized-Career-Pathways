@@ -18,6 +18,8 @@ import { TextReveal } from '../motion/TextReveal';
 import { ScoreBar } from '../components/guidance/ScoreBar';
 import { VoiceWaveform } from '../components/guidance/VoiceWaveform';
 import { AnimatePresence, motion } from 'motion/react';
+import { interpretAptitudeScores } from '../services/ai';
+import { Sparkles } from 'lucide-react';
 
 const TOTAL_SECONDS = 300;
 const FORM_STORAGE_KEY = "cc_guidance_aptitude_form";
@@ -44,6 +46,9 @@ export function AssessAptitudePage() {
   const [why, setWhy] = useState<ScoreEvidence | null>(null);
   const answerLock = useRef(false);
   const [isAdvancing, setIsAdvancing] = useState(false);
+  const [interpretation, setInterpretation] = useState<string | null>(null);
+  const [interpretationLoading, setInterpretationLoading] = useState(false);
+  const [interpretationFailed, setInterpretationFailed] = useState(false);
 
   const complete = (
     finalAnswers: Record<string, number>,
@@ -73,6 +78,20 @@ export function AssessAptitudePage() {
       });
     sounds.assessComplete();
     hapticSuccess();
+    void loadInterpretation(scores);
+  };
+
+  const loadInterpretation = async (scores: ReturnType<typeof scoreAptitude>) => {
+    setInterpretationLoading(true);
+    setInterpretationFailed(false);
+    try {
+      const text = await interpretAptitudeScores(scores, lang);
+      setInterpretation(text);
+    } catch {
+      setInterpretationFailed(true);
+    } finally {
+      setInterpretationLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -125,8 +144,39 @@ export function AssessAptitudePage() {
                 <div className="mt-1 font-[Inter] text-[10px] underline">{explainLabel}</div>
               </button>
             ))}
+
+            {(interpretationLoading || interpretation || interpretationFailed) && (
+              <div className="card-sketch mt-6 bg-[var(--paper-raised)] p-4" role="status" aria-live="polite">
+                <div className="mb-2 flex items-center gap-2 font-mono-ui text-[10px] uppercase tracking-widest text-[var(--ink-soft)]">
+                  <Sparkles size={12} className="text-[var(--accent-news)]" aria-hidden="true" />
+                  {lang === "hi" ? "AI-सहायता प्राप्त व्याख्या" : lang === "te" ? "AI-సహాయక వ్యాఖ్యానం" : "AI-assisted interpretation"}
+                </div>
+                {interpretationLoading && (
+                  <p className="text-sm text-[var(--ink-soft)]">
+                    {lang === "hi" ? "आपके परिणामों की व्याख्या तैयार हो रही है..." : lang === "te" ? "మీ ఫలితాలను వివరిస్తోంది..." : "Reading your results..."}
+                  </p>
+                )}
+                {!interpretationLoading && interpretation && (
+                  <p className="text-sm leading-relaxed text-[var(--ink)]">{interpretation}</p>
+                )}
+                {!interpretationLoading && interpretationFailed && (
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm text-[var(--ink-soft)]">
+                      {lang === "hi" ? "व्याख्या उपलब्ध नहीं है। आपका स्कोर ऊपर सुरक्षित है।" : lang === "te" ? "వ్యాఖ్యానం అందుబాటులో లేదు. మీ స్కోరు పైన సురక్షితంగా ఉంది." : "Interpretation unavailable right now — your scores above are unaffected."}
+                    </p>
+                    <button
+                      onClick={() => void loadInterpretation(result)}
+                      className="shrink-0 border-2 border-[var(--ink)] px-3 py-1.5 font-mono-ui text-xs uppercase transition-colors hover:bg-[var(--ink)] hover:text-[var(--paper)]"
+                    >
+                      {lang === "hi" ? "पुनः प्रयास" : lang === "te" ? "మళ్లీ ప్రయత్నించండి" : "Retry"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             <p className="border-t border-black/10 pt-4 mt-6 text-sm font-[Inter] text-black/60">
-              {lang === "hi" ? "यह 5 मिनट की प्रारंभिक जाँच है, पूर्ण मनोमितीय परीक्षण नहीं—इसे पहला संकेत मानें।" : lang === "te" ? "ఇది 5 నిమిషాల ప్రాథమిక పరీక్ష మాత్రమే, పూర్తి సైకోమెట్రిక్ పరీక్ష కాదు—దీనిని తొలి సంకేతంగా చూడండి." : "A 5-minute screener, not a full psychometric battery — treat as a first signal."}
+              {lang === "hi" ? "यह 5 मिनट की प्रारंभिक जाँच है, पूर्ण मनोमितीय परीक्षण नहीं—इसे पहला संकेत मानें।" : lang === "te" ? "ఇది 5 నిమిషాల ప్రాథమిక పరీక్ష మాత్రమే, పూర్తి సైకోమెట్రిక్ పరీక్ష కాదు—దీనిని తొలి సంకేతంగా చూడండి。" : "A 5-minute screener, not a full psychometric battery — treat as a first signal."}
             </p>
             <button
               onClick={() => navigate("/assess")}

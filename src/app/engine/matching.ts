@@ -144,7 +144,7 @@ function component(
   return { dimension, score: rounded(score), weight, note, dataAvailable, source, sourceDetail };
 }
 
-function scoreOccupation(passport: CareerPassport, occupation: Occupation): CareerRecommendation {
+function scoreOccupation(passport: CareerPassport, occupation: Occupation, momentumBoost = 0): CareerRecommendation {
   const weights = weightsFor(passport.segment);
   const [interest, hasInterest] = interestScore(passport, occupation);
   const [aptitude, hasAptitude] = aptitudeScore(passport, occupation);
@@ -157,6 +157,12 @@ function scoreOccupation(passport: CareerPassport, occupation: Occupation): Care
   let feasibility = 100 - gapReport.sgi;
   const directMonths = buildPathwayPlan(passport, occupation.id).routes.find(route => route.kind === 'direct')?.totalMonths ?? 0;
   if (directMonths * 4 > passport.constraints.weeklyLearningHours * 40) feasibility -= 15;
+  // A small, capped adjustment reflecting demonstrated recent progress (new
+  // skill evidence, confidence gains, assessments completed in the last 14
+  // days). Only applied once there is skill evidence to judge feasibility
+  // against, and always disclosed in the component note below.
+  const appliedMomentumBoost = hasSkills ? Math.max(0, Math.min(6, momentumBoost)) : 0;
+  if (appliedMomentumBoost > 0) feasibility = clamp(feasibility + appliedMomentumBoost);
 
   const components = [
     component('interest', interest, weights.interest, hasInterest ? 'RIASEC cosine similarity with this occupation profile' : 'neutral until the interest inventory is complete', hasInterest, 'assessment', hasInterest ? ASSESSMENT_VERSION : 'Assessment not yet completed'),
@@ -168,7 +174,7 @@ function scoreOccupation(passport: CareerPassport, occupation: Occupation): Care
     component('aspiration', aspiration, weights.aspiration, hasAspiration ? 'dream roles and themes in your stated aspiration' : 'neutral until an aspiration is recorded', hasAspiration, 'career_passport', hasAspiration ? 'Your recorded aspiration and timeframe' : 'No aspiration recorded'),
     component('market', marketScore(occupation), weights.market, 'timestamped indicative demand signal with trend adjustment', true, 'market_snapshot', (() => { const signal = marketFor(occupation.id); return signal ? `${signal.observedPeriod} · ${signal.source}` : 'No market snapshot available; neutral score used'; })()),
     component('progression', progressionScore(occupation), weights.progression, 'number and strength of grounded outgoing transitions', true, 'knowledge_base', `Transition map in ${KB_VERSION}`),
-    component('learningFeasibility', feasibility, weights.learningFeasibility, 'skill-gap readiness adjusted for weekly learning time', hasSkills, 'computed', hasSkills ? 'Computed from skill gaps and stated weekly learning time' : 'Neutral until skill evidence is recorded'),
+    component('learningFeasibility', feasibility, weights.learningFeasibility, appliedMomentumBoost > 0 ? `skill-gap readiness adjusted for weekly learning time, plus a +${Math.round(appliedMomentumBoost)}-point recent-momentum adjustment from your last two weeks of profile activity` : 'skill-gap readiness adjusted for weekly learning time', hasSkills, 'computed', hasSkills ? (appliedMomentumBoost > 0 ? 'Computed from skill gaps, stated weekly learning time, and recent profile momentum' : 'Computed from skill gaps and stated weekly learning time') : 'Neutral until skill evidence is recorded'),
     component('geographic', geographicScore(passport, occupation), weights.geographic, 'location and relocation preference compared with signal regions', Boolean(passport.constraints.location), 'market_snapshot', passport.constraints.location ? 'Your stated location and relocation preference compared with indicative regions' : 'No location recorded; neutral score used'),
   ];
   const totalScore = rounded(components.reduce((sum, item) => sum + item.score * item.weight, 0));
@@ -203,8 +209,9 @@ function candidateOccupations(passport: CareerPassport): Occupation[] {
   return OCCUPATIONS.filter(occupation => ids.has(occupation.id));
 }
 
-export function matchCareers(passport: CareerPassport): RecommendationSet {
-  const all = candidateOccupations(passport).map(occupation => scoreOccupation(passport, occupation)).sort((a, b) => b.totalScore - a.totalScore || a.occupationId.localeCompare(b.occupationId));
+export function matchCareers(passport: CareerPassport, options: { momentumBoost?: number } = {}): RecommendationSet {
+  const momentumBoost = options.momentumBoost ?? 0;
+  const all = candidateOccupations(passport).map(occupation => scoreOccupation(passport, occupation, momentumBoost)).sort((a, b) => b.totalScore - a.totalScore || a.occupationId.localeCompare(b.occupationId));
   const selected: CareerRecommendation[] = [];
   const used = new Set<string>();
   const add = (recommendation: CareerRecommendation, group: RecommendationGroup) => {

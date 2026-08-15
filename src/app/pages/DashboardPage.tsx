@@ -26,6 +26,13 @@ import type { StickFigurePose } from '../components/StickFigure';
 import { getPassportCompletenessBreakdown } from '../engine/skillProfile';
 import { FixedRibbon } from '../components/FixedRibbon';
 
+const MOMENTUM_ICONS: Record<string, React.ReactNode> = {
+  skill_confidence_improved: <TrendingUp size={16} className="text-[var(--accent-news)]" strokeWidth={2} aria-hidden="true" />,
+  assessment_completed: <Award size={16} className="text-[var(--accent-news)]" strokeWidth={2} aria-hidden="true" />,
+  pathway_step_completed: <CheckCircle2 size={16} className="text-[var(--accent-news)]" strokeWidth={2} aria-hidden="true" />,
+  evidence_added: <Star size={16} className="text-[var(--accent-news)]" strokeWidth={2} aria-hidden="true" />,
+};
+
 interface DashboardCard {
   title: string;
   description: string;
@@ -37,7 +44,9 @@ interface DashboardCard {
 }
 
 export function DashboardPage() {
-  const { passport, recommendations, pathways } = useGuidance();
+  const { passport, recommendations, pathways, getMomentumSummary } = useGuidance();
+  const momentumSummary = getMomentumSummary();
+  const recentMomentumEvents = momentumSummary.recentEvents.slice(-3).reverse();
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const completenessSections = passport ? getPassportCompletenessBreakdown(passport) : [];
   const completedAssessments = completenessSections.filter(section => ['interests', 'aptitude', 'values', 'aspiration'].includes(section.id) && section.complete).length;
@@ -401,6 +410,32 @@ export function DashboardPage() {
               </div>
             </motion.div>
           </motion.div>
+
+          {/* Your profile improved — recent momentum */}
+          {recentMomentumEvents.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55 }}
+              className="card-sketch mt-6 border-l-4 border-l-[var(--accent-news)] bg-[var(--paper-raised)] p-6"
+            >
+              <div className="mb-4 flex items-center gap-3">
+                <TrendingUp size={22} className="text-[var(--accent-news)]" strokeWidth={2} aria-hidden="true" />
+                <h3 className="font-display text-xl text-[var(--ink)]">Your profile improved</h3>
+              </div>
+              <ul className="space-y-2">
+                {recentMomentumEvents.map((event, index) => (
+                  <li key={`${event.timestamp}-${index}`} className="flex items-start gap-2 text-sm text-[var(--ink-soft)]">
+                    <span className="mt-0.5 shrink-0">{MOMENTUM_ICONS[event.type] ?? <Star size={16} className="text-[var(--accent-news)]" strokeWidth={2} aria-hidden="true" />}</span>
+                    <span>{event.description}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-4 font-mono-ui text-[10px] uppercase tracking-wider text-[var(--ink-faint)]">
+                Based on your last 30 days of profile activity · counted toward recommendation feasibility scoring
+              </p>
+            </motion.div>
+          )}
         </div>
       </section>
 

@@ -1198,6 +1198,27 @@ Include 3-4 phases. Be honest about difficulty and realistic about timeframes.`,
   });
 }
 
+// ─── Aptitude screener interpretation (short, standard model) ───
+// A brief, hedged, AI-assisted reading of an already-computed deterministic
+// screener result. The AI never sees raw answers and cannot alter the scores
+// themselves — it only phrases what the numbers already say.
+
+export async function interpretAptitudeScores(
+  scores: { numerical: number; verbal: number; logical: number; spatial: number },
+  language: 'en' | 'hi' | 'te' = 'en',
+  signal?: AbortSignal,
+): Promise<string> {
+  const languageName = language === 'hi' ? 'Hindi' : language === 'te' ? 'Telugu' : 'English';
+  return withRetry(async () => {
+    const raw = await callGroq(
+      `You are a careful, encouraging career counselor writing in ${languageName}. You will be given four already-computed aptitude screener scores (0–100, numerical/verbal/logical/spatial) from a short, non-clinical 24-item form. Write EXACTLY two sentences in plain ${languageName}: the first names the person's relative strength(s) in plain language; the second gives one grounded, practical next step or reflection tied to that strength. Do not invent numbers, do not diagnose, do not claim clinical or psychometric certainty, do not use the words "IQ" or "genius". Return ONLY the two sentences, no preamble, no quotes.`,
+      `Scores out of 100 — Numerical: ${scores.numerical}, Verbal: ${scores.verbal}, Logical: ${scores.logical}, Spatial: ${scores.spatial}.`,
+      { temperature: 0.5, maxTokens: 120, signal, usageType: 'aptitude-interpretation' },
+    );
+    return raw.trim().replace(/^["']|["']$/g, '');
+  });
+}
+
 // ─── Quick one-line description (free, standard model) ──────────
 
 export async function getQuickDescription(jobTitle: string, signal?: AbortSignal): Promise<string> {

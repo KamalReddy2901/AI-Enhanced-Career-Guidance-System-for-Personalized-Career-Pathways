@@ -101,6 +101,8 @@ The total is the weighted sum of 11 0–100 components:
 
 Weights vary by segment and sum to 100%. The language model does not assign these scores. Each generated landscape now records an explicit guidance-engine, assessment-bank, scoring, and knowledge-base release identifier. The UI exposes each raw component, its weight, source category, source/freshness note, missing-data neutrality, completed-user-input coverage, and bounded skill counterfactuals.
 
+The learning-feasibility component can now include a small, capped (≤6 point) adjustment for demonstrated recent profile activity — new skill evidence, confidence gains, or assessments completed in the last 14 days (see “Adaptive personalization” below). It only applies once skill evidence exists, is always disclosed in that component's note and source detail, and never changes any other component or the engine's deterministic guarantee (identical input still produces identical output).
+
 The landscape returns 13 diverse recommendations across safe, stretch, and ambitious groupings. “Best fit” preserves the engine’s diversified order. “Fastest path” compares the minimum calculated duration across each occupation’s routes instead of using a proxy.
 
 ### Gap and pathway engine
@@ -127,13 +129,21 @@ Current AI use cases include:
 - simulations and interview questions;
 - related careers and resource suggestions;
 - career comparisons, roadmaps, and transition plans;
-- grounded counselor responses.
-
-The passport also keeps a rolling local "momentum" log (skill confidence gains, assessment completions, new evidence) for future progress-reflection surfaces; it is currently recorded but not yet exposed in the UI.
+- grounded counselor responses;
+- a short, hedged AI-assisted interpretation (exactly two sentences, never a diagnosis) shown after the aptitude screener, reading only the already-computed deterministic scores — the model never sees raw answers and cannot influence the scores themselves.
 
 Known occupations use the versioned knowledge base for their preliminary snapshot and deterministic work-life/interview indicators instead of spending an AI request. AI responses are normalized before rendering so missing fields cannot crash dossier pages. The counselor is instructed not to invent score changes: a change may be quantified only when the supplied context contains a computed before/after counterfactual.
 
 AI-generated salaries, companies, resources, work-life descriptions, and narrative market commentary still require independent verification. They are not authoritative labor-market data.
+
+### Adaptive personalization
+
+The passport keeps a rolling local "momentum" log (skill confidence gains, assessment completions, new evidence), capped at the most recent 50 events and pruned after 30 days. It now feeds two surfaces:
+
+- a capped, disclosed nudge to the learning-feasibility scoring component described above;
+- a "Your profile improved" card on the Dashboard, shown only when recent momentum events exist, listing up to three of them in plain language.
+
+Rank/score changes between recomputations were already surfaced via the existing `recommendationChanges` mechanism (the homepage/dashboard "stop press" banner); that mechanism is general-purpose and picks up momentum-driven improvements automatically — no separate drift-detection logic was needed.
 
 ### Data and consent
 
@@ -181,7 +191,7 @@ All 100 occupations pass structural validation and generate three core routes. T
 
 - Production requests go through the authenticated Cloudflare Worker; Groq credentials are not embedded in the production browser bundle.
 - The Worker selects healthy keys round-robin within each warm isolate, deduplicates configured keys, honors `Retry-After` on 429 responses, quarantines 401 keys for 15 minutes, and performs one bounded retry for a network or 5xx failure. Request-level 4xx failures do not incorrectly quarantine a healthy key.
-- Usage types route explicitly between `openai/gpt-oss-20b` for lighter tasks and `openai/gpt-oss-120b` for dossiers, simulations, counselor, interview, comparison, transition, roadmap, compatibility, and structured market-intelligence work. Unknown usage types fail safe to the premium tier.
+- Usage types route explicitly between `openai/gpt-oss-20b` for lighter tasks and `openai/gpt-oss-120b` for dossiers, simulations, counselor, interview, comparison, transition, roadmap, compatibility, structured market-intelligence, skill-discovery extraction, and career-trajectory projection work; the short aptitude-interpretation blurb routes to the lighter tier. Unknown usage types fail safe to the premium tier.
 - Intermittent GPT-OSS strict-JSON validation failures receive one prompt-guided JSON retry without `response_format`; callers still parse and validate the result.
 - GPT-OSS requests use low-effort, hidden reasoning so internal reasoning cannot consume a concise UI response budget or appear in the rendered answer. An empty completion is treated as a provider failure and activates the grounded fallback instead of rendering a blank response.
 - Successful Worker responses expose only non-secret operational metadata: selected model and configured key-pool size.
@@ -237,15 +247,26 @@ The August 2026 production audit used a signed-in burner account from onboarding
 - export declares a schema version;
 - duplicate consent migration writes are prevented.
 
-## UI consistency pass (latest)
+## UI consistency pass and predictive/adaptive feature completion (latest)
 
-A design-system audit confirmed CareerCase already runs a deliberate editorial/"newsprint" visual language (ink/paper/accent-news CSS tokens, `card-sketch` hard-shadow cards, Playfair Display/JetBrains Mono type, a single red accent, built-in focus rings, 44×44px touch targets, and reduced-motion support in `src/styles/theme.css`). The pass below brought recently added surfaces in line with that system rather than introducing a new one:
+A prior session had started a larger plan ("predictive analytics, adaptive personalization, and AI-driven assessment features") and stopped partway through, leaving a build-breaking half-wired state. This pass finished that plan and brought every touched surface in line with CareerCase's existing design system rather than introducing a new one.
+
+**Design-system audit.** CareerCase already runs a deliberate editorial/"newsprint" visual language (ink/paper/accent-news CSS tokens, `card-sketch` hard-shadow cards, Playfair Display/JetBrains Mono type, a single red accent, built-in focus rings, 44×44px touch targets, and reduced-motion support in `src/styles/theme.css`):
 
 - the skill-discovery chat and career-trajectory projection card (both new) were rebuilt from generic purple/pink gradient, dark-mode, and rounded-2xl styling onto the existing ink/paper/`card-sketch`/`accent-news` system, matching the Counselor chat's bubble and typing-indicator conventions;
 - the new "Discover skills" and "Load 3-Year Career Trajectory" entry points now use the app's standard bordered/mono-label button treatment instead of ad hoc gradients;
 - a stray off-palette badge in the gap-closing learning routes panel was brought back to the neutral ink palette;
-- fixed a broken build left by the momentum-tracking and trajectory-projection work in progress: the guidance context wasn't exposing `momentumLog`/`getMomentumSummary`, the trajectory projector's market-context type didn't match the knowledge-base market signal shape, and a new progress-log event type wasn't declared — all three are now wired through and typecheck cleanly;
+- six PassportPage section containers that mixed a hand-rolled `border-2` + generic `shadow-md` were unified onto the single `card-sketch` recipe;
 - removed all `dark:` Tailwind variants app-wide (the product has no dark-mode toggle, so these were inert and misleading).
+
+**Feature completion.** Finished the plan's remaining stages:
+
+- fixed a broken build left by the in-progress momentum-tracking and trajectory-projection work: the guidance context wasn't exposing `momentumLog`/`getMomentumSummary`, the trajectory projector's market-context type didn't match the knowledge-base market signal shape, and a new progress-log event type wasn't declared — all three are now wired through and typecheck cleanly;
+- added the momentum-aware learning-feasibility adjustment and the Dashboard "Your profile improved" card described under Adaptive personalization above;
+- added the AI-assisted aptitude-screener interpretation described under AI-assisted exploration above;
+- reviewed the pitch/UI/README copy for the "AI-driven aptitude assessment" framing the plan flagged: the app's own UI and README already describe the aptitude module correctly ("a 5-minute screener, not a full psychometric battery"), so no copy needed correction there. The one instance of that phrase (`PPTX_MAKER_HANDOFF.md`) is a verbatim quote of the official SIH260480 problem statement's requirement text, not a claim CareerCase makes about itself, so it was left unchanged for quoting accuracy;
+- registered `skill-discovery`, `trajectory-projection`, and `aptitude-interpretation` in the Worker's explicit usage-type → model-tier map so they no longer silently default to the premium-tier fallback;
+- verified with `npm run typecheck`, `npm run build`, `npm run kb:validate`, `npm run qa:guidance`, and `npm run qa:guidance-regression` (all pass; the pre-existing, unrelated `npm run qa:product` failure is a cosmetic parameter-naming assertion against `CareerLandscapeScatter.tsx` that predates this session).
 
 ## Alignment with the attached research dossier
 

@@ -349,7 +349,14 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
       import("../engine/matching"),
       import("../engine/pathways"),
     ]);
-    const next = matchCareers(passport);
+    const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
+    const recentMomentumCount = momentumLog.filter(
+      (event) => new Date(event.timestamp).getTime() > fourteenDaysAgo,
+    ).length;
+    // Small, capped bonus: recent, demonstrated profile activity nudges the
+    // learning-feasibility component rather than the whole recommendation.
+    const momentumBoost = Math.min(6, recentMomentumCount * 1.5);
+    const next = matchCareers(passport, { momentumBoost });
     setRecommendations((previous) => {
       if (previous) {
         const priorRank = new Map(
@@ -504,7 +511,7 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
         /* stale cache */
       }
     }
-  }, [passport, isSupabaseConfigured, user]);
+  }, [passport, isSupabaseConfigured, user, momentumLog]);
 
   useEffect(() => {
     if (!passport) return;
