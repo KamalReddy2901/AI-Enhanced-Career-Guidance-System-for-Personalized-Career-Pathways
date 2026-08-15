@@ -10,7 +10,7 @@ import { computeGapReport } from './gaps';
 import { buildTopReasons, buildWhyNotHigher, counterfactualText } from './explain';
 import { computeAptitudeEvidenceAdjustment, applyAptitudeAdjustment } from './aptitude';
 import { weightsFor } from './weights';
-import { buildPathwayPlan } from './pathways';
+import { buildDirectRoute } from './pathways';
 
 /** Bump these only when the corresponding reviewed guidance contract changes. */
 export const GUIDANCE_ENGINE_VERSION = 'guidance-engine-v2';
@@ -34,8 +34,9 @@ const TIER_TWO_CITIES = [
 const STATE_CAPITALS = [
   ...METRO_CITIES,
   'agartala', 'aizawl', 'amaravati', 'bhopal', 'bhubaneswar', 'chandigarh', 'dehradun',
-  'dispur', 'gangtok', 'gandhinagar', 'imphal', 'itanagar', 'jaipur', 'kohima', 'lucknow',
-  'panaji', 'patna', 'raipur', 'ranchi', 'shillong', 'shimla', 'srinagar', 'thiruvananthapuram',
+  'dispur', 'gangtok', 'gandhinagar', 'guwahati', 'imphal', 'itanagar', 'jaipur', 'kohima',
+  'lucknow', 'panaji', 'patna', 'raipur', 'ranchi', 'shillong', 'shimla', 'srinagar',
+  'thiruvananthapuram',
 ];
 const INDUSTRIAL_HUBS = [
   ...METRO_CITIES,
@@ -209,7 +210,7 @@ function geographicScore(passport: CareerPassport, occupation: Occupation): numb
 }
 
 function directRouteMonths(passport: CareerPassport, occupationId: string): number {
-  return buildPathwayPlan(passport, occupationId).routes.find(route => route.kind === 'direct')?.totalMonths ?? 0;
+  return buildDirectRoute(passport, occupationId).totalMonths;
 }
 
 function learningCapacityPenalty(passport: CareerPassport, occupationId: string): number {
@@ -267,9 +268,7 @@ function scoreOccupation(passport: CareerPassport, occupation: Occupation, momen
   const learningNote = capacityPenalty > 0
     ? `skill-gap readiness adjusted for weekly learning capacity; a ${capacityPenalty}-point capacity penalty applies because the estimated route workload exceeds the hours available across its projected duration`
     : 'skill-gap readiness adjusted using a route workload estimate and weekly learning capacity';
-  const learningSource = capacityPenalty > 0
-    ? `Computed from skill gaps and an hours-to-hours route-capacity comparison calibrated at ${REFERENCE_WEEKLY_LEARNING_HOURS} h/week`
-    : `Computed from skill gaps and an hours-to-hours route-capacity comparison calibrated at ${REFERENCE_WEEKLY_LEARNING_HOURS} h/week`;
+  const learningSource = `Computed from skill gaps and an hours-to-hours route-capacity comparison calibrated at ${REFERENCE_WEEKLY_LEARNING_HOURS} h/week`;
 
   const components = [
     component('interest', interest, weights.interest, hasInterest ? 'RIASEC cosine similarity with this occupation profile' : 'neutral until the interest inventory is complete', hasInterest, 'assessment', hasInterest ? ASSESSMENT_VERSION : 'Assessment not yet completed'),
