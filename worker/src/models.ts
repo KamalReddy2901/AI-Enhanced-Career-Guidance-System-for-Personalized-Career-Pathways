@@ -38,4 +38,5 @@ export const USAGE_MODEL_TIER: Record<string, ModelTier> = {
   'skill-discovery': 'premium',      // conversational skill extraction from work-experience chat
   'trajectory-projection': 'premium', // 3-year career trajectory speculative reasoning
   'aptitude-interpretation': 'standard', // short 2-sentence screener interpretation
+  'aptitude-signal-discovery': 'premium', // conversational aptitude evidence extraction (4-5 turn interview)
 };

@@ -3,6 +3,62 @@ import type { AptitudeScores } from './types';
 export type AptitudeDimension = keyof AptitudeScores;
 export interface AptitudeQuestion { id: string; dimension: AptitudeDimension; prompt: string; options: string[]; answer: number; }
 
+// ─── Aptitude Evidence (AI-extracted, not AI-scored) ─────────────────────────
+
+export interface AptitudeEvidenceItem {
+  dimension: AptitudeDimension;
+  rationale: string;   // short quote/paraphrase of what the user said
+  strength: number;    // 0-1, how strongly this evidence supports the dimension
+}
+
+/**
+ * Combines evidence into a small, capped, per-dimension adjustment (points,
+ * not a replacement score). Mirrors the cap discipline already used for the
+ * momentum-boost adjustment in engine/matching.ts (max 6 points there).
+ * 
+ * The AI never outputs a final score — it only outputs evidence items with
+ * rationale and bounded strength. This pure function does all arithmetic.
+ */
+export function computeAptitudeEvidenceAdjustment(
+  evidence: AptitudeEvidenceItem[],
+): Record<AptitudeDimension, number> {
+  const CAP = 6; // same order of magnitude as momentum boost cap in matching.ts
+  const byDimension: Record<AptitudeDimension, number> = {
+    numerical: 0,
+    verbal: 0,
+    logical: 0,
+    spatial: 0,
+  };
+  
+  for (const dim of Object.keys(byDimension) as AptitudeDimension[]) {
+    const items = evidence.filter(e => e.dimension === dim);
+    // Each evidence item contributes 0-4 points based on its strength (0-1)
+    const raw = items.reduce((sum, item) => {
+      const clampedStrength = Math.max(0, Math.min(1, item.strength));
+      return sum + clampedStrength * 4;
+    }, 0);
+    byDimension[dim] = Math.max(0, Math.min(CAP, Math.round(raw)));
+  }
+  
+  return byDimension;
+}
+
+/**
+ * Applies the adjustment to a baseline score, clamped to 100. The baseline
+ * (screener) score is never mutated/lost — always store it separately so the
+ * deterministic result remains auditable.
+ */
+export function applyAptitudeAdjustment(
+  baseline: AptitudeScores,
+  adjustment: Record<AptitudeDimension, number>,
+): AptitudeScores {
+  const result = { ...baseline };
+  for (const dim of Object.keys(result) as AptitudeDimension[]) {
+    result[dim] = Math.max(0, Math.min(100, result[dim] + adjustment[dim]));
+  }
+  return result;
+}
+
 // Two short forms per dimension. Questions are intentionally transparent screeners,
 // not a claim of clinical or psychometric measurement.
 export const APTITUDE_QUESTIONS: AptitudeQuestion[] = [

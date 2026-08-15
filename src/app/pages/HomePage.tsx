@@ -310,8 +310,9 @@ export function HomePage() {
             ))}
           </ol>
           <p className="mx-auto mt-10 max-w-2xl text-center font-[Inter] text-sm leading-relaxed text-[var(--ink-soft)] md:text-base">
-            {howTo.explorePrefix}<Link to="/job?fresh=1" onClick={() => { sounds.navigate(); hapticTap(); }} className="font-semibold text-[var(--ink)] underline decoration-[var(--accent-news)] decoration-2 underline-offset-2 hover:decoration-[var(--ink)] transition-colors">{howTo.explore}</Link>
-            {howTo.counselorPrefix}<Link to={user ? '/counselor' : '/auth?redirect=%2Fcounselor'} onClick={() => { sounds.navigate(); hapticTap(); }} className="font-semibold text-[var(--ink)] underline decoration-[var(--accent-news)] decoration-2 underline-offset-2 hover:decoration-[var(--ink)] transition-colors">{howTo.counselor}</Link>{howTo.counselorSuffix}
+            {howTo.explorePrefix}<Link to="/job?fresh=1" onClick={() => { sounds.navigate(); hapticTap(); }} className="font-semibold text-[var(--ink)] underline decoration-[var(--accent-news)] decoration-2 underline-offset-2 hover:decoration-[var(--ink)] transition-colors">{howTo.explore}</Link>.
+            <br />
+            Or talk to an AI counselor in the <Link to={user ? '/counselor' : '/auth?redirect=%2Fcounselor'} onClick={() => { sounds.navigate(); hapticTap(); }} className="font-semibold text-[var(--ink)] underline decoration-[var(--accent-news)] decoration-2 underline-offset-2 hover:decoration-[var(--ink)] transition-colors">{howTo.counselor}</Link>.
           </p>
         </div>
       </section>

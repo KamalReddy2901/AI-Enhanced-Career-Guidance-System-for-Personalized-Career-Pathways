@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { StickFigure } from "../components/StickFigure";
-import { scoreAptitude, selectAptitudeForm } from "../engine/aptitude";
+import { scoreAptitude, selectAptitudeForm, type AptitudeEvidenceItem } from "../engine/aptitude";
 import { calculateCompleteness } from "../engine/skillProfile";
 import { useGuidance } from "../context/GuidanceContext";
 import { useAuth } from "../context/AuthContext";
@@ -19,7 +19,8 @@ import { ScoreBar } from '../components/guidance/ScoreBar';
 import { VoiceWaveform } from '../components/guidance/VoiceWaveform';
 import { AnimatePresence, motion } from 'motion/react';
 import { interpretAptitudeScores } from '../services/ai';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, MessageCircle } from 'lucide-react';
+import { AptitudeSignalDiscovery } from '../components/guidance/AptitudeSignalDiscovery';
 
 const TOTAL_SECONDS = 300;
 const FORM_STORAGE_KEY = "cc_guidance_aptitude_form";
@@ -49,6 +50,25 @@ export function AssessAptitudePage() {
   const [interpretation, setInterpretation] = useState<string | null>(null);
   const [interpretationLoading, setInterpretationLoading] = useState(false);
   const [interpretationFailed, setInterpretationFailed] = useState(false);
+  const [showDiscovery, setShowDiscovery] = useState(false);
+
+  const handleEvidenceDiscovered = (evidence: AptitudeEvidenceItem[]) => {
+    if (!result) return;
+    // Store evidence and update passport with baseline + evidence
+    updatePassport((previous) => {
+      if (!previous) throw new Error("Complete onboarding first");
+      const next = {
+        ...previous,
+        aptitudeBaseline: result, // preserve deterministic screener result
+        aptitudeEvidence: evidence,
+        // aptitude field stays as-is (will be computed with adjustment on read)
+      };
+      next.completeness = calculateCompleteness(next);
+      return next;
+    });
+    sounds.success();
+    hapticSuccess();
+  };
 
   const complete = (
     finalAnswers: Record<string, number>,
@@ -175,6 +195,35 @@ export function AssessAptitudePage() {
               </div>
             )}
 
+            {/* Optional: Sharpen with conversation */}
+            <button
+              onClick={() => setShowDiscovery(true)}
+              className="card-sketch mt-6 w-full bg-[var(--paper-raised)] p-4 text-left transition-transform hover:-translate-y-0.5"
+            >
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-[var(--ink)] p-2">
+                  <MessageCircle className="h-5 w-5 text-[var(--paper)]" aria-hidden="true" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-display text-base text-[var(--ink)]">
+                    {lang === "hi" 
+                      ? "त्वरित बातचीत के साथ इसे तेज करें" 
+                      : lang === "te" 
+                      ? "త్వరిత సంభాషణతో పదును పెట్టండి" 
+                      : "Sharpen this with a quick conversation"}
+                  </h3>
+                  <p className="text-sm text-[var(--ink-soft)]">
+                    {lang === "hi"
+                      ? "अपने समस्या-समाधान दृष्टिकोण के बारे में 4-5 प्रश्न — वैकल्पिक"
+                      : lang === "te"
+                      ? "మీ సమస్య-పరిష్కార విధానం గురించి 4-5 ప్రశ్నలు — ఐచ్ఛికం"
+                      : "4-5 questions about your problem-solving approach — optional"}
+                  </p>
+                </div>
+                <Sparkles className="h-5 w-5 text-[var(--accent-news)]" aria-hidden="true" />
+              </div>
+            </button>
+
             <p className="border-t border-black/10 pt-4 mt-6 text-sm font-[Inter] text-black/60">
               {lang === "hi" ? "यह 5 मिनट की प्रारंभिक जाँच है, पूर्ण मनोमितीय परीक्षण नहीं—इसे पहला संकेत मानें।" : lang === "te" ? "ఇది 5 నిమిషాల ప్రాథమిక పరీక్ష మాత్రమే, పూర్తి సైకోమెట్రిక్ పరీక్ష కాదు—దీనిని తొలి సంకేతంగా చూడండి。" : "A 5-minute screener, not a full psychometric battery — treat as a first signal."}
             </p>
@@ -185,6 +234,13 @@ export function AssessAptitudePage() {
               {lang === "hi" ? "आकलन डेस्क पर वापस जाएँ" : lang === "te" ? "అంచనా విభాగానికి తిరిగి వెళ్ళండి" : "Back to assessment desk"}
             </button>
             {why && <WhyPanel evidence={why} onClose={()=>setWhy(null)}/>}
+            {showDiscovery && result && (
+              <AptitudeSignalDiscovery
+                onClose={() => setShowDiscovery(false)}
+                onEvidenceDiscovered={handleEvidenceDiscovered}
+                baselineScores={result}
+              />
+            )}
           </div>
         </div>
       </div>

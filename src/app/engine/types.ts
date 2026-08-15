@@ -115,6 +115,17 @@ export interface CareerPassport {
   skills: SkillClaim[];
   riasec?: RiasecScores;
   aptitude?: AptitudeScores;
+  /** Baseline aptitude screener result before any AI evidence adjustment.
+   * Preserved separately to keep the deterministic result auditable. */
+  aptitudeBaseline?: AptitudeScores;
+  /** AI-extracted aptitude evidence items (rationale + strength 0-1).
+   * Never a direct score — evidence is converted to a capped adjustment via
+   * pure deterministic function in engine/aptitude.ts */
+  aptitudeEvidence?: Array<{
+    dimension: 'numerical' | 'verbal' | 'logical' | 'spatial';
+    rationale: string;
+    strength: number; // 0-1
+  }>;
   values?: WorkValues;
   aspiration?: Aspiration;
   constraints: Constraints;

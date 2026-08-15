@@ -8,6 +8,7 @@ import type {
 } from './types';
 import { computeGapReport } from './gaps';
 import { buildTopReasons, buildWhyNotHigher, counterfactualText } from './explain';
+import { computeAptitudeEvidenceAdjustment, applyAptitudeAdjustment, type AptitudeDimension } from './aptitude';
 import { weightsFor } from './weights';
 import { buildPathwayPlan } from './pathways';
 
@@ -34,12 +35,29 @@ function interestScore(passport: CareerPassport, occupation: Occupation): [numbe
   ), true];
 }
 
-function aptitudeScore(passport: CareerPassport, occupation: Occupation): [number, boolean] {
-  if (!passport.aptitude) return [50, false];
+function aptitudeScore(passport: CareerPassport, occupation: Occupation): [number, boolean, number] {
+  if (!passport.aptitude) return [50, false, 0];
+  
+  // Compute adjusted aptitude scores if evidence exists
+  let scores = passport.aptitude;
+  let adjustment = 0;
+  
+  if (passport.aptitudeEvidence && passport.aptitudeEvidence.length > 0) {
+    const adjustments = computeAptitudeEvidenceAdjustment(passport.aptitudeEvidence);
+    const baseline = passport.aptitudeBaseline || passport.aptitude;
+    scores = applyAptitudeAdjustment(baseline, adjustments);
+    
+    // Calculate average adjustment for disclosure
+    const dimensions = ['numerical', 'verbal', 'logical', 'spatial'] as const;
+    adjustment = Math.round(
+      dimensions.reduce((sum, dim) => sum + adjustments[dim], 0) / dimensions.length
+    );
+  }
+  
   const dimensions = ['numerical', 'verbal', 'logical', 'spatial'] as const;
   const denominator = dimensions.reduce((sum, dimension) => sum + 100 * occupation.aptitudeProfile[dimension], 0);
-  const numerator = dimensions.reduce((sum, dimension) => sum + passport.aptitude![dimension] * occupation.aptitudeProfile[dimension], 0);
-  return [denominator ? 100 * numerator / denominator : 50, true];
+  const numerator = dimensions.reduce((sum, dimension) => sum + scores[dimension] * occupation.aptitudeProfile[dimension], 0);
+  return [denominator ? 100 * numerator / denominator : 50, true, adjustment];
 }
 
 function valuesScore(passport: CareerPassport, occupation: Occupation): [number, boolean] {
@@ -147,7 +165,7 @@ function component(
 function scoreOccupation(passport: CareerPassport, occupation: Occupation, momentumBoost = 0): CareerRecommendation {
   const weights = weightsFor(passport.segment);
   const [interest, hasInterest] = interestScore(passport, occupation);
-  const [aptitude, hasAptitude] = aptitudeScore(passport, occupation);
+  const [aptitude, hasAptitude, aptitudeAdjustment] = aptitudeScore(passport, occupation);
   const [values, hasValues] = valuesScore(passport, occupation);
   const [skill, hasSkills] = skillScore(passport, occupation);
   const [transferable, hasTransferable] = transferableScore(passport, occupation);
@@ -166,7 +184,7 @@ function scoreOccupation(passport: CareerPassport, occupation: Occupation, momen
 
   const components = [
     component('interest', interest, weights.interest, hasInterest ? 'RIASEC cosine similarity with this occupation profile' : 'neutral until the interest inventory is complete', hasInterest, 'assessment', hasInterest ? ASSESSMENT_VERSION : 'Assessment not yet completed'),
-    component('aptitude', aptitude, weights.aptitude, hasAptitude ? 'weighted against this role’s numerical, verbal, logical and spatial demands' : 'neutral until the aptitude screener is complete', hasAptitude, 'assessment', hasAptitude ? ASSESSMENT_VERSION : 'Assessment not yet completed'),
+    component('aptitude', aptitude, weights.aptitude, hasAptitude ? (aptitudeAdjustment > 0 ? `weighted against this role's numerical, verbal, logical and spatial demands, with a +${aptitudeAdjustment}-point average adjustment from conversational evidence (capped at +6 per dimension)` : `weighted against this role's numerical, verbal, logical and spatial demands`) : 'neutral until the aptitude screener is complete', hasAptitude, 'assessment', hasAptitude ? (aptitudeAdjustment > 0 ? `${ASSESSMENT_VERSION} screener baseline + ${passport.aptitudeEvidence?.length ?? 0} evidence items from Aptitude Signal Discovery` : ASSESSMENT_VERSION) : 'Assessment not yet completed'),
     component('values', values, weights.values, hasValues ? 'mean distance from the work values this role typically offers' : 'neutral until the values sorter is complete', hasValues, 'assessment', hasValues ? ASSESSMENT_VERSION : 'Assessment not yet completed'),
     component('skill', skill, weights.skill, hasSkills ? 'proficiency-weighted coverage, moderated by evidence confidence' : 'neutral until skills are added', hasSkills, 'career_passport', hasSkills ? 'Skills and supporting evidence in your Career Passport' : 'No skill evidence recorded'),
     component('transferable', transferable, weights.transferable, hasTransferable ? 'strongest evidence-backed transition from prior experience' : 'neutral because no mapped experience is available', hasTransferable, 'career_passport', hasTransferable ? 'Mapped work experience and supporting skill evidence' : 'No mapped work experience recorded'),

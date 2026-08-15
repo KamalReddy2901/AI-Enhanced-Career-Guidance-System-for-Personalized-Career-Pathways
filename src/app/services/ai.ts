@@ -716,6 +716,107 @@ Return this exact JSON:
   }
 }
 
+// ─── Aptitude Evidence Extraction (AI-driven evidence, not AI-invented scores) ───
+
+export interface AptitudeEvidenceItem {
+  dimension: 'numerical' | 'verbal' | 'logical' | 'spatial';
+  rationale: string;   // short quote/paraphrase of what the user said
+  strength: number;    // 0-1, how strongly this evidence supports the dimension
+}
+
+/**
+ * Extract aptitude evidence from a conversation about how someone has approached
+ * real problems/decisions/projects. The AI NEVER outputs a 0-100 aptitude score
+ * directly — it only outputs evidence items with rationale and bounded strength.
+ * All score arithmetic happens in pure deterministic functions (see engine/aptitude.ts).
+ */
+export async function extractAptitudeEvidence(
+  conversationText: string,
+  language: 'en' | 'hi' | 'te' = 'en'
+): Promise<AptitudeEvidenceItem[]> {
+  return withRetry(async () => {
+    const languageLabels = {
+      en: { numerical: 'numerical reasoning', verbal: 'verbal reasoning', logical: 'logical reasoning', spatial: 'spatial reasoning' },
+      hi: { numerical: 'संख्यात्मक तर्क', verbal: 'मौखिक तर्क', logical: 'तार्किक तर्क', spatial: 'स्थानिक तर्क' },
+      te: { numerical: 'సంఖ్యా తార్కికత', verbal: 'మౌఖిక తార్కికత', logical: 'తార్కిక తార్కికత', spatial: 'ప్రాదేశిక తార్కికత' },
+    };
+    const labels = languageLabels[language] || languageLabels.en;
+
+    const systemPrompt = `You are an aptitude assessment expert extracting EVIDENCE (not scores) from a conversation about someone's problem-solving approach.
+
+Extract evidence items for these four dimensions:
+- **numerical**: working with numbers, quantities, calculations, patterns in data
+- **verbal**: understanding language, explaining concepts, communication clarity
+- **logical**: reasoning through steps, identifying patterns, making deductions
+- **spatial**: visualizing layouts, understanding directions, manipulating shapes/objects
+
+For each piece of evidence:
+1. Quote or paraphrase what the user said that demonstrates that aptitude dimension
+2. Rate strength 0-1 based on how clearly/strongly the example shows that dimension (0.2=weak hint, 0.5=moderate, 0.8+=strong clear example)
+
+CRITICAL: Never output a final 0-100 aptitude score. Only output evidence items.
+Be selective — only extract evidence with clear support in the conversation.
+If a dimension has no evidence, omit it entirely from the output.`;
+
+    const userPrompt = `Extract aptitude evidence from this conversation:
+
+${conversationText}
+
+Return ONLY this exact JSON structure:
+[
+  {
+    "dimension": "numerical" | "verbal" | "logical" | "spatial",
+    "rationale": "Specific quote or paraphrase from conversation showing this aptitude",
+    "strength": 0-1 number
+  }
+]
+
+Dimensions: ${labels.numerical}, ${labels.verbal}, ${labels.logical}, ${labels.spatial}`;
+
+    const raw = await callGroq(systemPrompt, userPrompt, {
+      temperature: 0.3,
+      maxTokens: 1000,
+      jsonMode: true,
+      usageType: 'aptitude-signal-discovery',
+    });
+
+    // Defensive parse with validation
+    try {
+      const parsed = JSON.parse(raw) as unknown[];
+      if (!Array.isArray(parsed)) {
+        console.warn('Aptitude evidence extraction: expected array, got:', typeof parsed);
+        return [];
+      }
+
+      const validDimensions = new Set(['numerical', 'verbal', 'logical', 'spatial']);
+      const validated = parsed
+        .filter((item): item is { dimension: string; rationale: string; strength: number } => {
+          return (
+            item !== null &&
+            typeof item === 'object' &&
+            'dimension' in item &&
+            'rationale' in item &&
+            'strength' in item &&
+            typeof item.dimension === 'string' &&
+            typeof item.rationale === 'string' &&
+            typeof item.strength === 'number'
+          );
+        })
+        .filter(item => validDimensions.has(item.dimension))
+        .map(item => ({
+          dimension: item.dimension as 'numerical' | 'verbal' | 'logical' | 'spatial',
+          rationale: item.rationale.slice(0, 300), // cap length
+          strength: Math.max(0, Math.min(1, item.strength)), // clamp to 0-1
+        }));
+
+      return validated;
+    } catch (err) {
+      console.error('Aptitude evidence parse error:', err);
+      return []; // fail gracefully — no evidence extracted
+    }
+  });
+}
+
 export interface AspirationExtraction {
   statement: string;
   horizonYears: number;
