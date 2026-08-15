@@ -27,7 +27,9 @@ function totalMonths(steps: PathwayStep[]): number {
   return Math.round(steps.reduce((sum, step) => sum + step.estMonths, 0));
 }
 
-function directRoute(passport: CareerPassport, occupationId: string): PathwayRoute {
+/** Build only the focused route. Matching uses this lightweight path to estimate
+ * learning capacity without constructing the more expensive stepping-stone graph. */
+export function buildDirectRoute(passport: CareerPassport, occupationId: string): PathwayRoute {
   const target = occupationById.get(occupationId)!;
   const gap = computeGapReport(passport, occupationId);
   const topGapIds = gap.gaps.slice(0, 4).map(item => item.skillId);
@@ -125,7 +127,7 @@ export function buildPathwayPlan(passport: CareerPassport, occupationId: string)
   if (!occupationById.has(occupationId)) throw new Error(`Unknown occupation: ${occupationId}`);
   
   const routes = [
-    directRoute(passport, occupationId),
+    buildDirectRoute(passport, occupationId),
     steppingStoneRoute(passport, occupationId),
     credentialRoute(passport, occupationId),
   ];
