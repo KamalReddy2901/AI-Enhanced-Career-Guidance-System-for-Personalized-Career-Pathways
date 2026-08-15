@@ -253,7 +253,6 @@ export function HomePage() {
 
       {/* ── HOW TO USE ─────────────────────────────────────── */}
       <section id="how-to-use" className="border-t border-black/8 bg-[var(--paper-raised)] px-6 py-16 md:py-20">
-        <div className="mx-auto max-w-6xl"><TrustStrip compact /></div>
         <div className="mx-auto max-w-4xl">
           <div className="max-w-2xl">
             <p className="label-caps text-[var(--ink-soft)]">{howTo.kicker}</p>
@@ -661,6 +660,13 @@ export function HomePage() {
               </motion.div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── TRUST BADGES ───────────────────────────────────── */}
+      <section className="border-t border-black/8 bg-[var(--paper-raised)] px-6 py-12">
+        <div className="mx-auto max-w-6xl">
+          <TrustStrip compact />
         </div>
       </section>
 
