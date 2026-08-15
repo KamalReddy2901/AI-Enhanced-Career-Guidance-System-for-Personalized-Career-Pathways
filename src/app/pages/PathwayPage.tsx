@@ -213,11 +213,12 @@ export function PathwayPage() {
   return (
     <div className="min-h-screen bg-[var(--paper)] px-6 py-16 pb-28 md:py-24">
       <GuidanceEntrance className="max-w-6xl mx-auto">
-        <header className="relative mb-12 grid min-h-56 gap-6 overflow-hidden border-b-2 border-[var(--ink)] pb-8 md:grid-cols-[1fr_auto]">
+        <header className="relative mb-12 grid min-h-56 gap-6 overflow-hidden border-b-4 border-[var(--accent-news)] pb-8 shadow-[0_4px_0_var(--accent-news)] md:grid-cols-[1fr_auto]">
           {richVisuals && <div className="pointer-events-auto absolute inset-x-0 top-0 z-0 h-[40%] opacity-60" aria-hidden="true"><Suspense fallback={null}><PathwayLineScene labels={route.steps.map(step => localizedStep(step, lang))}/></Suspense></div>}
           <StickFigure pose="climbing" size={92} />
           <div className="relative z-10">
-            <div className="font-[JetBrains_Mono] text-xs uppercase tracking-widest text-[var(--ink-soft)]">
+            <div className="inline-flex items-center gap-2 border-l-4 border-[var(--accent-news)] pl-3 font-[JetBrains_Mono] text-xs uppercase tracking-widest text-[var(--ink)]">
+              <span className="inline-block h-2 w-2 rounded-full bg-[var(--accent-news)] animate-pulse"></span>
               NCO {occupation.ncoCode} · NSQF {occupation.nsqfEntryLevel} ·{" "}
               {market?.observedPeriod}
             </div>
@@ -230,34 +231,53 @@ export function PathwayPage() {
           </div>
         </header>
         <section className="grid lg:grid-cols-[1.5fr_.75fr] gap-4 mb-8">
-          <div className="bg-white border border-black/10 p-5">
-            <div className="font-[JetBrains_Mono] text-xs uppercase tracking-wide">
+          <div className="card-sketch bg-white p-6 shadow-[3px_3px_0_var(--ink)] transition-shadow hover:shadow-[5px_5px_0_var(--ink)]">
+            <div className="mb-4 flex items-center gap-2 border-l-4 border-[var(--accent-news)] pl-3 font-[JetBrains_Mono] text-xs uppercase tracking-wide">
+              <span className="inline-block h-2 w-2 rounded-full bg-[var(--accent-news)]"></span>
               {c.gaps}
             </div>
-            <div className="mt-4 divide-y divide-black/15 border-y border-black/15">
+            <div className="mt-4 divide-y divide-black/10 border-y-2 border-black/10">
               {[...plan.gapReport.gaps].sort((a,b)=>b.severity-a.severity).slice(0, 8).map((gap) => (
-                <button key={gap.skillId} data-testid={`pathway-gap-${gap.skillId}`} className="block min-h-11 w-full py-5 text-left" onClick={()=>setWhy({title:`Why the ${skillName(gap.skillId)} gap is ${gap.severity}`,eyebrow:"Skill-gap evidence desk",summary:`This gap compares your current proficiency ${gap.current}/4 with the role requirement ${gap.required}/4, then adjusts for requirement importance and evidence confidence.`,method:"severity = (required − current) ÷ 4 × importance × (2 − claim confidence), normalized over the occupation requirement set.",items:[{label:"Current proficiency",value:gap.current*25,detail:`Current Career Passport level: ${gap.current}/4.`},{label:"Required proficiency",value:gap.required*25,detail:`Curated requirement for ${occupation.title}: ${gap.required}/4.`},{label:"Requirement importance",value:gap.importance*100,detail:"Importance comes from the versioned occupation knowledge base."},{label:"Evidence confidence",value:gap.confidence*100,detail:"Accumulated from the evidence ledger; weaker evidence increases uncertainty."}],source:`KB kb-2026.06.1 · ${occupation.ncoCode}`})} aria-label={`Explain ${skillName(gap.skillId)} gap score ${gap.severity}`}>
-                  <div className="flex items-baseline justify-between gap-4"><span className="font-display text-lg">{skillName(gap.skillId)}</span><span className="font-mono-ui text-xl font-bold text-[var(--accent-news)]">−{Math.max(0,gap.required-gap.current)}</span></div>
-                  <div className="mt-3 grid gap-2 font-mono-ui text-[10px] uppercase"><div className="grid grid-cols-[5rem_1fr_auto] items-center gap-2"><span>Required</span><div className="h-2 border border-black"><div className="h-full border-r border-black" style={{width:`${gap.required*25}%`}}/></div><span>{gap.required}/4</span></div><div className="grid grid-cols-[5rem_1fr_auto] items-center gap-2"><span>Current</span><div className="h-2 border border-black"><motion.div className="h-full origin-left bg-black" initial={{scaleX:reducedMotion?1:0}} whileInView={{scaleX:1}} viewport={{once:true}} style={{width:`${gap.current*25}%`}}/></div><span>{gap.current}/4</span></div></div>
+                <button key={gap.skillId} data-testid={`pathway-gap-${gap.skillId}`} className="group block min-h-11 w-full py-5 text-left transition-colors hover:bg-red-50/50" onClick={()=>setWhy({title:`Why the ${skillName(gap.skillId)} gap is ${gap.severity}`,eyebrow:"Skill-gap evidence desk",summary:`This gap compares your current proficiency ${gap.current}/4 with the role requirement ${gap.required}/4, then adjusts for requirement importance and evidence confidence.`,method:"severity = (required − current) ÷ 4 × importance × (2 − claim confidence), normalized over the occupation requirement set.",items:[{label:"Current proficiency",value:gap.current*25,detail:`Current Career Passport level: ${gap.current}/4.`},{label:"Required proficiency",value:gap.required*25,detail:`Curated requirement for ${occupation.title}: ${gap.required}/4.`},{label:"Requirement importance",value:gap.importance*100,detail:"Importance comes from the versioned occupation knowledge base."},{label:"Evidence confidence",value:gap.confidence*100,detail:"Accumulated from the evidence ledger; weaker evidence increases uncertainty."}],source:`KB kb-2026.06.1 · ${occupation.ncoCode}`})} aria-label={`Explain ${skillName(gap.skillId)} gap score ${gap.severity}`}>
+                  <div className="flex items-baseline justify-between gap-4">
+                    <span className="font-display text-lg group-hover:text-[var(--accent-news)] transition-colors">{skillName(gap.skillId)}</span>
+                    <span className="font-mono-ui text-2xl font-bold text-[var(--accent-news)] transition-transform group-hover:scale-110">−{Math.max(0,gap.required-gap.current)}</span>
+                  </div>
+                  <div className="mt-3 grid gap-2 font-mono-ui text-[10px] uppercase">
+                    <div className="grid grid-cols-[5rem_1fr_auto] items-center gap-2">
+                      <span>Required</span>
+                      <div className="h-2 border-2 border-black/20 bg-gray-100">
+                        <div className="h-full border-r-2 border-[var(--accent-news)] bg-[var(--accent-news)]/20" style={{width:`${gap.required*25}%`}}/>
+                      </div>
+                      <span>{gap.required}/4</span>
+                    </div>
+                    <div className="grid grid-cols-[5rem_1fr_auto] items-center gap-2">
+                      <span>Current</span>
+                      <div className="h-2 border-2 border-black/20 bg-gray-100">
+                        <motion.div className="h-full origin-left bg-black" initial={{scaleX:reducedMotion?1:0}} whileInView={{scaleX:1}} viewport={{once:true}} style={{width:`${gap.current*25}%`}}/>
+                      </div>
+                      <span>{gap.current}/4</span>
+                    </div>
+                  </div>
                   <p className="mt-2 font-[Inter] text-xs text-[var(--ink-soft)]">{c.evidence} {Math.round(gap.confidence * 100)}% · <span className="underline">{c.whyGap}</span></p>
                 </button>
               ))}
             </div>
           </div>
-          <button className="block min-h-11 w-full bg-white border border-black/10 p-5 text-left" onClick={()=>setWhy({title:`Why readiness is ${plan.gapReport.readiness}`,eyebrow:"Readiness evidence desk",summary:"Readiness is the complement of the proficiency- and confidence-adjusted Skill Gap Index. It is a planning signal, not a prediction of success.",method:"Each requirement gap is weighted by importance and adjusted for evidence confidence. SGI is the normalized weighted total; readiness = 100 − SGI.",items:[{label:"Readiness",value:plan.gapReport.readiness,detail:"The share of required proficiency currently evidenced after confidence adjustment."},{label:"Skill Gap Index",value:plan.gapReport.sgi,detail:"Lower is better; this is the remaining normalized gap across all role requirements."},...plan.gapReport.gaps.slice(0,4).map(gap=>({label:skillName(gap.skillId),value:gap.severity,detail:`Current ${gap.current}/4 → required ${gap.required}/4 · ${Math.round(gap.confidence*100)}% evidence confidence.`}))],source:`KB kb-2026.06.1 · profile v${passport.version}`})} aria-label={`Explain readiness score ${plan.gapReport.readiness}`}>
+          <button className="card-sketch block min-h-11 w-full bg-gradient-to-br from-white to-gray-50 p-6 text-left shadow-[3px_3px_0_var(--ink)] transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-[5px_5px_0_var(--ink)]" onClick={()=>setWhy({title:`Why readiness is ${plan.gapReport.readiness}`,eyebrow:"Readiness evidence desk",summary:"Readiness is the complement of the proficiency- and confidence-adjusted Skill Gap Index. It is a planning signal, not a prediction of success.",method:"Each requirement gap is weighted by importance and adjusted for evidence confidence. SGI is the normalized weighted total; readiness = 100 − SGI.",items:[{label:"Readiness",value:plan.gapReport.readiness,detail:"The share of required proficiency currently evidenced after confidence adjustment."},{label:"Skill Gap Index",value:plan.gapReport.sgi,detail:"Lower is better; this is the remaining normalized gap across all role requirements."},...plan.gapReport.gaps.slice(0,4).map(gap=>({label:skillName(gap.skillId),value:gap.severity,detail:`Current ${gap.current}/4 → required ${gap.required}/4 · ${Math.round(gap.confidence*100)}% evidence confidence.`}))],source:`KB kb-2026.06.1 · profile v${passport.version}`})} aria-label={`Explain readiness score ${plan.gapReport.readiness}`}>
             <svg viewBox="0 0 160 100" className="mx-auto w-full max-w-[220px]">
               <path
                 d="M20 80a60 60 0 01120 0"
                 fill="none"
-                stroke="#ddd"
-                strokeWidth="12"
+                stroke="#f3f4f6"
+                strokeWidth="14"
                 strokeLinecap="round"
               />
               <path
                 d="M20 80a60 60 0 01120 0"
                 fill="none"
-                stroke="#1a1a1a"
-                strokeWidth="12"
+                stroke="#dc2626"
+                strokeWidth="14"
                 strokeLinecap="round"
                 pathLength="100"
                 strokeDasharray={`${plan.gapReport.readiness} 100`}
@@ -267,16 +287,18 @@ export function PathwayPage() {
                 y="75"
                 textAnchor="middle"
                 fontFamily="Playfair Display"
-                fontSize="31"
+                fontSize="34"
+                fontWeight="700"
+                fill="#dc2626"
               >
                 {plan.gapReport.readiness}
               </text>
             </svg>
-            <div className="text-center font-[JetBrains_Mono] text-xs uppercase">
-              {c.readiness} · SGI {plan.gapReport.sgi}
+            <div className="text-center font-[JetBrains_Mono] text-xs uppercase tracking-wide">
+              <span className="text-[var(--accent-news)] font-bold">{c.readiness}</span> · SGI {plan.gapReport.sgi}
             </div>
             <div className="mt-1 text-center font-[Inter] text-[10px] underline">{c.whyScores}</div>
-            <h2 className="font-[Playfair_Display] text-xl mt-6">
+            <h2 className="font-[Playfair_Display] text-xl mt-6 border-t-2 border-[var(--accent-news)]/20 pt-4">
               {c.bring}
             </h2>
             {plan.gapReport.transferable.length ? (
@@ -285,9 +307,10 @@ export function PathwayPage() {
                   <li
                     key={item.skillId}
                     title={item.fromExperience}
-                    className="font-[Inter] text-sm"
+                    className="font-[Inter] text-sm flex items-start gap-2"
                   >
-                    ✓ {skillName(item.skillId)}
+                    <span className="inline-block mt-1 h-1.5 w-1.5 rounded-full bg-emerald-600 flex-shrink-0"></span>
+                    {skillName(item.skillId)}
                   </li>
                 ))}
               </ul>
@@ -321,30 +344,33 @@ export function PathwayPage() {
           </div>
         </section>
         <section className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-3xl font-[Playfair_Display]">
-              {c.routes}
-            </h2>
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-1 bg-[var(--accent-news)]"></div>
+              <h2 className="text-3xl font-[Playfair_Display]">
+                {c.routes}
+              </h2>
+            </div>
             <button
               onClick={() => setShowRouteQuiz(true)}
-              className="flex items-center gap-2 border border-[var(--ink-faint)] px-3 py-2 text-sm hover:border-[var(--ink)] transition-colors"
+              className="flex items-center gap-2 border-2 border-[var(--ink)] px-4 py-2 text-sm font-mono-ui uppercase tracking-wide transition-[transform,box-shadow] hover:-translate-y-[2px] hover:shadow-[3px_3px_0_var(--ink)]"
               title="Take a quiz to find the best route for you"
             >
               <HelpCircle size={16} />
               Which route for me?
             </button>
           </div>
-          <div className="grid md:grid-cols-3 gap-3">
+          <div className="grid md:grid-cols-3 gap-4">
             {plan.routes.map((candidate) => (
               <button
                 key={candidate.kind}
                 onClick={() => chooseRoute(candidate.kind)}
-                className={`min-h-44 text-left bg-white border-2 p-5 ${route.kind === candidate.kind ? "border-black shadow-[3px_3px_0_#1a1a1a]" : "border-black/10"}`}
+                className={`group min-h-44 text-left bg-white p-6 transition-[transform,box-shadow] ${route.kind === candidate.kind ? "border-4 border-[var(--accent-news)] shadow-[5px_5px_0_var(--accent-news)] -translate-y-1" : "border-2 border-black/10 hover:border-[var(--accent-news)] hover:-translate-y-[2px] hover:shadow-[3px_3px_0_var(--ink)]"}`}
               >
-                <div className="font-[JetBrains_Mono] text-xs uppercase">
+                <div className={`font-[JetBrains_Mono] text-xs uppercase tracking-wide ${route.kind === candidate.kind ? "text-[var(--accent-news)] font-bold" : "text-[var(--ink-soft)]"}`}>
                   {c.labels[candidate.kind]}
                 </div>
-                <div className="text-3xl font-[Playfair_Display] mt-3">
+                <div className={`text-3xl font-[Playfair_Display] mt-3 transition-colors ${route.kind === candidate.kind ? "text-[var(--accent-news)]" : "group-hover:text-[var(--accent-news)]"}`}>
                   {candidate.totalMonths} {c.months}
                 </div>
                 <p className="font-[Inter] text-sm text-black/60 mt-2">

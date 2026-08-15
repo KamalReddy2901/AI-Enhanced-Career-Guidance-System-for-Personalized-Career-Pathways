@@ -59,6 +59,17 @@
 - Career Journey and Mood Match now stay on single lines
 - Borders adjusted accordingly
 
+### Task 14: "Close this gap via" Section Formatting ✅
+**File**: `src/app/components/guidance/GapLearningRoutes.tsx`
+- Completely redesigned with cards and badges
+- Added red accent header with GraduationCap icon
+- Each skill now in its own card with hover effects
+- Route metadata displayed as colorful pill badges (duration, NSQF level)
+- Action links styled as interactive cards with hover animations
+- Border-left accent for visual hierarchy
+- Shadow effects on hover for better interactivity
+- Much easier to scan and more visually appealing
+
 ## 🔨 REMAINING TASKS
 
 ### Task 5: Career Landscape Cards Enhancement
@@ -92,14 +103,6 @@
 - Add fallback/retry logic
 - Ensure consistent generation
 
-### Task 14: "Close this gap via" Section Formatting
-**Files**: Multiple (JobDetailPage, PathwayPage, etc.)
-**TODO**:
-- Find all instances
-- Improve visual formatting
-- Use cards/badges instead of plain text
-- Make easier to scan
-
 ### Task 15: Red Ribbon Appearance Issue
 **File**: `src/app/pages/HomePage.tsx`
 **Status**: Already addressed in Task 3 (Dashboard has ribbon now)
@@ -122,10 +125,10 @@
 
 ## Summary
 
-**Completed**: 8 out of 16 tasks (50%)
+**Completed**: 9 out of 16 tasks (56%)
 **Core visual fixes**: DONE
 **Critical UX improvements**: DONE
-**Remaining**: Mostly enhancements requiring AI generation or complex visual redesigns
+**Remaining**: 7 tasks (mostly AI generation and complex redesigns)
 
 ## Next Steps
 
