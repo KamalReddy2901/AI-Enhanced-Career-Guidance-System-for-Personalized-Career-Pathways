@@ -77,6 +77,7 @@ It goes beyond a generic career chatbot by keeping the ranked score deterministi
 
 - RIASEC interest inventory: 36 items.
 - Aptitude screener: one 24-item form selected from a 48-item two-form bank; numerical, verbal, logical, and spatial dimensions.
+  - Optional **Aptitude Signal Discovery**: a 4-5 turn conversational follow-up that extracts evidence (not scores) from how the user has approached real problems. The AI outputs structured evidence items (dimension, rationale, strength 0-1); a pure deterministic function converts evidence to a small, capped adjustment (≤6 points per dimension). The baseline screener result is preserved separately and always disclosed when an adjustment has been applied.
 - Work values: 15 comparisons across stability, growth, autonomy, impact, balance, and compensation.
 - Aspirations: five structured prompts with optional AI extraction.
 - Input locks prevent rapid repeated answers from skipping items or overrunning an assessment.
@@ -103,6 +104,8 @@ Weights vary by segment and sum to 100%. The language model does not assign thes
 
 The learning-feasibility component can now include a small, capped (≤6 point) adjustment for demonstrated recent profile activity — new skill evidence, confidence gains, or assessments completed in the last 14 days (see “Adaptive personalization” below). It only applies once skill evidence exists, is always disclosed in that component's note and source detail, and never changes any other component or the engine's deterministic guarantee (identical input still produces identical output).
 
+The aptitude-fit component may similarly include a small, capped (≤6 points per dimension) adjustment when the user completes the optional Aptitude Signal Discovery conversation. The AI extracts evidence items (dimension, rationale, strength 0-1) from the user's problem-solving examples; a pure deterministic function (`computeAptitudeEvidenceAdjustment` in `engine/aptitude.ts`) computes the adjustment. The baseline screener result is preserved in `passport.aptitudeBaseline`, and any applied adjustment is always disclosed in the component's note and source detail. The adjustment never replaces the deterministic screener score—it augments it.
+
 The landscape returns 13 diverse recommendations across safe, stretch, and ambitious groupings. “Best fit” preserves the engine’s diversified order. “Fastest path” compares the minimum calculated duration across each occupation’s routes instead of using a proxy.
 
 ### Gap and pathway engine
@@ -125,6 +128,8 @@ Current AI use cases include:
 - full dossiers for roles outside the grounded knowledge base;
 - resume and aspiration extraction;
 - conversational skill discovery — a guided chat that infers evidence-backed skills from a short work-experience interview and merges them into the passport;
+- **Aptitude Signal Discovery** — a 4-5 turn conversational follow-up to the aptitude screener that extracts structured evidence (dimension, rationale, strength 0-1) from how the user has approached real problems, then applies a small, capped, deterministically-computed adjustment to the baseline screener scores;
+- **Aptitude Signal Discovery** — a 4-5 turn conversational follow-up to the aptitude screener that extracts structured evidence (dimension, rationale, strength 0-1) from how the user has approached real problems, then applies a small, capped, deterministically-computed adjustment to the baseline screener scores;
 - a 3-year career trajectory projection (demand range, key skill evolution, divergence paths, and explicit confidence banding) shown on demand from the job dossier;
 - simulations and interview questions;
 - related careers and resource suggestions;
