@@ -291,6 +291,58 @@ export function CareerRoadmapPage() {
 
               {/* Vertical timeline */}
               <div className="relative">
+                {/* Single "Why these steps?" button in left margin */}
+                <div className="absolute left-0 top-0 z-20 -ml-2">
+                  {(() => {
+                    // Gather all evidence for a comprehensive explanation
+                    const allGaps = roadmapGapReport?.gaps || [];
+                    const gapSummaries = allGaps.slice(0, 3).map(gap => {
+                      const route = learningRoutesForSkill(gap.skillId, 1)[0];
+                      return `${skillName(gap.skillId)}: ${gap.current}/4 → ${gap.required}/4${route ? ` (via ${route.name})` : ''}`;
+                    });
+                    
+                    return (
+                      <EvidenceButton
+                        testId="roadmap-why-steps-btn"
+                        label={lang === 'hi' ? 'ये चरण क्यों?' : lang === 'te' ? 'ఈ దశలు ఎందుకు?' : 'Why these steps?'}
+                        evidence={{
+                          title: lang === 'hi' ? 'रोडमैप प्रमाण' : lang === 'te' ? 'రోడ్‌మ్యాప్ ఆధారం' : 'Roadmap evidence',
+                          eyebrow: roadmap.title,
+                          summary: lang === 'hi'
+                            ? 'यह रोडमैप आपकी पासपोर्ट कौशल-अंतर रिपोर्ट से जुड़े चरणों को दिखाता है। प्रत्येक चरण उस कौशल के लिए आवश्यक योग्यता और अनुभव से मेल खाता है।'
+                            : lang === 'te'
+                            ? 'ఈ రోడ్‌మ్యాప్ మీ పాస్‌పోర్ట్ నైపుణ్య లోటు నివేదికతో అనుసంధానమైన దశలను చూపుతుంది. ప్రతి దశ ఆ నైపుణ్యానికి అవసరమైన అర్హత మరియు అనుభవంతో సరిపోతుంది.'
+                            : 'This roadmap shows stages grounded in your Passport skill-gap report. Each stage matches the qualifications and experience required for that skill.',
+                          method: lang === 'hi'
+                            ? 'रोडमैप AI-सहायित है; दिखाए गए अंतर, योग्यता और वेतन नियम-आधारित इंजन और संस्करणित ज्ञान-आधार से आते हैं।'
+                            : lang === 'te'
+                            ? 'రోడ్‌మ్యాప్ AI సహాయంతో ఉంటుంది; చూపిన లోటు, అర్హత, జీతం నియమ-ఆధారిత ఇంజిన్, వెర్షన్ చేసిన నాలెడ్జ్-బేస్ నుండి వస్తాయి.'
+                            : 'Roadmap is AI-assisted; the displayed gaps, qualifications, and salaries come from the deterministic engine and versioned knowledge base.',
+                          items: [
+                            {
+                              label: lang === 'hi' ? 'कुल अवधि' : lang === 'te' ? 'మొత్తం వ్యవధి' : 'Total duration',
+                              detail: roadmap.totalYears
+                            },
+                            {
+                              label: lang === 'hi' ? 'चरण' : lang === 'te' ? 'దశలు' : 'Stages',
+                              detail: `${roadmap.stages.length} stages`
+                            },
+                            ...(gapSummaries.length > 0 ? [{
+                              label: lang === 'hi' ? 'मुख्य कौशल-अंतर' : lang === 'te' ? 'ముఖ్య నైపుణ్య లోటులు' : 'Key skill gaps',
+                              detail: gapSummaries.join(' • ')
+                            }] : [])
+                          ],
+                          source: lang === 'hi'
+                            ? 'कौशल-अंतर इंजन · संस्करणित योग्यता ज्ञान-आधार'
+                            : lang === 'te'
+                            ? 'నైపుణ్య లోటు ఇంజిన్ · వెర్షన్ చేసిన అర్హత నాలెడ్జ్-బేస్'
+                            : 'Skill-gap engine · versioned qualification knowledge base'
+                        }}
+                      />
+                    );
+                  })()}
+                </div>
+
                 {/* Timeline line */}
                 <div className="absolute left-[1.4rem] top-6 bottom-6 w-0.5 bg-black/8" />
 
@@ -312,14 +364,14 @@ export function CareerRoadmapPage() {
                           <div className={`w-4 h-4 rounded-full ${colors.dot} ring-4 ring-background z-10`} />
                         </div>
 
-                        {/* Card */}
+                        {/* Card - removed individual "WHY THIS STEP?" button */}
                         <div className={`flex-1 border ${colors.border} ${colors.bg} mb-1`}>
                           <button
                             onClick={() => { setExpandedStage(isExpanded ? null : i); hapticTap(); isExpanded ? sounds.collapse() : sounds.expand(); }}
                             className="w-full flex items-center justify-between p-4 text-left"
                             aria-expanded={isExpanded}
                           >
-                            <div>
+                            <div className="flex-1">
                               <div className="flex items-center gap-3 flex-wrap">
                                 <p className="font-[Playfair_Display] text-black" style={{ fontSize: '1rem' }}>
                                   {stage.stage}
@@ -334,7 +386,6 @@ export function CareerRoadmapPage() {
                               <p className="font-[Inter] text-black/40 mt-0.5" style={{ fontSize: '0.75rem' }}>
                                 {stage.salary}
                               </p>
-                              {(() => { const gap=roadmapGapReport?.gaps[i % Math.max(roadmapGapReport.gaps.length,1)]; const route=gap ? learningRoutesForSkill(gap.skillId,1)[0] : undefined; const nextLevel=gap ? Math.min(4,gap.current+1) : 0; const counterfactual=gap&&passport&&roadmapOccupation ? counterfactualText(passport,roadmapOccupation.id,currentFit,gap.skillId,nextLevel) : ''; return <EvidenceButton testId={`roadmap-stage-${i + 1}-why-btn`} label={lang==='hi'?'यह चरण क्यों?':lang==='te'?'ఈ దశ ఎందుకు?':'Why this step?'} evidence={{title:lang==='hi'?'रोडमैप चरण प्रमाण':lang==='te'?'రోడ్‌మ్యాప్ దశ ఆధారం':'Roadmap-step evidence',eyebrow:stage.stage,summary:gap ? (lang==='hi'?`यह चरण ${skillName(gap.skillId)} के दर्ज कौशल-अंतर से जुड़ा है।`:lang==='te'?`ఈ దశ ${skillName(gap.skillId)} నమోదు చేసిన నైపుణ్య లోటుతో అనుసంధానమైంది.`:`This stage is grounded in the recorded ${skillName(gap.skillId)} skill gap.`) : (lang==='hi'?'यह वर्णनात्मक चरण है; इस शीर्षक के लिए पासपोर्ट कौशल-अंतर उपलब्ध नहीं है।':lang==='te'?'ఇది వివరణాత్మక దశ; ఈ శీర్షికకు పాస్‌పోర్ట్ నైపుణ్య లోటు అందుబాటులో లేదు.':'This is a descriptive stage; no Passport skill gap is available for this title.'),method:lang==='hi'?'मील-पत्थर का पाठ AI-सहायित है; दिखाया गया अंतर, योग्यता और प्रति-तथ्य नियम-आधारित इंजन व ज्ञान-आधार से आते हैं और कोई अंक नहीं बदलते।':lang==='te'?'మైలురాయి వచనం AI సహాయంతో ఉంటుంది; చూపిన లోటు, అర్హత, కౌంటర్‌ఫ్యాక్చువల్ నియమ-ఆధారిత ఇంజిన్, నాలెడ్జ్-బేస్ నుండి వస్తాయి; స్కోర్‌ను మార్చవు.':'Milestone copy is AI-assisted; the displayed gap, qualification, and counterfactual come from the deterministic engine and knowledge base and do not alter a score.',items:[{label:lang==='hi'?'भूमिका':lang==='te'?'పాత్ర':'Role',detail:stage.role},...(gap?[{label:lang==='hi'?'उत्पन्न कौशल-अंतर':lang==='te'?'ఉత్పన్న నైపుణ్య లోటు':'Generating skill gap',detail:`${skillName(gap.skillId)} · ${gap.current}/4 → ${gap.required}/4`},{label:lang==='hi'?'योग्यता मार्ग':lang==='te'?'అర్హత మార్గం':'Qualification route',detail:route?`${route.name} · NSQF ${route.nsqfLevel}`:(lang==='hi'?'कोई सीधा मार्ग नहीं मिला':lang==='te'?'ప్రత్యక్ష మార్గం దొరకలేదు':'No direct route found')},{label:lang==='hi'?'अगर कौशल बढ़े':lang==='te'?'నైపుణ్యం పెరిగితే':'If the skill improves',detail:counterfactual}]:[])],source:lang==='hi'?'कौशल-अंतर इंजन · संस्करणित योग्यता ज्ञान-आधार':lang==='te'?'నైపుణ్య లోటు ఇంజిన్ · వెర్షన్ చేసిన అర్హత నాలెడ్జ్-బేస్':'Skill-gap engine · versioned qualification knowledge base'}}/>; })()}
                             </div>
                             {isExpanded ? (
                               <ChevronUp size={15} className="text-black/30 shrink-0 ml-3" />
