@@ -8,17 +8,77 @@ import type {
 } from './types';
 import { computeGapReport } from './gaps';
 import { buildTopReasons, buildWhyNotHigher, counterfactualText } from './explain';
-import { computeAptitudeEvidenceAdjustment, applyAptitudeAdjustment, type AptitudeDimension } from './aptitude';
+import { computeAptitudeEvidenceAdjustment, applyAptitudeAdjustment } from './aptitude';
 import { weightsFor } from './weights';
-import { buildPathwayPlan } from './pathways';
+import { buildDirectRoute } from './pathways';
 
 /** Bump these only when the corresponding reviewed guidance contract changes. */
-export const GUIDANCE_ENGINE_VERSION = 'guidance-engine-v1';
+export const GUIDANCE_ENGINE_VERSION = 'guidance-engine-v2';
 export const ASSESSMENT_VERSION = 'assessment-bank-v1';
-export const SCORING_VERSION = 'weighted-match-v1';
+export const SCORING_VERSION = 'weighted-match-v2';
 
 const clamp = (value: number): number => Math.max(0, Math.min(100, value));
 const rounded = (value: number): number => Math.round(clamp(value));
+const REFERENCE_WEEKLY_LEARNING_HOURS = 6;
+const WEEKS_PER_MONTH = 4;
+
+const METRO_CITIES = [
+  'ahmedabad', 'bangalore', 'chennai', 'delhi', 'hyderabad', 'kolkata', 'mumbai', 'pune',
+];
+const TIER_TWO_CITIES = [
+  'bhopal', 'bhubaneswar', 'chandigarh', 'coimbatore', 'dehradun', 'guwahati', 'indore',
+  'jaipur', 'kanpur', 'kochi', 'lucknow', 'mangalore', 'mysore', 'nagpur', 'nashik',
+  'patna', 'raipur', 'ranchi', 'surat', 'thiruvananthapuram', 'vadodara', 'vijayawada',
+  'visakhapatnam',
+];
+const STATE_CAPITALS = [
+  ...METRO_CITIES,
+  'agartala', 'aizawl', 'amaravati', 'bhopal', 'bhubaneswar', 'chandigarh', 'dehradun',
+  'dispur', 'gangtok', 'gandhinagar', 'guwahati', 'imphal', 'itanagar', 'jaipur', 'kohima',
+  'lucknow', 'panaji', 'patna', 'raipur', 'ranchi', 'shillong', 'shimla', 'srinagar',
+  'thiruvananthapuram',
+];
+const INDUSTRIAL_HUBS = [
+  ...METRO_CITIES,
+  'aurangabad', 'coimbatore', 'faridabad', 'gurgaon', 'jamshedpur', 'kanpur', 'ludhiana',
+  'noida', 'rajkot', 'surat', 'vadodara', 'visakhapatnam',
+];
+
+function normalizeLocation(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/\bbengaluru\b/g, 'bangalore')
+    .replace(/\bmysuru\b/g, 'mysore')
+    .replace(/\bgurugram\b/g, 'gurgaon')
+    .replace(/\bnew delhi\b/g, 'delhi')
+    .replace(/\bdelhi ncr\b/g, 'delhi')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function locationInSet(location: string, places: string[]): boolean {
+  return places.some(place => location.includes(place));
+}
+
+function regionMatchesLocation(locationText: string, regionText: string): boolean {
+  const location = normalizeLocation(locationText);
+  const region = normalizeLocation(regionText);
+  if (!location || !region) return false;
+
+  if (location.includes(region) || region.includes(location)) return true;
+  if (region === 'india' || region.includes('all india') || region.includes('nationwide')) return true;
+  if (region.includes('rural') && region.includes('urban')) return true;
+  if (region.includes('metro') && locationInSet(location, METRO_CITIES)) return true;
+  if (region.includes('tier 1') && locationInSet(location, METRO_CITIES)) return true;
+  if (region.includes('tier 2') && locationInSet(location, TIER_TWO_CITIES)) return true;
+  if (region.includes('state capital') && locationInSet(location, STATE_CAPITALS)) return true;
+  if (region.includes('urban') && locationInSet(location, [...METRO_CITIES, ...TIER_TWO_CITIES, ...STATE_CAPITALS])) return true;
+  if (region.includes('industrial hub') && locationInSet(location, INDUSTRIAL_HUBS)) return true;
+  if (region.includes('rural') && /\b(rural|village|district)\b/.test(location)) return true;
+
+  return false;
+}
 
 function cosine(user: number[], target: number[]): number {
   const dot = user.reduce((sum, value, index) => sum + value * target[index], 0);
@@ -145,9 +205,33 @@ function progressionScore(occupation: Occupation): number {
 function geographicScore(passport: CareerPassport, occupation: Occupation): number {
   const signal = marketFor(occupation.id);
   if (!signal || !passport.constraints.location) return 70;
-  const location = passport.constraints.location.toLowerCase();
-  if (signal.regions.some(region => location.includes(region.toLowerCase()) || region.toLowerCase().includes(location))) return 85;
+  if (signal.regions.some(region => regionMatchesLocation(passport.constraints.location, region))) return 85;
   return passport.constraints.canRelocate ? 70 : 55;
+}
+
+function directRouteMonths(passport: CareerPassport, occupationId: string): number {
+  return buildDirectRoute(passport, occupationId).totalMonths;
+}
+
+function learningCapacityPenalty(passport: CareerPassport, occupationId: string): number {
+  const projectedMonths = directRouteMonths(passport, occupationId);
+  if (!projectedMonths) return 0;
+
+  // Calibrate the route's approximate workload at a neutral 6 h/week, then
+  // compare hours-to-hours against the user's capacity over their projected
+  // route duration. This avoids the previous weeks-vs-hours dimensional bug.
+  const referencePassport: CareerPassport = {
+    ...passport,
+    constraints: {
+      ...passport.constraints,
+      weeklyLearningHours: REFERENCE_WEEKLY_LEARNING_HOURS,
+    },
+  };
+  const referenceMonths = directRouteMonths(referencePassport, occupationId);
+  const estimatedRequiredHours = referenceMonths * WEEKS_PER_MONTH * REFERENCE_WEEKLY_LEARNING_HOURS;
+  const availableHours = projectedMonths * WEEKS_PER_MONTH * Math.max(0, passport.constraints.weeklyLearningHours);
+
+  return availableHours < estimatedRequiredHours ? 15 : 0;
 }
 
 function component(
@@ -172,15 +256,19 @@ function scoreOccupation(passport: CareerPassport, occupation: Occupation, momen
   const [experience, hasExperience] = experienceScore(passport, occupation);
   const [aspiration, hasAspiration] = aspirationScore(passport, occupation);
   const gapReport = computeGapReport(passport, occupation.id);
-  let feasibility = 100 - gapReport.sgi;
-  const directMonths = buildPathwayPlan(passport, occupation.id).routes.find(route => route.kind === 'direct')?.totalMonths ?? 0;
-  if (directMonths * 4 > passport.constraints.weeklyLearningHours * 40) feasibility -= 15;
+  const capacityPenalty = learningCapacityPenalty(passport, occupation.id);
+  let feasibility = 100 - gapReport.sgi - capacityPenalty;
   // A small, capped adjustment reflecting demonstrated recent progress (new
   // skill evidence, confidence gains, assessments completed in the last 14
   // days). Only applied once there is skill evidence to judge feasibility
   // against, and always disclosed in the component note below.
   const appliedMomentumBoost = hasSkills ? Math.max(0, Math.min(6, momentumBoost)) : 0;
   if (appliedMomentumBoost > 0) feasibility = clamp(feasibility + appliedMomentumBoost);
+
+  const learningNote = capacityPenalty > 0
+    ? `skill-gap readiness adjusted for weekly learning capacity; a ${capacityPenalty}-point capacity penalty applies because the estimated route workload exceeds the hours available across its projected duration`
+    : 'skill-gap readiness adjusted using a route workload estimate and weekly learning capacity';
+  const learningSource = `Computed from skill gaps and an hours-to-hours route-capacity comparison calibrated at ${REFERENCE_WEEKLY_LEARNING_HOURS} h/week`;
 
   const components = [
     component('interest', interest, weights.interest, hasInterest ? 'RIASEC cosine similarity with this occupation profile' : 'neutral until the interest inventory is complete', hasInterest, 'assessment', hasInterest ? ASSESSMENT_VERSION : 'Assessment not yet completed'),
@@ -192,8 +280,8 @@ function scoreOccupation(passport: CareerPassport, occupation: Occupation, momen
     component('aspiration', aspiration, weights.aspiration, hasAspiration ? 'dream roles and themes in your stated aspiration' : 'neutral until an aspiration is recorded', hasAspiration, 'career_passport', hasAspiration ? 'Your recorded aspiration and timeframe' : 'No aspiration recorded'),
     component('market', marketScore(occupation), weights.market, 'timestamped indicative demand signal with trend adjustment', true, 'market_snapshot', (() => { const signal = marketFor(occupation.id); return signal ? `${signal.observedPeriod} · ${signal.source}` : 'No market snapshot available; neutral score used'; })()),
     component('progression', progressionScore(occupation), weights.progression, 'number and strength of grounded outgoing transitions', true, 'knowledge_base', `Transition map in ${KB_VERSION}`),
-    component('learningFeasibility', feasibility, weights.learningFeasibility, appliedMomentumBoost > 0 ? `skill-gap readiness adjusted for weekly learning time, plus a +${Math.round(appliedMomentumBoost)}-point recent-momentum adjustment from your last two weeks of profile activity` : 'skill-gap readiness adjusted for weekly learning time', hasSkills, 'computed', hasSkills ? (appliedMomentumBoost > 0 ? 'Computed from skill gaps, stated weekly learning time, and recent profile momentum' : 'Computed from skill gaps and stated weekly learning time') : 'Neutral until skill evidence is recorded'),
-    component('geographic', geographicScore(passport, occupation), weights.geographic, 'location and relocation preference compared with signal regions', Boolean(passport.constraints.location), 'market_snapshot', passport.constraints.location ? 'Your stated location and relocation preference compared with indicative regions' : 'No location recorded; neutral score used'),
+    component('learningFeasibility', feasibility, weights.learningFeasibility, appliedMomentumBoost > 0 ? `${learningNote}, plus a +${Math.round(appliedMomentumBoost)}-point recent-momentum adjustment from your last two weeks of profile activity` : learningNote, hasSkills, 'computed', appliedMomentumBoost > 0 ? `${learningSource}; recent profile momentum also applied` : learningSource),
+    component('geographic', geographicScore(passport, occupation), weights.geographic, 'normalized location and relocation preference compared with indicative market regions', Boolean(passport.constraints.location), 'market_snapshot', passport.constraints.location ? 'Your stated location, common Indian city aliases, broad region categories, and relocation preference compared with indicative regions' : 'No location recorded; neutral score used'),
   ];
   const totalScore = rounded(components.reduce((sum, item) => sum + item.score * item.weight, 0));
   const evidenceConfidences = passport.skills.map(claim => claim.confidence);
@@ -209,27 +297,11 @@ function scoreOccupation(passport: CareerPassport, occupation: Occupation, momen
   return { occupationId: occupation.id, totalScore, confidence, group: 'best_fit', components, topReasons: buildTopReasons(components), whyNotHigher: whyNotHigher.slice(0, 3), skillGapPreview: preview, evidenceCoverage };
 }
 
-function candidateOccupations(passport: CareerPassport): Occupation[] {
-  const scored = OCCUPATIONS.map(occupation => ({ occupation, interest: interestScore(passport, occupation)[0], skill: skillScore(passport, occupation)[0] }));
-  const ids = new Set<string>();
-  scored.sort((a, b) => b.interest - a.interest).slice(0, 40).forEach(item => ids.add(item.occupation.id));
-  scored.sort((a, b) => b.skill - a.skill).slice(0, 30).forEach(item => ids.add(item.occupation.id));
-  for (const experience of passport.experiences) {
-    if (!experience.occupationId) continue;
-    for (const edge of transitionsFrom(experience.occupationId)) {
-      ids.add(edge.toId);
-      transitionsFrom(edge.toId).forEach(next => ids.add(next.toId));
-    }
-  }
-  passport.aspiration?.dreamOccupationIds.forEach(id => ids.add(id));
-  const representedClusters = new Set([...ids].map(id => occupationById.get(id)?.cluster));
-  OCCUPATIONS.filter(occupation => !representedClusters.has(occupation.cluster) || occupation.isEmerging).slice(0, 8).forEach(occupation => ids.add(occupation.id));
-  return OCCUPATIONS.filter(occupation => ids.has(occupation.id));
-}
-
 export function matchCareers(passport: CareerPassport, options: { momentumBoost?: number } = {}): RecommendationSet {
   const momentumBoost = options.momentumBoost ?? 0;
-  const all = candidateOccupations(passport).map(occupation => scoreOccupation(passport, occupation, momentumBoost)).sort((a, b) => b.totalScore - a.totalScore || a.occupationId.localeCompare(b.occupationId));
+  // The reviewed KB currently contains 100 occupations, so exhaustive scoring
+  // is cheap and avoids order-biased pre-pruning when profile evidence is sparse.
+  const all = OCCUPATIONS.map(occupation => scoreOccupation(passport, occupation, momentumBoost)).sort((a, b) => b.totalScore - a.totalScore || a.occupationId.localeCompare(b.occupationId));
   const selected: CareerRecommendation[] = [];
   const used = new Set<string>();
   const add = (recommendation: CareerRecommendation, group: RecommendationGroup) => {
