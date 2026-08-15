@@ -386,10 +386,10 @@ export function PathwayPage() {
                 </button>
                 <div>
                   <div className="label-caps">{timelineCopy.step} {String(index+1).padStart(2,'0')} — {step.estMonths} {c.months}</div>
-                  <div className="font-[Inter] text-sm font-semibold">
+                  <div className="font-[Inter] text-sm font-semibold break-words">
                     {localizedStep(step, lang)}
                   </div>
-                  <div className="font-[JetBrains_Mono] text-[10px] uppercase text-[var(--ink-soft)]">
+                  <div className="font-[JetBrains_Mono] text-[10px] uppercase text-[var(--ink-soft)] break-words">
                     {localizedStepKind(step.kind, lang)} · {step.estMonths} {c.months}
                   </div>
                   {step.refId && qualificationById.has(step.refId) && <div className="mt-3"><p className="font-[Inter] text-xs">{c.find} {qualificationById.get(step.refId)!.providerHint}</p><div className="mt-2 flex flex-wrap gap-2">{qualificationById.get(step.refId)!.links?.map(link => <a key={link.url} className="inline-flex min-h-11 items-center gap-1 border border-[var(--ink)] px-3 font-[JetBrains_Mono] text-[10px] uppercase tracking-widest transition-colors hover:bg-[var(--ink)] hover:text-white" href={link.url} target="_blank" rel="noopener noreferrer" data-testid={`pathway-learn-link-${step.refId}-${link.label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`} onClick={() => { sounds.click(); hapticTap(); }}>{link.label}<ExternalLink className="h-3 w-3" /></a>)}</div></div>}

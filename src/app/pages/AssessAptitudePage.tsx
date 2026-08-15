@@ -161,7 +161,7 @@ export function AssessAptitudePage() {
             <div className="h-1 origin-left bg-black transition-transform duration-300" style={{ transform: `scaleX(${(index + 1) / questions.length})` }} />
           </div>
           {question.dimension === "spatial" && <SpatialSketch id={question.id} />}
-          <div className="mb-6 flex items-start gap-3"><h2 className="flex-1 text-2xl font-[Playfair_Display]"><TextReveal text={localized.prompt}/></h2><button onClick={()=>speak(`${localized.prompt}. ${localized.options.join(". ")}`,locale)} className="grid min-h-11 min-w-11 place-items-center border border-black/20" aria-label="Read question aloud"><VoiceWaveform active={voiceStatus.status==='speaking'} /></button></div>
+          <div className="mb-6 flex items-start gap-3"><h2 className="flex-1 text-2xl font-[Playfair_Display]"><TextReveal text={localized.prompt}/></h2><button onClick={()=>speak(`${localized.prompt}. ${localized.options.join(". ")}`,locale)} className="grid min-h-11 min-w-11 place-items-center border border-black/20 flex-shrink-0" aria-label="Read question aloud"><div className="flex items-center justify-center"><VoiceWaveform active={voiceStatus.status==='speaking'} /></div></button></div>
           {voiceStatus.message && <p className="-mt-4 mb-4 font-[Inter] text-xs text-black/55" role="status" aria-live="polite">{voiceStatus.message}</p>}
           <div className="space-y-3">
             {localized.options.map((option, optionIndex) => (
@@ -174,6 +174,17 @@ export function AssessAptitudePage() {
                 {String.fromCharCode(65 + optionIndex)}. {option}
               </button>
             ))}
+          </div>
+          {/* Navigation buttons */}
+          <div className="mt-8 flex items-center justify-between gap-4">
+            {index > 0 && (
+              <button
+                onClick={() => setIndex(i => Math.max(0, i - 1))}
+                className="min-h-11 border border-black/20 px-6 font-[Inter] text-sm transition-colors hover:border-black hover:bg-black hover:text-white"
+              >
+                ← Previous
+              </button>
+            )}
           </div>
           </motion.div></AnimatePresence>
         </GuidanceEntrance>

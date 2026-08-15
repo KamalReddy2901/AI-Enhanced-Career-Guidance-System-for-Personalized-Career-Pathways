@@ -122,6 +122,17 @@ export function AssessValuesPage() {
               </button>
               ))}
             </div>
+            {/* Navigation buttons */}
+            <div className="mt-8 flex items-center justify-between gap-4">
+              {i > 0 && (
+                <button
+                  onClick={() => setI(prev => Math.max(0, prev - 1))}
+                  className="min-h-11 border border-black/20 px-6 font-[Inter] text-sm transition-colors hover:border-black hover:bg-black hover:text-white"
+                >
+                  ← Previous
+                </button>
+              )}
+            </div>
           </div>
         )}
       </GuidanceEntrance>

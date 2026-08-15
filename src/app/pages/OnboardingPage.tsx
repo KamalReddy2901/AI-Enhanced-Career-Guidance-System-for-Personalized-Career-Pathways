@@ -11,6 +11,7 @@ import type { Segment, CareerPassport, Education, Constraints, Experience } from
 import { OCCUPATIONS } from '../data/knowledge';
 import { LanguageSwitcher, useT, type Language } from '../i18n';
 import { AnimatePresence, motion } from 'motion/react';
+import { LocationAutocomplete } from '../components/form/LocationAutocomplete';
 
 const STEPS = ['language', 'segment', 'goals', 'background', 'constraints', 'consent', 'finish'] as const;
 type Step = typeof STEPS[number];
@@ -422,12 +423,10 @@ function ConstraintsStep({ constraints, setConstraints, segment }: {
       <div className="space-y-4">
         <div>
           <label className="block font-[Inter] text-sm font-semibold mb-2">{c.location}</label>
-          <input
-            type="text"
+          <LocationAutocomplete
             value={constraints.location}
-            onChange={(e) => setConstraints({ ...constraints, location: e.target.value })}
+            onChange={(value) => setConstraints({ ...constraints, location: value })}
             placeholder={c.locationPh}
-            className="w-full p-3 border border-black/20 rounded-sm font-[Inter] text-sm"
           />
         </div>
 

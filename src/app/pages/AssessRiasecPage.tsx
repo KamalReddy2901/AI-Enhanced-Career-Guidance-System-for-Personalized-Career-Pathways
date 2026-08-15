@@ -117,10 +117,12 @@ export function AssessRiasecPage() {
           </h2>
           <button
             onClick={() => speak(itemText, locale)}
-            className="min-h-11 min-w-11 border border-black/20"
+            className="grid min-h-11 min-w-11 place-items-center border border-black/20 flex-shrink-0"
             aria-label="Read question aloud"
           >
-            <VoiceWaveform active={voiceStatus.status==='speaking'} />
+            <div className="flex items-center justify-center">
+              <VoiceWaveform active={voiceStatus.status==='speaking'} />
+            </div>
           </button>
         </div>
         {voiceStatus.message && <p className="-mt-5 mb-5 font-[Inter] text-xs text-black/55" role="status" aria-live="polite">{voiceStatus.message}</p>}
@@ -153,6 +155,17 @@ export function AssessRiasecPage() {
                 <motion.span whileTap={{scale:.82}} className="grid size-12 place-items-center rounded-full border-2 border-black text-sm transition-[transform,background-color,color] group-hover:-translate-y-0.5 group-hover:bg-black group-hover:text-white">{n+1}</motion.span><span className={n===0||n===responseLabels.length-1?'block':'sr-only'}>{label}</span>
               </button>
             ),
+          )}
+        </div>
+        {/* Navigation buttons */}
+        <div className="mt-8 flex items-center justify-between gap-4">
+          {index > 0 && (
+            <button
+              onClick={() => setIndex(i => Math.max(0, i - 1))}
+              className="min-h-11 border border-black/20 px-6 font-[Inter] text-sm transition-colors hover:border-black hover:bg-black hover:text-white"
+            >
+              ← Previous
+            </button>
           )}
         </div>
         </motion.div></AnimatePresence>

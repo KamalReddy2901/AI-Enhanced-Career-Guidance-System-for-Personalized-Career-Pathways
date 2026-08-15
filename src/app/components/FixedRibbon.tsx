@@ -14,13 +14,15 @@ const RIBBON_MESSAGES = [
 
 interface FixedRibbonProps {
   className?: string;
+  messages?: string[];
 }
 
-export function FixedRibbon({ className = '' }: FixedRibbonProps) {
+export function FixedRibbon({ className = '', messages: customMessages }: FixedRibbonProps) {
   const messages = useMemo(() => {
+    const baseMessages = customMessages ?? RIBBON_MESSAGES;
     // Create 3 copies for seamless loop
-    return [...RIBBON_MESSAGES, ...RIBBON_MESSAGES, ...RIBBON_MESSAGES];
-  }, []);
+    return [...baseMessages, ...baseMessages, ...baseMessages];
+  }, [customMessages]);
 
   return (
     <div className={`w-full overflow-hidden bg-[var(--accent-news)] ${className}`}>

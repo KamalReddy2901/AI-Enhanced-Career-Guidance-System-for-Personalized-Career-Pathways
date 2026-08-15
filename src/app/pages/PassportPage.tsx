@@ -21,6 +21,7 @@ import { readResumeText } from '../utils/resumeText';
 import { useUndoStack } from '../hooks/useUndoStack';
 import { Undo2, Redo2, RotateCcw, Plus, Trash2, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { LocationAutocomplete } from '../components/form/LocationAutocomplete';
 
 export function PassportPage() {
   const navigate = useNavigate();
@@ -415,14 +416,33 @@ export function PassportPage() {
           )}
           {extractNotice && <div className="mb-3 border-l-4 border-[var(--accent-news)] bg-[var(--paper)] p-3 text-sm">{extractNotice}</div>}
           {unmatchedSkills.length > 0 && (
-            <div className="mb-3 rounded-sm border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-3 text-sm">
-              <p className="mb-1 font-semibold">{t('passportUnmatchedSkills')}</p>
-              <p className="text-[var(--ink-soft)]">{unmatchedSkills.join(', ')}</p>
+            <div className="mb-3 rounded-sm border-2 border-[var(--accent-news)] bg-[var(--paper)] p-4">
+              <p className="mb-2 font-semibold text-sm">{t('passportUnmatchedSkills')}</p>
+              <p className="mb-3 text-xs text-[var(--ink-soft)]">These skills from your resume couldn't be matched to our knowledge base. Click any to add them directly:</p>
+              <div className="flex flex-wrap gap-2">
+                {unmatchedSkills.map((skill) => (
+                  <button
+                    key={skill}
+                    onClick={() => {
+                      setManualSkillName(skill);
+                      setAddingManualSkill(true);
+                    }}
+                    className="inline-flex items-center gap-1 border border-[var(--ink-faint)] bg-white px-3 py-1.5 text-xs font-[Inter] transition-all hover:border-[var(--ink)] hover:bg-[var(--ink)] hover:text-white"
+                  >
+                    <Plus size={10} /> {skill}
+                  </button>
+                ))}
+              </div>
               <button
-                onClick={() => setAddingManualSkill(true)}
-                className="mt-2 flex items-center gap-2 text-xs underline hover:no-underline"
+                onClick={() => {
+                  if (unmatchedSkills.length > 0) {
+                    setManualSkillName(unmatchedSkills[0]);
+                  }
+                  setAddingManualSkill(true);
+                }}
+                className="mt-3 flex items-center gap-2 text-xs underline hover:no-underline text-[var(--ink-soft)]"
               >
-                <Plus size={12} /> Add these skills manually
+                <Plus size={12} /> Add all skills manually one by one
               </button>
             </div>
           )}
@@ -811,10 +831,9 @@ export function PassportPage() {
             <div className="grid gap-4 text-sm sm:grid-cols-2">
               <label className="block">
                 <span className="text-sm font-semibold mb-2 block">{t('passportLocation')}</span>
-                <input 
-                  value={passport.constraints.location} 
-                  onChange={event=>updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');return {...previous,constraints:{...previous.constraints,location:event.target.value}}})} 
-                  className="mt-1 min-h-11 w-full border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-2 focus:border-[var(--ink)] focus:outline-none"
+                <LocationAutocomplete
+                  value={passport.constraints.location}
+                  onChange={value=>updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');return {...previous,constraints:{...previous.constraints,location:value}}})}
                 />
               </label>
               <label className="block">

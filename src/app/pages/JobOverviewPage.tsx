@@ -36,9 +36,6 @@ function JobSearchEmptyState() {
         <h1 className="font-display text-4xl leading-snug tracking-tight text-[var(--ink)] mb-3">
           What do you want<br/>to explore?
         </h1>
-        <p className="text-sm text-[var(--ink-soft)] mb-10">
-          Type any job title — even made-up ones. AI will build a full dossier for you.
-        </p>
         <MagnifierSearch
           onSearchComplete={handleSearchComplete}
           isAnimating={isSearchAnimating}
@@ -61,8 +58,8 @@ function JobSearchEmptyState() {
             >
               <span className="text-[var(--accent-news)] transition-transform group-hover:scale-110">{tool.icon}</span>
               <div>
-                <span className="block font-[Inter] text-[.75rem] font-medium leading-tight text-black/80">{tool.label}</span>
-                <span className="mt-0.5 block font-[Inter] text-[.65rem] leading-tight text-black/40">{tool.note}</span>
+                <span className="block font-[Inter] text-[.75rem] font-medium leading-tight text-black/80 whitespace-nowrap">{tool.label}</span>
+                <span className="mt-0.5 block font-[Inter] text-[.65rem] leading-tight text-black/40 whitespace-nowrap">{tool.note}</span>
               </div>
             </button>)}
           </div>

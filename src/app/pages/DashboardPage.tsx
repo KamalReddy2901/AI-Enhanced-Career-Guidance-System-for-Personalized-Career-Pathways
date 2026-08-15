@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { motion } from 'motion/react';
+import { motion, useAnimate } from 'motion/react';
 import { 
   ClipboardCheck, 
   Map, 
@@ -12,12 +12,19 @@ import {
   TrendingUp,
   Target,
   Zap,
-  Sparkles
+  Sparkles,
+  Award,
+  Clock,
+  BarChart3,
+  Brain,
+  Flame,
+  Star
 } from 'lucide-react';
 import { useGuidance } from '../context/GuidanceContext';
 import { StickFigure } from '../components/StickFigure';
 import type { StickFigurePose } from '../components/StickFigure';
 import { getPassportCompletenessBreakdown } from '../engine/skillProfile';
+import { FixedRibbon } from '../components/FixedRibbon';
 
 interface DashboardCard {
   title: string;
@@ -116,8 +123,48 @@ export function DashboardPage() {
 
   const nextStep = getNextStep();
 
+  // Animated counter for stats
+  const [counters, setCounters] = useState({ careers: 0, skills: 0, pathways: 0, progress: 0 });
+  
+  useEffect(() => {
+    const targetCareers = recommendations?.recommendations.length ?? 0;
+    const targetSkills = passport?.skills.length ?? 0;
+    const targetPathways = pathways.length;
+    const targetProgress = progressPercentage;
+    
+    const duration = 1000;
+    const steps = 30;
+    const interval = duration / steps;
+    
+    let step = 0;
+    const timer = setInterval(() => {
+      step++;
+      const progress = step / steps;
+      setCounters({
+        careers: Math.round(targetCareers * progress),
+        skills: Math.round(targetSkills * progress),
+        pathways: Math.round(targetPathways * progress),
+        progress: Math.round(targetProgress * progress),
+      });
+      
+      if (step >= steps) clearInterval(timer);
+    }, interval);
+    
+    return () => clearInterval(timer);
+  }, [recommendations, passport, pathways, progressPercentage]);
+
   return (
     <div className="min-h-screen bg-[var(--paper)] pb-16">
+      {/* Animated Red Ribbon - similar to homepage */}
+      <FixedRibbon
+        messages={[
+          'YOUR CAREER COMMAND CENTER',
+          `${progressPercentage}% PASSPORT READY`,
+          passport ? `${passport.skills.length} SKILLS TRACKED` : 'BUILD YOUR PROFILE',
+          recommendations ? `${recommendations.recommendations.length} CAREER MATCHES` : 'GET PERSONALIZED MATCHES',
+          pathways.length > 0 ? `${pathways.length} ACTIVE ${pathways.length === 1 ? 'PATHWAY' : 'PATHWAYS'}` : 'EXPLORE PATHWAYS',
+        ]}
+      />
       {/* Header Section */}
       <section className="border-b border-[var(--ink-faint)] bg-[var(--paper-raised)] px-6 py-16">
         <div className="mx-auto max-w-6xl">
@@ -357,7 +404,7 @@ export function DashboardPage() {
         </div>
       </section>
 
-      {/* Quick Stats */}
+      {/* Quick Stats - Enhanced with animated counters */}
       <section className="px-6 pb-12">
         <div className="mx-auto max-w-6xl">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -365,45 +412,72 @@ export function DashboardPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.1 }}
-              className="bg-[var(--paper-raised)] border border-[var(--ink-faint)] p-6 text-center"
+              whileHover={{ scale: 1.02, y: -4 }}
+              className="group relative bg-[var(--paper-raised)] border-2 border-[var(--ink)] p-8 text-center overflow-hidden transition-all hover:shadow-[6px_6px_0_var(--ink)]"
             >
-              <Target size={32} className="mx-auto mb-3 text-[var(--accent-news)]" strokeWidth={1.5} />
-              <div className="font-display text-3xl mb-1 text-[var(--ink)]">
-                {recommendations?.recommendations.length ?? 0}
+              <div className="absolute top-0 left-0 w-full h-1 bg-[#dc2626] transition-all group-hover:h-2" />
+              <Target size={36} className="mx-auto mb-4 text-[#dc2626] transition-transform group-hover:scale-110" strokeWidth={1.5} />
+              <div className="font-display text-5xl mb-2 text-[var(--ink)] tabular-nums">
+                {counters.careers}
               </div>
-              <div className="font-mono-ui text-xs uppercase tracking-wider text-[var(--ink-soft)]">
+              <div className="font-mono-ui text-[10px] uppercase tracking-widest text-[var(--ink-soft)]">
                 Career Matches
               </div>
+              <motion.div 
+                className="absolute -bottom-2 -right-2 opacity-5"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              >
+                <Target size={80} strokeWidth={1} />
+              </motion.div>
             </motion.div>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.2 }}
-              className="bg-[var(--paper-raised)] border border-[var(--ink-faint)] p-6 text-center"
+              whileHover={{ scale: 1.02, y: -4 }}
+              className="group relative bg-[var(--paper-raised)] border-2 border-[var(--ink)] p-8 text-center overflow-hidden transition-all hover:shadow-[6px_6px_0_var(--ink)]"
             >
-              <TrendingUp size={32} className="mx-auto mb-3 text-[var(--accent-news)]" strokeWidth={1.5} />
-              <div className="font-display text-3xl mb-1 text-[var(--ink)]">
-                {passport?.skills.length ?? 0}
+              <div className="absolute top-0 left-0 w-full h-1 bg-[var(--accent-news)] transition-all group-hover:h-2" />
+              <Brain size={36} className="mx-auto mb-4 text-[var(--accent-news)] transition-transform group-hover:scale-110" strokeWidth={1.5} />
+              <div className="font-display text-5xl mb-2 text-[var(--ink)] tabular-nums">
+                {counters.skills}
               </div>
-              <div className="font-mono-ui text-xs uppercase tracking-wider text-[var(--ink-soft)]">
+              <div className="font-mono-ui text-[10px] uppercase tracking-widest text-[var(--ink-soft)]">
                 Skills Tracked
               </div>
+              <motion.div 
+                className="absolute -bottom-2 -right-2 opacity-5"
+                animate={{ rotate: -360 }}
+                transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+              >
+                <Brain size={80} strokeWidth={1} />
+              </motion.div>
             </motion.div>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.3 }}
-              className="bg-[var(--paper-raised)] border border-[var(--ink-faint)] p-6 text-center"
+              whileHover={{ scale: 1.02, y: -4 }}
+              className="group relative bg-[var(--paper-raised)] border-2 border-[var(--ink)] p-8 text-center overflow-hidden transition-all hover:shadow-[6px_6px_0_var(--ink)]"
             >
-              <Zap size={32} className="mx-auto mb-3 text-[var(--accent-news)]" strokeWidth={1.5} />
-              <div className="font-display text-3xl mb-1 text-[var(--ink)]">
-                {pathways.length}
+              <div className="absolute top-0 left-0 w-full h-1 bg-[#dc2626] transition-all group-hover:h-2" />
+              <Flame size={36} className="mx-auto mb-4 text-[#dc2626] transition-transform group-hover:scale-110" strokeWidth={1.5} />
+              <div className="font-display text-5xl mb-2 text-[var(--ink)] tabular-nums">
+                {counters.pathways}
               </div>
-              <div className="font-mono-ui text-xs uppercase tracking-wider text-[var(--ink-soft)]">
+              <div className="font-mono-ui text-[10px] uppercase tracking-widest text-[var(--ink-soft)]">
                 Active Pathways
               </div>
+              <motion.div 
+                className="absolute -bottom-2 -right-2 opacity-5"
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <Flame size={80} strokeWidth={1} />
+              </motion.div>
             </motion.div>
           </div>
         </div>
