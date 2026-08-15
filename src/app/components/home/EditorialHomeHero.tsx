@@ -27,10 +27,7 @@ export function EditorialHomeHero({
 
   return (
     <>
-      <StopPress changes={recommendationChanges} onDismiss={onDismissChanges} onExplain={(occupationId) => {
-        const recommendation = recommendations?.recommendations.find((item) => item.occupationId === occupationId);
-        if (recommendation) onExplain(recommendation);
-      }} />
+      {/* StopPress removed from homepage per user request - shown on other pages */}
 
       <section className="px-6 py-8" aria-labelledby="home-progress-title">
         <div className="card-sketch mx-auto flex max-w-6xl flex-col gap-5 p-6 md:flex-row md:items-center md:justify-between md:p-8">
