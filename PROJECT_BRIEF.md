@@ -122,10 +122,14 @@ Current AI use cases include:
 
 - full dossiers for roles outside the grounded knowledge base;
 - resume and aspiration extraction;
+- conversational skill discovery — a guided chat that infers evidence-backed skills from a short work-experience interview and merges them into the passport;
+- a 3-year career trajectory projection (demand range, key skill evolution, divergence paths, and explicit confidence banding) shown on demand from the job dossier;
 - simulations and interview questions;
 - related careers and resource suggestions;
 - career comparisons, roadmaps, and transition plans;
 - grounded counselor responses.
+
+The passport also keeps a rolling local "momentum" log (skill confidence gains, assessment completions, new evidence) for future progress-reflection surfaces; it is currently recorded but not yet exposed in the UI.
 
 Known occupations use the versioned knowledge base for their preliminary snapshot and deterministic work-life/interview indicators instead of spending an AI request. AI responses are normalized before rendering so missing fields cannot crash dossier pages. The counselor is instructed not to invent score changes: a change may be quantified only when the supplied context contains a computed before/after counterfactual.
 
@@ -232,6 +236,16 @@ The August 2026 production audit used a signed-in burner account from onboarding
 - card and landscape controls are localized in English, Hindi, and Telugu; landscape points support keyboard focus, Enter, and Space;
 - export declares a schema version;
 - duplicate consent migration writes are prevented.
+
+## UI consistency pass (latest)
+
+A design-system audit confirmed CareerCase already runs a deliberate editorial/"newsprint" visual language (ink/paper/accent-news CSS tokens, `card-sketch` hard-shadow cards, Playfair Display/JetBrains Mono type, a single red accent, built-in focus rings, 44×44px touch targets, and reduced-motion support in `src/styles/theme.css`). The pass below brought recently added surfaces in line with that system rather than introducing a new one:
+
+- the skill-discovery chat and career-trajectory projection card (both new) were rebuilt from generic purple/pink gradient, dark-mode, and rounded-2xl styling onto the existing ink/paper/`card-sketch`/`accent-news` system, matching the Counselor chat's bubble and typing-indicator conventions;
+- the new "Discover skills" and "Load 3-Year Career Trajectory" entry points now use the app's standard bordered/mono-label button treatment instead of ad hoc gradients;
+- a stray off-palette badge in the gap-closing learning routes panel was brought back to the neutral ink palette;
+- fixed a broken build left by the momentum-tracking and trajectory-projection work in progress: the guidance context wasn't exposing `momentumLog`/`getMomentumSummary`, the trajectory projector's market-context type didn't match the knowledge-base market signal shape, and a new progress-log event type wasn't declared — all three are now wired through and typecheck cleanly;
+- removed all `dark:` Tailwind variants app-wide (the product has no dark-mode toggle, so these were inert and misleading).
 
 ## Alignment with the attached research dossier
 

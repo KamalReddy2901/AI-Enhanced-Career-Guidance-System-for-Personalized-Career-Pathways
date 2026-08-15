@@ -26,6 +26,7 @@ interface GuidanceContextValue {
   passport: CareerPassport | null;
   recommendations: RecommendationSet | null;
   recommendationChanges: RecommendationChange[];
+  momentumLog: MomentumEvent[];
   pathways: PathwayPlan[];
 
   updatePassport: (
@@ -36,6 +37,7 @@ interface GuidanceContextValue {
   replacePathwayPlan: (plan: PathwayPlan) => void;
   resetGuidance: () => void;
   dismissRecommendationChanges: () => void;
+  getMomentumSummary: () => { count: number; recentEvents: MomentumEvent[] };
 
   loading: boolean;
 }
@@ -48,12 +50,25 @@ export interface RecommendationChange {
   rank: number;
 }
 
+export interface MomentumEvent {
+  timestamp: string;
+  type: 'skill_confidence_improved' | 'assessment_completed' | 'pathway_step_completed' | 'evidence_added';
+  description: string;
+  delta: {
+    skillId?: string;
+    confidenceDelta?: number;
+    assessmentType?: 'riasec' | 'aptitude' | 'values' | 'aspiration';
+    occupationId?: string;
+  };
+}
+
 const GuidanceContext = createContext<GuidanceContextValue | null>(null);
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 const PASSPORT_STORAGE_KEY = "cc_guidance_passport";
 const PATHWAYS_STORAGE_KEY = "cc_guidance_pathways";
+const MOMENTUM_STORAGE_KEY = "cc_guidance_momentum";
 
 /**
  * Older anonymous profiles can outlive the UI version that created them.
@@ -125,6 +140,7 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
   const [recommendationChanges, setRecommendationChanges] = useState<
     RecommendationChange[]
   >([]);
+  const [momentumLog, setMomentumLog] = useState<MomentumEvent[]>([]);
   const [pathways, setPathways] = useState<PathwayPlan[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -165,6 +181,18 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
       } catch {
         /* ignore invalid local pathway data */
       }
+      try {
+        const momentumRaw = localStorage.getItem(MOMENTUM_STORAGE_KEY);
+        if (momentumRaw && !cancelled) {
+          const events = JSON.parse(momentumRaw) as MomentumEvent[];
+          // Keep only events from last 30 days
+          const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+          const recent = events.filter(e => new Date(e.timestamp).getTime() > cutoff);
+          setMomentumLog(recent);
+        }
+      } catch {
+        /* ignore invalid momentum data */
+      }
 
       // If signed in, load from Supabase and merge
       if (user?.id) {
@@ -190,6 +218,76 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, [user?.id, authLoading, isSupabaseConfigured]);
 
+  // ─── Momentum Detection ─────────────────────────────────────────────────────
+  const detectMomentumEvents = useCallback((prev: CareerPassport | null, next: CareerPassport): MomentumEvent[] => {
+    if (!prev) return [];
+    const events: MomentumEvent[] = [];
+
+    // Detect skill confidence improvements
+    for (const nextSkill of next.skills) {
+      const prevSkill = prev.skills.find(s => s.skillId === nextSkill.skillId);
+      if (prevSkill && nextSkill.confidence > prevSkill.confidence) {
+        const delta = nextSkill.confidence - prevSkill.confidence;
+        if (delta >= 0.1) { // Only track meaningful improvements
+          events.push({
+            timestamp: new Date().toISOString(),
+            type: 'skill_confidence_improved',
+            description: `${nextSkill.name || nextSkill.skillId} confidence improved`,
+            delta: { skillId: nextSkill.skillId, confidenceDelta: delta },
+          });
+        }
+      }
+    }
+
+    // Detect new assessments
+    if (!prev.riasec && next.riasec) {
+      events.push({
+        timestamp: new Date().toISOString(),
+        type: 'assessment_completed',
+        description: 'Completed interest assessment',
+        delta: { assessmentType: 'riasec' },
+      });
+    }
+    if (!prev.aptitude && next.aptitude) {
+      events.push({
+        timestamp: new Date().toISOString(),
+        type: 'assessment_completed',
+        description: 'Completed aptitude assessment',
+        delta: { assessmentType: 'aptitude' },
+      });
+    }
+    if (!prev.values && next.values) {
+      events.push({
+        timestamp: new Date().toISOString(),
+        type: 'assessment_completed',
+        description: 'Completed values assessment',
+        delta: { assessmentType: 'values' },
+      });
+    }
+    if (!prev.aspiration && next.aspiration) {
+      events.push({
+        timestamp: new Date().toISOString(),
+        type: 'assessment_completed',
+        description: 'Recorded career aspiration',
+        delta: { assessmentType: 'aspiration' },
+      });
+    }
+
+    // Detect new evidence
+    const prevEvidenceCount = prev.skills.reduce((sum, s) => sum + s.evidence.length, 0);
+    const nextEvidenceCount = next.skills.reduce((sum, s) => sum + s.evidence.length, 0);
+    if (nextEvidenceCount > prevEvidenceCount) {
+      events.push({
+        timestamp: new Date().toISOString(),
+        type: 'evidence_added',
+        description: `Added ${nextEvidenceCount - prevEvidenceCount} new evidence item(s)`,
+        delta: {},
+      });
+    }
+
+    return events;
+  }, []);
+
   // ─── Update passport ────────────────────────────────────────────────────────
   const updatePassport = useCallback(
     (mutator: (prev: CareerPassport | null) => CareerPassport) => {
@@ -200,6 +298,22 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
           updatedAt: new Date().toISOString(),
           version: (prev?.version ?? 0) + 1,
         });
+
+        // Detect momentum events
+        const newEvents = detectMomentumEvents(prev, updated);
+        if (newEvents.length > 0) {
+          setMomentumLog(prevLog => {
+            const combined = [...prevLog, ...newEvents];
+            // Keep only last 50 events
+            const trimmed = combined.slice(-50);
+            try {
+              localStorage.setItem(MOMENTUM_STORAGE_KEY, JSON.stringify(trimmed));
+            } catch {
+              // Ignore storage errors
+            }
+            return trimmed;
+          });
+        }
 
         // Save to localStorage immediately
         try {
@@ -223,6 +337,10 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
     },
     [user],
   );
+
+  const getMomentumSummary = useCallback(() => {
+    return { count: momentumLog.length, recentEvents: momentumLog.slice(-5) };
+  }, [momentumLog]);
 
   // ─── Deterministic recommendation and active-pathway recomputation ─────────
   const recompute = useCallback(async () => {
@@ -400,6 +518,7 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
         passport,
         recommendations,
         recommendationChanges,
+        momentumLog,
         pathways,
         updatePassport,
         recompute,
@@ -407,6 +526,7 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
         replacePathwayPlan,
         resetGuidance,
         dismissRecommendationChanges,
+        getMomentumSummary,
         loading,
       }}
     >

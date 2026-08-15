@@ -70,6 +70,8 @@ import { hapticLight, hapticTap } from '../utils/haptic';
 import { useT } from '../i18n';
 import { TrustStrip } from "../components/guidance/TrustStrip";
 import { GapLearningRoutes } from '../components/guidance/GapLearningRoutes';
+import { TrajectoryChart } from '../components/guidance/TrajectoryChart';
+import { projectCareerTrajectory, type CareerTrajectory } from '../services/trajectoryProjector';
 import type { CareerRecommendation } from "../engine/types";
 
 /**
@@ -186,6 +188,8 @@ export function JobDetailPage() {
   const [showDossierNav, setShowDossierNav] = useState(false);
   const [compatibility, setCompatibility] = useState('');
   const [checkingCompatibility, setCheckingCompatibility] = useState(false);
+  const [trajectory, setTrajectory] = useState<CareerTrajectory | null>(null);
+  const [trajectoryLoading, setTrajectoryLoading] = useState(false);
   const requestedLoadRef = useRef<string | null>(null);
   const params = new URLSearchParams(location.search);
   const requestedOccupation = occupationById.get(params.get("occupation") ?? "");
@@ -374,6 +378,25 @@ export function JobDetailPage() {
       });
     } finally {
       setIsRegenerating(false);
+    }
+  };
+
+  const loadTrajectory = async () => {
+    if (!knowledgeOccupation || trajectoryLoading || trajectory) return;
+    
+    setTrajectoryLoading(true);
+    try {
+      const projected = await projectCareerTrajectory(
+        knowledgeOccupation.title,
+        knowledgeOccupation.id,
+        marketSignal || null
+      );
+      setTrajectory(projected);
+    } catch (error) {
+      console.error('Failed to load trajectory:', error);
+      toast.error('Could not load career trajectory projection');
+    } finally {
+      setTrajectoryLoading(false);
     }
   };
 
@@ -1295,6 +1318,38 @@ export function JobDetailPage() {
                 </div>
               </div>
             ) : null}
+          </motion.div>
+        )}
+
+        {/* ── Career Trajectory ────────────────────────────── */}
+        {knowledgeOccupation && (
+          <motion.div
+            ref={registerSection("trajectory")}
+            className="mt-10 mb-10 print:hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            {!trajectory && !trajectoryLoading && (
+              <button
+                onClick={loadTrajectory}
+                className="card-sketch flex w-full items-center justify-center gap-2 bg-[var(--paper-raised)] px-6 py-4 font-mono-ui text-sm uppercase tracking-wide text-[var(--ink)] transition-colors hover:bg-[var(--accent-news)] hover:text-[var(--paper)]"
+              >
+                <Sparkles size={16} aria-hidden="true" />
+                Load 3-Year Career Trajectory
+              </button>
+            )}
+
+            {trajectoryLoading && (
+              <div className="flex items-center justify-center gap-3 py-12" role="status">
+                <Loader2 size={20} className="animate-spin text-[var(--accent-news)]" aria-hidden="true" />
+                <span className="text-sm text-[var(--ink-soft)]">
+                  Projecting career trajectory...
+                </span>
+              </div>
+            )}
+            
+            {trajectory && <TrajectoryChart trajectory={trajectory} />}
           </motion.div>
         )}
 

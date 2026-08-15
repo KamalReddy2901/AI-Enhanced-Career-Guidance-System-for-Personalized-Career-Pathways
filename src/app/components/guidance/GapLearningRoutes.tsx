@@ -47,8 +47,8 @@ export function GapLearningRoutes({ passport, occupationId }: { passport: Career
                     <span className="font-[Inter] text-sm font-semibold text-[var(--ink)]">
                       {route.name}
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 font-mono-ui text-[10px] uppercase text-blue-800">
-                      <Clock size={12} />
+                    <span className="inline-flex items-center gap-1 rounded-full bg-black/5 px-2 py-1 font-mono-ui text-[10px] uppercase text-[var(--ink-soft)]">
+                      <Clock size={12} aria-hidden="true" />
                       {route.typicalMonths} {c.months}
                     </span>
                     <span className="rounded-full bg-emerald-100 px-2 py-1 font-mono-ui text-[10px] uppercase text-emerald-800">

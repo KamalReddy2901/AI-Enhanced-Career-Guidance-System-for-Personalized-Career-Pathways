@@ -19,9 +19,10 @@ import { TextReveal } from '../motion/TextReveal';
 import { useT } from '../i18n';
 import { readResumeText } from '../utils/resumeText';
 import { useUndoStack } from '../hooks/useUndoStack';
-import { Undo2, Redo2, RotateCcw, Plus, Trash2, Edit2 } from 'lucide-react';
+import { Undo2, Redo2, RotateCcw, Plus, Trash2, Edit2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { LocationAutocomplete } from '../components/form/LocationAutocomplete';
+import { SkillDiscoveryChat } from '../components/guidance/SkillDiscoveryChat';
 
 export function PassportPage() {
   const navigate = useNavigate();
@@ -57,6 +58,7 @@ export function PassportPage() {
   const [manualSkillProficiency, setManualSkillProficiency] = useState<Proficiency>(2);
   const [editingAspiration, setEditingAspiration] = useState(false);
   const [aspirationText, setAspirationText] = useState('');
+  const [showSkillDiscovery, setShowSkillDiscovery] = useState(false);
   const resumeInputRef = useRef<HTMLInputElement>(null);
 
   const handleResumeFile = async (file: File | undefined) => {
@@ -181,6 +183,23 @@ export function PassportPage() {
     sounds.success();
     hapticSuccess();
     toast.success('Skill added to passport');
+  };
+
+  const handleSkillsDiscovered = (discoveredSkills: SkillClaim[]) => {
+    if (discoveredSkills.length === 0) return;
+
+    updatePassport(prev => {
+      if (!prev) throw new Error('Passport unavailable');
+      undoStack.pushState(prev);
+      const next = { ...prev, skills: mergeSkillClaims(prev.skills, discoveredSkills) };
+      next.completeness = calculateCompleteness(next);
+      return next;
+    });
+
+    sounds.success();
+    hapticSuccess();
+    toast.success(`${discoveredSkills.length} skill${discoveredSkills.length > 1 ? 's' : ''} added to passport`);
+    void logProgress(user?.id ?? null, 'skill_discovery_completed', { skillCount: discoveredSkills.length });
   };
 
   const handleResetResumeData = () => {
@@ -371,7 +390,7 @@ export function PassportPage() {
         </div>
 
         {/* Resume Extraction */}
-        <div className="mb-6 border-2 border-[var(--ink)] bg-[var(--paper-raised)] p-6 shadow-md">
+        <div className="card-sketch mb-6 bg-[var(--paper-raised)] p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-2xl">{t('passportAddResume')}</h2>
             {(passport.skills.length > 0 || passport.experiences.length > 0) && (
@@ -456,15 +475,24 @@ export function PassportPage() {
         </div>
 
         {/* Skills */}
-        <div className="mb-6 border-2 border-[var(--ink)] bg-[var(--paper-raised)] p-6 shadow-md">
+        <div className="card-sketch mb-6 bg-[var(--paper-raised)] p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-2xl">{t('passportSkills')}</h2>
-            <button
-              onClick={() => setAddingManualSkill(true)}
-              className="flex items-center gap-2 border-2 border-[var(--ink)] px-3 py-2 text-xs font-mono-ui uppercase hover:bg-[var(--ink)] hover:text-[var(--paper)] transition-colors"
-            >
-              <Plus size={14} /> Add skill
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setShowSkillDiscovery(true)}
+                className="flex items-center gap-2 border-2 border-[var(--accent-news)] px-3 py-2 text-xs font-mono-ui uppercase text-[var(--accent-news)] transition-colors hover:bg-[var(--accent-news)] hover:text-[var(--paper)]"
+                title="Discover skills through AI conversation"
+              >
+                <Sparkles size={14} aria-hidden="true" /> Discover
+              </button>
+              <button
+                onClick={() => setAddingManualSkill(true)}
+                className="flex items-center gap-2 border-2 border-[var(--ink)] px-3 py-2 text-xs font-mono-ui uppercase hover:bg-[var(--ink)] hover:text-[var(--paper)] transition-colors"
+              >
+                <Plus size={14} aria-hidden="true" /> Add skill
+              </button>
+            </div>
           </div>
           {passport.skills.length === 0 ? (
             <p className="text-sm text-[var(--ink-soft)]">{t('passportNoSkills')}</p>
@@ -592,7 +620,7 @@ export function PassportPage() {
         </div>
 
         {/* Experiences */}
-        <div className="mb-6 border-2 border-[var(--ink)] bg-[var(--paper-raised)] p-6 shadow-md">
+        <div className="card-sketch mb-6 bg-[var(--paper-raised)] p-6">
           <h2 className="font-display mb-4 text-2xl">{t('passportExperiences')}</h2>
           {passport.experiences.length === 0 ? (
             <p className="text-sm text-[var(--ink-soft)]">{t('passportNoExperiences')}</p>
@@ -638,7 +666,7 @@ export function PassportPage() {
         </div>
 
         {/* Assessments */}
-        <div className="mb-6 border-2 border-[var(--ink)] bg-[var(--paper-raised)] p-6 shadow-md">
+        <div className="card-sketch mb-6 bg-[var(--paper-raised)] p-6">
           <h2 className="font-display mb-4 text-2xl">{t('passportAssessmentResults')}</h2>
           <div className="space-y-4">
             {passport.riasec ? (
@@ -790,7 +818,7 @@ export function PassportPage() {
 
         {/* Aspiration */}
         {passport.aspiration && (
-          <div className="mb-6 border-2 border-[var(--ink)] bg-[var(--paper-raised)] p-6 shadow-md">
+          <div className="card-sketch mb-6 bg-[var(--paper-raised)] p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-2xl">{t('passportAspiration')}</h2>
               <button
@@ -817,7 +845,7 @@ export function PassportPage() {
         )}
 
         {/* Constraints */}
-        <div className="border-2 border-[var(--ink)] bg-[var(--paper-raised)] p-6 shadow-md">
+        <div className="card-sketch bg-[var(--paper-raised)] p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display text-2xl">{t('passportConstraints')}</h2>
             <button 
@@ -1002,6 +1030,15 @@ export function PassportPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Skill Discovery Chat */}
+      {showSkillDiscovery && passport && (
+        <SkillDiscoveryChat
+          onClose={() => setShowSkillDiscovery(false)}
+          onSkillsDiscovered={handleSkillsDiscovered}
+          passport={passport}
+        />
       )}
     </div>
   );

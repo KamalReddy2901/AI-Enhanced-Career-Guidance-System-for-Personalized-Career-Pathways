@@ -26,7 +26,7 @@ interface LocalAssessmentRun {
 
 interface LocalProgressEvent {
   id: string;
-  eventType: 'skill_validated' | 'module_completed' | 'milestone_done' | 'profile_edit';
+  eventType: 'skill_validated' | 'module_completed' | 'milestone_done' | 'profile_edit' | 'skill_discovery_completed';
   payload: Record<string, unknown>;
   createdAt: string;
 }
@@ -319,7 +319,7 @@ export type { DbProgress };
 
 export async function logProgress(
   userId: string | null,
-  eventType: 'skill_validated' | 'module_completed' | 'milestone_done' | 'profile_edit',
+  eventType: 'skill_validated' | 'module_completed' | 'milestone_done' | 'profile_edit' | 'skill_discovery_completed',
   payload: Record<string, unknown>
 ): Promise<void> {
   const event: LocalProgressEvent = { id: localEventId(), eventType, payload, createdAt: new Date().toISOString() };
