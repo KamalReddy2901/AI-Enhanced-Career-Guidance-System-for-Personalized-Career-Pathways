@@ -31,7 +31,7 @@ export function WordCloudMasthead({ passport, showLanding, onNavigate }: WordClo
     <section id="hero" className="relative min-h-screen overflow-hidden bg-[var(--paper)]" data-testid="hero-section">
       <ScrollingTitles />
 
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 text-center">
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 text-center pb-20">
         <motion.div
           className="flex flex-col items-center"
           initial={{ opacity: 0, y: 18 }}
@@ -149,9 +149,9 @@ export function WordCloudMasthead({ passport, showLanding, onNavigate }: WordClo
 
         {/* Scroll cue */}
         <motion.div
-          className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-2"
+          className="absolute bottom-12 left-0 right-0 flex flex-col items-center gap-2"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 0.35 }}
+          animate={{ opacity: 0.6 }}
           transition={{ delay: 1.2 }}
           aria-hidden="true"
         >
