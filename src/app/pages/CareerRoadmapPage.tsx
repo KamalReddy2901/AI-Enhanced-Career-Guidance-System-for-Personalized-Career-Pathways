@@ -280,19 +280,18 @@ export function CareerRoadmapPage() {
               transition={{ duration: 0.3 }}
             >
               {/* Title bar */}
-              <div className="border-b-2 border-black/15 pb-4 mb-6">
-                <h2 className="font-[Playfair_Display] text-black" style={{ fontSize: '1.5rem' }}>
-                  {roadmap.title} Roadmap
-                </h2>
-                <p className="font-[Inter] text-black/40 mt-1" style={{ fontSize: '0.8rem' }}>
-                  {roadmap.totalYears}
-                </p>
-              </div>
-
-              {/* Vertical timeline */}
-              <div className="relative">
-                {/* Single "Why these steps?" button in left margin */}
-                <div className="absolute left-0 top-0 z-20 -ml-2">
+              <div className="flex items-start justify-between border-b-2 border-black/15 pb-4 mb-6">
+                <div className="flex-1">
+                  <h2 className="font-[Playfair_Display] text-black" style={{ fontSize: '1.5rem' }}>
+                    {roadmap.title} Roadmap
+                  </h2>
+                  <p className="font-[Inter] text-black/40 mt-1" style={{ fontSize: '0.8rem' }}>
+                    {roadmap.totalYears}
+                  </p>
+                </div>
+                
+                {/* Single "Why these steps?" button positioned in header */}
+                <div className="ml-4">
                   {(() => {
                     // Gather all evidence for a comprehensive explanation
                     const allGaps = roadmapGapReport?.gaps || [];
@@ -342,6 +341,10 @@ export function CareerRoadmapPage() {
                     );
                   })()}
                 </div>
+              </div>
+
+              {/* Vertical timeline */}
+              <div className="relative">
 
                 {/* Timeline line */}
                 <div className="absolute left-[1.4rem] top-6 bottom-6 w-0.5 bg-black/8" />

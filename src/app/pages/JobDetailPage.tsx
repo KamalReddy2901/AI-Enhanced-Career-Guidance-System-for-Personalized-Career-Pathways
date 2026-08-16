@@ -1761,7 +1761,7 @@ export function JobDetailPage() {
 
         <motion.div
           ref={registerSection("actions")}
-          className="flex flex-col sm:flex-row gap-4 mt-10 mb-4 print:hidden"
+          className="flex flex-wrap gap-3 mt-10 mb-4 print:hidden"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
@@ -1769,39 +1769,39 @@ export function JobDetailPage() {
           <motion.button
             ref={simulateBtnRef}
             onClick={() => navigate("/simulation")}
-            className="flex-1 flex items-center justify-center gap-3 bg-black text-white py-4 px-6 hover:bg-black/85 transition-colors font-[Inter] group"
+            className="flex-1 min-w-[200px] flex items-center justify-center gap-3 bg-black text-white py-4 px-4 sm:px-6 hover:bg-black/85 transition-colors font-[Inter] group"
             style={{ fontSize: "0.95rem" }}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
           >
             <Play
               size={20}
-              className="group-hover:translate-x-0.5 transition-transform"
+              className="group-hover:translate-x-0.5 transition-transform shrink-0"
             />
-            Start Day-in-the-Life Simulation
+            <span className="whitespace-nowrap">Start Day-in-the-Life Simulation</span>
           </motion.button>
 
           <motion.button
             onClick={() => void handleCompatibilityCheck()}
             disabled={checkingCompatibility}
-            className="flex items-center justify-center gap-2 border-2 border-black/20 py-4 px-6 font-[Inter] text-black/60 hover:border-black/40 hover:text-black disabled:opacity-40"
+            className="flex items-center justify-center gap-2 border-2 border-black/20 py-4 px-4 sm:px-6 font-[Inter] text-black/60 hover:border-black/40 hover:text-black disabled:opacity-40 whitespace-nowrap"
             style={{ fontSize: "0.88rem" }}
             whileHover={checkingCompatibility ? {} : { scale: 1.01 }} whileTap={checkingCompatibility ? {} : { scale: 0.99 }}
           >
-            {checkingCompatibility ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
-            Does it fit me?
+            {checkingCompatibility ? <Loader2 size={18} className="animate-spin shrink-0" /> : <Sparkles size={18} className="shrink-0" />}
+            <span>Does it fit me?</span>
           </motion.button>
 
           <motion.button
             onClick={() => navigate("/interview-prep")}
-            className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-4 px-6 hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
+            className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-4 px-4 sm:px-6 hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter] whitespace-nowrap"
             style={{ fontSize: "0.88rem" }}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
           >
-            <UserCheck size={18} />
-            Interview Prep
-            <Sparkles size={12} className="text-black/30" />
+            <UserCheck size={18} className="shrink-0" />
+            <span>Interview Prep</span>
+            <Sparkles size={12} className="text-black/30 shrink-0" />
           </motion.button>
 
           <motion.button
@@ -1809,14 +1809,14 @@ export function JobDetailPage() {
               setShowChat(true);
               sounds.slide();
             }}
-            className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-4 px-6 hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter]"
+            className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-4 px-4 sm:px-6 hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter] whitespace-nowrap"
             style={{ fontSize: "0.88rem" }}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
           >
-            <MessageCircle size={18} />
-            Ask Questions
-            <Sparkles size={12} className="text-black/30" />
+            <MessageCircle size={18} className="shrink-0" />
+            <span>Ask Questions</span>
+            <Sparkles size={12} className="text-black/30 shrink-0" />
           </motion.button>
         </motion.div>
 

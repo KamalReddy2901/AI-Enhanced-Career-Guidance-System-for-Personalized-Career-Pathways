@@ -699,53 +699,57 @@ export function SimulationPage() {
               </div>}
 
               {/* Actions */}
-              <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center">
+              <div className="flex flex-wrap gap-3 justify-center items-center">
                 {(aiSummary || !loadingSummary) && (
                   <motion.button
                     onClick={handleDownloadPDF}
-                    className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-6 hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter] whitespace-nowrap"
+                    className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-4 sm:px-6 hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter] whitespace-nowrap text-center"
                     style={{ fontSize: '0.85rem' }}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <Download size={16} className="shrink-0" />
-                    Download PDF
+                    <span className="hidden sm:inline">Download PDF</span>
+                    <span className="sm:hidden">PDF</span>
                   </motion.button>
                 )}
                 <motion.button
                   onClick={() => void handleCompatibilityCheck()}
                   disabled={checkingCompatibility}
-                  className="flex items-center justify-center gap-2 border-2 border-black/20 py-3 px-6 font-[Inter] text-black/60 hover:border-black/40 hover:text-black disabled:opacity-40 whitespace-nowrap"
+                  className="flex items-center justify-center gap-2 border-2 border-black/20 py-3 px-4 sm:px-6 font-[Inter] text-black/60 hover:border-black/40 hover:text-black disabled:opacity-40 whitespace-nowrap"
                   style={{ fontSize: '0.85rem' }}
                   whileHover={checkingCompatibility ? {} : { scale: 1.02 }} whileTap={checkingCompatibility ? {} : { scale: 0.98 }}
                 >
-                  {checkingCompatibility ? <Loader2 size={16} className="animate-spin"/> : <Sparkles size={16}/>} Does it fit me?
+                  {checkingCompatibility ? <Loader2 size={16} className="animate-spin"/> : <Sparkles size={16}/>}
+                  <span>Does it fit me?</span>
                 </motion.button>
                 <motion.button
                   onClick={handleRestart}
-                  className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-6 hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter] whitespace-nowrap"
+                  className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-4 sm:px-6 hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter] whitespace-nowrap"
                   style={{ fontSize: '0.85rem' }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   <RotateCcw size={16} className="shrink-0" />
-                  New Simulation
+                  <span className="hidden sm:inline">New Simulation</span>
+                  <span className="sm:hidden">New</span>
                 </motion.button>
                 {scenarios.length > 0 && (
                   <motion.button
                     onClick={handleRedo}
-                    className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-6 hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter] whitespace-nowrap"
+                    className="flex items-center justify-center gap-2 border-2 border-black/20 text-black/60 py-3 px-4 sm:px-6 hover:border-black/40 hover:text-black transition-[color,background-color,border-color,opacity,transform,box-shadow] font-[Inter] whitespace-nowrap"
                     style={{ fontSize: '0.85rem' }}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <RotateCcw size={16} className="shrink-0" />
-                    Redo This Simulation
+                    <span className="hidden sm:inline">Redo This Simulation</span>
+                    <span className="sm:hidden">Redo</span>
                   </motion.button>
                 )}
                 <motion.button
                   onClick={() => navigate('/job?fresh=1')}
-                  className="flex items-center justify-center gap-2 bg-black text-white py-3 px-6 hover:bg-black/85 transition-colors font-[Inter] whitespace-nowrap"
+                  className="flex items-center justify-center gap-2 bg-black text-white py-3 px-4 sm:px-6 hover:bg-black/85 transition-colors font-[Inter] whitespace-nowrap"
                   style={{ fontSize: '0.85rem' }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}

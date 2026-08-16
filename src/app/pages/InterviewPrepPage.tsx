@@ -159,10 +159,49 @@ export function InterviewPrepPage() {
             )}
           </div>
 
-          <div className="border-l-2 border-black/10 pl-4">
-            <p className="font-[Inter] text-black/50 leading-relaxed" style={{ fontSize: '0.88rem' }}>
-              AI-generated interview questions tailored to {jobTitle} positions. Click any question to see the suggested answer strategy and key points to mention.
-            </p>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 border-l-2 border-black/10 pl-4">
+              <p className="font-[Inter] text-black/50 leading-relaxed" style={{ fontSize: '0.88rem' }}>
+                AI-generated interview questions tailored to {jobTitle} positions. Click any question to see the suggested answer strategy and key points to mention.
+              </p>
+            </div>
+            
+            {/* Single "How is feedback generated?" button */}
+            <div className="shrink-0">
+              <EvidenceButton 
+                testId="interview-feedback-global-btn" 
+                label={lang === 'hi' ? 'फीडबैक कैसे बनता है?' : lang === 'te' ? 'ఫీడ్‌బ్యాక్ ఎలా రూపొందుతుంది?' : 'How is feedback generated?'} 
+                evidence={{
+                  title: lang === 'hi' ? 'साक्षात्कार प्रमाण' : lang === 'te' ? 'ఇంటర్వ్యూ ఆధారం' : 'Interview evidence',
+                  eyebrow: jobTitle,
+                  summary: lang === 'hi' 
+                    ? 'भूमिका का NCO, क्षेत्र और आवश्यक कौशल संस्करणित ज्ञान-आधार से आते हैं; यही संदर्भ प्रश्न को आधार देता है।' 
+                    : lang === 'te' 
+                    ? 'పాత్ర NCO, రంగం, అవసరమైన నైపుణ్యాలు వెర్షన్ చేసిన నాలెడ్జ్-బేస్ నుండి వచ్చి ప్రశ్నకు ఆధారం ఇస్తాయి.' 
+                    : 'The role NCO, sector, and required skills come from the versioned knowledge base and ground these questions.',
+                  method: lang === 'hi' 
+                    ? 'प्रश्न और तैयारी पाठ सुरक्षित Worker प्रॉक्सी से LLM द्वारा लिखे जाते हैं। यहाँ कोई संख्यात्मक अंक नहीं है और LLM कोई अंक नहीं देता।' 
+                    : lang === 'te' 
+                    ? 'ప్రశ్న, సిద్ధత వచనం సురక్షిత Worker ప్రాక్సీ ద్వారా LLM రాస్తుంది. ఇక్కడ సంఖ్యాత్మక స్కోర్ లేదు; LLM ఎటువంటి స్కోర్ ఇవ్వదు.' 
+                    : 'Questions and preparation text are LLM-generated through the secure Worker proxy. There is no numeric score here, and no score is LLM-derived.',
+                  items: [
+                    {
+                      label: lang === 'hi' ? 'प्रश्न प्रकार' : lang === 'te' ? 'ప్రశ్న రకాలు' : 'Question types',
+                      detail: 'Technical, Behavioral, Situational, Career Goals'
+                    },
+                    {
+                      label: lang === 'hi' ? 'तैयारी विधि' : lang === 'te' ? 'సిద్ధత విధానం' : 'Preparation approach',
+                      detail: 'Suggested strategy + key points for each question'
+                    }
+                  ],
+                  source: lang === 'hi' 
+                    ? 'व्यवसाय ज्ञान-आधार · सुरक्षित Worker · कोई अंक नहीं' 
+                    : lang === 'te' 
+                    ? 'వృత్తి నాలెడ్జ్-బేస్ · సురక్షిత Worker · స్కోర్ లేదు' 
+                    : 'Occupation knowledge base · secure Worker · no score'
+                }} 
+              />
+            </div>
           </div>
         </motion.div>
 
@@ -278,9 +317,8 @@ export function InterviewPrepPage() {
                                     <p className="font-[Inter] text-black/60 leading-relaxed mb-4 whitespace-pre-line" style={{ fontSize: '0.85rem' }}>
                                       {q.approach}
                                     </p>
-                                    <EvidenceButton testId={`interview-feedback-${i + 1}-why-btn`} label={lang === 'hi' ? 'फीडबैक कैसे बनता है?' : lang === 'te' ? 'ఫీడ్‌బ్యాక్ ఎలా రూపొందుతుంది?' : 'How is feedback generated?'} evidence={{title:lang === 'hi' ? 'साक्षात्कार प्रमाण' : lang === 'te' ? 'ఇంటర్వ్యూ ఆధారం' : 'Interview evidence',eyebrow:q.category,summary:lang === 'hi' ? 'भूमिका का NCO, क्षेत्र और आवश्यक कौशल संस्करणित ज्ञान-आधार से आते हैं; यही संदर्भ प्रश्न को आधार देता है।' : lang === 'te' ? 'పాత్ర NCO, రంగం, అవసరమైన నైపుణ్యాలు వెర్షన్ చేసిన నాలెడ్జ్-బేస్ నుండి వచ్చి ప్రశ్నకు ఆధారం ఇస్తాయి.' : 'The role NCO, sector, and required skills come from the versioned knowledge base and ground this question.',method:lang === 'hi' ? 'प्रश्न और तैयारी पाठ सुरक्षित Worker प्रॉक्सी से LLM द्वारा लिखे जाते हैं। यहाँ कोई संख्यात्मक अंक नहीं है और LLM कोई अंक नहीं देता।' : lang === 'te' ? 'ప్రశ్న, సిద్ధత వచనం సురక్షిత Worker ప్రాక్సీ ద్వారా LLM రాస్తుంది. ఇక్కడ సంఖ్యాత్మక స్కోర్ లేదు; LLM ఎటువంటి స్కోర్ ఇవ్వదు.' : 'Question and preparation text are LLM-generated through the secure Worker proxy. There is no numeric score here, and no score is LLM-derived.',items:[{label:lang === 'hi' ? 'प्रश्न' : lang === 'te' ? 'ప్రశ్న' : 'Question',detail:q.question},{label:lang === 'hi' ? 'तैयारी विधि' : lang === 'te' ? 'సిద్ధత విధానం' : 'Preparation approach',detail:q.approach}],source:lang === 'hi' ? 'व्यवसाय ज्ञान-आधार · सुरक्षित Worker · कोई अंक नहीं' : lang === 'te' ? 'వృత్తి నాలెడ్జ్-బేస్ · సురక్షిత Worker · స్కోర్ లేదు' : 'Occupation knowledge base · secure Worker · no score' }} />
 
-                                    <p className="font-[Inter] text-black/40 uppercase tracking-[0.1em] mb-2" style={{ fontSize: '0.65rem' }}>
+                                    <p className="font-[Inter] text-black/40 uppercase tracking-[0.1em] mb-2 mt-6" style={{ fontSize: '0.65rem' }}>
                                       Key Points to Mention
                                     </p>
                                     <ul className="space-y-1.5">

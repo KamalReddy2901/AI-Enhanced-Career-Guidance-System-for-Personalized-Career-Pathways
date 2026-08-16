@@ -878,11 +878,13 @@ export interface CareerCompatibilityInput {
 }
 
 export async function assessCareerCompatibility(input: CareerCompatibilityInput): Promise<string> {
-  return callGroq(
-    `You are a careful career counselor. Assess compatibility using only the supplied career dossier, Career Passport, and optional simulation result. Do not invent facts or give a fabricated percentage. Be concise, specific, and honest. Use exactly these headings: "What fits", "What to test", and "A practical next step". Explain that this is an exploratory compatibility check, not a verdict.`,
+  const raw = await callGroq(
+    `You are a careful career counselor. Assess compatibility using only the supplied career dossier, Career Passport, and optional simulation result. Do not invent facts or give a fabricated percentage. Be concise, specific, and honest. Use these headings without markdown: "What fits", "What to test", and "A practical next step". Write in plain text with clear line breaks. Do NOT use markdown formatting like ** or __ for bold.`,
     JSON.stringify(input),
     { temperature: 0.35, maxTokens: 650, usageType: 'compatibility' },
   );
+  // Strip any markdown formatting that might have slipped through
+  return raw.replace(/\*\*(.*?)\*\*/g, '$1').replace(/__(.*?)__/g, '$1');
 }
 
 // ─── Generate Simulation (Cached + Retry) ─────────────────────
