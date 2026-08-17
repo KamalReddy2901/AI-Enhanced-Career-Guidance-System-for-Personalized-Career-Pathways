@@ -5,6 +5,7 @@ import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight, Sparkles } from 'lucide-r
 import { StickFigure } from '../components/StickFigure';
 import { BrandMark } from '../components/BrandMark';
 import { useAuth } from '../context/AuthContext';
+import { useGuidance } from '../context/GuidanceContext';
 import { toast } from 'sonner';
 import { TextReveal } from '../motion/TextReveal';
 import { sounds } from '../utils/sounds';
@@ -14,6 +15,7 @@ export function AuthPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { signIn, signUp, signInWithGoogle, user, loading, isSupabaseConfigured } = useAuth();
+  const { passport, loading: guidanceLoading } = useGuidance();
 
   const [mode, setMode] = useState<'signin' | 'signup'>(
     searchParams.get('mode') === 'signup' ? 'signup' : 'signin'
@@ -25,16 +27,24 @@ export function AuthPage() {
   const [signUpSuccess, setSignUpSuccess] = useState(false);
 
   const requestedRedirect = searchParams.get('redirect');
-  const redirect = requestedRedirect?.startsWith('/') && !requestedRedirect.startsWith('//')
-    ? requestedRedirect
-    : '/dashboard';
+  
+  // If user has a passport, go to dashboard (or requested redirect)
+  // If no passport exists, send them to onboarding first
+  const getDefaultRedirect = () => {
+    if (requestedRedirect?.startsWith('/') && !requestedRedirect.startsWith('//')) {
+      return requestedRedirect;
+    }
+    // Check if passport exists - if not, redirect to onboarding
+    return passport ? '/dashboard' : '/onboarding';
+  };
 
-  // Already logged in - redirect
+  // Already logged in - redirect based on passport state
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && !guidanceLoading && user) {
+      const redirect = getDefaultRedirect();
       navigate(redirect, { replace: true });
     }
-  }, [user, loading, navigate, redirect]);
+  }, [user, loading, guidanceLoading, passport, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +68,7 @@ export function AuthPage() {
       } else {
         sounds.success(); hapticSuccess();
         toast.success('Welcome back!');
-        navigate(redirect, { replace: true });
+        // Redirect will happen via useEffect after passport loads
       }
     }
     setIsSubmitting(false);
@@ -219,7 +229,7 @@ export function AuthPage() {
                 <motion.button
                   type="button"
                   onClick={async () => {
-                    const { error } = await signInWithGoogle(redirect);
+                    const { error } = await signInWithGoogle(requestedRedirect ?? undefined);
                     if (error) toast.error(error);
                   }}
                   disabled={isSubmitting}

@@ -57,6 +57,7 @@ export function combineEvidenceConfidence(evidence: SkillEvidence[]): number {
 /**
  * Match extracted skill names → canonical skillIds
  * Uses case-insensitive name/alias matching
+ * UPDATED: Auto-adds unmatched skills as custom skills (name field) instead of requiring manual confirmation
  */
 export function matchSkillsToKB(extracted: ExtractedSkill[]): SkillMatchResult {
   const matched: SkillClaim[] = [];
@@ -77,10 +78,25 @@ export function matchSkillsToKB(extracted: ExtractedSkill[]): SkillMatchResult {
       observedAt: new Date().toISOString(),
     }],
   });
+  
+  const makeCustomClaim = (ex: ExtractedSkill, confidence: number): SkillClaim => ({
+    skillId: undefined!,  // No KB match
+    name: ex.name,        // Preserve original extracted name
+    proficiency: ex.proficiency,
+    confidence,
+    evidence: [{
+      type: 'inferred_from_resume',
+      description: ex.evidence,
+      confidence,
+      observedAt: new Date().toISOString(),
+    }],
+  });
 
   for (const ex of extracted) {
     const normalized = normalize(ex.name);
     if (!normalized) continue;
+    
+    // Try exact match first
     const exact = [...skillById].find(([, skill]) =>
       [skill.name, ...skill.aliases].some(alias => normalize(alias) === normalized),
     );
@@ -88,8 +104,9 @@ export function matchSkillsToKB(extracted: ExtractedSkill[]): SkillMatchResult {
       matched.push(makeClaim(exact[0], ex, .72));
       continue;
     }
+    
+    // Try partial match
     let found = false;
-
     for (const [skillId, skill] of skillById) {
       const nameLower = normalize(skill.name);
       const tokens = normalized.split(/\s+/);
@@ -103,8 +120,10 @@ export function matchSkillsToKB(extracted: ExtractedSkill[]): SkillMatchResult {
       }
     }
 
+    // NEW: If no KB match found, auto-add as custom skill with lower confidence
     if (!found) {
-      unmatched.push(ex.name);
+      matched.push(makeCustomClaim(ex, .6));  // 0.6 confidence for custom skills
+      unmatched.push(ex.name);  // Still track for UI display (informational only)
     }
   }
 

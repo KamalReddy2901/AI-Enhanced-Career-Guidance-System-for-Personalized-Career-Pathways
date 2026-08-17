@@ -1,5 +1,5 @@
 import {
-  KB_VERSION, OCCUPATIONS, marketFor, occupationById, transitionsFrom,
+  KB_VERSION, OCCUPATIONS, marketFor, occupationById, transitionsFrom, skillById,
 } from '../data/knowledge';
 import type { Occupation } from '../data/knowledge';
 import type {
@@ -129,13 +129,52 @@ function valuesScore(passport: CareerPassport, occupation: Occupation): [number,
 function skillScore(passport: CareerPassport, occupation: Occupation): [number, boolean] {
   if (!passport.skills.length) return [50, false];
   const totalImportance = occupation.skills.reduce((sum, requirement) => sum + requirement.importance, 0);
+  
+  // Helper to normalize skill names for fuzzy matching
+  const normalize = (value: string) => value
+    .toLowerCase()
+    .replace(/[^a-z0-9+#]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  
   const coverage = occupation.skills.reduce((sum, requirement) => {
-    const claim = passport.skills.find(item => item.skillId === requirement.skillId);
+    // First try exact KB match
+    let claim = passport.skills.find(item => item.skillId === requirement.skillId);
+    let matchConfidence = 1.0;
+    
+    // If no exact match, try fuzzy matching custom skills (those with name but no skillId)
+    if (!claim) {
+      const requiredSkill = skillById.get(requirement.skillId);
+      if (requiredSkill) {
+        const requiredNames = [requiredSkill.name, ...requiredSkill.aliases].map(normalize);
+        
+        // Check custom skills for partial/fuzzy matches
+        for (const customSkill of passport.skills.filter(s => !s.skillId && s.name)) {
+          const customNormalized = normalize(customSkill.name!);
+          const customTokens = customNormalized.split(/\s+/);
+          
+          // Check if custom skill name matches any alias of the required skill
+          if (requiredNames.some(rn => rn === customNormalized)) {
+            claim = customSkill;
+            matchConfidence = 0.8; // Slightly lower confidence for fuzzy match
+            break;
+          }
+          
+          // Check if custom skill contains meaningful tokens from required skill
+          if (customTokens.some(token => token.length >= 4 && requiredNames.some(rn => rn.includes(token)))) {
+            claim = customSkill;
+            matchConfidence = 0.6; // Lower confidence for partial match
+            break;
+          }
+        }
+      }
+    }
+    
     const current = claim?.proficiency ?? 0;
     // A self-report or weak resume match is useful, but should not carry the
     // same force as independently supported evidence.
     const evidenceConfidence = claim?.confidence ?? 0;
-    return sum + Math.min(current, requirement.requiredProficiency) / requirement.requiredProficiency * evidenceConfidence * requirement.importance;
+    return sum + Math.min(current, requirement.requiredProficiency) / requirement.requiredProficiency * evidenceConfidence * matchConfidence * requirement.importance;
   }, 0);
   return [totalImportance ? 100 * coverage / totalImportance : 50, true];
 }
