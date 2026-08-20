@@ -219,7 +219,7 @@ export function HelpCenterPage() {
           transition={{ delay: 0.1 }}
         >
           <a
-            href="https://github.com/KamalReddy2901/career-sim"
+            href="https://github.com/KamalReddy2901/AI-Enhanced-Career-Guidance-System-for-Personalized-Career-Pathways"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 border border-black/10 p-4 hover:border-black/30 transition-colors group"
@@ -334,7 +334,7 @@ export function HelpCenterPage() {
           </p>
           <div className="flex flex-wrap gap-3">
             <a
-              href="https://github.com/KamalReddy2901/career-sim/issues"
+              href="https://github.com/KamalReddy2901/AI-Enhanced-Career-Guidance-System-for-Personalized-Career-Pathways/issues"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 border-2 border-black/20 px-4 py-2 font-[Inter] text-black/60 hover:border-black/40 hover:text-black transition-colors"

@@ -1,14 +1,10 @@
 import { Link } from 'react-router';
-import { motion } from 'motion/react';
 import { ShieldCheck, Brain, Database, Lock, Code, Users, Target, Zap } from 'lucide-react';
 import { NCOBadge } from '../components/NCOBadge';
 import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 import { TextReveal } from '../motion/TextReveal';
-import { useT } from '../i18n';
 
 export function AboutPage() {
-  const { t } = useT();
-
   return (
     <div className="min-h-screen bg-[var(--paper)] px-6 py-16 pb-24 md:py-24">
       <GuidanceEntrance className="max-w-4xl mx-auto">
@@ -21,7 +17,7 @@ export function AboutPage() {
             <TextReveal text="About CareerCase" />
           </h1>
           <p className="text-xl text-[var(--ink-soft)] leading-relaxed">
-            Evidence-based career guidance powered by India's National Classification of Occupations (NCO-2015) and National Skills Qualifications Framework (NSQF).
+            Evidence-led career guidance grounded in India's National Classification of Occupations (NCO-2015) and National Skills Qualifications Framework (NSQF).
           </p>
         </header>
 
@@ -33,13 +29,13 @@ export function AboutPage() {
           </h2>
           <div className="prose prose-lg max-w-none">
             <p className="text-[var(--ink-soft)] leading-relaxed mb-4">
-              CareerCase is a deterministic, evidence-based career guidance system designed for India's workforce. Unlike AI chatbots that generate vague suggestions, we use a structured knowledge base of 100+ NCO-2015 coded occupations, each mapped to specific skills, qualifications, and career pathways.
+              CareerCase is a deterministic, evidence-led career guidance prototype designed for India's workforce. Unlike a free-form chatbot, it uses a versioned demonstration knowledge base of 100 NCO-mapped occupations, each connected to skills, qualifications, and career pathways.
             </p>
             <p className="text-[var(--ink-soft)] leading-relaxed mb-4">
               Our system creates a "Career Passport" for each user—a living document that captures your interests, aptitudes, values, skills, and aspirations. This passport becomes the foundation for personalized career recommendations and pathway planning.
             </p>
             <p className="text-[var(--ink-soft)] leading-relaxed">
-              CareerCase is built to complement government initiatives like the Skill India Digital Hub (SIDH), National Career Service (NCS), and Pradhan Mantri Kaushal Vikas Yojana (PMKVY).
+              CareerCase is designed to complement initiatives such as the Skill India Digital Hub (SIDH), National Career Service (NCS), and Pradhan Mantri Kaushal Vikas Yojana (PMKVY). Direct platform integrations are future work.
             </p>
           </div>
         </section>
@@ -108,16 +104,16 @@ export function AboutPage() {
           </div>
           <div className="mt-6 p-4 bg-[var(--paper)] border-l-4 border-[var(--accent-news)]">
             <p className="text-sm text-[var(--ink-soft)]">
-              <strong>Note:</strong> We do use AI (Groq Llama models) for generating career dossiers, job descriptions, market insights, and conversational guidance—but never for core scoring or matching. The deterministic engine remains transparent and auditable.
+              <strong>Note:</strong> CareerCase uses Groq-hosted <code>openai/gpt-oss-20b</code> and <code>openai/gpt-oss-120b</code> models for assisted extraction, dossiers, simulations, and conversational guidance—but never for core scoring or matching. The deterministic engine remains inspectable and reproducible.
             </p>
           </div>
         </section>
 
-        {/* Evidence-Based Methodology */}
+        {/* Evidence-Led Methodology */}
         <section className="mb-12">
           <h2 className="font-display text-3xl mb-4 flex items-center gap-3">
             <Database size={28} />
-            Evidence-Based Methodology
+            Evidence-Led Methodology
           </h2>
           <div className="space-y-6">
             <div className="border-l-4 border-[var(--ink)] pl-6">
@@ -125,7 +121,7 @@ export function AboutPage() {
                 1. Multi-Dimensional Profiling
               </h3>
               <p className="text-sm text-[var(--ink-soft)]">
-                We assess users across 11 fit dimensions: Interest (RIASEC), Aptitude, Values, Skills, Transferable Skills, Experience, Aspirations, Market Demand, Career Progression, Learning Feasibility, and Geographic Fit. Each dimension contributes to the final recommendation score based on evidence-backed weights.
+                Structured exploratory assessments and Career Passport evidence feed 11 fit dimensions: Interest (RIASEC), Aptitude, Values, Skills, Transferable Skills, Experience, Aspirations, Market Demand, Career Progression, Learning Feasibility, and Geographic Fit. Each dimension contributes through published, segment-specific weights.
               </p>
             </div>
             <div className="border-l-4 border-[var(--ink)] pl-6">
@@ -141,7 +137,7 @@ export function AboutPage() {
                 3. Multi-Route Pathways
               </h3>
               <p className="text-sm text-[var(--ink-soft)]">
-                We don't believe in one-size-fits-all. Each career pathway offers three routes: Focused (skill-and-evidence based), Lower-Risk (stepping-stone role), and Credential Route (formal qualification). Compare their actual time and trade-offs against your constraints.
+                We don't believe in one-size-fits-all. Each career pathway offers three routes: Focused (skill-and-evidence based), Lower-Risk (stepping-stone role), and Credential-First (formal qualification). Compare their estimated durations and trade-offs against your constraints.
               </p>
             </div>
             <div className="border-l-4 border-[var(--ink)] pl-6">
@@ -149,7 +145,7 @@ export function AboutPage() {
                 4. Recognition of Prior Learning (RPL)
               </h3>
               <p className="text-sm text-[var(--ink-soft)]">
-                If you have transferable skills from past experience, we highlight them explicitly. You can validate these skills through NSQF-aligned RPL processes and reduce your learning time.
+                If you have transferable skills from past experience, CareerCase highlights them explicitly and points to routes where prior evidence may be relevant. Formal RPL recognition and any resulting time reduction must be confirmed by an authorized provider.
               </p>
             </div>
           </div>
@@ -165,19 +161,19 @@ export function AboutPage() {
             <div>
               <h3 className="font-semibold mb-2">NCO-2015 (National Classification of Occupations)</h3>
               <p className="text-sm text-[var(--ink-soft)] mb-3">
-                Every occupation in CareerCase is mapped to an official NCO-2015 code. This ensures our recommendations align with India's labour market structure and can integrate with government systems like NCS and SIDH.
+                Every demonstration occupation carries an NCO-2015 mapping. This aligns the prototype's occupation structure with a common Indian classification and provides groundwork for future NCS or SIDH mapping.
               </p>
               <p className="font-mono-ui text-xs uppercase tracking-wide text-[var(--ink-soft)]">
-                Coverage: 100+ NCO codes spanning all major sectors
+                Coverage: 100 NCO-mapped demonstration occupations
               </p>
             </div>
             <div>
               <h3 className="font-semibold mb-2">NSQF (National Skills Qualifications Framework)</h3>
               <p className="text-sm text-[var(--ink-soft)] mb-3">
-                Each occupation and qualification is tagged with an NSQF level (1-10), indicating the complexity and entry requirements. This helps you understand progression paths and qualification equivalencies.
+                Occupations and qualification routes carry prototype NSQF-level metadata (1–10) to communicate entry complexity and progression. Provider eligibility and formal equivalence must be verified at source.
               </p>
               <p className="font-mono-ui text-xs uppercase tracking-wide text-[var(--ink-soft)]">
-                Integration: NSQF-aligned pathways with multi-entry/exit points
+                Metadata: NSQF levels with NCrF-inspired terminology
               </p>
             </div>
           </div>
@@ -192,11 +188,11 @@ export function AboutPage() {
                 <div>
                   <h3 className="font-semibold mb-1">Occupation Knowledge Base</h3>
                   <p className="text-sm text-[var(--ink-soft)]">
-                    Curated from NCO-2015, NSDC sector reports, and industry skill councils
+                    Curated demonstration data mapped to NCO-2015 codes and NSQF levels
                   </p>
                 </div>
                 <span className="font-mono-ui text-xs uppercase text-[var(--accent-news)]">
-                  KB v2026.06.1
+                  kb-2026.06.1
                 </span>
               </div>
             </div>
@@ -205,11 +201,11 @@ export function AboutPage() {
                 <div>
                   <h3 className="font-semibold mb-1">Skills Taxonomy</h3>
                   <p className="text-sm text-[var(--ink-soft)]">
-                    Based on NSQF Qualification Packs and O*NET skill descriptors
+                    Curated skill descriptors with aliases, categories, and occupation requirements
                   </p>
                 </div>
                 <span className="font-mono-ui text-xs uppercase text-[var(--ink-soft)]">
-                  800+ skills
+                  178 skills
                 </span>
               </div>
             </div>
@@ -218,11 +214,11 @@ export function AboutPage() {
                 <div>
                   <h3 className="font-semibold mb-1">Market Signals</h3>
                   <p className="text-sm text-[var(--ink-soft)]">
-                    Indicative demand data refreshed via AI analysis of job trends (with timestamp)
+                    Versioned, indicative demand signals—not live vacancy or labour-statistics data
                   </p>
                 </div>
                 <span className="font-mono-ui text-xs uppercase text-[var(--ink-soft)]">
-                  Dynamic
+                  2025-H2 snapshot
                 </span>
               </div>
             </div>
@@ -231,11 +227,11 @@ export function AboutPage() {
                 <div>
                   <h3 className="font-semibold mb-1">Qualifications Catalog</h3>
                   <p className="text-sm text-[var(--ink-soft)]">
-                    NSDC-approved courses, ITI programs, university degrees, and apprenticeships
+                    Curated prototype routes with provider hints and NSQF-level metadata
                   </p>
                 </div>
                 <span className="font-mono-ui text-xs uppercase text-[var(--ink-soft)]">
-                  300+ programs
+                  105 routes
                 </span>
               </div>
             </div>
@@ -252,7 +248,7 @@ export function AboutPage() {
             <div>
               <h3 className="font-semibold mb-2">Your Data, Your Control</h3>
               <p className="text-sm text-[var(--ink-soft)]">
-                All profile data (assessments, skills, experiences) is stored encrypted in your account. You can export, delete, or modify it at any time. We comply with India's Digital Personal Data Protection (DPDP) Act, 2023.
+                Anonymous profiles can remain in browser storage; signed-in profiles can be persisted through Supabase with row-level security. CareerCase provides explicit consent, JSON export, and deletion controls. These are DPDP-aware prototype safeguards, not a claim of formal compliance; legal and security reviews are still pending.
               </p>
             </div>
             <div>
@@ -279,15 +275,15 @@ export function AboutPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="border border-[var(--ink-faint)] p-4">
               <h3 className="font-mono-ui text-xs uppercase tracking-wide mb-2">Frontend</h3>
-              <p className="text-sm text-[var(--ink-soft)]">React, TypeScript, Vite, Framer Motion</p>
+              <p className="text-sm text-[var(--ink-soft)]">React, TypeScript, Vite, Tailwind CSS, Motion</p>
             </div>
             <div className="border border-[var(--ink-faint)] p-4">
               <h3 className="font-mono-ui text-xs uppercase tracking-wide mb-2">Backend</h3>
-              <p className="text-sm text-[var(--ink-soft)]">Supabase (PostgreSQL, Auth, Storage)</p>
+              <p className="text-sm text-[var(--ink-soft)]">Supabase (PostgreSQL, Auth, row-level security)</p>
             </div>
             <div className="border border-[var(--ink-faint)] p-4">
               <h3 className="font-mono-ui text-xs uppercase tracking-wide mb-2">AI Layer</h3>
-              <p className="text-sm text-[var(--ink-soft)]">Groq (Llama 3.3 70B) via Cloudflare Worker proxy</p>
+              <p className="text-sm text-[var(--ink-soft)]">Groq GPT-OSS models via an authenticated Cloudflare Worker</p>
             </div>
             <div className="border border-[var(--ink-faint)] p-4">
               <h3 className="font-mono-ui text-xs uppercase tracking-wide mb-2">Knowledge Base</h3>
@@ -295,11 +291,11 @@ export function AboutPage() {
             </div>
             <div className="border border-[var(--ink-faint)] p-4">
               <h3 className="font-mono-ui text-xs uppercase tracking-wide mb-2">Hosting</h3>
-              <p className="text-sm text-[var(--ink-soft)]">Vercel (frontend), Cloudflare (AI proxy)</p>
+              <p className="text-sm text-[var(--ink-soft)]">Cloudflare Pages (frontend) and Workers (AI gateway)</p>
             </div>
             <div className="border border-[var(--ink-faint)] p-4">
               <h3 className="font-mono-ui text-xs uppercase tracking-wide mb-2">Testing</h3>
-              <p className="text-sm text-[var(--ink-soft)]">Vitest, React Testing Library</p>
+              <p className="text-sm text-[var(--ink-soft)]">TypeScript QA scripts, deterministic regression checks, and Node Worker tests</p>
             </div>
           </div>
         </section>
@@ -340,42 +336,42 @@ export function AboutPage() {
           </div>
         </section>
 
-        {/* Integration Readiness */}
+        {/* Integration Groundwork */}
         <section className="mb-12 bg-[var(--paper-raised)] border border-[var(--ink-faint)] p-8">
           <h2 className="font-display text-3xl mb-4 flex items-center gap-3">
             <Users size={28} />
-            Government Integration Readiness
+            Government Integration Groundwork
           </h2>
           <div className="grid md:grid-cols-3 gap-6 mb-6">
             <div className="text-center p-4 border border-[var(--ink-faint)]">
               <div className="font-mono-ui text-xs uppercase tracking-wide mb-2 text-[var(--accent-news)]">
-                ✓ SIDH Compatible
+                SIDH data-model groundwork
               </div>
               <p className="text-sm text-[var(--ink-soft)]">NCO-aligned data model</p>
             </div>
             <div className="text-center p-4 border border-[var(--ink-faint)]">
               <div className="font-mono-ui text-xs uppercase tracking-wide mb-2 text-[var(--accent-news)]">
-                ✓ NCS Ready
+                NCS mapping groundwork
               </div>
               <p className="text-sm text-[var(--ink-soft)]">Occupation code mapping</p>
             </div>
             <div className="text-center p-4 border border-[var(--ink-faint)]">
               <div className="font-mono-ui text-xs uppercase tracking-wide mb-2 text-[var(--accent-news)]">
-                ✓ PMKVY Aligned
+                PMKVY pathway alignment
               </div>
               <p className="text-sm text-[var(--ink-soft)]">NSQF-based pathways</p>
             </div>
           </div>
           <div>
-            <h3 className="font-semibold mb-2">API Integration Potential</h3>
+            <h3 className="font-semibold mb-2">Proposed Integration Interfaces</h3>
             <p className="text-sm text-[var(--ink-soft)] mb-3">
-              CareerCase exposes RESTful APIs for recommendations, pathway planning, and skill-gap analysis. These can be consumed by government portals, educational institutions, or skill development centers.
+              The prototype documents proposed REST interface contracts for recommendations, pathway planning, skill-gap analysis, and passport export. They describe a future integration direction; public integration endpoints are not deployed today.
             </p>
             <Link 
               to="/help" 
               className="inline-block text-sm underline hover:no-underline"
             >
-              View API documentation →
+              View integration roadmap →
             </Link>
           </div>
         </section>
@@ -385,7 +381,7 @@ export function AboutPage() {
           <h2 className="font-display text-3xl mb-4">Team & Acknowledgments</h2>
           <div className="prose max-w-none">
             <p className="text-sm text-[var(--ink-soft)] mb-4">
-              CareerCase is built as part of the Smart India Hackathon 2024 (Problem Statement PS-1781: AI-Powered Career Counseling and Skilling Platform).
+              CareerCase is built for the Smart India Hackathon 2026 problem statement SIH260480: AI-Enhanced Career Guidance System for Personalized Career Pathways.
             </p>
             <div className="bg-[var(--paper-raised)] border border-[var(--ink-faint)] p-6">
               <h3 className="font-semibold mb-3">Data Sources & Standards</h3>
@@ -406,7 +402,7 @@ export function AboutPage() {
             <div>
               <h3 className="font-display text-2xl mb-2">Ready to explore?</h3>
               <p className="text-sm text-[var(--ink-soft)]">
-                Start your career journey with evidence-based guidance.
+                Start your career journey with structured, evidence-led guidance.
               </p>
             </div>
             <div className="flex gap-3">

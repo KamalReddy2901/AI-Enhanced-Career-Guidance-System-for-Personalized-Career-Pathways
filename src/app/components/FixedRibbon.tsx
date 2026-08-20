@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 
 const RIBBON_MESSAGES = [
   'Discover your perfect career match',
-  'Science-backed career guidance',
+  'Structured exploratory guidance',
   'Build your personalized pathway',
   'Explore 100+ career options',
   'Your career, your story',
