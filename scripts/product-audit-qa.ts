@@ -114,7 +114,11 @@ assert.match(source('src/app/pages/RootLayout.tsx'), /e\.defaultPrevented/, 'glo
 assert.match(source('src/app/services/ai.ts'), /normalizeTrendingCareers/, 'cached or AI-supplied trends must be normalized before the home page uses them');
 assert.match(source('src/app/pages/HomePage.tsx'), /\(trending\.rising \?\? \[\]\)\.map/, 'the home page must tolerate a legacy trend cache missing a list');
 assert.match(source('src/app/pages/RouteErrorPage.tsx'), /import\.meta\.env\.DEV/, 'production recovery pages must not expose raw runtime diagnostics');
-assert.match(source('src/app/components/guidance/CareerLandscapeScatter.tsx'), /onKeyDown=\{\(event\)/, 'career landscape points must be keyboard-operable');
+const careerLandscape = source('src/app/components/guidance/CareerLandscapeScatter.tsx');
+assert.match(careerLandscape, /role="button"/, 'career landscape points must expose an interactive role');
+assert.match(careerLandscape, /tabIndex=\{0\}/, 'career landscape points must be reachable by keyboard');
+assert.match(careerLandscape, /onKeyDown=\{/, 'career landscape points must handle keyboard activation');
+assert.match(careerLandscape, /\.key === 'Enter'[\s\S]*?\.key === ' '/, 'career landscape points must activate with Enter or Space');
 assert.match(source('src/app/pages/RecommendationsPage.tsx'), /aria-pressed=\{viewMode === 'cards'\}/, 'recommendation view-mode controls must expose their state');
 
 console.log(JSON.stringify({

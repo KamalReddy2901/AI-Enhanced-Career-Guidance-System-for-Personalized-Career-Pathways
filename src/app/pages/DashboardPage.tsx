@@ -54,7 +54,7 @@ export function DashboardPage() {
   const cards: DashboardCard[] = [
     {
       title: 'Assessment Desk',
-      description: 'Discover your interests, aptitudes, values, and aspirations through scientific assessments',
+      description: 'Explore your interests, aptitudes, values, and aspirations through structured screeners',
       icon: <ClipboardCheck size={28} strokeWidth={1.5} />,
       path: '/assess',
       pose: 'reading',
@@ -63,6 +63,15 @@ export function DashboardPage() {
         label: 'Completed', 
         value: `${completedAssessments}/4`
       } : undefined,
+    },
+    {
+      title: 'Career Passport',
+      description: 'Your living career profile with skills, experience, and credentials',
+      icon: <UserRound size={28} strokeWidth={1.5} />,
+      path: '/passport',
+      pose: 'presenting',
+      accentColor: '#dc2626',
+      stats: passport ? { label: 'Complete', value: `${passport.completeness}%` } : undefined,
     },
     {
       title: 'Career Landscape',
@@ -81,15 +90,6 @@ export function DashboardPage() {
       pose: 'climbing',
       accentColor: 'var(--ink)',
       stats: pathways.length > 0 ? { label: 'Pathways', value: pathways.length } : undefined,
-    },
-    {
-      title: 'Career Passport',
-      description: 'Your living career profile with skills, experience, and credentials',
-      icon: <UserRound size={28} strokeWidth={1.5} />,
-      path: '/passport',
-      pose: 'presenting',
-      accentColor: '#dc2626',
-      stats: passport ? { label: 'Complete', value: `${passport.completeness}%` } : undefined,
     },
   ];
 

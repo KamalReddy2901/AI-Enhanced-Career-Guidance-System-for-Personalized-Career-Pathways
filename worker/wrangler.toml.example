@@ -1,0 +1,14 @@
+# Copy this file to wrangler.toml only when creating a separate Worker.
+# Never place credentials here; add them with `wrangler secret put`.
+
+name = "careercaseai"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+
+[vars]
+ENVIRONMENT = "production"
+
+# Required encrypted secrets:
+#   GROQ_API_KEYS       comma-separated Groq key pool
+#   SUPABASE_URL        Supabase project origin
+#   SUPABASE_ANON_KEY   Supabase anonymous key used to validate bearer tokens

@@ -20,7 +20,7 @@ const ALLOWED_ORIGINS = new Set([
 ]);
 
 function cors(origin: string | null) {
-  const allowOrigin = (origin && ALLOWED_ORIGINS.has(origin)) ? origin : 'https://career-sim.pages.dev';
+  const allowOrigin = (origin && ALLOWED_ORIGINS.has(origin)) ? origin : 'https://careercase.pages.dev';
   return {
     'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',

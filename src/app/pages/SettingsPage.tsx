@@ -387,7 +387,7 @@ export function SettingsPage() {
                   <span>&bull;</span>
                   <button onClick={()=>navigate('/how-it-works')} className="underline hover:text-black/60">How guidance works</button>
                   <span>&bull;</span>
-                  <a href="https://github.com/KamalReddy2901/career-sim" target="_blank" rel="noopener noreferrer" className="underline hover:text-black/60">GitHub</a>
+                  <a href="https://github.com/KamalReddy2901/AI-Enhanced-Career-Guidance-System-for-Personalized-Career-Pathways" target="_blank" rel="noopener noreferrer" className="underline hover:text-black/60">GitHub</a>
                 </div>
               </div>
             </div>

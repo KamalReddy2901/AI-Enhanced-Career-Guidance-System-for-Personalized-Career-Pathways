@@ -44,9 +44,9 @@ export function Navbar() {
   const personalLinks = [
     { to: '/dashboard', icon: <Home size={13} />, label: t('dashboard'), active: location.pathname === '/dashboard' },
     { to: '/assess', icon: <ClipboardCheck size={13} />, label: t('assess'), active: location.pathname.startsWith('/assess') },
+    { to: '/passport', icon: <UserRound size={13} />, label: t('passport'), active: location.pathname === '/passport' },
     { to: '/recommendations', icon: <Map size={13} />, label: t('recommendations'), active: location.pathname === '/recommendations' },
     { to: '/pathways', icon: <Route size={13} />, label: t('pathways'), active: location.pathname.startsWith('/pathway') || location.pathname === '/pathways' },
-    { to: '/passport', icon: <UserRound size={13} />, label: t('passport'), active: location.pathname === '/passport' },
   ];
   const personalActive = personalLinks.some(link => link.active);
 
