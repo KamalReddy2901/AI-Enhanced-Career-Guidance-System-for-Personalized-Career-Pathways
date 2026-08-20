@@ -391,6 +391,22 @@ button, a, [role="button"], [role="link"] {
   background: white;
   transform: rotate(35deg);
 }
+.trajectory-scroll {
+  scroll-behavior: smooth;
+  scrollbar-color: var(--accent-news) rgb(26 26 26 / 10%);
+  scrollbar-width: thin;
+}
+.trajectory-scroll::-webkit-scrollbar { height: 9px; }
+.trajectory-scroll::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgb(26 26 26 / 8%);
+}
+.trajectory-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid var(--paper-raised);
+  border-radius: 999px;
+  background: var(--accent-news);
+}
+.trajectory-scroll::-webkit-scrollbar-thumb:hover { background: var(--ink); }
 .typing-dots { display: inline-flex; gap: 3px; }
 .typing-dots i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; animation: counselor-dot .7s ease-in-out infinite alternate; }
 .typing-dots i:nth-child(2) { animation-delay: .12s; }

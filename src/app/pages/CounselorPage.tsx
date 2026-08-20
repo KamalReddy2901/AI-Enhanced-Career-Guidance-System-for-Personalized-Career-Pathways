@@ -15,9 +15,14 @@ import { TextReveal } from '../motion/TextReveal';
 import { skillClaimName } from '../engine/skillProfile';
 import { sounds } from '../utils/sounds';
 import { hapticTap } from '../utils/haptic';
+import { renderMarkdown } from '../utils/markdown';
 
 const escalationPattern =
   /suicid|self.?harm|hopeless|depress|panic|abuse|forced|family conflict|cannot cope|खुदकुशी|आत्महत्या|निराश|जबरदस्ती|కృంగి|ఆత్మహత్య|బలవంత/i;
+
+function FormattedCounselorAnswer({ text }: { text: string }) {
+  return <div className="leading-relaxed">{renderMarkdown(text)}</div>;
+}
 
 export function CounselorPage() {
   const { passport, recommendations, pathways } = useGuidance();
@@ -196,8 +201,8 @@ export function CounselorPage() {
           </div>
         </header>
         <div className="counselor-strip border border-[var(--ink)]/10 bg-[var(--paper-raised)] p-4 pb-0 md:p-6 md:pb-0">
-          <div className="space-y-5" aria-live="polite">{history.map((message,index)=>message.role==='user'?<motion.div key={`${message.role}-${index}`} initial={reducedMotion?false:{y:12,opacity:0}} animate={{y:0,opacity:1}} transition={{duration:reducedMotion?0:.25}} className="ml-auto max-w-[82%] rounded-2xl rounded-br-sm bg-[var(--ink)] p-4 text-sm text-[var(--paper)]">{message.text}</motion.div>:<div key={`${message.role}-${index}`} className="flex items-end gap-2"><StickFigure pose="standing" size={28}/><motion.div initial={reducedMotion?false:{y:12,opacity:0}} animate={{y:0,opacity:1}} transition={{duration:reducedMotion?0:.25}} className="card-sketch counselor-answer relative max-w-[86%] whitespace-pre-wrap p-4 text-sm">{message.text}</motion.div></div>)}</div>
-          {(answer || busy) && <div className="mt-5 flex items-end gap-2"><StickFigure pose="standing" size={28}/><motion.div initial={reducedMotion?false:{y:12,opacity:0}} animate={{y:0,opacity:1}} className="card-sketch counselor-answer relative max-w-[86%] whitespace-pre-wrap p-4 text-sm">{answer}{busy && <><span className="typewriter-caret ml-0.5" aria-hidden="true">|</span><span className="typing-dots ml-2" aria-label={t("counselorTyping")}><i/><i/><i/></span></>}</motion.div></div>}
+          <div className="space-y-5" aria-live="polite">{history.map((message,index)=>message.role==='user'?<motion.div key={`${message.role}-${index}`} initial={reducedMotion?false:{y:12,opacity:0}} animate={{y:0,opacity:1}} transition={{duration:reducedMotion?0:.25}} className="ml-auto max-w-[82%] rounded-2xl rounded-br-sm bg-[var(--ink)] p-4 text-sm text-[var(--paper)]">{message.text}</motion.div>:<div key={`${message.role}-${index}`} className="flex items-end gap-2"><StickFigure pose="standing" size={28}/><motion.div initial={reducedMotion?false:{y:12,opacity:0}} animate={{y:0,opacity:1}} transition={{duration:reducedMotion?0:.25}} className="card-sketch counselor-answer relative max-w-[86%] p-4 text-sm"><FormattedCounselorAnswer text={message.text} /></motion.div></div>)}</div>
+          {(answer || busy) && <div className="mt-5 flex items-end gap-2"><StickFigure pose="standing" size={28}/><motion.div initial={reducedMotion?false:{y:12,opacity:0}} animate={{y:0,opacity:1}} className="card-sketch counselor-answer relative max-w-[86%] p-4 text-sm">{answer && <FormattedCounselorAnswer text={answer} />}{busy && <><span className="typewriter-caret ml-0.5" aria-hidden="true">|</span><span className="typing-dots ml-2" aria-label={t("counselorTyping")}><i/><i/><i/></span></>}</motion.div></div>}
           <div className="sticky bottom-0 z-10 -mx-4 mt-6 border-t-2 border-[var(--ink)] bg-[var(--paper)] p-4 md:-mx-6 md:p-6">
           <textarea
             value={input}

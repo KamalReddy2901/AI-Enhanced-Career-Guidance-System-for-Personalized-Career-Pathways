@@ -1,5 +1,6 @@
+import { useRef } from 'react';
 import { motion } from 'motion/react';
-import { TrendingUp, TrendingDown, Minus, AlertTriangle, ArrowRight, Sparkles } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import type { CareerTrajectory, YearOutlook } from '../../services/trajectoryProjector';
 import { getTrajectoryDataAge } from '../../services/trajectoryProjector';
 
@@ -18,7 +19,7 @@ function YearCard({ outlook, isBaseline }: { outlook: YearOutlook; isBaseline: b
   const demandUncertainty = outlook.demandRange.max - outlook.demandRange.min;
 
   return (
-    <div className={`flex-1 ${isBaseline ? 'opacity-80' : ''}`}>
+    <div className={`w-[clamp(18rem,38vw,31rem)] shrink-0 snap-start ${isBaseline ? 'opacity-80' : ''}`}>
       <div className="card-sketch flex h-full flex-col bg-[var(--paper-raised)] p-4">
         <div className="mb-3 flex items-center justify-between">
           <h4 className="font-mono-ui text-xs font-semibold uppercase tracking-wide text-[var(--ink)]">
@@ -97,10 +98,20 @@ function YearCard({ outlook, isBaseline }: { outlook: YearOutlook; isBaseline: b
 }
 
 export function TrajectoryChart({ trajectory }: TrajectoryChartProps) {
+  const timelineRef = useRef<HTMLDivElement>(null);
   const confidenceColors = {
     high: 'border-emerald-300 bg-emerald-50 text-emerald-800',
     medium: 'border-amber-300 bg-amber-50 text-amber-800',
     low: 'border-[var(--accent-news)]/40 bg-[var(--accent-news)]/10 text-[var(--accent-news)]',
+  };
+
+  const scrollTimeline = (direction: -1 | 1) => {
+    const timeline = timelineRef.current;
+    if (!timeline) return;
+    timeline.scrollBy({
+      left: direction * Math.min(timeline.clientWidth * 0.82, 520),
+      behavior: 'smooth',
+    });
   };
 
   return (
@@ -108,7 +119,7 @@ export function TrajectoryChart({ trajectory }: TrajectoryChartProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="card-sketch bg-[var(--paper-raised)] p-6"
+      className="card-sketch overflow-hidden bg-[var(--paper-raised)] p-6"
     >
       {/* Header */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -128,17 +139,43 @@ export function TrajectoryChart({ trajectory }: TrajectoryChartProps) {
         </div>
       </div>
 
-      {/* Timeline */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row">
-        <YearCard outlook={trajectory.baselineYear} isBaseline={true} />
-        <div className="flex items-center justify-center px-2 sm:rotate-0 rotate-90" aria-hidden="true">
-          <ArrowRight className="h-5 w-5 text-[var(--ink-faint)]" />
+      {/* Horizontally scrollable timeline */}
+      <div className="relative mb-6">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <p className="font-mono-ui text-[0.65rem] uppercase tracking-[0.12em] text-[var(--ink-soft)]">
+            Swipe, shift-scroll, or use the arrows
+          </p>
+          <div className="flex shrink-0 items-center gap-2" aria-label="Trajectory navigation">
+            <button
+              type="button"
+              onClick={() => scrollTimeline(-1)}
+              aria-label="Scroll trajectory backward"
+              className="flex h-9 w-9 items-center justify-center border border-[var(--ink)]/20 bg-[var(--paper)] text-[var(--ink)] transition-[background-color,color,transform] hover:-translate-x-0.5 hover:bg-[var(--ink)] hover:text-[var(--paper)]"
+            >
+              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollTimeline(1)}
+              aria-label="Scroll trajectory forward"
+              className="flex h-9 w-9 items-center justify-center border border-[var(--ink)]/20 bg-[var(--paper)] text-[var(--ink)] transition-[background-color,color,transform] hover:translate-x-0.5 hover:bg-[var(--ink)] hover:text-[var(--paper)]"
+            >
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
         </div>
-        <YearCard outlook={trajectory.year2} isBaseline={false} />
-        <div className="flex items-center justify-center px-2 sm:rotate-0 rotate-90" aria-hidden="true">
-          <ArrowRight className="h-5 w-5 text-[var(--ink-faint)]" />
+        <div
+          ref={timelineRef}
+          role="region"
+          aria-label="Career trajectory timeline"
+          tabIndex={0}
+          className="trajectory-scroll -mx-2 flex snap-x snap-mandatory gap-4 overflow-x-auto px-2 pb-4 scroll-smooth overscroll-x-contain"
+          style={{ scrollPaddingInline: '0.5rem' }}
+        >
+          <YearCard outlook={trajectory.baselineYear} isBaseline={true} />
+          <YearCard outlook={trajectory.year2} isBaseline={false} />
+          <YearCard outlook={trajectory.year3Plus} isBaseline={false} />
         </div>
-        <YearCard outlook={trajectory.year3Plus} isBaseline={false} />
       </div>
 
       {/* Divergence Paths */}

@@ -1778,7 +1778,7 @@ export function JobDetailPage() {
               size={20}
               className="group-hover:translate-x-0.5 transition-transform shrink-0"
             />
-            <span className="whitespace-nowrap">Start Day-in-the-Life Simulation</span>
+            <span className="whitespace-nowrap">Start Simulation</span>
           </motion.button>
 
           <motion.button
