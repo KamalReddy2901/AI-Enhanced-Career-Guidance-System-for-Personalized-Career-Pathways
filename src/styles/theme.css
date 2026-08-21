@@ -225,6 +225,43 @@ button, a, [role="button"], [role="link"] {
   min-height: 44px;
   min-width: 44px;
 }
+
+/* CareerCase cut-paper pointer: CSS-only and precise-pointer only. */
+@media (hover: hover) and (pointer: fine) {
+  html,
+  body {
+    cursor: url('/cursors/careercase-cut-paper-pointer-60.png') 1 1, auto;
+  }
+
+  a,
+  button,
+  summary,
+  select,
+  label[for],
+  [role="button"],
+  [role="link"] {
+    cursor: url('/cursors/careercase-cut-paper-pointer-60.png') 1 1, pointer;
+  }
+
+  input:not([type]),
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  textarea,
+  [contenteditable="true"] {
+    cursor: text;
+  }
+
+  button:disabled,
+  select:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
 /* ─── Reduced motion ────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
