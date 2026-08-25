@@ -333,6 +333,7 @@ const requiredRlsTestClaims = [
   'assigned verifier can read exactly requested evidence',
   'assigned verifier cannot read evidence after consent expires',
   'assigned verifier still cannot browse unrelated evidence after consent expires',
+  'assigned verifier cannot append verification event after consent expires',
 ];
 for (const claim of requiredRlsTestClaims) assert.match(rlsTests, new RegExp(claim, 'i'));
 

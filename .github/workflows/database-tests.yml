@@ -71,7 +71,7 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
             -f supabase/tests/sih26044_rls.sql
           sql_assertion_count="$(grep -Ec '^(select|[[:space:]]+perform) pg_temp\.assert_(true|blocked)\(' supabase/tests/sih26044_rls.sql)"
-          test "$sql_assertion_count" -eq 50
+          test "$sql_assertion_count" -eq 51
           echo "EXECUTED SQL assertions: $sql_assertion_count"
 
       - name: Execute SIH26044 Storage API lifecycle assertions

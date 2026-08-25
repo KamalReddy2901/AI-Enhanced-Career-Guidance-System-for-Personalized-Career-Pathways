@@ -499,8 +499,17 @@ set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000005';
 select pg_temp.assert_true((select count(*) = 1 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000001'), 'assigned verifier can read exactly requested evidence');
 select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000002'), 'assigned verifier cannot browse unrelated evidence');
 
--- Consent lifecycle regression: expire the consent and verify verifier loses access
+-- Authenticated verifier appends verification event while consent is active
+insert into sih26044.verification_events (
+  id, verification_request_id, evidence_record_id, action, actor_id, actor_organization_id, reason
+) values (
+  '64000000-0000-0000-0000-000000000001', '63000000-0000-0000-0000-000000000001',
+  '60000000-0000-0000-0000-000000000001', 'verified_by_issuer',
+  '20000000-0000-0000-0000-000000000005', '30000000-0000-0000-0000-000000000003', 'Bounded issuer review'
+);
 reset role;
+
+-- Consent lifecycle regression: expire the consent and verify verifier loses access
 insert into sih26044.consent_lifecycle_events (
   id, consent_grant_id, action, actor_id, reason
 ) values (
@@ -508,22 +517,24 @@ insert into sih26044.consent_lifecycle_events (
   '62000000-0000-0000-0000-000000000002',
   'expired',
   '20000000-0000-0000-0000-000000000001',
-  'Consent lifecycle regression test: verify expired consent blocks verifier access'
+  'Consent lifecycle regression test: verify expired consent blocks verifier access and event append'
 );
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000005';
 select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000001'), 'assigned verifier cannot read evidence after consent expires');
 select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000002'), 'assigned verifier still cannot browse unrelated evidence after consent expires');
-reset role;
 
--- Record verification event (from before consent expiry)
-insert into sih26044.verification_events (
-  id, verification_request_id, evidence_record_id, action, actor_id, actor_organization_id, reason
-) values (
-  '64000000-0000-0000-0000-000000000001', '63000000-0000-0000-0000-000000000001',
-  '60000000-0000-0000-0000-000000000001', 'verified_by_issuer',
-  '20000000-0000-0000-0000-000000000005', '30000000-0000-0000-0000-000000000003', 'Bounded issuer review'
+-- Verifier cannot append verification event after consent expires
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.verification_events (
+    id, verification_request_id, evidence_record_id, action, actor_id, actor_organization_id, reason
+  ) values (
+    '64000000-0000-0000-0000-000000000002', '63000000-0000-0000-0000-000000000001',
+    '60000000-0000-0000-0000-000000000001', 'corrected',
+    '20000000-0000-0000-0000-000000000005', '30000000-0000-0000-0000-000000000003', 'Attempted correction after expiry'
+  )$sql$,
+  'assigned verifier cannot append verification event after consent expires'
 );
 reset role;
 
