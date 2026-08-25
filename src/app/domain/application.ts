@@ -1,4 +1,5 @@
-import type { ActorId, ApplicationEventId, ApplicationId, ApplicationSnapshotId, ConsentRecordId, EvidenceRecordId, IsoTimestamp, OpportunityId, OpportunityVersionId, OrganizationId } from './shared';
+import type { ReadinessBand } from './readiness';
+import type { ActorId, ApplicationEventId, ApplicationId, ApplicationSnapshotId, ConsentRecordId, EvidenceRecordId, IsoTimestamp, OpportunityId, OpportunityReadinessResultId, OpportunityVersionId, OrganizationId } from './shared';
 
 export const APPLICATION_STAGES = [
   'saved',
@@ -35,6 +36,16 @@ export interface Application {
 }
 
 /** Immutable evidence and requirement selection at the moment of submission. */
+export interface ApplicationReadinessSnapshotReference {
+  readonly readinessResultId: OpportunityReadinessResultId;
+  readonly readinessBand: ReadinessBand;
+  readonly engineVersion: string;
+  readonly evidencePolicyVersion: string;
+  readonly inputVersion: string;
+  readonly subjectFactsVersion: string;
+  readonly evidenceProjectionVersion: string;
+}
+
 export interface ApplicationSnapshot {
   readonly id: ApplicationSnapshotId;
   readonly applicationId: ApplicationId;
@@ -42,6 +53,7 @@ export interface ApplicationSnapshot {
   readonly evidenceRecordIds: readonly EvidenceRecordId[];
   readonly requirementResponses: Readonly<Record<string, string>>;
   readonly consentRecordIds: readonly ConsentRecordId[];
+  readonly submittedReadiness: ApplicationReadinessSnapshotReference;
   readonly capturedAt: IsoTimestamp;
   readonly contentHash: string;
 }

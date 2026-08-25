@@ -57,6 +57,15 @@ jobs:
       - name: Run opportunity readiness QA
         run: npm run qa:opportunity-readiness
 
+      - name: Run controlled demo isolation QA
+        run: npm run qa:demo-isolation
+
+      - name: Run controlled demo golden flow QA
+        run: npm run qa:demo-flow
+
+      - name: Run recruiter projection privacy QA
+        run: npm run qa:recruiter-projection
+
       - name: Build production client
         run: npm run build
 

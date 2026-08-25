@@ -2,6 +2,8 @@ import { lazy } from 'react';
 import { createBrowserRouter } from 'react-router';
 import { RootLayout } from './pages/RootLayout';
 import { RouteErrorPage } from './pages/RouteErrorPage';
+import { LegacyCareerCaseRuntime } from './pages/LegacyCareerCaseRuntime';
+import { DemoSihRuntime } from './demo/DemoSihRuntime';
 
 const AuthPage = lazy(() => import('./pages/AuthPage').then(m => ({ default: m.AuthPage })));
 const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
@@ -37,41 +39,65 @@ const CounselorPage = lazy(() => import('./pages/CounselorPage').then(m => ({ de
 const HelpCenterPage = lazy(() => import('./pages/HelpCenterPage').then(m => ({ default: m.HelpCenterPage })));
 const AboutPage = lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
 const IntegrationPage = lazy(() => import('./pages/IntegrationPage').then(m => ({ default: m.IntegrationPage })));
+const DemoOverviewPage = lazy(() => import('./demo/DemoPages').then(m => ({ default: m.DemoOverviewPage })));
+const DemoStudentPage = lazy(() => import('./demo/DemoPages').then(m => ({ default: m.DemoStudentPage })));
+const DemoMentorPage = lazy(() => import('./demo/DemoPages').then(m => ({ default: m.DemoMentorPage })));
+const DemoRecruiterPage = lazy(() => import('./demo/DemoPages').then(m => ({ default: m.DemoRecruiterPage })));
+const DemoInstitutionPage = lazy(() => import('./demo/DemoPages').then(m => ({ default: m.DemoInstitutionPage })));
+const DemoFacultyPage = lazy(() => import('./demo/DemoPages').then(m => ({ default: m.DemoFacultyPage })));
 
 export const router = createBrowserRouter([
-  { path: '/', Component: RootLayout, ErrorBoundary: RouteErrorPage, children: [
-    { index: true, Component: HomePage },
-    { path: 'auth', Component: AuthPage },
-    { path: 'job', Component: JobOverviewPage },
-    { path: 'job/detail', Component: JobDetailPage },
-    { path: 'simulation', Component: SimulationPage },
-    { path: 'history', Component: HistoryPage },
-    { path: 'quiz', Component: QuizPage },
-    { path: 'compare', Component: ComparisonPage },
-    { path: 'favorites', Component: FavoritesPage },
-    { path: 'interview-prep', Component: InterviewPrepPage },
-    { path: 'settings', Component: SettingsPage },
-    { path: 'mood', Component: MoodMatchPage },
-    { path: 'career-transition', Component: CareerTransitionPage },
-    { path: 'roadmap', Component: CareerRoadmapPage },
-    { path: 'pricing', Component: PricingPage },
-    // ── Phase 1: Guidance system routes ───────────────────────────────────
-    { path: 'dashboard', Component: DashboardPage },
-    { path: 'onboarding', Component: OnboardingPage },
-    { path: 'assess', Component: AssessmentHubPage },
-    { path: 'assess/interests', Component: AssessRiasecPage },
-    { path: 'assess/aptitude', Component: AssessAptitudePage },
-    { path: 'assess/values', Component: AssessValuesPage },
-    { path: 'assess/aspirations', Component: AssessAspirationsPage },
-    { path: 'passport', Component: PassportPage },
-    { path: 'recommendations', Component: RecommendationsPage },
-    { path: 'pathway/:occupationId', Component: PathwayPage },
-    { path: 'pathways', Component: PathwaysPage },
-    { path: 'how-it-works', Component: HowItWorksPage },
-    { path: 'counselor', Component: CounselorPage },
-    { path: 'help', Component: HelpCenterPage },
-    { path: 'about', Component: AboutPage },
-    { path: 'integration', Component: IntegrationPage },
-    { path: '*', Component: NotFoundPage },
-  ]},
+  {
+    Component: LegacyCareerCaseRuntime,
+    ErrorBoundary: RouteErrorPage,
+    children: [{ path: '/', Component: RootLayout, children: [
+      { index: true, Component: HomePage },
+      { path: 'auth', Component: AuthPage },
+      { path: 'job', Component: JobOverviewPage },
+      { path: 'job/detail', Component: JobDetailPage },
+      { path: 'simulation', Component: SimulationPage },
+      { path: 'history', Component: HistoryPage },
+      { path: 'quiz', Component: QuizPage },
+      { path: 'compare', Component: ComparisonPage },
+      { path: 'favorites', Component: FavoritesPage },
+      { path: 'interview-prep', Component: InterviewPrepPage },
+      { path: 'settings', Component: SettingsPage },
+      { path: 'mood', Component: MoodMatchPage },
+      { path: 'career-transition', Component: CareerTransitionPage },
+      { path: 'roadmap', Component: CareerRoadmapPage },
+      { path: 'pricing', Component: PricingPage },
+      // ── Phase 1: Guidance system routes ─────────────────────────────────
+      { path: 'dashboard', Component: DashboardPage },
+      { path: 'onboarding', Component: OnboardingPage },
+      { path: 'assess', Component: AssessmentHubPage },
+      { path: 'assess/interests', Component: AssessRiasecPage },
+      { path: 'assess/aptitude', Component: AssessAptitudePage },
+      { path: 'assess/values', Component: AssessValuesPage },
+      { path: 'assess/aspirations', Component: AssessAspirationsPage },
+      { path: 'passport', Component: PassportPage },
+      { path: 'recommendations', Component: RecommendationsPage },
+      { path: 'pathway/:occupationId', Component: PathwayPage },
+      { path: 'pathways', Component: PathwaysPage },
+      { path: 'how-it-works', Component: HowItWorksPage },
+      { path: 'counselor', Component: CounselorPage },
+      { path: 'help', Component: HelpCenterPage },
+      { path: 'about', Component: AboutPage },
+      { path: 'integration', Component: IntegrationPage },
+      { path: '*', Component: NotFoundPage },
+    ]}],
+  },
+  {
+    path: '/demo',
+    Component: DemoSihRuntime,
+    ErrorBoundary: RouteErrorPage,
+    children: [
+      { index: true, Component: DemoOverviewPage },
+      { path: 'student', Component: DemoStudentPage },
+      { path: 'mentor', Component: DemoMentorPage },
+      { path: 'recruiter', Component: DemoRecruiterPage },
+      { path: 'institution', Component: DemoInstitutionPage },
+      { path: 'faculty', Component: DemoFacultyPage },
+      { path: '*', Component: DemoOverviewPage },
+    ],
+  },
 ]);
