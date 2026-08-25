@@ -19,6 +19,7 @@ assert.deepEqual(migrationFiles, [
   '202608260004_applications_outcomes_collaboration_audit.sql',
   '202608260005_rls_authorization.sql',
   '202608260006_private_storage.sql',
+  '202608260007_security_integrity_hardening.sql',
 ]);
 
 const migrationSources = await Promise.all(migrationFiles.map(async file => ({
@@ -27,6 +28,7 @@ const migrationSources = await Promise.all(migrationFiles.map(async file => ({
 })));
 const sql = migrationSources.map(item => item.source).join('\n');
 const normalizedSql = sql.replace(/--.*$/gm, '');
+const hardeningSql = migrationSources.find(item => item.file.endsWith('007_security_integrity_hardening.sql'))?.source ?? '';
 
 const createdTables = [...normalizedSql.matchAll(/create\s+table\s+sih26044\.([a-z0-9_]+)/gi)]
   .map(match => match[1]);
@@ -47,7 +49,22 @@ for (const policy of policyStatements) {
     `Unconditional SIH policy is prohibited: ${policy.slice(0, 120)}`);
 }
 
-const evidencePolicies = policyStatements.filter(policy => /on\s+sih26044\.evidence_records\b/i.test(policy));
+const activePolicyMap = new Map<string, string>();
+const policyOperations = [...normalizedSql.matchAll(
+  /create\s+policy\s+[a-z0-9_]+[\s\S]*?;|drop\s+policy\s+if\s+exists\s+[a-z0-9_]+\s+on\s+(?:sih26044|storage)\.[a-z0-9_]+\s*;/gi,
+)].map(match => match[0]);
+for (const operation of policyOperations) {
+  const create = operation.match(/create\s+policy\s+([a-z0-9_]+)[\s\S]*?on\s+((?:sih26044|storage)\.[a-z0-9_]+)/i);
+  if (create) {
+    activePolicyMap.set(`${create[2].toLowerCase()}.${create[1].toLowerCase()}`, operation);
+    continue;
+  }
+  const drop = operation.match(/drop\s+policy\s+if\s+exists\s+([a-z0-9_]+)\s+on\s+((?:sih26044|storage)\.[a-z0-9_]+)/i);
+  if (drop) activePolicyMap.delete(`${drop[2].toLowerCase()}.${drop[1].toLowerCase()}`);
+}
+const activePolicyStatements = [...activePolicyMap.values()];
+
+const evidencePolicies = activePolicyStatements.filter(policy => /on\s+sih26044\.evidence_records\b/i.test(policy));
 assert.equal(
   evidencePolicies.some(policy => /recruiter|industry_partner/i.test(policy)),
   false,
@@ -68,7 +85,7 @@ const appendOnlyTables = [
   'audit_events',
 ];
 for (const table of appendOnlyTables) {
-  const unsafePolicies = policyStatements.filter(policy =>
+  const unsafePolicies = activePolicyStatements.filter(policy =>
     new RegExp(`on\\s+sih26044\\.${table}\\b`, 'i').test(policy)
     && /for\s+(update|delete)\b/i.test(policy));
   assert.deepEqual(unsafePolicies, [], `${table} must not have UPDATE/DELETE RLS policies`);
@@ -82,6 +99,27 @@ assert.doesNotMatch(normalizedSql, prohibitedColumn,
 assert.doesNotMatch(normalizedSql, /\bautomatic_(rejection|shortlist)|\bauto_(reject|shortlist)/i,
   'Automatic rejection/shortlisting database mechanisms are prohibited');
 
+const activeInsertPolicies = (table: string) => activePolicyStatements.filter(policy =>
+  new RegExp(`on\\s+sih26044\\.${table}\\b`, 'i').test(policy)
+  && /for\s+insert\b/i.test(policy));
+const weakEvidenceInsert = activeInsertPolicies('evidence_records');
+assert.equal(weakEvidenceInsert.length, 1, 'Evidence must have exactly one authenticated direct INSERT policy');
+assert.match(weakEvidenceInsert[0], /provenance\s+in\s*\(\s*'self_declared'\s*,\s*'self_reported'\s*,\s*'extracted'\s*,\s*'inferred'\s*\)/i);
+assert.match(weakEvidenceInsert[0], /initial_verification_state\s+in\s*\(\s*'proposed'\s*,\s*'unverified'\s*,\s*'self_confirmed'\s*\)/i);
+assert.doesNotMatch(weakEvidenceInsert[0], /assessed|artifact_backed|activity_observation|human_attested|issuer_verified|outcome_linked|human_verified/i,
+  'Generic evidence INSERT must not mint strong provenance or authoritative verification');
+
+for (const trustedWriteTable of [
+  'opportunity_readiness_results',
+  'application_snapshots',
+  'application_snapshot_evidence',
+  'application_snapshot_consents',
+  'audit_events',
+]) {
+  assert.deepEqual(activeInsertPolicies(trustedWriteTable), [], `${trustedWriteTable} must be a trusted-write boundary`);
+  assert.match(hardeningSql, new RegExp(`revoke\\s+insert\\s+on\\s+sih26044\\.${trustedWriteTable}\\s+from\\s+authenticated`, 'i'));
+}
+
 assert.match(normalizedSql, /values\s*\(\s*'career-evidence-private'\s*,\s*'career-evidence-private'\s*,\s*false\b/i,
   'Private evidence bucket must be declared non-public');
 assert.doesNotMatch(normalizedSql, /career-evidence-private[\s\S]{0,120}\btrue\b/i,
@@ -90,6 +128,24 @@ assert.match(normalizedSql, /storage\.foldername\(name\)[\s\S]{0,120}current_act
   'Storage policies must bind the first path segment to the current actor');
 assert.doesNotMatch(normalizedSql, /recruiter[\s\S]{0,160}on\s+storage\.objects/i,
   'Recruiters must not receive generic evidence object access');
+
+const activeStoragePolicies = activePolicyStatements.filter(policy => /on\s+storage\.objects\b/i.test(policy));
+const hardenedStorageInsert = activeStoragePolicies.find(policy => /for\s+insert\b/i.test(policy) && /career-evidence-private/i.test(policy));
+assert.ok(hardenedStorageInsert, 'Canonical private evidence INSERT policy is required');
+assert.match(hardenedStorageInsert, /array_length\s*\(\s*storage\.foldername\(name\)\s*,\s*1\s*\)\s*=\s*2/i,
+  'Supabase foldername excludes the filename: canonical path must have exactly two folders');
+assert.match(hardenedStorageInsert, /storage\.filename\(name\)/i, 'Storage filename must be validated separately');
+assert.doesNotMatch(hardeningSql, /array_length\s*\(\s*storage\.foldername\(name\)\s*,\s*1\s*\)\s*=\s*3/i,
+  'Hardening migration must not repeat the legacy folder-count defect');
+assert.deepEqual(
+  activeStoragePolicies.filter(policy => /for\s+update\b/i.test(policy) && /career-evidence-private/i.test(policy)),
+  [],
+  'Registered evidence objects must have no generic authenticated UPDATE policy',
+);
+const hardenedStorageDelete = activeStoragePolicies.find(policy => /for\s+delete\b/i.test(policy) && /career-evidence-private/i.test(policy));
+assert.ok(hardenedStorageDelete);
+assert.match(hardenedStorageDelete, /not\s+exists[\s\S]*?sih26044\.artifacts/i,
+  'Storage DELETE must prove that an upload is not registered as an artifact');
 
 const requiredTables = [
   'actors', 'organizations', 'organization_memberships', 'organization_membership_roles',
@@ -141,8 +197,28 @@ assert.match(normalizedSql, /not a digital signature/i);
 assert.match(normalizedSql, /current_application_stage\(a\.id\)\s+not\s+in\s*\(\s*'saved'\s*,\s*'preparing'\s*\)/i,
   'Recruiter authorization must exclude saved/preparing applications');
 assert.match(normalizedSql, /policy_program_analyst/i);
-assert.doesNotMatch(policyStatements.join('\n'), /policy_program_analyst/i,
+assert.doesNotMatch(activePolicyStatements.join('\n'), /policy_program_analyst/i,
   'Policy/program analyst must receive no individual-row policy');
+
+assert.match(hardeningSql, /trigger\s+enforce_authenticated_requirement_confirmation/i);
+assert.match(hardeningSql, /trigger\s+enforce_authenticated_eligibility_confirmation/i);
+assert.match(hardeningSql, /content_changed[\s\S]*?new\.human_confirmed\s*:=\s*false/i,
+  'High-impact content edits must invalidate stale confirmation traces');
+assert.match(hardeningSql, /new\.confirmed_by_actor_id\s*:=\s*actor_id/i);
+assert.match(hardeningSql, /new\.confirmed_at\s*:=\s*statement_timestamp\(\)/i);
+assert.match(hardeningSql, /not\s+in\s*\(\s*'structured_human_entry'\s*,\s*'ai_assisted_review'\s*\)/i);
+assert.match(hardeningSql, /trigger\s+protect_artifact_core_metadata/i);
+assert.match(hardeningSql, /trigger\s+validate_application_linked_outcome/i);
+assert.match(hardeningSql, /application_id\s+is\s+not\s+null[\s\S]*?can_record_application_outcome/i);
+
+for (const internalHelper of [
+  'is_consent_active\\(uuid, uuid, uuid, sih26044\\.consent_purpose\\)',
+  'current_scoped_verification_state\\(uuid, uuid\\)',
+  'current_application_stage\\(uuid\\)',
+]) {
+  assert.match(hardeningSql, new RegExp(`revoke\\s+all\\s+on\\s+function\\s+sih26044\\.${internalHelper}\\s+from\\s+authenticated`, 'i'),
+    `Internal helper must not remain directly executable: ${internalHelper}`);
+}
 
 assert.doesNotMatch(sql, /SUPABASE_SERVICE_ROLE_KEY|service_role_key\s*=|eyJ[a-zA-Z0-9_-]{20,}\.[a-zA-Z0-9_-]{20,}/,
   'Service-role keys, JWTs, and secrets must not appear in migrations');
@@ -176,13 +252,32 @@ const requiredRlsTestClaims = [
   'audit history cannot be deleted',
   'evidence bucket is private',
   'one actor cannot read another actor private storage object',
+  'learner cannot insert issuer_verified provenance',
+  'learner cannot insert human_attested provenance',
+  'learner cannot insert assessed provenance',
+  'learner cannot insert human_verified initial state',
+  'learner can still insert permitted weak evidence',
+  'learner retains read access to own trusted readiness',
+  'learner cannot directly insert canonical readiness result',
+  'confirmed requirement edit invalidates stale confirmation',
+  'confirmation actor cannot be impersonated',
+  'production client cannot claim controlled confirmation method',
+  'confirmed eligibility edit invalidates stale confirmation',
+  'freshly reconfirmed edited content can publish',
+  'outcome cannot target unrelated learner/application',
+  'valid application-linked outcome can be recorded by authorized human actor',
+  'registered artifact object cannot be updated/overwritten',
+  'registered artifact object cannot be deleted by normal client',
+  'valid storage path uses exactly actor/artifact folders plus filename',
+  'low-level trust helper cannot leak unauthorized state',
 ];
 for (const claim of requiredRlsTestClaims) assert.match(rlsTests, new RegExp(claim, 'i'));
 
 console.log(JSON.stringify({
   migrationsInspected: migrationFiles,
   sihTablesInspected: createdTables.length,
-  policiesInspected: policyStatements.length,
+  policyDefinitionsInspected: policyStatements.length,
+  activePoliciesInspected: activePolicyStatements.length,
   securityDefinerHelpersInspected: securityDefinerFunctions.length,
   rawRecruiterEvidencePolicies: 0,
   appendOnlyTablesChecked: appendOnlyTables.length,
