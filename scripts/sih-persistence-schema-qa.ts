@@ -20,6 +20,7 @@ assert.deepEqual(migrationFiles, [
   '202608260005_rls_authorization.sql',
   '202608260006_private_storage.sql',
   '202608260007_security_integrity_hardening.sql',
+  '202608260008_artifact_and_confirmation_hardening.sql',
 ]);
 
 const migrationSources = await Promise.all(migrationFiles.map(async file => ({
@@ -29,6 +30,7 @@ const migrationSources = await Promise.all(migrationFiles.map(async file => ({
 const sql = migrationSources.map(item => item.source).join('\n');
 const normalizedSql = sql.replace(/--.*$/gm, '');
 const hardeningSql = migrationSources.find(item => item.file.endsWith('007_security_integrity_hardening.sql'))?.source ?? '';
+const finalHardeningSql = migrationSources.find(item => item.file.endsWith('008_artifact_and_confirmation_hardening.sql'))?.source ?? '';
 
 const createdTables = [...normalizedSql.matchAll(/create\s+table\s+sih26044\.([a-z0-9_]+)/gi)]
   .map(match => match[1]);
@@ -106,6 +108,9 @@ const weakEvidenceInsert = activeInsertPolicies('evidence_records');
 assert.equal(weakEvidenceInsert.length, 1, 'Evidence must have exactly one authenticated direct INSERT policy');
 assert.match(weakEvidenceInsert[0], /provenance\s+in\s*\(\s*'self_declared'\s*,\s*'self_reported'\s*,\s*'extracted'\s*,\s*'inferred'\s*\)/i);
 assert.match(weakEvidenceInsert[0], /initial_verification_state\s+in\s*\(\s*'proposed'\s*,\s*'unverified'\s*,\s*'self_confirmed'\s*\)/i);
+assert.match(weakEvidenceInsert[0], /proposal_source\s+is\s+null[\s\S]*?proposal_source\s+in\s*\(\s*'user_entry'\s*,\s*'ai_extraction'\s*,\s*'rule_based_extraction'\s*\)/i);
+assert.doesNotMatch(weakEvidenceInsert[0], /connector_import/i,
+  'Generic browser evidence INSERT must not claim connector_import attribution');
 assert.doesNotMatch(weakEvidenceInsert[0], /assessed|artifact_backed|activity_observation|human_attested|issuer_verified|outcome_linked|human_verified/i,
   'Generic evidence INSERT must not mint strong provenance or authoritative verification');
 
@@ -118,6 +123,10 @@ for (const trustedWriteTable of [
 ]) {
   assert.deepEqual(activeInsertPolicies(trustedWriteTable), [], `${trustedWriteTable} must be a trusted-write boundary`);
   assert.match(hardeningSql, new RegExp(`revoke\\s+insert\\s+on\\s+sih26044\\.${trustedWriteTable}\\s+from\\s+authenticated`, 'i'));
+}
+for (const trustedWriteTable of ['artifacts', 'evidence_artifact_links']) {
+  assert.deepEqual(activeInsertPolicies(trustedWriteTable), [], `${trustedWriteTable} must be a trusted-write boundary`);
+  assert.match(finalHardeningSql, new RegExp(`revoke\\s+insert\\s+on\\s+sih26044\\.${trustedWriteTable}\\s+from\\s+authenticated`, 'i'));
 }
 
 assert.match(normalizedSql, /values\s*\(\s*'career-evidence-private'\s*,\s*'career-evidence-private'\s*,\s*false\b/i,
@@ -146,6 +155,10 @@ const hardenedStorageDelete = activeStoragePolicies.find(policy => /for\s+delete
 assert.ok(hardenedStorageDelete);
 assert.match(hardenedStorageDelete, /not\s+exists[\s\S]*?sih26044\.artifacts/i,
   'Storage DELETE must prove that an upload is not registered as an artifact');
+assert.match(normalizedSql, /trigger\s+protect_artifact_core_metadata/i,
+  'Artifact core identity and fingerprint immutability trigger must remain installed');
+assert.match(normalizedSql, /new\.integrity_fingerprint[\s\S]*?old\.integrity_fingerprint/i,
+  'Artifact integrity fingerprint must remain protected from later mutation');
 
 const requiredTables = [
   'actors', 'organizations', 'organization_memberships', 'organization_membership_roles',
@@ -202,11 +215,29 @@ assert.doesNotMatch(activePolicyStatements.join('\n'), /policy_program_analyst/i
 
 assert.match(hardeningSql, /trigger\s+enforce_authenticated_requirement_confirmation/i);
 assert.match(hardeningSql, /trigger\s+enforce_authenticated_eligibility_confirmation/i);
-assert.match(hardeningSql, /content_changed[\s\S]*?new\.human_confirmed\s*:=\s*false/i,
-  'High-impact content edits must invalidate stale confirmation traces');
-assert.match(hardeningSql, /new\.confirmed_by_actor_id\s*:=\s*actor_id/i);
-assert.match(hardeningSql, /new\.confirmed_at\s*:=\s*statement_timestamp\(\)/i);
-assert.match(hardeningSql, /not\s+in\s*\(\s*'structured_human_entry'\s*,\s*'ai_assisted_review'\s*\)/i);
+for (const confirmationFunction of [
+  'enforce_authenticated_requirement_confirmation',
+  'enforce_authenticated_eligibility_confirmation',
+]) {
+  const functionMatch = finalHardeningSql.match(new RegExp(
+    `create\\s+or\\s+replace\\s+function\\s+sih26044\\.${confirmationFunction}\\(\\)[\\s\\S]*?\\$\\$;`,
+    'i',
+  ));
+  assert.ok(functionMatch, `Final all-writer confirmation function missing: ${confirmationFunction}`);
+  const functionSql = functionMatch[0];
+  assert.doesNotMatch(functionSql, /if\s+current_user\s*<>\s*'authenticated'\s+then\s+return\s+new/i,
+    `${confirmationFunction} must not bypass trusted writers`);
+  const invalidationOffset = functionSql.search(/if\s+content_changed\s+and\s+not\s+fresh_confirmation/i);
+  const writerBranchOffset = functionSql.search(/if\s+current_user\s*=\s*'authenticated'/i);
+  assert.ok(invalidationOffset >= 0 && writerBranchOffset > invalidationOffset,
+    `${confirmationFunction} must invalidate stale content before writer-specific rules`);
+  assert.match(functionSql, /new\.human_confirmed\s*:=\s*false[\s\S]*?new\.confirmed_by_actor_id\s*:=\s*null/i);
+  assert.match(functionSql, /new\.confirmed_by_actor_id\s*:=\s*actor_id/i);
+  assert.match(functionSql, /new\.confirmed_at\s*:=\s*statement_timestamp\(\)/i);
+  assert.match(functionSql, /not\s+in\s*\(\s*'structured_human_entry'\s*,\s*'ai_assisted_review'\s*\)/i);
+  assert.match(functionSql, /where\s+a\.id\s*=\s*new\.confirmed_by_actor_id\s+and\s+a\.status\s*=\s*'active'/i,
+    'Trusted confirmation must identify an explicit active actor');
+}
 assert.match(hardeningSql, /trigger\s+protect_artifact_core_metadata/i);
 assert.match(hardeningSql, /trigger\s+validate_application_linked_outcome/i);
 assert.match(hardeningSql, /application_id\s+is\s+not\s+null[\s\S]*?can_record_application_outcome/i);
@@ -241,6 +272,7 @@ const requiredRlsTestClaims = [
   'own-organization recruiter can read submitted consented application',
   'organization B recruiter cannot read organization A application',
   'assigned verifier can read exactly requested evidence',
+  'assigned verifier retains read access to properly linked artifact metadata',
   'unrelated verifier cannot read requested evidence',
   'policy analyst cannot read individual evidence',
   'published opportunity version cannot be mutated',
@@ -270,6 +302,18 @@ const requiredRlsTestClaims = [
   'registered artifact object cannot be deleted by normal client',
   'valid storage path uses exactly actor/artifact folders plus filename',
   'low-level trust helper cannot leak unauthorized state',
+  'learner cannot insert canonical artifact metadata',
+  'learner cannot insert canonical evidence-artifact link',
+  'browser cannot claim connector_import proposal source',
+  'trusted requirement edit without fresh trace invalidates confirmation',
+  'trusted eligibility edit without fresh trace invalidates confirmation',
+  'fresh trusted confirmation binds edited requirement content',
+  'fresh trusted confirmation binds edited eligibility content',
+  'browser cannot claim clean scan status through artifact insertion',
+  'storage orphan upload remains possible',
+  'storage orphan upload can be deleted',
+  'learner retains read access to own registered artifact metadata',
+  'learner retains read access to own canonical evidence-artifact link',
 ];
 for (const claim of requiredRlsTestClaims) assert.match(rlsTests, new RegExp(claim, 'i'));
 

@@ -114,6 +114,66 @@ insert into sih26044.eligibility_rules (
   true, '20000000-0000-0000-0000-000000000003', now(), 'structured_human_entry'
 );
 
+-- Migration-owner writes simulate a trusted/non-authenticated adapter. Exact
+-- content edits must invalidate stale traces for these writers too.
+update sih26044.opportunity_requirements
+set literal_source_wording = 'SQL fundamentals for trusted review'
+where id = '52000000-0000-0000-0000-000000000001';
+select pg_temp.assert_true(
+  (select not human_confirmed
+    and confirmed_by_actor_id is null
+    and confirmed_at is null
+    and confirmation_method is null
+   from sih26044.opportunity_requirements
+   where id = '52000000-0000-0000-0000-000000000001'),
+  'trusted requirement edit without fresh trace invalidates confirmation'
+);
+update sih26044.opportunity_requirements
+set literal_source_wording = 'SQL fundamentals',
+    human_confirmed = true,
+    confirmed_by_actor_id = '20000000-0000-0000-0000-000000000003',
+    confirmed_at = statement_timestamp(),
+    confirmation_method = 'connector_review'
+where id = '52000000-0000-0000-0000-000000000001';
+select pg_temp.assert_true(
+  (select human_confirmed
+    and literal_source_wording = 'SQL fundamentals'
+    and confirmed_by_actor_id = '20000000-0000-0000-0000-000000000003'
+    and confirmation_method = 'connector_review'
+   from sih26044.opportunity_requirements
+   where id = '52000000-0000-0000-0000-000000000001'),
+  'fresh trusted confirmation binds edited requirement content'
+);
+
+update sih26044.eligibility_rules
+set literal_source_wording = 'Undergraduate study for trusted review'
+where id = '53000000-0000-0000-0000-000000000001';
+select pg_temp.assert_true(
+  (select not human_confirmed
+    and confirmed_by_actor_id is null
+    and confirmed_at is null
+    and confirmation_method is null
+   from sih26044.eligibility_rules
+   where id = '53000000-0000-0000-0000-000000000001'),
+  'trusted eligibility edit without fresh trace invalidates confirmation'
+);
+update sih26044.eligibility_rules
+set literal_source_wording = 'Undergraduate study',
+    human_confirmed = true,
+    confirmed_by_actor_id = '20000000-0000-0000-0000-000000000003',
+    confirmed_at = statement_timestamp(),
+    confirmation_method = 'controlled_fixture'
+where id = '53000000-0000-0000-0000-000000000001';
+select pg_temp.assert_true(
+  (select human_confirmed
+    and literal_source_wording = 'Undergraduate study'
+    and confirmed_by_actor_id = '20000000-0000-0000-0000-000000000003'
+    and confirmation_method = 'controlled_fixture'
+   from sih26044.eligibility_rules
+   where id = '53000000-0000-0000-0000-000000000001'),
+  'fresh trusted confirmation binds edited eligibility content'
+);
+
 insert into sih26044.evidence_records (
   id, subject_actor_id, literal_claim, provenance, initial_verification_state,
   scope_kind, scope_literal_skill_label, source_system, source_captured_at
@@ -212,6 +272,17 @@ select pg_temp.assert_blocked(
   )$sql$,
   'learner cannot insert human_verified initial state'
 );
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.evidence_records (
+    id, subject_actor_id, literal_claim, provenance, initial_verification_state,
+    proposal_source, scope_kind, scope_literal_skill_label, source_system, source_captured_at
+  ) values (
+    '60100000-0000-0000-0000-000000000006', '20000000-0000-0000-0000-000000000001',
+    'Forged connector proposal', 'extracted', 'proposed', 'connector_import',
+    'global_skill', 'SQL', 'browser', now()
+  )$sql$,
+  'browser cannot claim connector_import proposal source'
+);
 insert into sih26044.evidence_records (
   id, subject_actor_id, literal_claim, provenance, initial_verification_state,
   scope_kind, scope_literal_skill_label, source_system, source_captured_at
@@ -278,6 +349,27 @@ select pg_temp.assert_true((select count(*) = 1 from sih26044.opportunity_readin
 insert into storage.objects (bucket_id, name)
 values (
   'career-evidence-private',
+  '20000000-0000-0000-0000-000000000001/90100000-0000-0000-0000-000000000001/orphan.txt'
+);
+select pg_temp.assert_true(
+  (select count(*) = 1 from storage.objects
+   where bucket_id = 'career-evidence-private'
+     and name = '20000000-0000-0000-0000-000000000001/90100000-0000-0000-0000-000000000001/orphan.txt'),
+  'storage orphan upload remains possible'
+);
+delete from storage.objects
+where bucket_id = 'career-evidence-private'
+  and name = '20000000-0000-0000-0000-000000000001/90100000-0000-0000-0000-000000000001/orphan.txt';
+select pg_temp.assert_true(
+  (select count(*) = 0 from storage.objects
+   where bucket_id = 'career-evidence-private'
+     and name = '20000000-0000-0000-0000-000000000001/90100000-0000-0000-0000-000000000001/orphan.txt'),
+  'storage orphan upload can be deleted'
+);
+
+insert into storage.objects (bucket_id, name)
+values (
+  'career-evidence-private',
   '20000000-0000-0000-0000-000000000001/90000000-0000-0000-0000-000000000001/evidence-a.txt'
 );
 select pg_temp.assert_true(
@@ -288,12 +380,66 @@ select pg_temp.assert_true(
      and name = '20000000-0000-0000-0000-000000000001/90000000-0000-0000-0000-000000000001/evidence-a.txt'),
   'valid storage path uses exactly actor/artifact folders plus filename'
 );
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.artifacts (
+    id, subject_actor_id, storage_object_path, media_type, display_name, integrity_fingerprint
+  ) values (
+    '90000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001',
+    '20000000-0000-0000-0000-000000000001/90000000-0000-0000-0000-000000000001/evidence-a.txt',
+    'text/plain', 'Evidence A', 'sha256:browser-claim'
+  )$sql$,
+  'learner cannot insert canonical artifact metadata'
+);
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.artifacts (
+    id, subject_actor_id, storage_object_path, media_type, display_name,
+    integrity_fingerprint, scan_status
+  ) values (
+    '90000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001',
+    '20000000-0000-0000-0000-000000000001/90000000-0000-0000-0000-000000000001/evidence-a.txt',
+    'text/plain', 'Evidence A', 'sha256:browser-claim', 'clean'
+  )$sql$,
+  'browser cannot claim clean scan status through artifact insertion'
+);
+reset role;
+
+-- A future trusted registration adapter owns these canonical writes. This
+-- fixture begins conservatively and links only after metadata registration.
 insert into sih26044.artifacts (
-  id, subject_actor_id, storage_object_path, media_type, display_name, integrity_fingerprint
+  id, subject_actor_id, storage_object_path, media_type, display_name,
+  integrity_fingerprint, scan_status
 ) values (
   '90000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001',
   '20000000-0000-0000-0000-000000000001/90000000-0000-0000-0000-000000000001/evidence-a.txt',
-  'text/plain', 'Evidence A', 'sha256:test-evidence-a'
+  'text/plain', 'Evidence A', 'sha256:test-evidence-a', 'pending'
+);
+insert into sih26044.evidence_artifact_links (
+  evidence_record_id, artifact_id, linked_by_actor_id
+) values (
+  '60000000-0000-0000-0000-000000000001', '90000000-0000-0000-0000-000000000001',
+  '20000000-0000-0000-0000-000000000001'
+);
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000001';
+select pg_temp.assert_true(
+  (select count(*) = 1 from sih26044.artifacts where id = '90000000-0000-0000-0000-000000000001'),
+  'learner retains read access to own registered artifact metadata'
+);
+select pg_temp.assert_true(
+  (select count(*) = 1 from sih26044.evidence_artifact_links
+   where evidence_record_id = '60000000-0000-0000-0000-000000000001'
+     and artifact_id = '90000000-0000-0000-0000-000000000001'),
+  'learner retains read access to own canonical evidence-artifact link'
+);
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.evidence_artifact_links (
+    evidence_record_id, artifact_id, linked_by_actor_id
+  ) values (
+    '60100000-0000-0000-0000-000000000005', '90000000-0000-0000-0000-000000000001',
+    '20000000-0000-0000-0000-000000000001'
+  )$sql$,
+  'learner cannot insert canonical evidence-artifact link'
 );
 select pg_temp.assert_blocked(
   $sql$update storage.objects
@@ -423,6 +569,7 @@ set local role authenticated;
 set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000005';
 select pg_temp.assert_true((select count(*) = 1 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000001'), 'assigned verifier can read exactly requested evidence');
 select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000002'), 'assigned verifier cannot browse unrelated evidence');
+select pg_temp.assert_true((select count(*) = 1 from sih26044.artifacts where id = '90000000-0000-0000-0000-000000000001'), 'assigned verifier retains read access to properly linked artifact metadata');
 insert into sih26044.verification_events (
   id, verification_request_id, evidence_record_id, action, actor_id, actor_organization_id, reason
 ) values (
