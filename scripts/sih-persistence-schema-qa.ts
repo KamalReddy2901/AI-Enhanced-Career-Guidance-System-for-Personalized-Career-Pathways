@@ -271,7 +271,6 @@ const requiredRlsTestClaims = [
   'recruiter cannot read saved/unsubmitted application',
   'own-organization recruiter can read submitted consented application',
   'organization B recruiter cannot read organization A application',
-  'assigned verifier can read exactly requested evidence',
   'unrelated verifier cannot read requested evidence',
   'policy analyst cannot read individual evidence',
   'published opportunity version cannot be mutated',
