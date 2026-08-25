@@ -147,8 +147,15 @@ async function runTests() {
   const { error: deleteOrphanError } = await learnerAClient.storage
     .from(BUCKET)
     .remove([orphanPath]);
-  
+
   assert(!deleteOrphanError, `owner can delete orphan upload (error: ${deleteOrphanError?.message})`);
+
+  // Postcondition: verify orphan is actually deleted
+  const { error: postDeleteCheck } = await learnerAClient.storage
+    .from(BUCKET)
+    .download(orphanPath);
+
+  assert(postDeleteCheck !== null, 'orphan upload is actually deleted');
   console.log('✓ C. Owner can delete orphan upload');
   
   // Setup: Create registered artifact fixture
@@ -204,25 +211,32 @@ async function runTests() {
   
   // E. Normal client cannot overwrite/upsert registered artifact
   const overwriteContent = new Blob(['Overwrite attempt'], { type: 'text/plain' });
-  
+
   const { error: overwriteError } = await learnerAClient.storage
     .from(BUCKET)
     .upload(registeredPath, overwriteContent, { upsert: true });
-  
-  assert(overwriteError !== null, 'normal client cannot overwrite registered artifact');
+
+  // Postcondition: verify original content is unchanged
+  const { data: afterOverwriteAttempt } = await learnerAClient.storage
+    .from(BUCKET)
+    .download(registeredPath);
+
+  const afterOverwriteText = await afterOverwriteAttempt.text();
+  assert(afterOverwriteText === 'Registered evidence artifact', 'normal client cannot overwrite registered artifact');
   console.log('✓ E. Normal client cannot overwrite registered artifact');
   
   // F. Normal client cannot delete registered artifact
-  // TODO: The DELETE RLS policy should block deletion of registered artifacts
-  // (those with rows in sih26044.artifacts), but currently allows it. The
-  // policy's NOT EXISTS check is likely RLS-filtered itself, causing it to
-  // not see registered artifacts. This requires investigation of migration 006.
-  // For now, this assertion is commented out to allow Storage API testing to proceed.
-  // const { error: deleteRegisteredError } = await learnerAClient.storage
-  //   .from(BUCKET)
-  //   .remove([registeredPath]);
-  // assert(deleteRegisteredError !== null, 'normal client cannot delete registered artifact');
-  console.log('✓ F. Normal client cannot delete registered artifact (TODO: RLS policy needs fix)');
+  const { error: deleteRegisteredError } = await learnerAClient.storage
+    .from(BUCKET)
+    .remove([registeredPath]);
+
+  // Postcondition: verify object still exists and is readable
+  const { data: stillExists, error: postDeleteReadError } = await learnerAClient.storage
+    .from(BUCKET)
+    .download(registeredPath);
+
+  assert(stillExists !== null && !postDeleteReadError, 'normal client cannot delete registered artifact');
+  console.log('✓ F. Normal client cannot delete registered artifact');
   
   // G. Learner B cannot read learner A's private artifact
   const { error: crossReadError } = await learnerBClient.storage

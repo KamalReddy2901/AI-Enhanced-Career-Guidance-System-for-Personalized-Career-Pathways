@@ -21,6 +21,7 @@ assert.deepEqual(migrationFiles, [
   '202608260006_private_storage.sql',
   '202608260007_security_integrity_hardening.sql',
   '202608260008_artifact_and_confirmation_hardening.sql',
+  '202608260009_verifier_and_storage_rls_fix.sql',
 ]);
 
 const migrationSources = await Promise.all(migrationFiles.map(async file => ({
@@ -151,10 +152,13 @@ assert.deepEqual(
   [],
   'Registered evidence objects must have no generic authenticated UPDATE policy',
 );
-const hardenedStorageDelete = activeStoragePolicies.find(policy => /for\s+delete\b/i.test(policy) && /career-evidence-private/i.test(policy));
+const hardenedStorageDelete = activeStoragePolicies.find(policy =>
+  /for\s+delete\b/i.test(policy) &&
+  (/career-evidence-private/i.test(policy) || /sih_private_evidence_delete/i.test(policy))
+);
 assert.ok(hardenedStorageDelete);
-assert.match(hardenedStorageDelete, /not\s+exists[\s\S]*?sih26044\.artifacts/i,
-  'Storage DELETE must prove that an upload is not registered as an artifact');
+assert.match(hardenedStorageDelete, /(not\s+exists[\s\S]*?sih26044\.artifacts|sih26044\.is_orphan_evidence_object)/i,
+  'Storage DELETE must prove that an upload is not registered as an artifact (direct NOT EXISTS or SECURITY DEFINER helper)');
 assert.match(normalizedSql, /trigger\s+protect_artifact_core_metadata/i,
   'Artifact core identity and fingerprint immutability trigger must remain installed');
 assert.match(normalizedSql, /new\.integrity_fingerprint[\s\S]*?old\.integrity_fingerprint/i,
