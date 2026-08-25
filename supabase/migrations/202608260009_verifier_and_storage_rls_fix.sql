@@ -39,7 +39,7 @@ as $$
       and not exists (
         select 1 from sih26044.consent_lifecycle_events cle
         where cle.consent_grant_id = cg.id
-          and cle.action = 'revoked'
+          and cle.action = 'withdrawn'
       )
       and sih26044.has_any_active_organization_role(
         vr.requested_verifier_organization_id,
