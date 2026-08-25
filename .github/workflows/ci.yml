@@ -66,6 +66,9 @@ jobs:
       - name: Run recruiter projection privacy QA
         run: npm run qa:recruiter-projection
 
+      - name: Run SIH26044 persistence schema security QA
+        run: npm run qa:sih-persistence-schema
+
       - name: Build production client
         run: npm run build
 
