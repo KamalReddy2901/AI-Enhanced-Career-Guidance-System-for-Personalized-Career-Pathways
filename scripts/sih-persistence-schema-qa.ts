@@ -22,6 +22,7 @@ assert.deepEqual(migrationFiles, [
   '202608260007_security_integrity_hardening.sql',
   '202608260008_artifact_and_confirmation_hardening.sql',
   '202608260009_verifier_and_storage_rls_fix.sql',
+  '202608260010_consent_and_helper_hardening.sql',
 ]);
 
 const migrationSources = await Promise.all(migrationFiles.map(async file => ({
@@ -206,6 +207,27 @@ for (const match of securityDefinerFunctions) {
 assert.doesNotMatch(normalizedSql, /is_(?:super_?)?admin|admin_bypass|bypass_rls/i,
   'Universal administrator bypass helpers are prohibited');
 
+// Migration 010 hardening: canonical consent semantics and explicit privileges
+const allCanVerifyEvidenceFuncs = [...normalizedSql.matchAll(
+  /create\s+or\s+replace\s+function\s+sih26044\.can_verify_evidence[\s\S]*?\$\$\s*;/gi
+)];
+const canVerifyEvidenceFunc = allCanVerifyEvidenceFuncs[allCanVerifyEvidenceFuncs.length - 1]?.[0];
+assert.ok(canVerifyEvidenceFunc, 'can_verify_evidence helper must exist');
+assert.match(canVerifyEvidenceFunc, /sih26044\.is_consent_active\s*\(/i,
+  'can_verify_evidence must delegate to canonical is_consent_active, not duplicate consent logic');
+assert.doesNotMatch(canVerifyEvidenceFunc, /cg\.(status|revoked_at)/i,
+  'can_verify_evidence must not reference non-existent consent_grants.status or revoked_at columns');
+
+// Migration 010: explicit SECURITY DEFINER privilege discipline
+assert.match(normalizedSql, /revoke\s+all\s+on\s+function\s+sih26044\.can_verify_evidence\s*\(\s*uuid\s*\)\s+from\s+public/i,
+  'can_verify_evidence must have explicit PUBLIC revoke');
+assert.match(normalizedSql, /grant\s+execute\s+on\s+function\s+sih26044\.can_verify_evidence\s*\(\s*uuid\s*\)\s+to\s+authenticated/i,
+  'can_verify_evidence must grant EXECUTE only to authenticated');
+assert.match(normalizedSql, /revoke\s+all\s+on\s+function\s+sih26044\.is_orphan_evidence_object\s*\(\s*text\s*,\s*text\s*\)\s+from\s+public/i,
+  'is_orphan_evidence_object must have explicit PUBLIC revoke');
+assert.match(normalizedSql, /grant\s+execute\s+on\s+function\s+sih26044\.is_orphan_evidence_object\s*\(\s*text\s*,\s*text\s*\)\s+to\s+authenticated/i,
+  'is_orphan_evidence_object must grant EXECUTE only to authenticated');
+
 assert.match(normalizedSql, /all consumed requirements and eligibility rules need complete human confirmation/i);
 assert.match(normalizedSql, /published opportunity versions are immutable/i);
 assert.match(normalizedSql, /extensions\.digest\([\s\S]*?'sha256'/i,
@@ -308,6 +330,9 @@ const requiredRlsTestClaims = [
   'fresh trusted confirmation binds edited requirement content',
   'fresh trusted confirmation binds edited eligibility content',
   'browser cannot claim clean scan status through artifact insertion',
+  'assigned verifier can read exactly requested evidence',
+  'assigned verifier cannot read evidence after consent expires',
+  'assigned verifier still cannot browse unrelated evidence after consent expires',
 ];
 for (const claim of requiredRlsTestClaims) assert.match(rlsTests, new RegExp(claim, 'i'));
 
@@ -338,8 +363,7 @@ console.log(JSON.stringify({
   appendOnlyTablesChecked: appendOnlyTables.length,
   privateBucket: 'career-evidence-private',
   executableSqlClaimsAuthored: requiredRlsTestClaims.length,
-  executableStorageApiClaims: 7,
-  totalExecutableSecurityAssertions: requiredRlsTestClaims.length + 7,
+  requiredStorageApiBehaviors: 8,
   databaseExecution: 'not_performed_by_static_qa',
   failures: [],
 }, null, 2));
