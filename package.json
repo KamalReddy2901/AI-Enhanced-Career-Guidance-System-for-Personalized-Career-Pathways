@@ -17,7 +17,9 @@
     "qa:guidance": "tsx scripts/guidance-qa.ts",
     "qa:guidance-regression": "tsx scripts/guidance-regression.ts",
     "qa:product": "tsx scripts/product-audit-qa.ts",
-    "qa:trending": "tsx scripts/trending-normalization-qa.ts"
+    "qa:trending": "tsx scripts/trending-normalization-qa.ts",
+    "qa:evidence-integrity": "tsx scripts/evidence-integrity-qa.ts",
+    "qa:sih-boundary": "tsx scripts/sih-boundary-qa.ts"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

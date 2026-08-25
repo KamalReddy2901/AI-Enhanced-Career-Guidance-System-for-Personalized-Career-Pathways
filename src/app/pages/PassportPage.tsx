@@ -7,11 +7,11 @@ import { sounds } from '../utils/sounds';
 import { hapticLight, hapticSuccess } from '../utils/haptic';
 import { GuidanceEntrance } from '../components/guidance/GuidanceEntrance';
 import { extractProfileFromResume, type ResumeExtraction } from '../services/ai';
-import { matchSkillsToKB, mergeSkillClaims, groupSkillsByCategory, estimateNSQFLevel, extractLiteralResumeSkills, skillClaimName } from '../engine/skillProfile';
+import { confirmSkillClaimProposals, createSkillClaimProposals, matchSkillsToKB, mergeSkillClaims, groupSkillsByCategory, estimateNSQFLevel, extractLiteralResumeSkills, skillClaimName } from '../engine/skillProfile';
 import { SkillValidationDialog } from '../components/guidance/SkillValidationDialog';
 import { RiasecHexagon } from '../components/guidance/RiasecHexagon';
 import { addSkillEvidence, calculateCompleteness } from '../engine/skillProfile';
-import type { SkillClaim, Proficiency } from '../engine/types';
+import type { SkillClaim, SkillClaimProposal, Proficiency } from '../engine/types';
 import { logProgress } from '../services/guidanceDb';
 import { WhyPanel, type ScoreEvidence } from '../components/guidance/WhyPanel';
 import { motion } from 'motion/react';
@@ -48,6 +48,11 @@ export function PassportPage() {
   const [extractError, setExtractError] = useState('');
   const [extractNotice, setExtractNotice] = useState('');
   const [unmatchedSkills, setUnmatchedSkills] = useState<string[]>([]);
+  const [pendingResumeReview, setPendingResumeReview] = useState<{
+    proposals: SkillClaimProposal[];
+    experiences: ResumeExtraction['experiences'];
+    education?: ResumeExtraction['education'];
+  } | null>(null);
   const [expandedEvidence, setExpandedEvidence] = useState<string | null>(null);
   const [validating, setValidating] = useState<SkillClaim | null>(null);
   const [editingConstraints, setEditingConstraints] = useState(false);
@@ -141,7 +146,8 @@ export function PassportPage() {
       return;
     }
 
-    // Try to match to KB first
+    // Exact canonical/alias matches are retained; unresolved text remains a
+    // distinct custom skill. Manual entry is always self-attested evidence.
     const { matched } = matchSkillsToKB([{
       name: manualSkillName.trim(),
       proficiency: manualSkillProficiency,
@@ -152,29 +158,18 @@ export function PassportPage() {
       if (!prev) throw new Error('Passport unavailable');
       undoStack.pushState(prev);
       
-      if (matched.length > 0) {
-        // Skill was matched to KB
-        const next = { ...prev, skills: mergeSkillClaims(prev.skills, matched) };
-        next.completeness = calculateCompleteness(next);
-        return next;
-      } else {
-        // Add as custom skill with a generated ID
-        const customClaim: SkillClaim = {
-          skillId: `custom_${Date.now()}`,
-          name: manualSkillName.trim(),
-          proficiency: manualSkillProficiency,
-          confidence: 0.6,
-          evidence: [{
-            type: 'self_reported',
-            description: `Manually added: ${manualSkillName.trim()}`,
-            confidence: 0.6,
-            observedAt: new Date().toISOString(),
-          }],
-        };
-        const next = { ...prev, skills: [...prev.skills, customClaim] };
-        next.completeness = calculateCompleteness(next);
-        return next;
-      }
+      const manualClaims = matched.map(claim => ({
+        ...claim,
+        evidence: claim.evidence.map(evidence => ({
+          ...evidence,
+          type: 'self_reported' as const,
+          description: `Manually added: ${manualSkillName.trim()}`,
+          verificationState: 'self_attested' as const,
+        })),
+      }));
+      const next = { ...prev, skills: mergeSkillClaims(prev.skills, manualClaims) };
+      next.completeness = calculateCompleteness(next);
+      return next;
     });
 
     setAddingManualSkill(false);
@@ -191,7 +186,14 @@ export function PassportPage() {
     updatePassport(prev => {
       if (!prev) throw new Error('Passport unavailable');
       undoStack.pushState(prev);
-      const next = { ...prev, skills: mergeSkillClaims(prev.skills, discoveredSkills) };
+      const confirmedSkills = discoveredSkills.map(claim => ({
+        ...claim,
+        evidence: claim.evidence.map(evidence => ({
+          ...evidence,
+          verificationState: 'self_attested' as const,
+        })),
+      }));
+      const next = { ...prev, skills: mergeSkillClaims(prev.skills, confirmedSkills) };
       next.completeness = calculateCompleteness(next);
       return next;
     });
@@ -285,6 +287,7 @@ export function PassportPage() {
     setExtractError('');
     setExtractNotice('');
     setUnmatchedSkills([]);
+    setPendingResumeReview(null);
     setExtractProgress({step: 'Starting extraction...', current: 1, total: 5});
     
     try {
@@ -302,37 +305,25 @@ export function PassportPage() {
       );
       
       setUnmatchedSkills(unmatched);
-      
-      setExtractProgress({step: 'Updating your passport...', current: 4, total: 5});
-      // Merge into passport
-      updatePassport(prev => {
-        const next = {...prev!,skills:mergeSkillClaims(prev!.skills,matched),experiences:[...prev!.experiences,...extracted.experiences.filter(e=>e.title.trim()&&e.years>0)],education:extracted.education||prev!.education};
-        next.completeness=calculateCompleteness(next);
-        return next;
+      setPendingResumeReview({
+        proposals: createSkillClaimProposals(matched, 'ai_resume_extraction'),
+        experiences: extracted.experiences.filter(e => e.title.trim() && e.years > 0),
+        education: extracted.education,
       });
-      
-      setExtractProgress({step: 'Complete!', current: 5, total: 5});
-      sounds.success();
-      hapticSuccess();
-      setTimeout(() => {
-        setResumeText('');
-        setExtractProgress(null);
-      }, 800);
+      setExtractProgress({step: 'Review required before saving', current: 5, total: 5});
+      setExtractNotice('AI extraction is proposed only. Review and confirm it before anything is added to your Career Passport.');
     } catch (err: unknown) {
       setExtractProgress({step: 'AI unavailable, using fallback...', current: 3, total: 5});
       const literal=extractLiteralResumeSkills(resumeText);
       if(literal.length){
         const {matched,unmatched}=matchSkillsToKB(literal);
         setUnmatchedSkills(unmatched);
-        setExtractProgress({step: 'Updating passport...', current: 4, total: 5});
-        updatePassport(prev=>{const next={...prev!,skills:mergeSkillClaims(prev!.skills,matched)};next.completeness=calculateCompleteness(next);return next});
-        setExtractNotice(`${t('passportAiUnavailable')} ${matched.length}`);
-        setExtractProgress({step: 'Complete!', current: 5, total: 5});
-        sounds.success();hapticSuccess();
-        setTimeout(() => {
-          setResumeText('');
-          setExtractProgress(null);
-        }, 800);
+        setPendingResumeReview({
+          proposals: createSkillClaimProposals(matched, 'literal_resume_extraction'),
+          experiences: [],
+        });
+        setExtractNotice(`${t('passportAiUnavailable')} ${matched.length}. Review these literal matches before saving.`);
+        setExtractProgress({step: 'Review required before saving', current: 5, total: 5});
       } else {
         setExtractError(t('passportParseFailed'));
         setExtractProgress(null);
@@ -340,6 +331,36 @@ export function PassportPage() {
     } finally {
       setIsExtracting(false);
     }
+  };
+
+  const confirmResumeReview = () => {
+    if (!pendingResumeReview) return;
+    const confirmedSkills = confirmSkillClaimProposals(pendingResumeReview.proposals);
+    updatePassport(prev => {
+      if (!prev) throw new Error('Passport unavailable');
+      undoStack.pushState(prev);
+      const next = {
+        ...prev,
+        skills: mergeSkillClaims(prev.skills, confirmedSkills),
+        experiences: [...prev.experiences, ...pendingResumeReview.experiences],
+        education: pendingResumeReview.education || prev.education,
+      };
+      next.completeness = calculateCompleteness(next);
+      return next;
+    });
+    setPendingResumeReview(null);
+    setResumeText('');
+    setExtractProgress(null);
+    setExtractNotice('Resume evidence confirmed and added to your Career Passport.');
+    sounds.success();
+    hapticSuccess();
+  };
+
+  const discardResumeReview = () => {
+    setPendingResumeReview(null);
+    setUnmatchedSkills([]);
+    setExtractProgress(null);
+    setExtractNotice('Proposed extraction discarded. No passport evidence was changed.');
   };
 
   const nsqfLevel = estimateNSQFLevel(passport.education);
@@ -434,11 +455,35 @@ export function PassportPage() {
             </div>
           )}
           {extractNotice && <div className="mb-3 border-l-4 border-[var(--accent-news)] bg-[var(--paper)] p-3 text-sm">{extractNotice}</div>}
+          {pendingResumeReview && (
+            <div className="mb-3 border-2 border-[var(--ink)] bg-[var(--paper)] p-4" data-testid="resume-extraction-review">
+              <p className="font-semibold">Review proposed resume evidence</p>
+              <p className="mt-1 text-xs text-[var(--ink-soft)]">
+                Nothing below is saved yet. Confirmation records your attestation of the extraction; it does not create issuer verification.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {pendingResumeReview.proposals.map(({ claim }) => (
+                  <span key={claim.skillId} className="border border-[var(--ink)] px-2 py-1 text-xs">
+                    {skillClaimName(claim)} · level {claim.proficiency}
+                  </span>
+                ))}
+              </div>
+              {(pendingResumeReview.experiences.length > 0 || pendingResumeReview.education) && (
+                <p className="mt-3 text-xs text-[var(--ink-soft)]">
+                  Also proposed: {pendingResumeReview.experiences.length} experience record{pendingResumeReview.experiences.length === 1 ? '' : 's'}{pendingResumeReview.education ? ' and one education record' : ''}.
+                </p>
+              )}
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button type="button" onClick={confirmResumeReview} className="min-h-11 bg-[var(--ink)] px-4 text-xs uppercase text-[var(--paper)]">Confirm and add</button>
+                <button type="button" onClick={discardResumeReview} className="min-h-11 border-2 border-[var(--ink)] px-4 text-xs uppercase">Discard</button>
+              </div>
+            </div>
+          )}
           {unmatchedSkills.length > 0 && (
             <div className="mb-3 rounded-sm border-2 border-[var(--ink)] bg-[var(--paper-raised)] p-4">
-              <p className="mb-2 font-semibold text-sm">✓ {unmatchedSkills.length} custom skills added</p>
+              <p className="mb-2 font-semibold text-sm">{unmatchedSkills.length} unresolved skill label{unmatchedSkills.length === 1 ? '' : 's'} preserved</p>
               <p className="mb-3 text-xs text-[var(--ink-soft)]">
-                These skills from your resume were automatically added as custom skills (they're not in our core 178-skill knowledge base, but will still be used in recommendations via fuzzy matching):
+                These exact labels were not canonicalized. They remain literal custom skills and are not silently treated as knowledge-base equivalents.
               </p>
               <div className="flex flex-wrap gap-2">
                 {unmatchedSkills.map((skill) => (
@@ -446,18 +491,18 @@ export function PassportPage() {
                     key={skill}
                     className="inline-flex items-center gap-1 border border-[var(--ink)] bg-[var(--paper)] px-3 py-1.5 text-xs font-[Inter]"
                   >
-                    ✓ {skill}
+                    {skill}
                   </span>
                 ))}
               </div>
               <p className="mt-3 text-xs text-[var(--ink-soft)] italic">
-                Custom skills are matched against occupation requirements using AI-assisted fuzzy matching and contribute to your skill coverage score.
+                Unresolved custom skills stay visible as evidence but do not satisfy canonical occupation requirements automatically.
               </p>
             </div>
           )}
           <button
             onClick={handleResumeExtract}
-            disabled={!resumeText.trim() || isExtracting}
+            disabled={!resumeText.trim() || isExtracting || Boolean(pendingResumeReview)}
             className="bg-[var(--ink)] px-6 py-2 text-sm text-[var(--paper)] transition-opacity disabled:opacity-30 hover:shadow-lg"
           >
             {isExtracting ? t('passportExtracting') : t('passportExtract')}

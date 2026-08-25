@@ -48,6 +48,12 @@ jobs:
       - name: Run trending normalization QA
         run: npm run qa:trending
 
+      - name: Run evidence integrity QA
+        run: npm run qa:evidence-integrity
+
+      - name: Run SIH26044 boundary QA
+        run: npm run qa:sih-boundary
+
       - name: Build production client
         run: npm run build
 

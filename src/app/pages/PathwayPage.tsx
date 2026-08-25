@@ -162,18 +162,9 @@ export function PathwayPage() {
       if (skillIds.length)
         updatePassport((previous) => {
           if (!previous) throw new Error("Career Passport unavailable");
-          const confidence =
-            step.kind === "qualification"
-              ? 0.9
-              : step.kind === "validate_skill"
-                ? 0.75
-                : 0.85;
-          const type =
-            step.kind === "qualification"
-              ? ("credentialed" as const)
-              : step.kind === "validate_skill"
-                ? ("self_reported" as const)
-                : ("assessed" as const);
+          // A checked pathway step proves only that the learner marked an
+          // activity complete. It cannot confer assessment or issuer status.
+          const confidence = 0.6;
           const claims: SkillClaim[] = skillIds.map((skillId) => {
             const required =
               occupation.skills.find((item) => item.skillId === skillId)
@@ -184,10 +175,11 @@ export function PathwayPage() {
               confidence,
               evidence: [
                 {
-                  type,
+                  type: "pathway_activity" as const,
                   description: `Completed pathway step: ${step.label}`,
                   confidence,
                   observedAt: new Date().toISOString(),
+                  verificationState: "self_attested" as const,
                 },
               ],
             };
