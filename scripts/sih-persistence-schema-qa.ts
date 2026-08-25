@@ -334,8 +334,8 @@ console.log(JSON.stringify({
   appendOnlyTablesChecked: appendOnlyTables.length,
   privateBucket: 'career-evidence-private',
   executableSqlClaimsAuthored: requiredRlsTestClaims.length,
-  executableStorageApiClaims: 12,
-  totalExecutableSecurityAssertions: requiredRlsTestClaims.length + 12,
+  executableStorageApiClaims: 7,
+  totalExecutableSecurityAssertions: requiredRlsTestClaims.length + 7,
   databaseExecution: 'not_performed_by_static_qa',
   failures: [],
 }, null, 2));

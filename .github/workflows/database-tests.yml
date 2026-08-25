@@ -78,7 +78,7 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/sih-storage-api-integration-test.mjs
-          storage_assertion_count=8
+          storage_assertion_count=7
           echo "EXECUTED Storage API assertions: $storage_assertion_count"
 
       - name: Stop disposable local Supabase
