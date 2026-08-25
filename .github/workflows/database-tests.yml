@@ -1,0 +1,68 @@
+name: SIH26044 database security tests
+
+on:
+  push:
+    branches:
+      - main
+      - foundation/sih26044-v0.1
+    paths:
+      - .github/workflows/database-tests.yml
+      - supabase/**
+  pull_request:
+    paths:
+      - .github/workflows/database-tests.yml
+      - supabase/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sih-database-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  database-security:
+    name: Clean migration replay and RLS integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: 2.115.0
+
+      - name: Verify local database tooling
+        run: |
+          set -euo pipefail
+          supabase --version
+          psql --version
+
+      - name: Start disposable local PostgreSQL
+        run: supabase db start
+
+      - name: Replay all migrations from a clean local database
+        run: supabase db reset --local
+
+      - name: Execute SIH26044 RLS and integrity assertions
+        env:
+          PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          case "$PGDATABASE_URL" in
+            postgresql://postgres:postgres@127.0.0.1:54322/postgres) ;;
+            *) echo "Refusing to execute against a non-local database URL" >&2; exit 1 ;;
+          esac
+          psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
+            -f supabase/tests/sih26044_rls.sql
+          assertion_count="$(grep -Ec '^(select|[[:space:]]+perform) pg_temp\.assert_(true|blocked)\(' supabase/tests/sih26044_rls.sql)"
+          test "$assertion_count" -eq 58
+          echo "EXECUTED SQL assertions: $assertion_count"
+
+      - name: Stop disposable local PostgreSQL
+        if: always()
+        run: supabase stop --no-backup || true
