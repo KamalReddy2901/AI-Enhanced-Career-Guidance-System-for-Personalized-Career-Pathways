@@ -13,8 +13,9 @@ import {
   isSignalRelevant,
 } from './opportunityEvidencePolicy';
 import { evaluateOpportunityRequirement } from './opportunityRequirementReadiness';
+import { assertOpportunityReadinessInputConfirmed } from './opportunityReadinessValidation';
 
-export const OPPORTUNITY_READINESS_ENGINE_VERSION = 'opportunity-readiness-engine-v1';
+export const OPPORTUNITY_READINESS_ENGINE_VERSION = 'opportunity-readiness-engine-v1.1';
 
 export function determineReadinessBand(
   eligibility: EligibilityStatus,
@@ -45,15 +46,16 @@ function learningDistanceFor(
 }
 
 export function computeOpportunityReadiness(input: OpportunityReadinessInput): OpportunityReadinessResult {
+  assertOpportunityReadinessInputConfirmed(input);
   const eligibility = evaluateEligibility(input.opportunity.eligibilityRules, input.subject);
   const requirementResults = input.opportunity.requirements.map(requirement =>
     evaluateOpportunityRequirement(requirement, input.subject.evidenceSignals));
   const requiredRequirementResults = requirementResults.filter(result => result.priority === 'required');
   const preferredRequirementResults = requirementResults.filter(result => result.priority === 'preferred');
   const readinessBand = determineReadinessBand(eligibility.status, requiredRequirementResults);
-  const met = requiredRequirementResults.filter(result =>
-    result.state === 'MET_STRONG' || result.state === 'MET_WEAK_EVIDENCE').length;
   const applicableRequired = requiredRequirementResults.filter(result => result.state !== 'NOT_APPLICABLE');
+  const met = applicableRequired.filter(result =>
+    result.state === 'MET_STRONG' || result.state === 'MET_WEAK_EVIDENCE').length;
 
   const relevantWorkSampleIds = new Set(
     input.subject.evidenceSignals
@@ -77,7 +79,7 @@ export function computeOpportunityReadiness(input: OpportunityReadinessInput): O
     eligibilityRuleResults: eligibility.ruleResults,
     requiredRequirementResults,
     preferredRequirementResults,
-    requiredCoverage: { met, total: requiredRequirementResults.length },
+    requiredCoverage: { met, total: applicableRequired.length },
     evidenceCoverage: {
       strong: requiredRequirementResults.filter(result => result.state === 'MET_STRONG').length,
       weak: requiredRequirementResults.filter(result => result.state === 'MET_WEAK_EVIDENCE').length,

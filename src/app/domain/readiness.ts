@@ -164,6 +164,23 @@ export interface OpportunityReadinessInput {
   readonly subject: ReadinessSubjectInput;
 }
 
+export type OpportunityReadinessInputValidationIssueCode =
+  | 'UNCONFIRMED_REQUIREMENT'
+  | 'INVALID_REQUIREMENT_CONFIRMATION_TRACE'
+  | 'UNCONFIRMED_ELIGIBILITY_RULE'
+  | 'INVALID_ELIGIBILITY_RULE_CONFIRMATION_TRACE';
+
+export interface OpportunityReadinessInputValidationIssue {
+  readonly code: OpportunityReadinessInputValidationIssueCode;
+  readonly path: string;
+  readonly literalSourceWording: string;
+  readonly message: string;
+}
+
+export type OpportunityReadinessInputValidationResult =
+  | { readonly valid: true; readonly issues: readonly [] }
+  | { readonly valid: false; readonly issues: readonly OpportunityReadinessInputValidationIssue[] };
+
 export interface OpportunityReadinessResult {
   readonly resultId: OpportunityReadinessResultId;
   readonly opportunityId: OpportunityId;

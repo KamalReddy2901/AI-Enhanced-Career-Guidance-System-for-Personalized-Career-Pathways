@@ -11,6 +11,7 @@ import {
   usableRelevantEvidenceSignals,
 } from './opportunityEvidencePolicy';
 import { explainRequirementState } from './opportunityExplain';
+import { assertOpportunityRequirementConfirmed } from './opportunityReadinessValidation';
 
 const isConfirmed = (signal: ReadinessEvidenceSignal) =>
   signal.verificationState === 'self_confirmed'
@@ -132,6 +133,7 @@ export function evaluateOpportunityRequirement(
   requirement: OpportunityRequirement,
   evidenceSignals: readonly ReadinessEvidenceSignal[],
 ): RequirementReadinessResult {
+  assertOpportunityRequirementConfirmed(requirement);
   const relevant = usableRelevantEvidenceSignals(requirement, evidenceSignals);
   const initialDecision = requirement.category === 'skill'
     ? skillDecision(requirement, relevant)

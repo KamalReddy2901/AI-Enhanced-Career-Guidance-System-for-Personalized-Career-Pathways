@@ -4,6 +4,7 @@ import type {
   EligibilityStatus,
   ReadinessSubjectInput,
 } from '../domain/readiness';
+import { hasCompleteHumanConfirmationTrace } from './opportunityReadinessValidation';
 
 const EDUCATION_ORDER: Readonly<Record<EligibilityEducationLevel, number>> = {
   below_10: 0,
@@ -30,6 +31,11 @@ export function evaluateEligibilityRule(
   subject: ReadinessSubjectInput,
   ruleIndex: number,
 ): EligibilityRuleResult {
+  if (!rule.humanConfirmed || !hasCompleteHumanConfirmationTrace(rule)) {
+    return result(ruleIndex, rule, 'NEEDS_REVIEW',
+      `The eligibility rule lacks a complete human-confirmation trace: "${rule.literalSourceWording}".`);
+  }
+
   if (rule.kind === 'custom') {
     return result(ruleIndex, rule, 'NEEDS_REVIEW',
       `Manual review is required for the literal eligibility rule: "${rule.literalSourceWording}".`);

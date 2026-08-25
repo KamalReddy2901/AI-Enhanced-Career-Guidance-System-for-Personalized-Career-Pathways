@@ -11,6 +11,7 @@ import {
   suggestSkillResolutions,
 } from '../src/app/domain';
 import type {
+  ActorId,
   ActorRole,
   AggregateMetric,
   ApplicationEvent,
@@ -19,6 +20,13 @@ import type {
   OpportunityRequirementId,
   ProhibitedRecruiterData,
 } from '../src/app/domain';
+
+const confirmationTrace = {
+  humanConfirmed: true as const,
+  confirmedByActorId: 'actor-controlled-fixture' as ActorId,
+  confirmedAt: '2026-08-25T00:00:00.000Z' as import('../src/app/domain').IsoTimestamp,
+  confirmationMethod: 'controlled_fixture' as const,
+};
 
 const repositoryRoot = fileURLToPath(new URL('..', import.meta.url));
 const sourceRoot = join(repositoryRoot, 'src', 'app');
@@ -100,7 +108,7 @@ const unresolvedSkillRequirement: OpportunityRequirement = {
   priority: 'required',
   importance: 3,
   evidenceExpectation: 'any_recorded',
-  humanConfirmed: true,
+  ...confirmationTrace,
   hardGate: false,
   literalSourceWording: 'Quantum Ceramics',
   canonicalResolution: { state: 'unresolved', literalText: 'Quantum Ceramics' },
@@ -113,7 +121,7 @@ const experienceRequirement: OpportunityRequirement = {
   priority: 'preferred',
   importance: 1,
   evidenceExpectation: 'any_recorded',
-  humanConfirmed: true,
+  ...confirmationTrace,
   hardGate: false,
   literalSourceWording: 'Two years working with laboratory equipment',
   minimumYears: 2,

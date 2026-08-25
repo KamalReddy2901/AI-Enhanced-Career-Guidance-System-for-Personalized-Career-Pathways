@@ -3,6 +3,8 @@ import type {
   ActorId,
   EvidenceArtifactId,
   EvidenceRecordId,
+  EligibilityRule,
+  EligibilityRuleDefinition,
   IsoTimestamp,
   OpportunityId,
   OpportunityReadinessInput,
@@ -28,7 +30,12 @@ import {
   determineReadinessBand,
 } from '../src/app/engine/opportunityReadiness';
 import { OPPORTUNITY_READINESS_POLICY_VERSION } from '../src/app/engine/opportunityEvidencePolicy';
+import { evaluateEligibilityRule } from '../src/app/engine/opportunityEligibility';
 import { evaluateOpportunityRequirement } from '../src/app/engine/opportunityRequirementReadiness';
+import {
+  OpportunityReadinessInputValidationError,
+  validateOpportunityReadinessInput,
+} from '../src/app/engine/opportunityReadinessValidation';
 import { suggestSkillResolutions } from '../src/app/domain/skillResolver';
 
 const at = '2026-08-25T00:00:00.000Z' as IsoTimestamp;
@@ -36,11 +43,27 @@ const requirementId = (value: string) => value as OpportunityRequirementId;
 const evidenceId = (value: string) => value as EvidenceRecordId;
 const artifactId = (value: string) => value as EvidenceArtifactId;
 
+const confirmedAuthoring = {
+  humanConfirmed: true as const,
+  confirmedByActorId: 'actor-opportunity-author' as ActorId,
+  confirmedAt: at,
+  confirmationMethod: 'controlled_fixture' as const,
+};
+
+const confirmedEligibilityRule = (
+  literalSourceWording: string,
+  definition: EligibilityRuleDefinition,
+): EligibilityRule => ({
+  ...definition,
+  literalSourceWording,
+  ...confirmedAuthoring,
+} as EligibilityRule);
+
 const requirementBase = {
   priority: 'required' as const,
   importance: 3 as const,
   evidenceExpectation: 'any_recorded' as const,
-  humanConfirmed: true,
+  ...confirmedAuthoring,
   hardGate: false,
 };
 
@@ -54,7 +77,7 @@ const skillRequirement = (
   canonicalResolution: { state: 'resolved', skillId: 'pottery', matchKind: 'exact' },
   minimumProficiency: 3,
   ...overrides,
-});
+} as SkillOpportunityRequirement);
 
 const experienceRequirement = (
   overrides: Partial<ExperienceOpportunityRequirement> = {},
@@ -65,7 +88,7 @@ const experienceRequirement = (
   literalSourceWording: 'Two years of directly relevant studio experience',
   minimumYears: 2,
   ...overrides,
-});
+} as ExperienceOpportunityRequirement);
 
 const qualificationRequirement = (
   overrides: Partial<QualificationOpportunityRequirement> = {},
@@ -75,7 +98,7 @@ const qualificationRequirement = (
   category: 'qualification',
   literalSourceWording: 'Relevant safety qualification',
   ...overrides,
-});
+} as QualificationOpportunityRequirement);
 
 const documentRequirement = (
   overrides: Partial<DocumentEvidenceOpportunityRequirement> = {},
@@ -87,7 +110,7 @@ const documentRequirement = (
   evidenceExpectation: 'artifact_expected',
   requestedArtifactKind: 'work_sample',
   ...overrides,
-});
+} as DocumentEvidenceOpportunityRequirement);
 
 const questionnaireRequirement = (
   overrides: Partial<QuestionnaireOpportunityRequirement> = {},
@@ -97,7 +120,7 @@ const questionnaireRequirement = (
   category: 'questionnaire',
   literalSourceWording: 'Complete the safety questionnaire',
   ...overrides,
-});
+} as QuestionnaireOpportunityRequirement);
 
 const logisticsRequirement = (
   overrides: Partial<LogisticsOpportunityRequirement> = {},
@@ -108,7 +131,7 @@ const logisticsRequirement = (
   literalSourceWording: 'Available for the mandatory studio shift',
   logisticsKind: 'schedule',
   ...overrides,
-});
+} as LogisticsOpportunityRequirement);
 
 const literalRequirement = (
   overrides: Partial<LiteralOpportunityRequirement> = {},
@@ -118,7 +141,7 @@ const literalRequirement = (
   category: 'other_literal',
   literalSourceWording: 'Prior participation in the named community kiln programme',
   ...overrides,
-});
+} as LiteralOpportunityRequirement);
 
 const signal = (overrides: Partial<ReadinessEvidenceSignal> = {}): ReadinessEvidenceSignal => ({
   evidenceRecordId: evidenceId('evidence-default'),
@@ -179,6 +202,16 @@ assert.notEqual('UNKNOWN', 'GAP');
 const canonical = skillRequirement();
 assert.equal(evaluateOpportunityRequirement(canonical, []).state, 'UNKNOWN');
 assert.equal(evaluateOpportunityRequirement(canonical, [signal()]).state, 'MET_WEAK_EVIDENCE');
+assert.equal(evaluateOpportunityRequirement(canonical, [signal({
+  evidenceRecordId: evidenceId('matching-canonical-and-scope'),
+  requirementId: canonical.id,
+  skillId: 'pottery',
+})]).state, 'MET_WEAK_EVIDENCE', 'matching canonical skill and requirement scope must remain relevant');
+assert.equal(evaluateOpportunityRequirement(canonical, [signal({
+  evidenceRecordId: evidenceId('contradictory-canonical-and-scope'),
+  requirementId: canonical.id,
+  skillId: 'java',
+})]).state, 'UNKNOWN', 'a contradictory canonical skill ID must override matching requirement scope');
 const unresolved = skillRequirement({
   id: requirementId('req-quantum'),
   literalSourceWording: 'Quantum Ceramics',
@@ -202,6 +235,20 @@ assert.equal(evaluateOpportunityRequirement(unresolved, [signal({
   literalSkillLabel: ' quantum   ceramics ',
   proficiency: undefined,
 })]).state, 'MET_WEAK_EVIDENCE');
+assert.equal(evaluateOpportunityRequirement(unresolved, [signal({
+  evidenceRecordId: evidenceId('contradictory-unresolved-scope'),
+  requirementId: unresolved.id,
+  skillId: 'pottery',
+  literalSkillLabel: 'Quantum Ceramics',
+  proficiency: undefined,
+})]).state, 'UNKNOWN', 'canonical identity must not silently support an unresolved literal requirement');
+assert.equal(evaluateOpportunityRequirement(unresolved, [signal({
+  evidenceRecordId: evidenceId('matching-unresolved-scope'),
+  requirementId: unresolved.id,
+  skillId: undefined,
+  literalSkillLabel: ' quantum  ceramics ',
+  proficiency: undefined,
+})]).state, 'MET_WEAK_EVIDENCE', 'exact-normalized unresolved literal scope must remain supported');
 
 // Proficiency: absence is unknown, unconfirmed threshold shortfall is partial,
 // and only sufficiently direct confirmed evidence establishes a gap.
@@ -333,7 +380,10 @@ const hardEligibilityFailure = computeOpportunityReadiness({
   ...readinessInput([canonical], [signal()]),
   opportunity: {
     ...readinessInput([canonical], [signal()]).opportunity,
-    eligibilityRules: [{ kind: 'education_level', operator: 'at_least', value: 'postgraduate' }],
+    eligibilityRules: [confirmedEligibilityRule(
+      'Postgraduate education is required',
+      { kind: 'education_level', operator: 'at_least', value: 'postgraduate' },
+    )],
   },
 });
 assert.equal(hardEligibilityFailure.eligibilityStatus, 'NOT_CURRENTLY_ELIGIBLE');
@@ -343,7 +393,10 @@ const unknownEligibility = computeOpportunityReadiness({
   ...unknownEligibilityInput,
   opportunity: {
     ...unknownEligibilityInput.opportunity,
-    eligibilityRules: [{ kind: 'education_level', operator: 'at_least', value: 'undergraduate' }],
+    eligibilityRules: [confirmedEligibilityRule(
+      'Undergraduate education is required',
+      { kind: 'education_level', operator: 'at_least', value: 'undergraduate' },
+    )],
   },
   subject: subject({ educationLevel: undefined, evidenceSignals: [signal()] }),
 });
@@ -354,7 +407,10 @@ const customEligibility = computeOpportunityReadiness({
   ...customEligibilityInput,
   opportunity: {
     ...customEligibilityInput.opportunity,
-    eligibilityRules: [{ kind: 'custom', literalSourceWording: 'Portfolio reviewed by department', machineEnforced: false }],
+    eligibilityRules: [confirmedEligibilityRule(
+      'Portfolio reviewed by department',
+      { kind: 'custom', machineEnforced: false },
+    )],
   },
 });
 assert.equal(customEligibility.eligibilityStatus, 'NEEDS_REVIEW');
@@ -363,17 +419,101 @@ const physicalLocationFailure = computeOpportunityReadiness({
   ...physicalLocationInput,
   opportunity: {
     ...physicalLocationInput.opportunity,
-    eligibilityRules: [{
-      kind: 'location',
-      operator: 'in',
-      values: ['Bengaluru'],
-      requiresPhysicalPresence: true,
-    }],
+    eligibilityRules: [confirmedEligibilityRule(
+      'Physical presence in Bengaluru is required',
+      {
+        kind: 'location',
+        operator: 'in',
+        values: ['Bengaluru'],
+        requiresPhysicalPresence: true,
+      },
+    )],
   },
 });
 assert.equal(physicalLocationFailure.eligibilityStatus, 'NOT_CURRENTLY_ELIGIBLE');
 assert.equal(physicalLocationFailure.readinessBand, 'NOT_ELIGIBLE',
   'mandatory physical presence is an uncompensated gate, not a graded contribution');
+
+// High-impact authoring confirmation is a validation boundary, not candidate
+// eligibility. Required, preferred, and eligibility structure must all be
+// confirmed before the normative compute function can run.
+const unconfirmedRequirement: SkillOpportunityRequirement = {
+  ...canonical,
+  humanConfirmed: false,
+  confirmedByActorId: undefined,
+  confirmedAt: undefined,
+  confirmationMethod: undefined,
+};
+const unconfirmedRequiredInput = readinessInput([unconfirmedRequirement], [signal()]);
+assert.deepEqual(validateOpportunityReadinessInput(unconfirmedRequiredInput).issues.map(issue => issue.code),
+  ['UNCONFIRMED_REQUIREMENT']);
+assert.throws(
+  () => computeOpportunityReadiness(unconfirmedRequiredInput),
+  (error: unknown) => error instanceof OpportunityReadinessInputValidationError
+    && error.issues[0]?.code === 'UNCONFIRMED_REQUIREMENT',
+  'an unconfirmed required requirement must refuse normative computation',
+);
+assert.throws(
+  () => evaluateOpportunityRequirement(unconfirmedRequirement, [signal()]),
+  OpportunityReadinessInputValidationError,
+  'the lower-level requirement evaluator must not bypass authoring confirmation',
+);
+const incompleteConfirmedTraceInput = readinessInput([
+  {
+    ...canonical,
+    humanConfirmed: true,
+    confirmedByActorId: '' as ActorId,
+    confirmedAt: at,
+    confirmationMethod: 'controlled_fixture',
+  } as SkillOpportunityRequirement,
+], [signal()]);
+assert.deepEqual(validateOpportunityReadinessInput(incompleteConfirmedTraceInput).issues.map(issue => issue.code),
+  ['INVALID_REQUIREMENT_CONFIRMATION_TRACE'],
+  'a true flag without a complete confirmation trace is not sufficient');
+assert.throws(
+  () => computeOpportunityReadiness(incompleteConfirmedTraceInput),
+  OpportunityReadinessInputValidationError,
+);
+const unconfirmedPreferred: SkillOpportunityRequirement = {
+  ...canonical,
+  id: requirementId('unconfirmed-preferred'),
+  priority: 'preferred',
+  humanConfirmed: false,
+  confirmedByActorId: undefined,
+  confirmedAt: undefined,
+  confirmationMethod: undefined,
+};
+assert.throws(
+  () => computeOpportunityReadiness(readinessInput([canonical, unconfirmedPreferred], [signal()])),
+  OpportunityReadinessInputValidationError,
+  'an unconfirmed preferred requirement must not silently enter normative evaluation',
+);
+const unconfirmedEligibilityRule = {
+  kind: 'education_level',
+  operator: 'at_least',
+  value: 'undergraduate',
+  literalSourceWording: 'Undergraduate education is required',
+  humanConfirmed: false,
+} as const satisfies EligibilityRule;
+assert.equal(evaluateEligibilityRule(unconfirmedEligibilityRule, subject(), 0).state, 'NEEDS_REVIEW',
+  'an unconfirmed eligibility rule must never return SATISFIED or FAILED');
+const unconfirmedEligibilityInput = readinessInput([canonical], [signal()]);
+const inputWithUnconfirmedEligibility = {
+  ...unconfirmedEligibilityInput,
+  opportunity: {
+    ...unconfirmedEligibilityInput.opportunity,
+    eligibilityRules: [unconfirmedEligibilityRule],
+  },
+};
+assert.deepEqual(validateOpportunityReadinessInput(inputWithUnconfirmedEligibility).issues.map(issue => issue.code),
+  ['UNCONFIRMED_ELIGIBILITY_RULE']);
+assert.throws(
+  () => computeOpportunityReadiness(inputWithUnconfirmedEligibility),
+  OpportunityReadinessInputValidationError,
+  'unconfirmed eligibility authoring must refuse computation rather than fabricate candidate ineligibility',
+);
+assert.equal(computeOpportunityReadiness(readinessInput([canonical], [signal()])).readinessBand, 'NEAR_READY',
+  'fully human-confirmed structure must continue to compute normally');
 
 // Exact state machine and preferred isolation.
 assert.equal(determineReadinessBand('NOT_CURRENTLY_ELIGIBLE', []), 'NOT_ELIGIBLE');
@@ -383,6 +523,20 @@ assert.equal(determineReadinessBand('ELIGIBLE', [stateOnly('PARTIAL')]), 'BUILDI
 assert.equal(determineReadinessBand('ELIGIBLE', [stateOnly('MET_WEAK_EVIDENCE'), stateOnly('UNKNOWN')]), 'BUILDING_EVIDENCE');
 assert.equal(determineReadinessBand('ELIGIBLE', [stateOnly('UNKNOWN')]), 'NEAR_READY');
 assert.equal(determineReadinessBand('ELIGIBLE', [stateOnly('MET_STRONG')]), 'READY_FOR_REVIEW');
+const notApplicableRequirement = skillRequirement({ id: requirementId('required-not-applicable') });
+const onlyNotApplicable = computeOpportunityReadiness(readinessInput(
+  [notApplicableRequirement],
+  [signal({
+    evidenceRecordId: evidenceId('not-applicable-evidence'),
+    requirementId: notApplicableRequirement.id,
+    capabilityAssertion: 'not_applicable',
+    directness: 'direct',
+  })],
+));
+assert.deepEqual(onlyNotApplicable.requiredCoverage, { met: 0, total: 0 },
+  'NOT_APPLICABLE requirements must be excluded from applicable required coverage');
+assert.deepEqual(onlyNotApplicable.verificationCoverage, { supported: 0, total: 0 });
+assert.equal(onlyNotApplicable.readinessBand, 'READY_FOR_REVIEW');
 const preferredGap = experienceRequirement({
   id: requirementId('preferred-gap'),
   priority: 'preferred',
@@ -481,6 +635,9 @@ console.log(JSON.stringify({
     unrelatedRequirementUnchanged: true,
   },
   preferredIsolation: true,
+  humanConfirmationGate: true,
+  notApplicableCoverage: onlyNotApplicable.requiredCoverage,
+  contradictorySkillScopeBlocked: true,
   deterministic: true,
   failures: [],
 }, null, 2));

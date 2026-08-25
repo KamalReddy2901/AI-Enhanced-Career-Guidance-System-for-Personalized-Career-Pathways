@@ -2,7 +2,7 @@ import type { OpportunityRequirement } from '../domain/opportunity';
 import type { EvidenceProvenance } from '../domain/evidence';
 import type { ReadinessEvidenceSignal } from '../domain/readiness';
 
-export const OPPORTUNITY_READINESS_POLICY_VERSION = 'opportunity-evidence-policy-v1';
+export const OPPORTUNITY_READINESS_POLICY_VERSION = 'opportunity-evidence-policy-v1.1';
 
 const normalizeLiteral = (value: string) => value
   .normalize('NFKC')
@@ -18,12 +18,33 @@ export function isSignalRelevant(
   requirement: OpportunityRequirement,
   signal: ReadinessEvidenceSignal,
 ): boolean {
-  if (signal.requirementId) return signal.requirementId === requirement.id;
+  if (signal.requirementId) {
+    if (signal.requirementId !== requirement.id) return false;
+    if (requirement.category !== 'skill') return true;
+
+    if (requirement.canonicalResolution.state === 'resolved') {
+      if (signal.skillId !== undefined) {
+        return signal.skillId === requirement.canonicalResolution.skillId;
+      }
+      if (signal.literalSkillLabel !== undefined) {
+        return normalizeLiteral(signal.literalSkillLabel) === normalizeLiteral(requirement.literalSourceWording);
+      }
+      return true;
+    }
+
+    if (signal.skillId !== undefined) return false;
+    if (signal.literalSkillLabel !== undefined) {
+      return normalizeLiteral(signal.literalSkillLabel)
+        === normalizeLiteral(requirement.canonicalResolution.literalText);
+    }
+    return true;
+  }
 
   if (requirement.category === 'skill') {
     if (requirement.canonicalResolution.state === 'resolved') {
       return signal.skillId === requirement.canonicalResolution.skillId;
     }
+    if (signal.skillId !== undefined) return false;
     const literal = requirement.canonicalResolution.literalText;
     return Boolean(signal.literalSkillLabel)
       && normalizeLiteral(signal.literalSkillLabel!) === normalizeLiteral(literal);

@@ -33,3 +33,27 @@ export interface SourceReference {
   readonly sourceUrl?: string;
   readonly capturedAt: IsoTimestamp;
 }
+
+export const HUMAN_CONFIRMATION_METHODS = [
+  'structured_human_entry',
+  'ai_assisted_review',
+  'connector_review',
+  'controlled_fixture',
+] as const;
+export type HumanConfirmationMethod = (typeof HUMAN_CONFIRMATION_METHODS)[number];
+
+/** Audit-ready confirmation of high-impact authored structure. Unconfirmed
+ * content cannot claim a confirming actor, time, or method. */
+export type HumanConfirmationTrace =
+  | {
+    readonly humanConfirmed: false;
+    readonly confirmedByActorId?: never;
+    readonly confirmedAt?: never;
+    readonly confirmationMethod?: never;
+  }
+  | {
+    readonly humanConfirmed: true;
+    readonly confirmedByActorId: ActorId;
+    readonly confirmedAt: IsoTimestamp;
+    readonly confirmationMethod: HumanConfirmationMethod;
+  };
