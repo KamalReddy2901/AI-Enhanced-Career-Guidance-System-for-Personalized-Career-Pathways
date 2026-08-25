@@ -375,6 +375,8 @@ select pg_temp.assert_blocked(
   )$sql$,
   'browser cannot claim clean scan status through artifact insertion'
 );
+reset role;
+
 -- A future trusted registration adapter owns these canonical writes. This
 -- fixture begins conservatively and links only after metadata registration.
 -- The storage object referenced here is validated through the Storage API
