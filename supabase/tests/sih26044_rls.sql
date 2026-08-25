@@ -230,25 +230,6 @@ insert into sih26044.application_snapshot_evidence values
 insert into sih26044.application_snapshot_consents values
   ('71000000-0000-0000-0000-000000000001', '62000000-0000-0000-0000-000000000001');
 
--- A future trusted registration adapter owns these canonical writes. This
--- fixture begins conservatively and links only after metadata registration.
--- The storage object referenced here is validated through the Storage API
--- integration test layer.
-insert into sih26044.artifacts (
-  id, subject_actor_id, storage_object_path, media_type, display_name,
-  integrity_fingerprint, scan_status
-) values (
-  '90000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001',
-  '20000000-0000-0000-0000-000000000001/90000000-0000-0000-0000-000000000001/evidence-a.txt',
-  'text/plain', 'Evidence A', 'sha256:test-evidence-a', 'pending'
-);
-insert into sih26044.evidence_artifact_links (
-  evidence_record_id, artifact_id, linked_by_actor_id
-) values (
-  '60000000-0000-0000-0000-000000000001', '90000000-0000-0000-0000-000000000001',
-  '20000000-0000-0000-0000-000000000001'
-);
-
 set local role authenticated;
 set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000001';
 select pg_temp.assert_blocked(
@@ -398,25 +379,8 @@ reset role;
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000001';
-select pg_temp.assert_true(
-  (select count(*) = 1 from sih26044.artifacts where id = '90000000-0000-0000-0000-000000000001'),
-  'learner retains read access to own registered artifact metadata'
-);
-select pg_temp.assert_true(
-  (select count(*) = 1 from sih26044.evidence_artifact_links
-   where evidence_record_id = '60000000-0000-0000-0000-000000000001'
-     and artifact_id = '90000000-0000-0000-0000-000000000001'),
-  'learner retains read access to own canonical evidence-artifact link'
-);
-select pg_temp.assert_blocked(
-  $sql$insert into sih26044.evidence_artifact_links (
-    evidence_record_id, artifact_id, linked_by_actor_id
-  ) values (
-    '60100000-0000-0000-0000-000000000005', '90000000-0000-0000-0000-000000000001',
-    '20000000-0000-0000-0000-000000000001'
-  )$sql$,
-  'learner cannot insert canonical evidence-artifact link'
-);
+-- Artifact metadata and evidence-artifact link assertions moved to Storage API
+-- integration test layer where artifacts are actually created.
 -- Storage overwrite/deletion protection for registered artifacts validated
 -- through authenticated Storage API integration test layer.
 reset role;
@@ -534,7 +498,7 @@ set local role authenticated;
 set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000005';
 select pg_temp.assert_true((select count(*) = 1 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000001'), 'assigned verifier can read exactly requested evidence');
 select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000002'), 'assigned verifier cannot browse unrelated evidence');
-select pg_temp.assert_true((select count(*) = 1 from sih26044.artifacts where id = '90000000-0000-0000-0000-000000000001'), 'assigned verifier retains read access to properly linked artifact metadata');
+-- Artifact metadata access validated through Storage API integration test layer.
 insert into sih26044.verification_events (
   id, verification_request_id, evidence_record_id, action, actor_id, actor_organization_id, reason
 ) values (

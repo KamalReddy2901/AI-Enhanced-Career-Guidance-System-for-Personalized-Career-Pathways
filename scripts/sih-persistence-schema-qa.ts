@@ -272,7 +272,6 @@ const requiredRlsTestClaims = [
   'own-organization recruiter can read submitted consented application',
   'organization B recruiter cannot read organization A application',
   'assigned verifier can read exactly requested evidence',
-  'assigned verifier retains read access to properly linked artifact metadata',
   'unrelated verifier cannot read requested evidence',
   'policy analyst cannot read individual evidence',
   'published opportunity version cannot be mutated',
@@ -300,20 +299,18 @@ const requiredRlsTestClaims = [
   'valid storage path uses exactly actor/artifact folders plus filename',
   'low-level trust helper cannot leak unauthorized state',
   'learner cannot insert canonical artifact metadata',
-  'learner cannot insert canonical evidence-artifact link',
   'browser cannot claim connector_import proposal source',
   'trusted requirement edit without fresh trace invalidates confirmation',
   'trusted eligibility edit without fresh trace invalidates confirmation',
   'fresh trusted confirmation binds edited requirement content',
   'fresh trusted confirmation binds edited eligibility content',
   'browser cannot claim clean scan status through artifact insertion',
-  'learner retains read access to own registered artifact metadata',
-  'learner retains read access to own canonical evidence-artifact link',
 ];
 for (const claim of requiredRlsTestClaims) assert.match(rlsTests, new RegExp(claim, 'i'));
 
-// Storage lifecycle assertions that require authenticated Storage API rather
-// than direct SQL mutation (modern Supabase blocks direct storage.objects writes):
+// Storage lifecycle and artifact metadata assertions that require authenticated
+// Storage API rather than direct SQL mutation (modern Supabase blocks direct
+// storage.objects writes):
 // - learner A can upload to own actor path
 // - learner A cannot upload into learner B actor path
 // - owner can delete orphan upload
@@ -322,6 +319,10 @@ for (const claim of requiredRlsTestClaims) assert.match(rlsTests, new RegExp(cla
 // - normal client cannot delete registered artifact
 // - learner B cannot read learner A private artifact
 // - bucket is private (implicit through auth requirements)
+// - learner retains read access to own registered artifact metadata
+// - learner retains read access to own canonical evidence-artifact link
+// - learner cannot insert canonical evidence-artifact link
+// - assigned verifier retains read access to properly linked artifact metadata
 // These are validated through scripts/sih-storage-api-integration-test.mjs.
 
 console.log(JSON.stringify({
@@ -334,8 +335,8 @@ console.log(JSON.stringify({
   appendOnlyTablesChecked: appendOnlyTables.length,
   privateBucket: 'career-evidence-private',
   executableSqlClaimsAuthored: requiredRlsTestClaims.length,
-  executableStorageApiClaims: 8,
-  totalExecutableSecurityAssertions: requiredRlsTestClaims.length + 8,
+  executableStorageApiClaims: 12,
+  totalExecutableSecurityAssertions: requiredRlsTestClaims.length + 12,
   databaseExecution: 'not_performed_by_static_qa',
   failures: [],
 }, null, 2));
