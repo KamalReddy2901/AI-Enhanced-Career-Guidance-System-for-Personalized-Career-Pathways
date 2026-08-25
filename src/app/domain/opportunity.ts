@@ -17,18 +17,41 @@ export type OpportunityType =
 
 export type OpportunityAudience = 'student' | 'alumni' | 'faculty' | 'professional' | 'institution';
 export type RequirementPriority = 'required' | 'preferred';
+export type RequirementImportance = 1 | 2 | 3;
+export type RequirementEvidenceExpectation =
+  | 'any_recorded'
+  | 'artifact_expected'
+  | 'human_or_issuer_expected';
+
+export type EligibilityEducationLevel =
+  | 'below_10'
+  | 'class_10'
+  | 'class_12'
+  | 'iti_diploma'
+  | 'undergraduate'
+  | 'postgraduate';
 
 export type EligibilityRule =
-  | { readonly kind: 'education_level'; readonly operator: 'at_least' | 'equals'; readonly value: string }
-  | { readonly kind: 'graduation_year'; readonly operator: 'before' | 'after' | 'between'; readonly value: number | readonly [number, number] }
-  | { readonly kind: 'location'; readonly operator: 'in' | 'not_in'; readonly values: readonly string[] }
+  | { readonly kind: 'education_level'; readonly operator: 'at_least' | 'equals'; readonly value: EligibilityEducationLevel }
+  | { readonly kind: 'graduation_year'; readonly operator: 'before' | 'after'; readonly value: number }
+  | { readonly kind: 'graduation_year'; readonly operator: 'between'; readonly value: readonly [number, number] }
+  | { readonly kind: 'location'; readonly operator: 'in' | 'not_in'; readonly values: readonly string[]; readonly requiresPhysicalPresence: true }
   | { readonly kind: 'organization_membership'; readonly organizationIds: readonly OrganizationId[] }
+  | { readonly kind: 'availability'; readonly factKey: string; readonly expectedValue: string | boolean }
+  | { readonly kind: 'licence_registration'; readonly licenceCode: string; readonly expectedValue: string | boolean }
+  | { readonly kind: 'work_authorization'; readonly jurisdiction: string }
+  | { readonly kind: 'language'; readonly language: string }
+  | { readonly kind: 'explicit_prerequisite'; readonly factKey: string; readonly expectedValue: string | boolean }
   | { readonly kind: 'custom'; readonly literalSourceWording: string; readonly machineEnforced: false };
 
 interface OpportunityRequirementBase {
   readonly id: OpportunityRequirementId;
   readonly priority: RequirementPriority;
   readonly literalSourceWording: string;
+  readonly importance: RequirementImportance;
+  readonly evidenceExpectation: RequirementEvidenceExpectation;
+  readonly humanConfirmed: boolean;
+  readonly hardGate: boolean;
 }
 
 export interface SkillOpportunityRequirement extends OpportunityRequirementBase {

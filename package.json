@@ -19,7 +19,8 @@
     "qa:product": "tsx scripts/product-audit-qa.ts",
     "qa:trending": "tsx scripts/trending-normalization-qa.ts",
     "qa:evidence-integrity": "tsx scripts/evidence-integrity-qa.ts",
-    "qa:sih-boundary": "tsx scripts/sih-boundary-qa.ts"
+    "qa:sih-boundary": "tsx scripts/sih-boundary-qa.ts",
+    "qa:opportunity-readiness": "tsx scripts/opportunity-readiness-qa.ts"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

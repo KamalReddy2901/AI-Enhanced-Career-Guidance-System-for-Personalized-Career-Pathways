@@ -16,6 +16,7 @@ export type ConsentRecordId = DomainId<'ConsentRecord'>;
 export type AuditEventId = DomainId<'AuditEvent'>;
 export type CollaborationEngagementId = DomainId<'CollaborationEngagement'>;
 export type OutcomeEventId = DomainId<'OutcomeEvent'>;
+export type OpportunityReadinessResultId = DomainId<'OpportunityReadinessResult'>;
 
 export type IsoDate = string & { readonly __isoDate: true };
 export type IsoTimestamp = string & { readonly __isoTimestamp: true };

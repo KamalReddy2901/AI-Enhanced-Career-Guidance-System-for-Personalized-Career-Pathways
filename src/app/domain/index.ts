@@ -6,6 +6,7 @@ export * from './consent';
 export * from './evidence';
 export * from './identity';
 export * from './opportunity';
+export * from './readiness';
 export * from './skillResolution';
 export * from './skillResolver';
 export * from './shared';

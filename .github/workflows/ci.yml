@@ -54,6 +54,9 @@ jobs:
       - name: Run SIH26044 boundary QA
         run: npm run qa:sih-boundary
 
+      - name: Run opportunity readiness QA
+        run: npm run qa:opportunity-readiness
+
       - name: Build production client
         run: npm run build
 

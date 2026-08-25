@@ -41,17 +41,46 @@ const isEngineBModule = (path: string) => {
     || /\/src\/app\/engine\/(opportunity|gapClosure|collaborationPolicies)/.test(normalized);
 };
 
+const isReadinessModule = (path: string) => {
+  const normalized = path.split(sep).join('/');
+  return normalized.endsWith('/src/app/domain/readiness.ts')
+    || /\/src\/app\/engine\/opportunity[A-Z][^/]*\.ts$/.test(normalized)
+    || normalized.includes('/engine-b/')
+    || normalized.includes('/opportunity-readiness/');
+};
+
 const prohibitedPatterns: ReadonlyArray<[RegExp, string]> = [
-  [/from\s+['"][^'"]*(?:\/|^)(?:matching|weights|gaps)['"]/, 'imports an Engine A scoring/readiness module'],
+  [/from\s+['"][^'"]*(?:\/|^)(?:matching|weights|gaps|pathways)['"]/, 'imports an Engine A scoring/readiness module'],
   [/\bGapReport\b/, 'references legacy GapReport'],
   [/\bgapReport\s*\.\s*readiness\b/, 'references legacy GapReport.readiness'],
   [/\bcomputeGapReport\b/, 'references the Engine A gap computation'],
+];
+
+const readinessBoundaryPatterns: ReadonlyArray<[RegExp, string]> = [
+  [/\bCareerPassport\b/, 'references the full Career Passport'],
+  [/\bCareerRecommendation\b/, 'references an Engine A recommendation'],
+  [/\bRiasec(?:Scores)?\b|\briasec\b/i, 'references RIASEC data'],
+  [/\bWorkValues\b|\bworkValues\b/, 'references work values'],
+  [/\bAspiration\b|\baspiration\b/, 'references private aspirations'],
+  [/\bCounselor\b|\bcounselorHistory\b/, 'references counselor information'],
+  [/\bfinancialConstraints\b|\bfamilyConstraints\b/, 'references private financial or family constraints'],
+  [/\bdisability\b|\baccessibility\b/i, 'references unrelated disability or accessibility information'],
+  [/from\s+['"][^'"]*(?:services\/ai|GuidanceContext|engine\/types)['"]/, 'imports a prohibited AI, context, or full legacy type module'],
+  [/\blocalStorage\b|\bsupabase\b|\bGroq\b|\bCloudflare\b|\bfetch\s*\(/i, 'contains a side effect or external service call'],
+  [/\bDate\.now\s*\(|\bnew\s+Date\s*\(|\bMath\.random\s*\(|\brandomUUID\s*\(/, 'generates nondeterministic time or identity internally'],
+  [/\breadinessPercentage\b|\bfitPercentage\b|\bhiringProbability\b|\bsuccessProbability\b|\bcandidateQualityScore\b|\bemployabilityScore\b|\brankingScore\b/, 'exposes prohibited pseudo-precision'],
 ];
 
 const violations: string[] = [];
 for (const path of (await sourceFiles(sourceRoot)).filter(isEngineBModule)) {
   const source = await readFile(path, 'utf8');
   for (const [pattern, reason] of prohibitedPatterns) {
+    if (pattern.test(source)) violations.push(`${relative(repositoryRoot, path)}: ${reason}`);
+  }
+}
+for (const path of (await sourceFiles(sourceRoot)).filter(isReadinessModule)) {
+  const source = await readFile(path, 'utf8');
+  for (const [pattern, reason] of readinessBoundaryPatterns) {
     if (pattern.test(source)) violations.push(`${relative(repositoryRoot, path)}: ${reason}`);
   }
 }
@@ -69,6 +98,10 @@ const unresolvedSkillRequirement: OpportunityRequirement = {
   id: 'requirement-skill' as OpportunityRequirementId,
   category: 'skill',
   priority: 'required',
+  importance: 3,
+  evidenceExpectation: 'any_recorded',
+  humanConfirmed: true,
+  hardGate: false,
   literalSourceWording: 'Quantum Ceramics',
   canonicalResolution: { state: 'unresolved', literalText: 'Quantum Ceramics' },
 };
@@ -78,6 +111,10 @@ const experienceRequirement: OpportunityRequirement = {
   id: 'requirement-experience' as OpportunityRequirementId,
   category: 'experience',
   priority: 'preferred',
+  importance: 1,
+  evidenceExpectation: 'any_recorded',
+  humanConfirmed: true,
+  hardGate: false,
   literalSourceWording: 'Two years working with laboratory equipment',
   minimumYears: 2,
 };
@@ -168,6 +205,7 @@ assert.equal(canRepresentConnectorAsLive({
 
 console.log(JSON.stringify({
   engineBFilesInspected: (await sourceFiles(sourceRoot)).filter(isEngineBModule).length,
+  readinessFilesInspected: (await sourceFiles(sourceRoot)).filter(isReadinessModule).length,
   boundaryViolations: violations,
   exactResolution: pottery,
   unresolvedResolution: unresolved,
