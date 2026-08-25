@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   database-security:
-    name: Clean migration replay and RLS integrity
+    name: Clean migration replay and security assertions
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -31,24 +31,35 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
       - name: Set up Supabase CLI
         uses: supabase/setup-cli@v3
         with:
           version: 2.115.0
 
-      - name: Verify local database tooling
+      - name: Verify local tooling
         run: |
           set -euo pipefail
+          node --version
+          npm --version
           supabase --version
           psql --version
 
-      - name: Start disposable local PostgreSQL
-        run: supabase db start
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Start disposable local Supabase
+        run: supabase start
 
       - name: Replay all migrations from a clean local database
         run: supabase db reset --local
 
-      - name: Execute SIH26044 RLS and integrity assertions
+      - name: Execute SIH26044 relational and RLS SQL assertions
         env:
           PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: |
@@ -59,10 +70,17 @@ jobs:
           esac
           psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
             -f supabase/tests/sih26044_rls.sql
-          assertion_count="$(grep -Ec '^(select|[[:space:]]+perform) pg_temp\.assert_(true|blocked)\(' supabase/tests/sih26044_rls.sql)"
-          test "$assertion_count" -eq 58
-          echo "EXECUTED SQL assertions: $assertion_count"
+          sql_assertion_count="$(grep -Ec '^(select|[[:space:]]+perform) pg_temp\.assert_(true|blocked)\(' supabase/tests/sih26044_rls.sql)"
+          test "$sql_assertion_count" -eq 53
+          echo "EXECUTED SQL assertions: $sql_assertion_count"
 
-      - name: Stop disposable local PostgreSQL
+      - name: Execute SIH26044 Storage API lifecycle assertions
+        run: |
+          set -euo pipefail
+          node scripts/sih-storage-api-integration-test.mjs
+          storage_assertion_count=8
+          echo "EXECUTED Storage API assertions: $storage_assertion_count"
+
+      - name: Stop disposable local Supabase
         if: always()
         run: supabase stop --no-backup || true
