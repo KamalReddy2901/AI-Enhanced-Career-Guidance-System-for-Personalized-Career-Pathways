@@ -181,6 +181,25 @@ insert into sih26044.evidence_records (
   ('60000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'Learner A literal claim', 'self_reported', 'self_confirmed', 'global_skill', 'Quantum Ceramics', 'local_test', now()),
   ('60000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000002', 'Learner B literal claim', 'self_reported', 'self_confirmed', 'global_skill', 'Ceramics', 'local_test', now());
 
+-- A future trusted registration adapter owns these canonical writes. This
+-- fixture begins conservatively and links only after metadata registration.
+-- The storage object referenced here is validated through the Storage API
+-- integration test layer.
+insert into sih26044.artifacts (
+  id, subject_actor_id, storage_object_path, media_type, display_name,
+  integrity_fingerprint, scan_status
+) values (
+  '90000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001',
+  '20000000-0000-0000-0000-000000000001/90000000-0000-0000-0000-000000000001/evidence-a.txt',
+  'text/plain', 'Evidence A', 'sha256:test-evidence-a', 'pending'
+);
+insert into sih26044.evidence_artifact_links (
+  evidence_record_id, artifact_id, linked_by_actor_id
+) values (
+  '60000000-0000-0000-0000-000000000001', '90000000-0000-0000-0000-000000000001',
+  '20000000-0000-0000-0000-000000000001'
+);
+
 insert into sih26044.opportunity_readiness_results (
   id, subject_actor_id, opportunity_id, opportunity_version_id, engine_version,
   evidence_policy_version, input_version, subject_facts_version,
@@ -377,24 +396,6 @@ select pg_temp.assert_blocked(
 );
 reset role;
 
--- A future trusted registration adapter owns these canonical writes. This
--- fixture begins conservatively and links only after metadata registration.
--- The storage object referenced here is validated through the Storage API
--- integration test layer.
-insert into sih26044.artifacts (
-  id, subject_actor_id, storage_object_path, media_type, display_name,
-  integrity_fingerprint, scan_status
-) values (
-  '90000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001',
-  '20000000-0000-0000-0000-000000000001/90000000-0000-0000-0000-000000000001/evidence-a.txt',
-  'text/plain', 'Evidence A', 'sha256:test-evidence-a', 'pending'
-);
-insert into sih26044.evidence_artifact_links (
-  evidence_record_id, artifact_id, linked_by_actor_id
-) values (
-  '60000000-0000-0000-0000-000000000001', '90000000-0000-0000-0000-000000000001',
-  '20000000-0000-0000-0000-000000000001'
-);
 set local role authenticated;
 set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000001';
 select pg_temp.assert_true(
