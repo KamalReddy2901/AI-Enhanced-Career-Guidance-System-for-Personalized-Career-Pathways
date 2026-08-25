@@ -45,5 +45,5 @@ using (
   and (storage.foldername(name))[1] = sih26044.current_actor_id()::text
 );
 
-comment on schema storage is
-  'Supabase Storage. SIH26044 career-evidence-private remains non-public; recruiter document delivery requires a later purpose-specific signed-URL service.';
+-- Supabase Storage. SIH26044 career-evidence-private remains non-public;
+-- recruiter document delivery requires a later purpose-specific signed-URL service.
