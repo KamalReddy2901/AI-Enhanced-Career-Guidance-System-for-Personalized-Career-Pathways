@@ -25,19 +25,54 @@ export type EligibilityRule =
   | { readonly kind: 'organization_membership'; readonly organizationIds: readonly OrganizationId[] }
   | { readonly kind: 'custom'; readonly literalSourceWording: string; readonly machineEnforced: false };
 
-export type RequirementEvidenceState =
-  | 'UNKNOWN'
-  | 'EVIDENCE_PRESENT'
-  | 'GAP'
-  | 'NOT_APPLICABLE';
-
-export interface OpportunityRequirement {
+interface OpportunityRequirementBase {
   readonly id: OpportunityRequirementId;
   readonly priority: RequirementPriority;
   readonly literalSourceWording: string;
+}
+
+export interface SkillOpportunityRequirement extends OpportunityRequirementBase {
+  readonly category: 'skill';
   readonly canonicalResolution: CanonicalResolutionState;
   readonly minimumProficiency?: 0 | 1 | 2 | 3 | 4;
 }
+
+export interface ExperienceOpportunityRequirement extends OpportunityRequirementBase {
+  readonly category: 'experience';
+  readonly minimumYears?: number;
+}
+
+export interface QualificationOpportunityRequirement extends OpportunityRequirementBase {
+  readonly category: 'qualification';
+}
+
+export interface DocumentEvidenceOpportunityRequirement extends OpportunityRequirementBase {
+  readonly category: 'document_evidence';
+  readonly requestedArtifactKind?: string;
+}
+
+export interface QuestionnaireOpportunityRequirement extends OpportunityRequirementBase {
+  readonly category: 'questionnaire';
+  readonly questionnaireReference?: string;
+}
+
+export interface LogisticsOpportunityRequirement extends OpportunityRequirementBase {
+  readonly category: 'logistics';
+  readonly logisticsKind?: 'location' | 'schedule' | 'travel' | 'work_mode' | 'availability' | 'other';
+}
+
+export interface LiteralOpportunityRequirement extends OpportunityRequirementBase {
+  readonly category: 'other_literal';
+}
+
+export type OpportunityRequirement =
+  | SkillOpportunityRequirement
+  | ExperienceOpportunityRequirement
+  | QualificationOpportunityRequirement
+  | DocumentEvidenceOpportunityRequirement
+  | QuestionnaireOpportunityRequirement
+  | LogisticsOpportunityRequirement
+  | LiteralOpportunityRequirement;
 
 export interface Opportunity {
   readonly id: OpportunityId;
@@ -58,8 +93,4 @@ export interface OpportunityVersion extends VersionStamp {
   readonly source: SourceReference;
   readonly publishedAt?: IsoTimestamp;
   readonly closesAt?: IsoTimestamp;
-}
-
-export function classifyUnresolvedRequirement(hasEvidence: boolean): RequirementEvidenceState {
-  return hasEvidence ? 'EVIDENCE_PRESENT' : 'UNKNOWN';
 }

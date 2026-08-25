@@ -30,8 +30,15 @@ export type ActorRole =
   | 'industry_partner'
   | 'issuer_verifier'
   | 'counselor'
+  | 'policy_program_analyst'
   | 'platform_admin'
   | 'auditor';
+
+export interface AggregateAnalysisAuthorization {
+  readonly role: 'policy_program_analyst';
+  readonly accessScope: 'privacy_protected_aggregate_only';
+  readonly individualCandidateDecisionAuthority: false;
+}
 
 export interface Actor {
   readonly id: ActorId;

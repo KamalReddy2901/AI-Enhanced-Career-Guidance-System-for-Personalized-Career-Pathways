@@ -24,6 +24,12 @@ import { toast } from 'sonner';
 import { LocationAutocomplete } from '../components/form/LocationAutocomplete';
 import { SkillDiscoveryChat } from '../components/guidance/SkillDiscoveryChat';
 
+interface PendingResumeReview {
+  skills: Array<{ proposal: SkillClaimProposal; included: boolean }>;
+  experiences: Array<{ record: ResumeExtraction['experiences'][number]; included: boolean }>;
+  education?: { record: NonNullable<ResumeExtraction['education']>; included: boolean };
+}
+
 export function PassportPage() {
   const navigate = useNavigate();
   const { passport, updatePassport } = useGuidance();
@@ -48,11 +54,7 @@ export function PassportPage() {
   const [extractError, setExtractError] = useState('');
   const [extractNotice, setExtractNotice] = useState('');
   const [unmatchedSkills, setUnmatchedSkills] = useState<string[]>([]);
-  const [pendingResumeReview, setPendingResumeReview] = useState<{
-    proposals: SkillClaimProposal[];
-    experiences: ResumeExtraction['experiences'];
-    education?: ResumeExtraction['education'];
-  } | null>(null);
+  const [pendingResumeReview, setPendingResumeReview] = useState<PendingResumeReview | null>(null);
   const [expandedEvidence, setExpandedEvidence] = useState<string | null>(null);
   const [validating, setValidating] = useState<SkillClaim | null>(null);
   const [editingConstraints, setEditingConstraints] = useState(false);
@@ -306,9 +308,12 @@ export function PassportPage() {
       
       setUnmatchedSkills(unmatched);
       setPendingResumeReview({
-        proposals: createSkillClaimProposals(matched, 'ai_resume_extraction'),
-        experiences: extracted.experiences.filter(e => e.title.trim() && e.years > 0),
-        education: extracted.education,
+        skills: createSkillClaimProposals(matched, 'ai_resume_extraction')
+          .map(proposal => ({ proposal, included: true })),
+        experiences: extracted.experiences
+          .filter(e => e.title.trim() && e.years > 0)
+          .map(record => ({ record, included: true })),
+        education: extracted.education ? { record: extracted.education, included: true } : undefined,
       });
       setExtractProgress({step: 'Review required before saving', current: 5, total: 5});
       setExtractNotice('AI extraction is proposed only. Review and confirm it before anything is added to your Career Passport.');
@@ -319,7 +324,8 @@ export function PassportPage() {
         const {matched,unmatched}=matchSkillsToKB(literal);
         setUnmatchedSkills(unmatched);
         setPendingResumeReview({
-          proposals: createSkillClaimProposals(matched, 'literal_resume_extraction'),
+          skills: createSkillClaimProposals(matched, 'literal_resume_extraction')
+            .map(proposal => ({ proposal, included: true })),
           experiences: [],
         });
         setExtractNotice(`${t('passportAiUnavailable')} ${matched.length}. Review these literal matches before saving.`);
@@ -335,15 +341,24 @@ export function PassportPage() {
 
   const confirmResumeReview = () => {
     if (!pendingResumeReview) return;
-    const confirmedSkills = confirmSkillClaimProposals(pendingResumeReview.proposals);
+    const confirmedSkills = confirmSkillClaimProposals(
+      pendingResumeReview.skills.filter(item => item.included).map(item => item.proposal),
+    );
+    const confirmedExperiences = pendingResumeReview.experiences
+      .filter(item => item.included)
+      .map(item => item.record);
+    const confirmedEducation = pendingResumeReview.education?.included
+      ? pendingResumeReview.education.record
+      : undefined;
+    if (confirmedSkills.length === 0 && confirmedExperiences.length === 0 && !confirmedEducation) return;
     updatePassport(prev => {
       if (!prev) throw new Error('Passport unavailable');
       undoStack.pushState(prev);
       const next = {
         ...prev,
         skills: mergeSkillClaims(prev.skills, confirmedSkills),
-        experiences: [...prev.experiences, ...pendingResumeReview.experiences],
-        education: pendingResumeReview.education || prev.education,
+        experiences: [...prev.experiences, ...confirmedExperiences],
+        education: confirmedEducation || prev.education,
       };
       next.completeness = calculateCompleteness(next);
       return next;
@@ -362,6 +377,27 @@ export function PassportPage() {
     setExtractProgress(null);
     setExtractNotice('Proposed extraction discarded. No passport evidence was changed.');
   };
+
+  const togglePendingSkill = (index: number) => setPendingResumeReview(current => current ? ({
+    ...current,
+    skills: current.skills.map((item, itemIndex) => itemIndex === index ? { ...item, included: !item.included } : item),
+  }) : current);
+
+  const togglePendingExperience = (index: number) => setPendingResumeReview(current => current ? ({
+    ...current,
+    experiences: current.experiences.map((item, itemIndex) => itemIndex === index ? { ...item, included: !item.included } : item),
+  }) : current);
+
+  const togglePendingEducation = () => setPendingResumeReview(current => current?.education ? ({
+    ...current,
+    education: { ...current.education, included: !current.education.included },
+  }) : current);
+
+  const hasIncludedResumeRecord = Boolean(pendingResumeReview && (
+    pendingResumeReview.skills.some(item => item.included)
+    || pendingResumeReview.experiences.some(item => item.included)
+    || pendingResumeReview.education?.included
+  ));
 
   const nsqfLevel = estimateNSQFLevel(passport.education);
   const groupedSkills = groupSkillsByCategory(passport.skills);
@@ -461,20 +497,77 @@ export function PassportPage() {
               <p className="mt-1 text-xs text-[var(--ink-soft)]">
                 Nothing below is saved yet. Confirmation records your attestation of the extraction; it does not create issuer verification.
               </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {pendingResumeReview.proposals.map(({ claim }) => (
-                  <span key={claim.skillId} className="border border-[var(--ink)] px-2 py-1 text-xs">
-                    {skillClaimName(claim)} · level {claim.proficiency}
-                  </span>
-                ))}
-              </div>
-              {(pendingResumeReview.experiences.length > 0 || pendingResumeReview.education) && (
-                <p className="mt-3 text-xs text-[var(--ink-soft)]">
-                  Also proposed: {pendingResumeReview.experiences.length} experience record{pendingResumeReview.experiences.length === 1 ? '' : 's'}{pendingResumeReview.education ? ' and one education record' : ''}.
-                </p>
+              {pendingResumeReview.skills.length > 0 && (
+                <section className="mt-4" aria-labelledby="resume-review-skills">
+                  <h3 id="resume-review-skills" className="font-mono-ui text-xs uppercase">Skills</h3>
+                  <div className="mt-2 space-y-3">
+                    {pendingResumeReview.skills.map(({ proposal, included }, index) => {
+                      const { claim } = proposal;
+                      return (
+                        <label key={`${claim.skillId}-${index}`} className="block border border-[var(--ink-faint)] p-3 text-xs">
+                          <span className="flex items-start gap-2">
+                            <input type="checkbox" checked={included} onChange={() => togglePendingSkill(index)} />
+                            <span className="font-semibold">Include {skillClaimName(claim)}</span>
+                          </span>
+                          <dl className="mt-2 grid gap-1 pl-6 text-[var(--ink-soft)]" data-proposed-record="skill">
+                            <div><dt className="inline font-semibold">Label: </dt><dd className="inline">{skillClaimName(claim)}</dd></div>
+                            <div><dt className="inline font-semibold">Internal identity: </dt><dd className="inline font-mono-ui">{claim.skillId}</dd></div>
+                            <div><dt className="inline font-semibold">Proficiency: </dt><dd className="inline">{claim.proficiency}</dd></div>
+                            <div><dt className="inline font-semibold">Confidence: </dt><dd className="inline">{Math.round(claim.confidence * 100)}%</dd></div>
+                            {claim.evidence.map((evidence, evidenceIndex) => (
+                              <div key={`${evidence.observedAt}-${evidenceIndex}`} className="mt-1 border-l-2 border-[var(--ink-faint)] pl-2">
+                                <dt className="font-semibold">Evidence {evidenceIndex + 1}</dt>
+                                <dd>Source type: {evidence.type}</dd>
+                                <dd>Literal detail: {evidence.description}</dd>
+                                <dd>Confidence: {Math.round(evidence.confidence * 100)}%</dd>
+                                <dd>Observed: {evidence.observedAt}</dd>
+                                <dd>Verification after confirmation: self_attested</dd>
+                              </div>
+                            ))}
+                          </dl>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+              {pendingResumeReview.experiences.length > 0 && (
+                <section className="mt-4" aria-labelledby="resume-review-experience">
+                  <h3 id="resume-review-experience" className="font-mono-ui text-xs uppercase">Experience</h3>
+                  <div className="mt-2 space-y-3">
+                    {pendingResumeReview.experiences.map(({ record, included }, index) => (
+                      <label key={`${record.title}-${index}`} className="block border border-[var(--ink-faint)] p-3 text-xs">
+                        <span className="flex items-start gap-2">
+                          <input type="checkbox" checked={included} onChange={() => togglePendingExperience(index)} />
+                          <span className="font-semibold">Include {record.title}</span>
+                        </span>
+                        <dl className="mt-2 grid gap-1 pl-6 text-[var(--ink-soft)]" data-proposed-record="experience">
+                          <div><dt className="inline font-semibold">Title: </dt><dd className="inline">{record.title}</dd></div>
+                          <div><dt className="inline font-semibold">Years: </dt><dd className="inline">{record.years}</dd></div>
+                          <div><dt className="inline font-semibold">Description: </dt><dd className="inline">{record.description}</dd></div>
+                        </dl>
+                      </label>
+                    ))}
+                  </div>
+                </section>
+              )}
+              {pendingResumeReview.education && (
+                <section className="mt-4" aria-labelledby="resume-review-education">
+                  <h3 id="resume-review-education" className="font-mono-ui text-xs uppercase">Education</h3>
+                  <label className="mt-2 block border border-[var(--ink-faint)] p-3 text-xs">
+                    <span className="flex items-start gap-2">
+                      <input type="checkbox" checked={pendingResumeReview.education.included} onChange={togglePendingEducation} />
+                      <span className="font-semibold">Include education record</span>
+                    </span>
+                    <dl className="mt-2 grid gap-1 pl-6 text-[var(--ink-soft)]" data-proposed-record="education">
+                      <div><dt className="inline font-semibold">Level: </dt><dd className="inline">{pendingResumeReview.education.record.level}</dd></div>
+                      <div><dt className="inline font-semibold">Field: </dt><dd className="inline">{pendingResumeReview.education.record.field || 'Not provided'}</dd></div>
+                    </dl>
+                  </label>
+                </section>
               )}
               <div className="mt-4 flex flex-wrap gap-2">
-                <button type="button" onClick={confirmResumeReview} className="min-h-11 bg-[var(--ink)] px-4 text-xs uppercase text-[var(--paper)]">Confirm and add</button>
+                <button type="button" onClick={confirmResumeReview} disabled={!hasIncludedResumeRecord} className="min-h-11 bg-[var(--ink)] px-4 text-xs uppercase text-[var(--paper)] disabled:opacity-30">Confirm selected and add</button>
                 <button type="button" onClick={discardResumeReview} className="min-h-11 border-2 border-[var(--ink)] px-4 text-xs uppercase">Discard</button>
               </div>
             </div>

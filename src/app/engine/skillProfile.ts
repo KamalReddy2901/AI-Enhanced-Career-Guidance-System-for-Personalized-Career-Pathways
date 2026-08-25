@@ -27,21 +27,22 @@ export interface SkillMatchResult {
 }
 
 const normalizeSkillText = (value: string) => value
-  .toLowerCase()
-  .replace(/[^a-z0-9+#]+/g, ' ')
+  .normalize('NFKC')
+  .toLocaleLowerCase('en')
+  .replace(/[^\p{L}\p{N}+#]+/gu, ' ')
   .replace(/\s+/g, ' ')
   .trim();
 
 /** Stable, literal-derived IDs keep custom claims distinct without pretending
  * that they belong to the canonical taxonomy. */
 export function customSkillId(label: string): string {
-  const literal = label.trim() || 'Custom skill';
+  const comparisonLabel = normalizeSkillText(label) || 'custom skill';
   let hash = 2166136261;
-  for (let index = 0; index < literal.length; index += 1) {
-    hash ^= literal.charCodeAt(index);
+  for (let index = 0; index < comparisonLabel.length; index += 1) {
+    hash ^= comparisonLabel.charCodeAt(index);
     hash = Math.imul(hash, 16777619);
   }
-  const slug = normalizeSkillText(literal).replace(/\s+/g, '-').slice(0, 48) || 'custom-skill';
+  const slug = comparisonLabel.replace(/\s+/g, '-').slice(0, 48) || 'custom-skill';
   return `custom:${slug}:${(hash >>> 0).toString(36)}`;
 }
 
@@ -50,7 +51,7 @@ export function customSkillId(label: string): string {
 export function skillClaimName(claim: SkillClaim): string {
   const canonical = skillById.get(claim.skillId)?.name;
   if (canonical) return canonical;
-  if (claim.name?.trim()) return claim.name.trim();
+  if (claim.name?.trim()) return claim.name;
   const legacy = claim.evidence
     .map(item => item.description.match(/^Manually added:\s*(.+)$/i)?.[1]?.trim())
     .find(Boolean);
@@ -127,7 +128,9 @@ export function normalizeSkillClaim(claim: SkillClaim): SkillClaim {
   const literalName = skillById.has(existingSkillId) ? undefined : skillClaimName(claim);
   const skillId = skillById.has(existingSkillId)
     ? existingSkillId
-    : (existingSkillId || customSkillId(literalName || 'Custom skill'));
+    : (literalName && literalName !== 'Custom skill'
+        ? customSkillId(literalName)
+        : (existingSkillId || customSkillId('Custom skill')));
   const evidence = claim.evidence.map(normalizeSkillEvidence);
   return {
     ...claim,
@@ -206,7 +209,7 @@ export function matchSkillsToKB(extracted: ExtractedSkill[]): SkillMatchResult {
   
   const makeCustomClaim = (ex: ExtractedSkill, confidence: number): SkillClaim => ({
     skillId: customSkillId(ex.name),
-    name: ex.name.trim(),
+    name: ex.name,
     proficiency: ex.proficiency,
     confidence,
     evidence: [{
@@ -232,7 +235,7 @@ export function matchSkillsToKB(extracted: ExtractedSkill[]): SkillMatchResult {
     }
     
     matched.push(makeCustomClaim(ex, .6));
-    unmatched.push(ex.name.trim());
+    unmatched.push(ex.name);
   }
 
   return { matched, unmatched: [...new Set(unmatched)] };

@@ -1,13 +1,25 @@
 import type { ActorId, ConsentRecordId, EvidenceArtifactId, EvidenceRecordId, IsoTimestamp, OpportunityId, OpportunityRequirementId, OrganizationId, OutcomeEventId, SourceReference, VerificationEventId } from './shared';
 
-export type EvidenceProvenance =
-  | 'self_reported'
-  | 'ai_proposed'
-  | 'assessment_result'
-  | 'activity_observation'
-  | 'human_attestation'
-  | 'issuer_record'
-  | 'outcome_linked';
+export const EVIDENCE_PROVENANCE = [
+  'self_declared',
+  'self_reported',
+  'extracted',
+  'inferred',
+  'assessed',
+  'artifact_backed',
+  'activity_observation',
+  'human_attested',
+  'issuer_verified',
+  'outcome_linked',
+] as const;
+
+export type EvidenceProvenance = (typeof EVIDENCE_PROVENANCE)[number];
+
+export type EvidenceProposalSource =
+  | 'ai_extraction'
+  | 'rule_based_extraction'
+  | 'user_entry'
+  | 'connector_import';
 
 export type VerificationState =
   | 'proposed'
@@ -35,12 +47,11 @@ export interface ArtifactReference {
 
 export type EvidenceVisibility = 'private' | 'consented_application' | 'organization_scoped' | 'public';
 
-export interface EvidenceRecord {
+interface EvidenceRecordBase {
   readonly id: EvidenceRecordId;
   readonly subjectActorId: ActorId;
   readonly literalClaim: string;
   readonly provenance: EvidenceProvenance;
-  readonly verificationState: VerificationState;
   readonly scope: EvidenceScope;
   readonly artifacts: readonly ArtifactReference[];
   readonly source: SourceReference;
@@ -49,6 +60,20 @@ export interface EvidenceRecord {
   readonly createdAt: IsoTimestamp;
   readonly currentVerificationEventId?: VerificationEventId;
 }
+
+/** Proposal source is orthogonal to provenance. AI extraction never implies
+ * authoritative human or issuer provenance, and confirmation retains the
+ * proposal source for auditability. */
+export type EvidenceRecord = EvidenceRecordBase & (
+  | {
+      readonly verificationState: 'proposed';
+      readonly proposalSource: EvidenceProposalSource;
+    }
+  | {
+      readonly verificationState: Exclude<VerificationState, 'proposed'>;
+      readonly proposalSource?: EvidenceProposalSource;
+    }
+);
 
 export type VerificationAction =
   | 'submitted_for_review'
@@ -73,7 +98,9 @@ export interface VerificationEvent {
   readonly supersedesEventId?: VerificationEventId;
 }
 
-export function canEnterAuthoritativeEvidenceState(record: EvidenceRecord): boolean {
+/** Whether a proposal has sufficient confirmation to enter the evidence ledger.
+ * This says nothing about human or issuer authority. */
+export function canEnterConfirmedEvidenceLedger(record: EvidenceRecord): boolean {
   return record.verificationState === 'self_confirmed'
     || record.verificationState === 'human_verified'
     || record.verificationState === 'issuer_verified'

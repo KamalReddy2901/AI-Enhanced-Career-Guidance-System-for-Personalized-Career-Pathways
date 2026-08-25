@@ -6,7 +6,22 @@ export type AggregateMetric =
   | 'stage_conversion'
   | 'outcome_count'
   | 'evidence_coverage'
-  | 'engagement_count';
+  | 'engagement_count'
+  | 'readiness_distribution'
+  | 'evidence_gap_distribution'
+  | 'capability_gap_distribution'
+  | 'eligibility_gap_distribution'
+  | 'logistics_gap_distribution'
+  | 'application_funnel'
+  | 'recruitment_funnel'
+  | 'outcome_distribution'
+  | 'intervention_effectiveness_association'
+  | 'requirement_pattern'
+  | 'demand_pattern'
+  | 'faculty_industry_engagement'
+  | 'curriculum_program_alignment';
+
+export type AnalyticsInterpretation = 'descriptive' | 'associational';
 
 export interface AggregateAnalyticsQuery {
   readonly organizationId?: OrganizationId;
@@ -23,6 +38,10 @@ export interface AggregateAnalyticsPoint {
   readonly value: number;
   readonly cohortSize: number;
   readonly suppressed: boolean;
+  readonly interpretation: AnalyticsInterpretation;
+  /** Aggregate analytics cannot represent intervention association as proof of
+   * causality without a separately approved causal study contract. */
+  readonly causalClaimed: false;
 }
 
 export interface AggregateAnalyticsResult {

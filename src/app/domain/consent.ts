@@ -7,7 +7,12 @@ export type ProhibitedRecruiterData =
   | 'work_values'
   | 'private_aspirations'
   | 'counselor_history'
-  | 'private_constraints';
+  | 'financial_constraints'
+  | 'family_constraints'
+  | 'private_constraints'
+  | 'guardian_data'
+  | 'unrelated_disability_information'
+  | 'unrelated_accessibility_information';
 
 export interface ConsentRecord {
   readonly id: ConsentRecordId;

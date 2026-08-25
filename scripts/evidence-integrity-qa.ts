@@ -4,6 +4,7 @@ import {
   combineEvidenceConfidence,
   confirmSkillClaimProposals,
   createSkillClaimProposals,
+  customSkillId,
   extractLiteralResumeSkills,
   matchSkillsToKB,
   mergeSkillClaims,
@@ -34,6 +35,18 @@ assert.equal(extractLiteralResumeSkills('Quantum Ceramics').some(claim => claim.
   'literal fallback must not promote a contained alias inside unrelated language');
 assert.equal(mergeSkillClaims([], customResult.matched).length, 2,
   'custom skills must not collapse into a shared merge bucket');
+assert.equal(customSkillId('Quantum Ceramics'), customSkillId('  quantum   ceramics  '),
+  'superficial case and spacing differences must share one unresolved identity');
+assert.notEqual(customSkillId('Quantum Ceramics'), customSkillId('Ceramics'),
+  'normalized identity must not introduce semantic/fuzzy equivalence');
+const caseVariantCustomClaims = matchSkillsToKB([
+  extracted('Quantum Ceramics'),
+  extracted('  quantum   ceramics  '),
+]).matched;
+assert.equal(caseVariantCustomClaims[1].name, '  quantum   ceramics  ',
+  'literal unresolved wording must remain unchanged for display and provenance');
+assert.equal(mergeSkillClaims([], caseVariantCustomClaims).length, 1,
+  'case/spacing variants must merge by normalized internal identity');
 const legacyCustomClaims = customResult.matched.map((claim, index) => ({
   ...claim,
   skillId: undefined as unknown as string,
@@ -108,15 +121,35 @@ assert.doesNotMatch(pathwaySource, /['"]credentialed['"]/,
   'pathway checkbox UI must not mint credentialed evidence');
 assert.match(passportSource, /createSkillClaimProposals[\s\S]*confirmSkillClaimProposals/,
   'resume UI must retain an explicit proposal-to-confirmation transition');
+assert.match(passportSource, /data-proposed-record="skill"/,
+  'resume review must render every proposed skill record');
+assert.match(passportSource, /data-proposed-record="skill"[\s\S]*claim\.skillId[\s\S]*claim\.proficiency[\s\S]*claim\.confidence[\s\S]*evidence\.type[\s\S]*evidence\.description[\s\S]*evidence\.confidence[\s\S]*evidence\.observedAt[\s\S]*self_attested/,
+  'resume review must disclose every proposed skill field and post-confirmation verification state');
+assert.match(passportSource, /data-proposed-record="experience"[\s\S]*record\.title[\s\S]*record\.years[\s\S]*record\.description/,
+  'resume review must render all proposed experience fields');
+assert.match(passportSource, /data-proposed-record="education"[\s\S]*education\.record\.level[\s\S]*education\.record\.field/,
+  'resume review must render all proposed education fields');
+assert.match(passportSource, /filter\(item => item\.included\)/,
+  'resume persistence must honor per-record include/exclude review choices');
+assert.doesNotMatch(passportSource, /Also proposed:/,
+  'summary-only confirmation copy must not replace informed structured review');
+const extractionSection = passportSource.slice(
+  passportSource.indexOf('const handleResumeExtract'),
+  passportSource.indexOf('const confirmResumeReview'),
+);
+assert.doesNotMatch(extractionSection, /updatePassport\s*\(/,
+  'resume extraction must not persist any proposed record before confirmation');
 assert.match(guidanceContextSource, /skills:\s*Array\.isArray\(value\.skills\)\s*\?\s*normalizeSkillClaims/,
   'stored Career Passport loading must normalize legacy evidence');
 
 console.log(JSON.stringify({
   customSkillsDistinct: true,
   literalLabelsPreserved: true,
+  normalizedCustomIdentity: true,
   fuzzyPromotionBlocked: true,
   weakEvidenceCompoundingBlocked: true,
   freeTextCredentialDowngraded: true,
   pathwayCompletionDowngraded: true,
   aiProposalConfirmationRequired: true,
+  informedResumeReviewRequired: true,
 }, null, 2));
