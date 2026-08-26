@@ -32,7 +32,7 @@ CareerCase is strictly distinguished from generic job boards, ATS, LMS, or chatb
 ## 2. Status Categorization
 
 ### IMPLEMENTED
-- **Database Persistence**: Migrations `001` through `015` in `sih26044` schema with strict RLS, append-only triggers, and least-privilege SECURITY DEFINER functions.
+- **Database Persistence**: Migrations `001` through `016` in `sih26044` schema with strict RLS, append-only triggers, and least-privilege SECURITY DEFINER functions.
 - **Engine B Integration**: Direct, single-source import of `computeOpportunityReadiness()` inside Cloudflare Worker.
 - **Deterministic Historical Snapshotting**: Immutable readiness results and semantic input snapshots (`sih26044.readiness_input_snapshots`).
 - **Organization Membership Semantics**: Exact D1 active membership semantics (`status = 'active'`, `valid_from <= now`, `valid_until is null or > now`, `org.status = 'active'`) with deterministic historical row collapse.

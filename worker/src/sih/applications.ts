@@ -131,38 +131,43 @@ export async function createAndFinalizeApplicationSnapshot(
     };
   });
 
-  // 6. Compute deterministic snapshot ID using same algorithm as DB
-  //    Matches migration 014 create_application_snapshot() uuid_generate_v5 derivation
+  // 6. Compute deterministic snapshot ID via database-authoritative planning RPC
+  //    Database is the single authority for RFC 4122 UUIDv5 computation.
+  //    Worker does not duplicate uuid_generate_v5() algorithm.
   const sortedEvidenceIds = [...req.selectedEvidenceRecordIds].sort();
   const sortedConsentIds = [req.consentGrantId].sort();
-  const snapshotNamespace = 'b6c7d3a0-f2e1-4b89-9c05-1a2b3c4d5e6f';
-  const canonicalMaterial = [
-    'sih26044:snapshot',
-    req.applicationId,
-    req.opportunityVersionId,
-    readinessResult.resultId,
-    readinessResult.inputVersion,
-    readinessResult.subjectFactsVersion,
-    readinessResult.evidenceProjectionVersion,
-    sortedEvidenceIds.join(','),
-    sortedConsentIds.join(','),
-    JSON.stringify(req.requirementResponses ?? {}),
-    'recruiter-projection-v1',
-  ].join(':');
   
-  const encoder = new TextEncoder();
-  const data = encoder.encode(snapshotNamespace + canonicalMaterial);
-  const hashBuffer = await crypto.subtle.digest('SHA-1', data);
-  const hashArray = new Uint8Array(hashBuffer);
+  const { data: planResult, error: planError } = await dbElevated.rpc('plan_application_snapshot_identity', {
+    p_application_id: req.applicationId,
+    p_opportunity_version_id: req.opportunityVersionId,
+    p_readiness_result_id: readinessResult.resultId,
+    p_input_version: readinessResult.inputVersion,
+    p_subject_facts_version: readinessResult.subjectFactsVersion,
+    p_evidence_projection_version: readinessResult.evidenceProjectionVersion,
+    p_selected_evidence_ids: sortedEvidenceIds,
+    p_consent_grant_ids: sortedConsentIds,
+    p_requirement_responses: req.requirementResponses ?? {},
+    p_recruiter_projection_version: 'recruiter-projection-v1',
+  });
+
+  if (planError || !planResult) {
+    throw new SihRouteError(
+      'TRUSTED_PERSISTENCE_FAILURE',
+      500,
+      'Unable to compute snapshot identity.',
+    );
+  }
+
+  const planRow = Array.isArray(planResult) ? planResult[0] : planResult;
+  const deterministicSnapshotId = String((planRow as { snapshot_id?: string })?.snapshot_id ?? '');
   
-  // UUIDv5: set version bits (4) and variant bits (10)
-  hashArray[6] = (hashArray[6] & 0x0f) | 0x50;
-  hashArray[8] = (hashArray[8] & 0x3f) | 0x80;
-  
-  const hex = Array.from(hashArray.slice(0, 16))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-  const deterministicSnapshotId = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+  if (!deterministicSnapshotId) {
+    throw new SihRouteError(
+      'TRUSTED_PERSISTENCE_FAILURE',
+      500,
+      'Snapshot identity computation returned empty result.',
+    );
+  }
   
   const capturedAt = new Date().toISOString();
 
