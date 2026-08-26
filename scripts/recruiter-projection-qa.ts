@@ -84,6 +84,8 @@ assert.deepEqual(recursiveViolations, [], `Prohibited recruiter projection field
 assert.equal(projection?.evidence.every(item => state.consentRecords[0].evidenceRecordIds.includes(item.evidenceRecordId)), true,
   'every shared evidence item must be explicitly covered by application_review consent');
 
+import './production-recruiter-projection-qa';
+
 console.log(JSON.stringify({
   sourceViolations,
   recursiveViolations,

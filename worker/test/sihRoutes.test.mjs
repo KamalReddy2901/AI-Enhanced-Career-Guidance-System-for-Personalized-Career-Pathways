@@ -4,6 +4,8 @@ import worker from '../src/index.ts';
 import { extractBearerToken } from '../src/sih/auth.ts';
 import { canonicalJson, deterministicResultId } from '../src/sih/canonicalJson.ts';
 import { handleSihRequest } from '../src/sih/routes.ts';
+import { evaluateEffectiveMemberships } from '../src/sih/readiness.ts';
+import { computeSha256 } from '../src/sih/artifacts.ts';
 import { SihRouteError } from '../src/sih/types.ts';
 import {
   computeOpportunityReadiness,
@@ -17,8 +19,8 @@ const env = {
   SUPABASE_ELEVATED_KEY: 'elevated-do-not-leak',
 };
 const respond = (data, status = 200) => Response.json(data, { status });
-const request = (body, authorization) => new Request('https://worker.test/sih/readiness/recompute', {
-  method: 'POST',
+const request = (body, authorization, path = '/sih/readiness/recompute', method = 'POST') => new Request(`https://worker.test${path}`, {
+  method,
   headers: { 'Content-Type': 'application/json', ...(authorization ? { Authorization: authorization } : {}) },
   body: JSON.stringify(body),
 });
@@ -100,6 +102,154 @@ test('unexpected persistence errors neither return nor log the elevated key', as
   } finally {
     console.error = originalError;
   }
+});
+
+test('organization membership semantics: exact D1 evaluation and deterministic collapse', () => {
+  const now = '2026-08-26T12:00:00Z';
+  const orgA = '30000000-0000-4000-8000-000000000001';
+  const orgB = '30000000-0000-4000-8000-000000000002';
+  const orgC = '30000000-0000-4000-8000-000000000003';
+
+  // 1. Active current membership -> active=true
+  const r1 = evaluateEffectiveMemberships([
+    { organization_id: orgA, status: 'active', valid_from: '2026-01-01T00:00:00Z', valid_until: null, organizations: { status: 'active' } },
+  ], now);
+  assert.deepEqual(r1, [{ organizationId: orgA, active: true, confirmed: true }]);
+
+  // 2. Expired membership -> active=false
+  const r2 = evaluateEffectiveMemberships([
+    { organization_id: orgA, status: 'active', valid_from: '2025-01-01T00:00:00Z', valid_until: '2026-01-01T00:00:00Z', organizations: { status: 'active' } },
+  ], now);
+  assert.deepEqual(r2, [{ organizationId: orgA, active: false, confirmed: true }]);
+
+  // 3. Future membership -> active=false
+  const r3 = evaluateEffectiveMemberships([
+    { organization_id: orgA, status: 'active', valid_from: '2026-09-01T00:00:00Z', valid_until: null, organizations: { status: 'active' } },
+  ], now);
+  assert.deepEqual(r3, [{ organizationId: orgA, active: false, confirmed: true }]);
+
+  // 4. Suspended organization -> active=false
+  const r4 = evaluateEffectiveMemberships([
+    { organization_id: orgA, status: 'active', valid_from: '2026-01-01T00:00:00Z', valid_until: null, organizations: { status: 'suspended' } },
+  ], now);
+  assert.deepEqual(r4, [{ organizationId: orgA, active: false, confirmed: true }]);
+
+  // 5. Ended/suspended membership -> active=false
+  const r5 = evaluateEffectiveMemberships([
+    { organization_id: orgA, status: 'ended', valid_from: '2026-01-01T00:00:00Z', valid_until: null, organizations: { status: 'active' } },
+    { organization_id: orgB, status: 'suspended', valid_from: '2026-01-01T00:00:00Z', valid_until: null, organizations: { status: 'active' } },
+  ], now);
+  assert.deepEqual(r5, [
+    { organizationId: orgA, active: false, confirmed: true },
+    { organizationId: orgB, active: false, confirmed: true },
+  ]);
+
+  // 6. Multiple historical rows collapse deterministically (one expired + one active -> active=true)
+  const r6 = evaluateEffectiveMemberships([
+    { organization_id: orgA, status: 'ended', valid_from: '2024-01-01T00:00:00Z', valid_until: '2025-01-01T00:00:00Z', organizations: { status: 'active' } },
+    { organization_id: orgA, status: 'active', valid_from: '2026-01-01T00:00:00Z', valid_until: null, organizations: { status: 'active' } },
+    { organization_id: orgA, status: 'active', valid_from: '2023-01-01T00:00:00Z', valid_until: '2024-01-01T00:00:00Z', organizations: { status: 'active' } },
+  ], now);
+  assert.deepEqual(r6, [{ organizationId: orgA, active: true, confirmed: true }]);
+
+  // 7. Shuffled historical order generates identical collapsed facts and ordering
+  const r6Shuffled = evaluateEffectiveMemberships([
+    { organization_id: orgA, status: 'active', valid_from: '2026-01-01T00:00:00Z', valid_until: null, organizations: { status: 'active' } },
+    { organization_id: orgA, status: 'ended', valid_from: '2024-01-01T00:00:00Z', valid_until: '2025-01-01T00:00:00Z', organizations: { status: 'active' } },
+  ], now);
+  assert.deepEqual(r6, r6Shuffled);
+});
+
+test('computeSha256 computes exact Web Crypto SHA-256 hex string', async () => {
+  const data = new TextEncoder().encode('CareerCase test content');
+  const hash = await computeSha256(data.buffer);
+  assert.equal(typeof hash, 'string');
+  assert.equal(hash.length, 64);
+  assert.match(hash, /^[0-9a-f]{64}$/);
+});
+
+test('PUT /sih/readiness/subject-facts dispatches cleanly', async () => {
+  let called = false;
+  const deps = {
+    recompute: async () => ({}),
+    materializeSubjectFacts: async () => {
+      called = true;
+      return { education_level: 'undergraduate' };
+    },
+  };
+  const response = await handleSihRequest(
+    request({ educationLevel: 'undergraduate', educationLevelConfirmed: true }, 'Bearer valid.token.value', '/sih/readiness/subject-facts', 'PUT'),
+    env, respond, deps,
+  );
+  assert.equal(response.status, 200);
+  assert.equal(called, true);
+  assert.equal((await response.json()).subjectFacts.education_level, 'undergraduate');
+});
+
+test('POST /sih/readiness/evidence-projections validates evidenceRecordId and dispatches', async () => {
+  let called = false;
+  const deps = {
+    recompute: async () => ({}),
+    saveEvidenceProjection: async () => {
+      called = true;
+      return { evidence_record_id: '60000000-0000-4000-8000-000000000001' };
+    },
+  };
+  const response = await handleSihRequest(
+    request({
+      evidenceRecordId: '60000000-0000-4000-8000-000000000001',
+      directness: 'direct',
+      observedAt: '2026-08-26T00:00:00Z',
+      confirmationMethod: 'direct_confirmation',
+    }, 'Bearer valid.token.value', '/sih/readiness/evidence-projections'),
+    env, respond, deps,
+  );
+  assert.equal(response.status, 200);
+  assert.equal(called, true);
+});
+
+test('POST /sih/artifacts/register validates artifactId and storageObjectPath and dispatches', async () => {
+  let called = false;
+  const deps = {
+    recompute: async () => ({}),
+    registerArtifact: async () => {
+      called = true;
+      return { id: '90000000-0000-4000-8000-000000000001' };
+    },
+  };
+  const response = await handleSihRequest(
+    request({
+      artifactId: '90000000-0000-4000-8000-000000000001',
+      storageObjectPath: '20000000-0000-4000-8000-000000000001/90000000-0000-4000-8000-000000000001/test.pdf',
+      displayName: 'Test PDF',
+      mediaType: 'application/pdf',
+    }, 'Bearer valid.token.value', '/sih/artifacts/register'),
+    env, respond, deps,
+  );
+  assert.equal(response.status, 200);
+  assert.equal(called, true);
+});
+
+test('POST /sih/applications/snapshot validates inputs and dispatches', async () => {
+  let called = false;
+  const deps = {
+    recompute: async () => ({}),
+    createApplicationSnapshot: async () => {
+      called = true;
+      return { ok: true, snapshotId: '41000000-0000-4000-8000-000000000001', integrityFingerprint: 'f'.repeat(64), finalizedAt: '2026-08-26T00:00:00Z', recruiterProjection: {} };
+    },
+  };
+  const response = await handleSihRequest(
+    request({
+      applicationId: '40000000-0000-4000-8000-000000000001',
+      opportunityVersionId: '51000000-0000-4000-8000-000000000001',
+      consentGrantId: '80000000-0000-4000-8000-000000000001',
+      selectedEvidenceRecordIds: ['60000000-0000-4000-8000-000000000001'],
+    }, 'Bearer valid.token.value', '/sih/applications/snapshot'),
+    env, respond, deps,
+  );
+  assert.equal(response.status, 200);
+  assert.equal(called, true);
 });
 
 test('existing AI route keeps authentication, proxying, and operational headers', async () => {

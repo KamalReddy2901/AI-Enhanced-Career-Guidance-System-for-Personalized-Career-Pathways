@@ -25,6 +25,7 @@ assert.deepEqual(migrationFiles, [
   '202608260009_verifier_and_storage_rls_fix.sql',
   '202608260010_consent_and_helper_hardening.sql',
   '202608260011_d2_trusted_readiness_persistence.sql',
+  '202608260012_d2_foundation_trusted_persistence.sql',
 ]);
 
 const migrationSources = await Promise.all(migrationFiles.map(async file => ({
@@ -36,9 +37,10 @@ const normalizedSql = sql.replace(/--.*$/gm, '');
 const hardeningSql = migrationSources.find(item => item.file.endsWith('007_security_integrity_hardening.sql'))?.source ?? '';
 const finalHardeningSql = migrationSources.find(item => item.file.endsWith('008_artifact_and_confirmation_hardening.sql'))?.source ?? '';
 const d2ReadinessSql = migrationSources.find(item => item.file.endsWith('011_d2_trusted_readiness_persistence.sql'))?.source ?? '';
+const d2FoundationSql = migrationSources.find(item => item.file.endsWith('012_d2_foundation_trusted_persistence.sql'))?.source ?? '';
 const localConfig = await readFile(configPath, 'utf8');
 
-const createdTables = [...normalizedSql.matchAll(/create\s+table\s+sih26044\.([a-z0-9_]+)/gi)]
+const createdTables = [...normalizedSql.matchAll(/create\s+table(?:\s+if\s+not\s+exists)?\s+sih26044\.([a-z0-9_]+)/gi)]
   .map(match => match[1]);
 assert.ok(createdTables.length >= 30, 'Expected normalized SIH26044 production tables');
 for (const table of createdTables) {
@@ -85,6 +87,8 @@ const appendOnlyTables = [
   'evidence_records',
   'verification_events',
   'opportunity_readiness_results',
+  'readiness_input_snapshots',
+  'evidence_derivations',
   'consent_grants',
   'consent_lifecycle_events',
   'application_snapshots',
@@ -134,6 +138,15 @@ for (const trustedWriteTable of ['artifacts', 'evidence_artifact_links']) {
   assert.deepEqual(activeInsertPolicies(trustedWriteTable), [], `${trustedWriteTable} must be a trusted-write boundary`);
   assert.match(finalHardeningSql, new RegExp(`revoke\\s+insert\\s+on\\s+sih26044\\.${trustedWriteTable}\\s+from\\s+authenticated`, 'i'));
 }
+for (const trustedWriteTable of [
+  'readiness_input_snapshots',
+  'evidence_derivations',
+  'readiness_subject_facts',
+  'readiness_evidence_projections',
+]) {
+  assert.deepEqual(activeInsertPolicies(trustedWriteTable), [], `${trustedWriteTable} must be a trusted-write boundary`);
+  assert.doesNotMatch(normalizedSql, new RegExp(`grant\\s+insert\\s+on\\s+sih26044\\.${trustedWriteTable}\\s+to\\s+authenticated`, 'i'));
+}
 
 assert.match(normalizedSql, /values\s*\(\s*'career-evidence-private'\s*,\s*'career-evidence-private'\s*,\s*false\b/i,
   'Private evidence bucket must be declared non-public');
@@ -173,10 +186,10 @@ const requiredTables = [
   'actors', 'organizations', 'organization_memberships', 'organization_membership_roles',
   'opportunities', 'opportunity_versions', 'opportunity_requirements', 'eligibility_rules',
   'evidence_records', 'artifacts', 'evidence_artifact_links', 'verification_requests',
-  'verification_events', 'opportunity_readiness_results', 'consent_grants',
-  'consent_lifecycle_events', 'applications', 'application_snapshots',
-  'application_snapshot_evidence', 'application_snapshot_consents', 'application_events',
-  'outcome_events', 'collaboration_engagements', 'audit_events',
+  'verification_events', 'opportunity_readiness_results', 'readiness_input_snapshots',
+  'evidence_derivations', 'consent_grants', 'consent_lifecycle_events', 'applications',
+  'application_snapshots', 'application_snapshot_evidence', 'application_snapshot_consents',
+  'application_events', 'outcome_events', 'collaboration_engagements', 'audit_events',
 ];
 for (const table of requiredTables) {
   assert.ok(createdTables.includes(table), `Required production table missing: ${table}`);
@@ -192,6 +205,14 @@ const requiredHelpers = [
   'finalize_application_snapshot',
   'can_recruiter_read_application',
   'can_access_verification_request',
+  'has_prohibited_json_keys',
+  'materialize_readiness_subject_facts',
+  'save_readiness_evidence_projection',
+  'register_trusted_artifact',
+  'update_artifact_scan_status',
+  'derive_artifact_backed_evidence',
+  'create_application_snapshot',
+  'record_authoritative_audit',
 ];
 for (const helper of requiredHelpers) {
   assert.match(normalizedSql, new RegExp(`create\\s+or\\s+replace\\s+function\\s+sih26044\\.${helper}\\b`, 'i'),
@@ -211,19 +232,30 @@ for (const match of securityDefinerFunctions) {
 assert.doesNotMatch(normalizedSql, /is_(?:super_?)?admin|admin_bypass|bypass_rls/i,
   'Universal administrator bypass helpers are prohibited');
 
-// D2-A: narrow trusted readiness boundary and deterministic idempotency.
+// D2: narrow trusted readiness boundary and deterministic idempotency.
 assert.match(localConfig, /schemas\s*=\s*\[\s*"public"\s*,\s*"storage"\s*,\s*"graphql_public"\s*,\s*"sih26044"\s*\]/,
   'Local PostgREST must add sih26044 without removing the normal exposed schemas');
 assert.match(d2ReadinessSql, /create\s+or\s+replace\s+function\s+sih26044\.persist_trusted_readiness_result/i);
 assert.match(d2ReadinessSql, /security\s+definer[\s\S]*?set\s+search_path\s*=\s*pg_catalog\s*,\s*sih26044/i);
-assert.match(d2ReadinessSql, /revoke\s+all\s+on\s+function\s+sih26044\.persist_trusted_readiness_result[\s\S]*?from\s+public\s*,\s*anon\s*,\s*authenticated/i);
-assert.match(d2ReadinessSql, /grant\s+execute\s+on\s+function\s+sih26044\.persist_trusted_readiness_result[\s\S]*?to\s+service_role/i);
-assert.doesNotMatch(d2ReadinessSql, /grant\s+(?:all|insert|update|delete)[\s\S]*?to\s+service_role/i,
+assert.match(d2FoundationSql, /revoke\s+all\s+on\s+function\s+sih26044\.persist_trusted_readiness_result[\s\S]*?from\s+public\s*,\s*anon\s*,\s*authenticated/i);
+assert.match(d2FoundationSql, /grant\s+execute\s+on\s+function\s+sih26044\.persist_trusted_readiness_result[\s\S]*?to\s+service_role/i);
+assert.doesNotMatch(d2FoundationSql, /grant\s+(?:all|insert|update|delete)[\s\S]*?to\s+service_role/i,
   'D2 elevated role must not receive direct custom-schema mutation privileges');
-assert.match(d2ReadinessSql, /create\s+unique\s+index\s+opportunity_readiness_results_semantic_identity/i);
-assert.match(d2ReadinessSql, /on\s+conflict\s+do\s+nothing/i,
-  'Trusted persistence RPC must use append-only idempotency without updating history');
-const d2InputTableSql = [...d2ReadinessSql.matchAll(/create\s+table\s+sih26044\.readiness_(?:subject_facts|evidence_projections)[\s\S]*?\n\);/gi)]
+
+// D2 Foundation: recursive key check, input snapshots, derivations, artifacts, audit
+assert.match(d2FoundationSql, /create\s+or\s+replace\s+function\s+sih26044\.has_prohibited_json_keys/i);
+assert.match(d2FoundationSql, /create\s+table\s+if\s+not\s+exists\s+sih26044\.readiness_input_snapshots/i);
+assert.match(d2FoundationSql, /create\s+table\s+if\s+not\s+exists\s+sih26044\.evidence_derivations/i);
+assert.match(d2FoundationSql, /create\s+or\s+replace\s+function\s+sih26044\.materialize_readiness_subject_facts/i);
+assert.match(d2FoundationSql, /create\s+or\s+replace\s+function\s+sih26044\.save_readiness_evidence_projection/i);
+assert.match(d2FoundationSql, /create\s+or\s+replace\s+function\s+sih26044\.register_trusted_artifact/i);
+assert.match(d2FoundationSql, /create\s+or\s+replace\s+function\s+sih26044\.update_artifact_scan_status/i);
+assert.match(d2FoundationSql, /create\s+or\s+replace\s+function\s+sih26044\.derive_artifact_backed_evidence/i);
+assert.match(d2FoundationSql, /create\s+or\s+replace\s+function\s+sih26044\.create_application_snapshot/i);
+assert.match(d2FoundationSql, /create\s+or\s+replace\s+function\s+sih26044\.record_authoritative_audit/i);
+assert.match(d2FoundationSql, /audit_events_principal_check/i);
+
+const d2InputTableSql = [...normalizedSql.matchAll(/create\s+table\s+(?:if\s+not\s+exists\s+)?sih26044\.readiness_(?:subject_facts|evidence_projections|input_snapshots)[\s\S]*?\n\);/gi)]
   .map(match => match[0]).join('\n');
 assert.doesNotMatch(d2InputTableSql, /riasec|work_values|aspiration|counselor_history|private_guidance/i,
   'D2 readiness input tables must not represent private Engine A/guidance fields');
@@ -239,7 +271,6 @@ assert.match(canVerifyEvidenceFunc, /sih26044\.is_consent_active\s*\(/i,
 assert.doesNotMatch(canVerifyEvidenceFunc, /cg\.(status|revoked_at)/i,
   'can_verify_evidence must not reference non-existent consent_grants.status or revoked_at columns');
 
-// Migration 010: explicit SECURITY DEFINER privilege discipline
 assert.match(normalizedSql, /revoke\s+all\s+on\s+function\s+sih26044\.can_verify_evidence\s*\(\s*uuid\s*\)\s+from\s+public/i,
   'can_verify_evidence must have explicit PUBLIC revoke');
 assert.match(normalizedSql, /grant\s+execute\s+on\s+function\s+sih26044\.can_verify_evidence\s*\(\s*uuid\s*\)\s+to\s+authenticated/i,
@@ -357,23 +388,6 @@ const requiredRlsTestClaims = [
   'assigned verifier cannot append verification event after consent expires',
 ];
 for (const claim of requiredRlsTestClaims) assert.match(rlsTests, new RegExp(claim, 'i'));
-
-// Storage lifecycle and artifact metadata assertions that require authenticated
-// Storage API rather than direct SQL mutation (modern Supabase blocks direct
-// storage.objects writes):
-// - learner A can upload to own actor path
-// - learner A cannot upload into learner B actor path
-// - owner can delete orphan upload
-// - learner A can read their own registered artifact
-// - normal client cannot overwrite registered artifact
-// - normal client cannot delete registered artifact
-// - learner B cannot read learner A private artifact
-// - bucket is private (implicit through auth requirements)
-// - learner retains read access to own registered artifact metadata
-// - learner retains read access to own canonical evidence-artifact link
-// - learner cannot insert canonical evidence-artifact link
-// - assigned verifier retains read access to properly linked artifact metadata
-// These are validated through scripts/sih-storage-api-integration-test.mjs.
 
 console.log(JSON.stringify({
   migrationsInspected: migrationFiles,

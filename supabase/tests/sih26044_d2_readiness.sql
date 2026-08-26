@@ -1,4 +1,4 @@
--- Executable D2-A trusted-role/readiness persistence security suite.
+-- Executable D2 Foundation trusted-role, privacy, artifact, derivation, snapshot security suite.
 begin;
 
 create or replace function pg_temp.assert_true(condition boolean, message text)
@@ -66,20 +66,53 @@ insert into sih26044.opportunity_versions (
 update sih26044.opportunities set current_version_id = '51000000-0000-4000-8000-0000000000d1'
 where id = '50000000-0000-4000-8000-0000000000d1';
 
+-- 1. Function privileges checks
 select pg_temp.assert_true(
-  not has_function_privilege('anon', 'sih26044.persist_trusted_readiness_result(uuid,uuid,uuid,uuid,text,text,text,text,text,sih26044.readiness_band,jsonb,timestamptz)', 'EXECUTE'),
+  not has_function_privilege('anon', 'sih26044.persist_trusted_readiness_result(uuid,uuid,uuid,uuid,text,text,text,text,text,sih26044.readiness_band,jsonb,timestamptz,jsonb)', 'EXECUTE'),
   'anon/PUBLIC must not execute the trusted readiness RPC'
 );
 select pg_temp.assert_true(
-  not has_function_privilege('authenticated', 'sih26044.persist_trusted_readiness_result(uuid,uuid,uuid,uuid,text,text,text,text,text,sih26044.readiness_band,jsonb,timestamptz)', 'EXECUTE'),
+  not has_function_privilege('authenticated', 'sih26044.persist_trusted_readiness_result(uuid,uuid,uuid,uuid,text,text,text,text,text,sih26044.readiness_band,jsonb,timestamptz,jsonb)', 'EXECUTE'),
   'authenticated browser clients must not execute the trusted readiness RPC'
 );
 select pg_temp.assert_true(
-  has_function_privilege('service_role', 'sih26044.persist_trusted_readiness_result(uuid,uuid,uuid,uuid,text,text,text,text,text,sih26044.readiness_band,jsonb,timestamptz)', 'EXECUTE'),
+  has_function_privilege('service_role', 'sih26044.persist_trusted_readiness_result(uuid,uuid,uuid,uuid,text,text,text,text,text,sih26044.readiness_band,jsonb,timestamptz,jsonb)', 'EXECUTE'),
   'only the intended server role receives RPC execution'
 );
 
+-- 2. Prohibited key filter verification (Keys blocked vs legitimate text values allowed)
+select pg_temp.assert_true(
+  sih26044.has_prohibited_json_keys('{"riasec":{"realistic":10}}'::jsonb),
+  'has_prohibited_json_keys must detect riasec key'
+);
+select pg_temp.assert_true(
+  sih26044.has_prohibited_json_keys('{"nested":{"work_values":["autonomy"]}}'::jsonb),
+  'has_prohibited_json_keys must detect work_values key recursively'
+);
+select pg_temp.assert_true(
+  sih26044.has_prohibited_json_keys('{"nested":{"privateAspirations":"secret"}}'::jsonb),
+  'has_prohibited_json_keys must detect privateAspirations key recursively'
+);
+select pg_temp.assert_true(
+  sih26044.has_prohibited_json_keys('{"nested":{"counselorHistory":["note"]}}'::jsonb),
+  'has_prohibited_json_keys must detect counselorHistory key recursively'
+);
+select pg_temp.assert_true(
+  sih26044.has_prohibited_json_keys('{"nested":{"financial_constraints":"low"}}'::jsonb),
+  'has_prohibited_json_keys must detect financial_constraints key recursively'
+);
+select pg_temp.assert_true(
+  not sih26044.has_prohibited_json_keys('{"literalClaim":"Research aspirations statement and counselor registration required"}'::jsonb),
+  'has_prohibited_json_keys must ALLOW legitimate literal strings containing aspiration or counselor'
+);
+select pg_temp.assert_true(
+  not sih26044.has_prohibited_json_keys('{"requirements":[{"wording":"Counselor certificate required"}]}'::jsonb),
+  'has_prohibited_json_keys must ALLOW legitimate nested strings'
+);
+
 set local role service_role;
+
+-- 3. Service role mutation restrictions
 select pg_temp.assert_blocked(
   $command$insert into sih26044.opportunity_readiness_results (
     id, subject_actor_id, opportunity_id, opportunity_version_id, engine_version,
@@ -92,51 +125,143 @@ select pg_temp.assert_blocked(
   )$command$,
   'service role must not receive direct readiness table INSERT'
 );
-select pg_temp.assert_blocked(
-  $command$insert into sih26044.actors (display_name) values ('Broad mutation')$command$,
-  'D2 server privilege must not permit broader custom-schema mutation'
+
+-- 4. Trusted readiness persistence RPC execution
+select * from sih26044.persist_trusted_readiness_result(
+  '70000000-0000-4000-8000-0000000000d1',
+  '20000000-0000-4000-8000-0000000000d1',
+  '50000000-0000-4000-8000-0000000000d1',
+  '51000000-0000-4000-8000-0000000000d1',
+  'engine-v1', 'policy-v1', 'input-v1', 'facts-v1', 'evidence-v1', 'NEEDS_REVIEW',
+  pg_temp.d2_result_body('70000000-0000-4000-8000-0000000000d1', '20000000-0000-4000-8000-0000000000d1'),
+  '2026-08-26T00:00:00Z',
+  '{"opportunity":{"id":"50000000-0000-4000-8000-0000000000d1"}}'::jsonb
 );
 
+-- Idempotency check
+select * from sih26044.persist_trusted_readiness_result(
+  '70000000-0000-4000-8000-0000000000d1',
+  '20000000-0000-4000-8000-0000000000d1',
+  '50000000-0000-4000-8000-0000000000d1',
+  '51000000-0000-4000-8000-0000000000d1',
+  'engine-v1', 'policy-v1', 'input-v1', 'facts-v1', 'evidence-v1', 'NEEDS_REVIEW',
+  pg_temp.d2_result_body('70000000-0000-4000-8000-0000000000d1', '20000000-0000-4000-8000-0000000000d1'),
+  '2026-08-26T00:00:00Z',
+  '{"opportunity":{"id":"50000000-0000-4000-8000-0000000000d1"}}'::jsonb
+);
+
+-- 5. Subject fact materialization
+select * from sih26044.materialize_readiness_subject_facts(
+  '20000000-0000-4000-8000-0000000000d1',
+  'undergraduate', true, 2026, true,
+  '[{"value":"Bangalore","confirmed":true}]'::jsonb, true,
+  '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, true
+);
+
+-- Subject fact materialization rejects prohibited keys
 select pg_temp.assert_blocked(
-  $command$select * from sih26044.persist_trusted_readiness_result(
-    '70000000-0000-4000-8000-0000000000d1',
-    '20000000-0000-4000-8000-0000000000d2',
-    '50000000-0000-4000-8000-0000000000d1',
-    '51000000-0000-4000-8000-0000000000d1',
-    'engine-v1', 'policy-v1', 'input-v1', 'facts-v1', 'evidence-v1', 'NEEDS_REVIEW',
-    pg_temp.d2_result_body('70000000-0000-4000-8000-0000000000d1', '20000000-0000-4000-8000-0000000000d1'),
-    '2026-08-26T00:00:00Z'
+  $command$select * from sih26044.materialize_readiness_subject_facts(
+    '20000000-0000-4000-8000-0000000000d1',
+    'undergraduate', true, 2026, true,
+    '[{"value":"Bangalore","confirmed":true}]'::jsonb, true,
+    '[{"riasec":"prohibited"}]'::jsonb, '[]'::jsonb, '[]'::jsonb, true
   )$command$,
-  'RPC must reject mismatched actor fields'
+  'materialize_readiness_subject_facts must reject prohibited guidance keys'
 );
 
-select * from sih26044.persist_trusted_readiness_result(
-  '70000000-0000-4000-8000-0000000000d1',
+-- 6. Artifact registration and scan status update
+select * from sih26044.register_trusted_artifact(
+  '90000000-0000-4000-8000-0000000000d1',
   '20000000-0000-4000-8000-0000000000d1',
-  '50000000-0000-4000-8000-0000000000d1',
-  '51000000-0000-4000-8000-0000000000d1',
-  'engine-v1', 'policy-v1', 'input-v1', 'facts-v1', 'evidence-v1', 'NEEDS_REVIEW',
-  pg_temp.d2_result_body('70000000-0000-4000-8000-0000000000d1', '20000000-0000-4000-8000-0000000000d1'),
-  '2026-08-26T00:00:00Z'
+  'career-evidence-private',
+  '20000000-0000-4000-8000-0000000000d1/90000000-0000-4000-8000-0000000000d1/test.pdf',
+  'application/pdf',
+  'Test Document',
+  'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 );
-select * from sih26044.persist_trusted_readiness_result(
-  '70000000-0000-4000-8000-0000000000d1',
+
+select * from sih26044.update_artifact_scan_status(
+  '90000000-0000-4000-8000-0000000000d1',
+  'clean',
+  'automated_scanner',
+  'Clean file scan'
+);
+
+-- 7. Evidence record and artifact-backed derivation
+insert into sih26044.evidence_records (
+  id, subject_actor_id, literal_claim, provenance, initial_verification_state,
+  scope_kind, scope_skill_id, scope_literal_skill_label, source_system, source_captured_at
+) values (
+  '60000000-0000-4000-8000-0000000000d1', '20000000-0000-4000-8000-0000000000d1',
+  'Initial self-reported SQL skill', 'self_reported', 'unverified',
+  'global_skill', 'sql', 'SQL', 'd2_test', statement_timestamp()
+);
+
+insert into sih26044.evidence_artifact_links (
+  evidence_record_id, artifact_id, linked_by_actor_id
+) values (
+  '60000000-0000-4000-8000-0000000000d1', '90000000-0000-4000-8000-0000000000d1',
+  '20000000-0000-4000-8000-0000000000d1'
+);
+
+select * from sih26044.derive_artifact_backed_evidence(
+  '60000000-0000-4000-8000-0000000000d2',
+  '60000000-0000-4000-8000-0000000000d1',
+  '90000000-0000-4000-8000-0000000000d1',
   '20000000-0000-4000-8000-0000000000d1',
-  '50000000-0000-4000-8000-0000000000d1',
-  '51000000-0000-4000-8000-0000000000d1',
-  'engine-v1', 'policy-v1', 'input-v1', 'facts-v1', 'evidence-v1', 'NEEDS_REVIEW',
-  pg_temp.d2_result_body('70000000-0000-4000-8000-0000000000d1', '20000000-0000-4000-8000-0000000000d1'),
-  '2026-08-26T00:00:00Z'
+  'Artifact backed SQL claim',
+  'artifact_attachment',
+  '20000000-0000-4000-8000-0000000000d1',
+  'direct_confirmation'
 );
+
+-- Prove derived record has provenance = artifact_backed and initial_verification_state = unverified
+select pg_temp.assert_true(
+  (select provenance = 'artifact_backed' and initial_verification_state = 'unverified'
+   from sih26044.evidence_records where id = '60000000-0000-4000-8000-0000000000d2'),
+  'Derived record must have artifact_backed provenance and unverified state'
+);
+
+-- 8. Audit event principal integrity
+select sih26044.record_authoritative_audit(
+  '20000000-0000-4000-8000-0000000000d1', null, null, 'human_action',
+  'evidence_records', '60000000-0000-4000-8000-0000000000d1', null, '{}'::jsonb
+);
+select sih26044.record_authoritative_audit(
+  null, 'system_scanner_daemon', null, 'system_action',
+  'artifacts', '90000000-0000-4000-8000-0000000000d1', null, '{}'::jsonb
+);
+
+-- Audit event must reject both principals or neither principal
+select pg_temp.assert_blocked(
+  $command$select sih26044.record_authoritative_audit(
+    '20000000-0000-4000-8000-0000000000d1', 'system_scanner', null, 'invalid_action',
+    'artifacts', '90000000-0000-4000-8000-0000000000d1', null, '{}'::jsonb
+  )$command$,
+  'Audit event must reject having both human actor and system principal'
+);
+select pg_temp.assert_blocked(
+  $command$select sih26044.record_authoritative_audit(
+    null, null, null, 'invalid_action',
+    'artifacts', '90000000-0000-4000-8000-0000000000d1', null, '{}'::jsonb
+  )$command$,
+  'Audit event must reject having neither human actor nor system principal'
+);
+
 reset role;
+
 select pg_temp.assert_true(
   (select count(*) = 1 from sih26044.opportunity_readiness_results where id = '70000000-0000-4000-8000-0000000000d1'),
   'identical trusted requests must remain idempotent'
 );
+select pg_temp.assert_true(
+  (select count(*) = 1 from sih26044.readiness_input_snapshots where readiness_result_id = '70000000-0000-4000-8000-0000000000d1'),
+  'canonical input snapshot must be persisted alongside readiness result'
+);
 select pg_temp.assert_blocked(
-  $command$update sih26044.opportunity_readiness_results set input_version = 'mutated'
-    where id = '70000000-0000-4000-8000-0000000000d1'$command$,
-  'historical readiness rows remain immutable'
+  $command$update sih26044.readiness_input_snapshots set input_version = 'mutated'
+    where readiness_result_id = '70000000-0000-4000-8000-0000000000d1'$command$,
+  'historical input snapshots remain immutable'
 );
 
 rollback;

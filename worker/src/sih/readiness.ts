@@ -12,6 +12,7 @@ import {
 } from '../../../src/app/engine/opportunityReadiness';
 import { OPPORTUNITY_READINESS_POLICY_VERSION } from '../../../src/app/engine/opportunityEvidencePolicy';
 import { canonicalJson, deterministicResultId, sha256Version } from './canonicalJson';
+import type { MaterializeSubjectFactsRequest, SaveEvidenceProjectionRequest } from './types';
 import { SihRouteError } from './types';
 
 type Row = Record<string, any>;
@@ -81,6 +82,42 @@ function verificationState(evidence: Row, events: Row[]): ReadinessEvidenceSigna
   return (latest ? actionToState[latest.action] : evidence.initial_verification_state) as ReadinessEvidenceSignal['verificationState'];
 }
 
+export function evaluateEffectiveMemberships(
+  memberships: Row[],
+  generatedAt: string,
+): Array<{ organizationId: OrganizationId; active: boolean; confirmed: boolean }> {
+  const genDate = new Date(generatedAt).getTime();
+  const orgEffectiveMap = new Map<string, boolean>();
+
+  for (const m of memberships) {
+    const orgId = String(m.organization_id);
+    const validFrom = m.valid_from ? new Date(m.valid_from).getTime() : 0;
+    const validUntil = m.valid_until ? new Date(m.valid_until).getTime() : Number.POSITIVE_INFINITY;
+    const mStatus = String(m.status);
+    const orgStatus = m.organizations
+      ? String(m.organizations.status)
+      : (m.organization ? String(m.organization.status) : 'active');
+
+    const isEffectiveActive = (
+      mStatus === 'active' &&
+      validFrom <= genDate &&
+      validUntil > genDate &&
+      orgStatus === 'active'
+    );
+
+    const current = orgEffectiveMap.get(orgId) ?? false;
+    orgEffectiveMap.set(orgId, current || isEffectiveActive);
+  }
+
+  return Array.from(orgEffectiveMap.entries())
+    .map(([organizationId, active]) => ({
+      organizationId: organizationId as OrganizationId,
+      active,
+      confirmed: true,
+    }))
+    .sort((left, right) => left.organizationId.localeCompare(right.organizationId));
+}
+
 export async function assembleOpportunityReadinessInput(
   client: SupabaseClient,
   actorId: string,
@@ -93,15 +130,17 @@ export async function assembleOpportunityReadinessInput(
     .eq('status', 'published').maybeSingle());
   if (!version) throw new SihRouteError('NOT_FOUND', 404, 'Published opportunity version was not found.');
 
-  const [requirementRows, ruleRows, facts, memberships, allEvidence] = await Promise.all([
+  const [requirementRows, ruleRows, facts, rawMemberships, allEvidence] = await Promise.all([
     select<Row[]>(db.from('opportunity_requirements').select('*')
       .eq('opportunity_version_id', version.id).order('ordinal')),
     select<Row[]>(db.from('eligibility_rules').select('*')
       .eq('opportunity_version_id', version.id).order('ordinal')),
     select<Row | null>(db.from('readiness_subject_facts').select('*')
       .eq('subject_actor_id', actorId).maybeSingle()),
-    select<Row[]>(db.from('organization_memberships').select('organization_id,status')
-      .eq('actor_id', actorId)),
+    select<Row[]>(db.from('organization_memberships').select(`
+      organization_id, status, valid_from, valid_until,
+      organizations:organization_id (status)
+    `).eq('actor_id', actorId)),
     select<Row[]>(db.from('evidence_records').select([
       'id', 'subject_actor_id', 'provenance', 'initial_verification_state', 'scope_kind',
       'scope_skill_id', 'scope_literal_skill_label', 'scope_opportunity_id',
@@ -120,14 +159,26 @@ export async function assembleOpportunityReadinessInput(
     select<Row[]>(db.from('evidence_artifact_links').select('evidence_record_id,artifact_id')
       .in('evidence_record_id', evidenceIds)),
   ]) : [[], [], []];
+
+  const linkedArtifactIds = [...new Set(links.map(l => l.artifact_id))];
+  const artifactRows = linkedArtifactIds.length
+    ? await select<Row[]>(db.from('artifacts').select('id,scan_status').in('id', linkedArtifactIds))
+    : [];
+  const cleanArtifactSet = new Set(
+    artifactRows.filter(a => a.scan_status === 'clean').map(a => a.id),
+  );
+
   const projectionById = new Map(projections.map(row => [row.evidence_record_id, row]));
   const evidenceSignals = evidence.flatMap((record): ReadinessEvidenceSignal[] => {
     const projection = projectionById.get(record.id);
     if (!projection) return [];
     const currentState = verificationState(record, events);
     if (!confirmedStates.has(currentState)) return [];
-    const artifactIds = links.filter(link => link.evidence_record_id === record.id)
-      .map(link => link.artifact_id as EvidenceArtifactId).sort();
+    // Only clean artifacts contribute to trusted readiness signals in Engine B
+    const artifactIds = links
+      .filter(link => link.evidence_record_id === record.id && cleanArtifactSet.has(link.artifact_id))
+      .map(link => link.artifact_id as EvidenceArtifactId)
+      .sort();
     return [{
       evidenceRecordId: record.id as EvidenceRecordId,
       ...(projection.requirement_id ? { requirementId: projection.requirement_id as OpportunityRequirementId } : {}),
@@ -161,6 +212,9 @@ export async function assembleOpportunityReadinessInput(
   const relevantLanguages = objects(facts?.relevant_languages)
     .filter(item => typeof item.value === 'string')
     .map(item => ({ value: item.value as string, confirmed: item.confirmed === true }));
+
+  const organizationMemberships = evaluateEffectiveMemberships(rawMemberships, generatedAt);
+
   const subjectMaterial = {
     actorId,
     educationLevel: facts?.education_level
@@ -169,10 +223,7 @@ export async function assembleOpportunityReadinessInput(
       ? undefined : { value: Number(facts.graduation_year), confirmed: facts.graduation_year_confirmed === true },
     physicalPresenceLocations,
     physicalPresenceLocationsComplete: facts?.physical_presence_locations_complete === true,
-    organizationMemberships: memberships.map(row => ({
-      organizationId: row.organization_id as OrganizationId,
-      active: row.status === 'active', confirmed: true,
-    })).sort((left, right) => left.organizationId.localeCompare(right.organizationId)),
+    organizationMemberships,
     organizationMembershipsComplete: true,
     eligibilityFacts,
     workAuthorizations,
@@ -208,6 +259,7 @@ export async function assembleOpportunityReadinessInput(
 export async function persistReadinessResult(
   elevatedClient: SupabaseClient,
   result: OpportunityReadinessResult,
+  canonicalInput: OpportunityReadinessInput,
 ): Promise<OpportunityReadinessResult> {
   const { data, error } = await elevatedClient.schema('sih26044').rpc('persist_trusted_readiness_result', {
     p_id: result.resultId,
@@ -222,6 +274,7 @@ export async function persistReadinessResult(
     p_readiness_band: result.readinessBand,
     p_result_body: result,
     p_generated_at: result.generatedAt,
+    p_canonical_input: canonicalInput,
   });
   if (error || !data) {
     throw new SihRouteError('TRUSTED_PERSISTENCE_FAILURE', 500, 'Unable to persist trusted readiness.');
@@ -260,5 +313,62 @@ export async function recomputeAndPersistReadiness(
     }
     throw error;
   }
-  return persistReadinessResult(elevatedClient, result);
+  return persistReadinessResult(elevatedClient, result, input);
+}
+
+export async function materializeSubjectFacts(
+  elevatedClient: SupabaseClient,
+  actorId: string,
+  facts: MaterializeSubjectFactsRequest,
+): Promise<Record<string, unknown>> {
+  const { data, error } = await elevatedClient.schema('sih26044').rpc('materialize_readiness_subject_facts', {
+    p_subject_actor_id: actorId,
+    p_education_level: facts.educationLevel ?? null,
+    p_education_level_confirmed: facts.educationLevelConfirmed ?? false,
+    p_graduation_year: facts.graduationYear ?? null,
+    p_graduation_year_confirmed: facts.graduationYearConfirmed ?? false,
+    p_physical_presence_locations: facts.physicalPresenceLocations ?? [],
+    p_physical_presence_locations_complete: facts.physicalPresenceLocationsComplete ?? false,
+    p_eligibility_facts: facts.eligibilityFacts ?? [],
+    p_work_authorizations: facts.workAuthorizations ?? [],
+    p_relevant_languages: facts.relevantLanguages ?? [],
+    p_relevant_languages_complete: facts.relevantLanguagesComplete ?? false,
+  });
+  if (error || !data) {
+    throw new SihRouteError('TRUSTED_PERSISTENCE_FAILURE', 500, 'Unable to materialize readiness subject facts.');
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  return row as Record<string, unknown>;
+}
+
+export async function saveEvidenceProjection(
+  elevatedClient: SupabaseClient,
+  actorId: string,
+  req: SaveEvidenceProjectionRequest,
+): Promise<Record<string, unknown>> {
+  const validMethods = ['structured_human_entry', 'ai_assisted_review', 'direct_confirmation', 'self_assessment_review'];
+  if (!validMethods.includes(req.confirmationMethod)) {
+    throw new SihRouteError('INVALID_REQUEST', 400, 'Invalid human confirmation method for capability projection.');
+  }
+
+  const { data, error } = await elevatedClient.schema('sih26044').rpc('save_readiness_evidence_projection', {
+    p_evidence_record_id: req.evidenceRecordId,
+    p_subject_actor_id: actorId,
+    p_requirement_id: req.requirementId ?? null,
+    p_skill_id: req.skillId ?? null,
+    p_literal_skill_label: req.literalSkillLabel ?? null,
+    p_literal_requirement_wording: req.literalRequirementWording ?? null,
+    p_proficiency: req.proficiency ?? null,
+    p_experience_years: req.experienceYears ?? null,
+    p_capability_assertion: req.capabilityAssertion ?? null,
+    p_directness: req.directness,
+    p_observed_at: req.observedAt,
+    p_confirmed_by_actor_id: actorId,
+    p_confirmation_method: req.confirmationMethod,
+  });
+  if (error || !data) {
+    throw new SihRouteError('INVALID_EVIDENCE_PROJECTION', 400, error ? (error as any).message : 'Unable to save readiness evidence projection.');
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  return row as Record<string, unknown>;
 }

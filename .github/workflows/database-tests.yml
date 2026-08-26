@@ -74,6 +74,14 @@ jobs:
           test "$sql_assertion_count" -eq 51
           echo "EXECUTED SQL assertions: $sql_assertion_count"
 
+      - name: Execute SIH26044 D2 readiness and trust assertions
+        env:
+          PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
+            -f supabase/tests/sih26044_d2_readiness.sql
+
       - name: Execute SIH26044 Storage API lifecycle assertions
         run: |
           set -euo pipefail

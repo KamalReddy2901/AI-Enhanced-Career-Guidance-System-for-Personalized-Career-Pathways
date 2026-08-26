@@ -104,7 +104,7 @@ jobs:
         run: npx wrangler deploy --dry-run
 
   database:
-    name: Disposable Supabase D2-A
+    name: Disposable Supabase D2 Foundation
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -121,15 +121,18 @@ jobs:
         run: npm ci
 
       - name: Start minimal disposable Supabase
-        run: npx --yes supabase@latest start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+        run: npx --yes supabase@latest start -x realtime,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
 
       - name: Run D1 database execution gate
         run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_rls.sql
 
-      - name: Run D2-A trusted-role security gate
+      - name: Run D2 trusted-role and foundation security gate
         run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_d2_readiness.sql
 
-      - name: Run D2-A Worker integration gate
+      - name: Run Storage API integration gate
+        run: node scripts/sih-storage-api-integration-test.mjs
+
+      - name: Run D2 Foundation Worker integration gate
         run: npm run qa:d2-readiness-integration
 
       - name: Stop disposable Supabase
