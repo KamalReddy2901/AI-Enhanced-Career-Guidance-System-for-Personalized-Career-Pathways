@@ -12,6 +12,10 @@ This directory converts the v1.2 ultimate plan into bounded PR1 workstreams. It 
 
 If this pack conflicts with a higher authority, stop and raise the conflict in the PR. Do not silently reinterpret the product.
 
+## PR1 is a checkpoint, not the final product boundary
+
+These five PR1 assignments are only the first integration sequence. They do not remove or defer out of the ultimate architecture any valuable v1.2 capability because of a 3–4 day prototype target. The complete target continues to include production multi-actor persistence and RBAC; full student, faculty, industry and institution lifecycles; authorized policy/program analytics; accessibility, localization and low-bandwidth support; production-grade consent, security and retention; assistive AI with human control; and truthful external-system adapters. A capability absent from PR1 remains planned unless the Master Plan explicitly excludes it for strategic reasons.
+
 ## PR1 ownership
 
 | Owner | Workstream | Primary integration dependency |
@@ -31,6 +35,8 @@ Laya and Madhu are separate owners. Neither person owns the other person's scree
 3. `docs/sih26044-foundation-architecture.md`.
 4. `docs/sih26044-teammate-boundaries.md`.
 5. The current domain types, engine, service and demo files named in your task plan.
+
+Do not begin implementation before completing the AI workflow and environment checkpoint in the shared pack.
 
 ## Integration order
 

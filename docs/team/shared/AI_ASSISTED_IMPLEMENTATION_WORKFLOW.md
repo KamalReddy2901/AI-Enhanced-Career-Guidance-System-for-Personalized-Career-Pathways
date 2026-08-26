@@ -2,6 +2,8 @@
 
 Use AI as an implementation assistant, not as the architecture owner.
 
+Complete this workflow before editing product files. The first checkpoint is an inspection report, not generated code.
+
 ## Step 1 — Give the AI the right context
 
 Start a fresh task and provide, in this order:
@@ -14,9 +16,13 @@ Start a fresh task and provide, in this order:
 
 Tell the AI: “Inspect first. Propose the smallest compliant vertical slice. Do not edit shared contracts, Engine B, migrations, Worker authority, or another owner's files without explicit approval.”
 
+Never give an AI production credentials, `.env` contents, real applicant evidence, private screenshots or access to Kamal's Supabase/Cloudflare dashboards. Use only repository code, approved documentation and synthetic fixtures.
+
 ## Step 2 — Require an inspection report
 
 Before code changes, require the AI to identify existing reusable types/components, files it expects to touch, data source (real controlled persistence versus demo fixture), privacy boundary, tests to run, and any missing contract. Reject a plan that invents duplicate types or a second readiness calculation.
+
+Checkpoint: save the inspection report in your working notes. If it proposes a protected/shared file, stop and send Kamal the shared-change request before any edit.
 
 ## Step 3 — Build one vertical slice at a time
 

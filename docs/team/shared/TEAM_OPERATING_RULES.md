@@ -4,6 +4,8 @@
 
 Every PR must extend the same evidence-backed Opportunity Readiness and Skills Intelligence loop. Do not build an isolated mini-product, duplicate a domain model, or change settled architecture for local convenience.
 
+PR1 is an implementation checkpoint, not a reduced definition of CareerCase. Prototype pressure may change build order or what is demonstrated first; it must never redefine the ultimate v1.2 architecture. Do not delete, label “out of scope forever,” or design against full stakeholder lifecycles, policy analytics, accessibility, localization, low-bandwidth support, production tenancy/security, background operations or integration adapters merely because they are not owned in this PR.
+
 ## Non-negotiable product rules
 
 - Keep Engine A (Career Guidance) separate from Engine B (Opportunity Readiness).
@@ -29,12 +31,15 @@ Every PR must extend the same evidence-backed Opportunity Readiness and Skills I
 - Reuse domain contracts and design primitives; do not copy-paste business logic into pages.
 - Never edit frozen migrations `001`–`012`. Any schema change requires Kamal's explicit architectural review and a forward-only migration.
 - Never commit secrets, `.env` files, generated credentials, personal data or real applicant evidence.
+- Production credentials, Supabase/Cloudflare dashboards, service-role keys, API secrets, deployment tokens and production environment configuration remain with Kamal. Teammates must not request, copy, create substitutes for, or place them in AI tools, terminal output, screenshots, issues or PRs.
 - Use only synthetic demo fixtures and label them clearly.
 - Record any controlled behavior or missing external dependency in the UI and PR description.
 
 ## Stop-and-escalate conditions
 
 Stop and ask Kamal before proceeding if work requires a shared domain type change, Engine B change, trusted Worker/RPC change, schema migration, route ownership collision, prohibited private data, automatic decision logic, or an unapproved external integration claim.
+
+When blocked, follow `BLOCKED_TROUBLESHOOTING_AND_EVIDENCE.md`. “It is not working” is not enough evidence for diagnosis.
 
 ## Definition of done
 

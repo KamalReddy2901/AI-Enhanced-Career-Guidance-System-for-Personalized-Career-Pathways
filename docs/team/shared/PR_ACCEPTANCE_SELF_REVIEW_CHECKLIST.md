@@ -5,6 +5,7 @@ Copy this checklist into every PR and answer honestly.
 ## Scope and architecture
 
 - [ ] PR implements only my assigned workstream and stated milestones.
+- [ ] I treated PR1 as a checkpoint and did not redefine or remove ultimate v1.2 capabilities because of prototype timing.
 - [ ] I reused canonical domain/service contracts and did not duplicate Engine B.
 - [ ] Engine A/private guidance data does not enter readiness or recruiter views.
 - [ ] `UNKNOWN` is distinct from unmet capability/eligibility/logistics states.
@@ -19,6 +20,7 @@ Copy this checklist into every PR and answer honestly.
 - [ ] Consent is explicit where disclosure or application requires it; withdrawal effects are represented.
 - [ ] No direct write targets a trusted table.
 - [ ] No secret, real personal data or unsafe artifact URL is committed.
+- [ ] I did not request, use or expose Kamal's production credentials, dashboards, tokens or environment configuration.
 - [ ] Demo data is synthetic and visibly disclosed.
 
 ## Product behavior

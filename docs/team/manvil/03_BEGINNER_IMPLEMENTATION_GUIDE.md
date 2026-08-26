@@ -1,5 +1,9 @@
 # Manvil — Beginner Step-by-Step Implementation Guide
 
+## 0. Complete the shared preflight first
+
+Before editing, complete `../shared/AI_ASSISTED_IMPLEMENTATION_WORKFLOW.md`, the Windows/environment checkpoint in `../shared/GIT_BRANCH_COMMIT_PR_REVIEW_GUIDE.md`, and read `../shared/BLOCKED_TROUBLESHOOTING_AND_EVIDENCE.md`. Production credentials, storage administration and security-service configuration remain with Kamal; never place them in an AI prompt.
+
 ## 1. Prepare
 
 ```bash
@@ -10,6 +14,8 @@ git switch -c feature/manvil/evidence-verifier-pr1
 npm ci
 npm run typecheck
 ```
+
+Checkpoint: `node -v` is `v22.16.0`, Git shows `feature/manvil/evidence-verifier-pr1`, baseline typecheck passes, and the AI inspection report maps every action to RLS-direct, trusted Worker or read-only authority.
 
 ## 2. Map every action to authority
 
@@ -52,3 +58,5 @@ Run storage/API integration only when documented environment prerequisites exist
 ## 7. Draft PR
 
 Target integration. Include ledger, verifier detail and denied/expired screenshots; exact test output; authority map; and explicit statements about scanner/issuer/integration status.
+
+Success means a reviewer can distinguish provenance from verification, trace append-only lineage/events, and complete or safely deny a scoped verifier action without any universal-certification claim. Push review corrections to the same Draft PR. Never self-merge. If blocked, send Kamal the shared evidence package.

@@ -1,5 +1,9 @@
 # Laya — Beginner Step-by-Step Implementation Guide
 
+## 0. Complete the shared preflight first
+
+Before editing, complete `../shared/AI_ASSISTED_IMPLEMENTATION_WORKFLOW.md`, the Windows/environment checkpoint in `../shared/GIT_BRANCH_COMMIT_PR_REVIEW_GUIDE.md`, and read `../shared/BLOCKED_TROUBLESHOOTING_AND_EVIDENCE.md`. Production credentials remain with Kamal. If protected routes are unavailable locally, use only the approved controlled runtime/fixtures and record the limitation.
+
 ## 1. Prepare
 
 Read the shared pack and your task/rules. Then run:
@@ -14,6 +18,8 @@ npm run typecheck
 ```
 
 If the last command fails before your edits, save its output and tell Kamal.
+
+Checkpoint: `node -v` is `v22.16.0`, Git shows `feature/laya/student-explorer-readiness-pr1`, baseline typecheck passes, and the AI inspection report names only allowed files. Do not continue until all four are true.
 
 ## 2. Inspect before editing
 
@@ -51,3 +57,5 @@ npm run build
 ## 7. Open Draft PR
 
 Review `git diff`, push your branch, target integration, paste the shared checklist and include desktop/mobile/UNKNOWN screenshots. State clearly which data is controlled prototype and list any approved shared-file patch.
+
+Success means a beginner reviewer can follow explorer → opportunity detail → version-aligned readiness casefile, understand every state without a match/hiring score, and reproduce the recorded checks. Push review corrections to the same Draft PR. Never self-merge. If blocked, send Kamal the evidence package from the shared troubleshooting guide.
