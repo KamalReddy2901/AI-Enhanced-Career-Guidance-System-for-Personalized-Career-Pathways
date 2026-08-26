@@ -27,6 +27,7 @@ assert.deepEqual(migrationFiles, [
   '202608260011_d2_trusted_readiness_persistence.sql',
   '202608260012_d2_foundation_trusted_persistence.sql',
   '202608260013_worker_consent_active_grant.sql',
+  '202608260014_foundation_freeze_hardening.sql',
 ]);
 
 const migrationSources = await Promise.all(migrationFiles.map(async file => ({
@@ -263,11 +264,15 @@ assert.match(d2ConsentGrantSql, /grant\s+execute\s+on\s+function\s+sih26044\.is_
   'Migration 013 must grant is_consent_active to service_role for the Worker application-snapshot path');
 assert.doesNotMatch(d2ConsentGrantSql, /grant\s+execute\s+on\s+function\s+sih26044\.is_consent_active[\s\S]*?to\s+(?:authenticated|anon|public)\b/i,
   'Migration 013 must not re-grant is_consent_active to browser or anonymous roles');
-// Migration 013: service_role needs SELECT on all sih26044 tables for direct Worker reads
-// (consent_evidence_records, actors, readiness_subject_facts, evidence_records, artifacts, etc.).
-// In local disposable Supabase, service_role bypasses RLS but still needs the pg privilege.
-assert.match(d2ConsentGrantSql, /grant\s+select\s+on\s+all\s+tables\s+in\s+schema\s+sih26044\s+to\s+service_role/i,
-  'Migration 013 must grant SELECT on all sih26044 tables to service_role for direct Worker reads');
+
+// Migration 014: revoke broad service_role SELECT grant (replaced with targeted function-level grants).
+// The broad GRANT SELECT ON ALL TABLES IN SCHEMA sih26044 TO service_role from migration 013
+// created excessive privilege -- Worker uses targeted RPCs, not direct table reads.
+const hardeningSql014 = migrationSources.find(item => item.file.endsWith('014_foundation_freeze_hardening.sql'))?.source ?? '';
+assert.match(hardeningSql014, /revoke\s+select\s+on\s+all\s+tables\s+in\s+schema\s+sih26044\s+from\s+service_role/i,
+  'Migration 014 must revoke the broad service_role SELECT grant from migration 013');
+assert.doesNotMatch(hardeningSql014, /grant\s+select\s+on\s+all\s+tables\s+in\s+schema\s+sih26044\s+to\s+service_role/i,
+  'Migration 014 must not re-introduce broad service_role SELECT grant');
 
 const d2InputTableSql = [...normalizedSql.matchAll(/create\s+table\s+(?:if\s+not\s+exists\s+)?sih26044\.readiness_(?:subject_facts|evidence_projections|input_snapshots)[\s\S]*?\n\);/gi)]
   .map(match => match[0]).join('\n');

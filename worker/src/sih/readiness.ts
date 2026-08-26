@@ -82,42 +82,6 @@ function verificationState(evidence: Row, events: Row[]): ReadinessEvidenceSigna
   return (latest ? actionToState[latest.action] : evidence.initial_verification_state) as ReadinessEvidenceSignal['verificationState'];
 }
 
-export function evaluateEffectiveMemberships(
-  memberships: Row[],
-  generatedAt: string,
-): Array<{ organizationId: OrganizationId; active: boolean; confirmed: boolean }> {
-  const genDate = new Date(generatedAt).getTime();
-  const orgEffectiveMap = new Map<string, boolean>();
-
-  for (const m of memberships) {
-    const orgId = String(m.organization_id);
-    const validFrom = m.valid_from ? new Date(m.valid_from).getTime() : 0;
-    const validUntil = m.valid_until ? new Date(m.valid_until).getTime() : Number.POSITIVE_INFINITY;
-    const mStatus = String(m.status);
-    const orgStatus = m.organizations
-      ? String(m.organizations.status)
-      : (m.organization ? String(m.organization.status) : 'active');
-
-    const isEffectiveActive = (
-      mStatus === 'active' &&
-      validFrom <= genDate &&
-      validUntil > genDate &&
-      orgStatus === 'active'
-    );
-
-    const current = orgEffectiveMap.get(orgId) ?? false;
-    orgEffectiveMap.set(orgId, current || isEffectiveActive);
-  }
-
-  return Array.from(orgEffectiveMap.entries())
-    .map(([organizationId, active]) => ({
-      organizationId: organizationId as OrganizationId,
-      active,
-      confirmed: true,
-    }))
-    .sort((left, right) => left.organizationId.localeCompare(right.organizationId));
-}
-
 export async function assembleOpportunityReadinessInput(
   client: SupabaseClient,
   actorId: string,
@@ -130,17 +94,17 @@ export async function assembleOpportunityReadinessInput(
     .eq('status', 'published').maybeSingle());
   if (!version) throw new SihRouteError('NOT_FOUND', 404, 'Published opportunity version was not found.');
 
-  const [requirementRows, ruleRows, facts, rawMemberships, allEvidence] = await Promise.all([
+  const [requirementRows, ruleRows, facts, membershipRows, allEvidence] = await Promise.all([
     select<Row[]>(db.from('opportunity_requirements').select('*')
       .eq('opportunity_version_id', version.id).order('ordinal')),
     select<Row[]>(db.from('eligibility_rules').select('*')
       .eq('opportunity_version_id', version.id).order('ordinal')),
     select<Row | null>(db.from('readiness_subject_facts').select('*')
       .eq('subject_actor_id', actorId).maybeSingle()),
-    select<Row[]>(db.from('organization_memberships').select(`
-      organization_id, status, valid_from, valid_until,
-      organizations:organization_id (status)
-    `).eq('actor_id', actorId)),
+    // Canonical D1 membership evaluation via SECURITY DEFINER RPC.
+    // Safe under RLS: suspended organizations hidden from embedded join are
+    // still evaluated correctly by has_active_organization_membership().
+    select<Row[]>(db.rpc('current_readiness_organization_memberships')),
     select<Row[]>(db.from('evidence_records').select([
       'id', 'subject_actor_id', 'provenance', 'initial_verification_state', 'scope_kind',
       'scope_skill_id', 'scope_literal_skill_label', 'scope_opportunity_id',
@@ -213,7 +177,13 @@ export async function assembleOpportunityReadinessInput(
     .filter(item => typeof item.value === 'string')
     .map(item => ({ value: item.value as string, confirmed: item.confirmed === true }));
 
-  const organizationMemberships = evaluateEffectiveMemberships(rawMemberships, generatedAt);
+  // Membership rows from current_readiness_organization_memberships() are already
+  // canonically evaluated (one row per organization, effective_active reflects D1 semantics).
+  const organizationMemberships = membershipRows.map(row => ({
+    organizationId: row.organization_id as OrganizationId,
+    active: row.effective_active === true,
+    confirmed: true as const,
+  })).sort((a, b) => a.organizationId.localeCompare(b.organizationId));
 
   const subjectMaterial = {
     actorId,
@@ -351,7 +321,7 @@ export async function saveEvidenceProjection(
     throw new SihRouteError('INVALID_REQUEST', 400, 'Invalid human confirmation method for capability projection.');
   }
 
-  const { data, error } = await elevatedClient.schema('sih26044').rpc('save_readiness_evidence_projection', {
+  const { data, error} = await elevatedClient.schema('sih26044').rpc('save_readiness_evidence_projection', {
     p_evidence_record_id: req.evidenceRecordId,
     p_subject_actor_id: actorId,
     p_requirement_id: req.requirementId ?? null,
@@ -367,7 +337,9 @@ export async function saveEvidenceProjection(
     p_confirmation_method: req.confirmationMethod,
   });
   if (error || !data) {
-    throw new SihRouteError('INVALID_EVIDENCE_PROJECTION', 400, error ? (error as any).message : 'Unable to save readiness evidence projection.');
+    const msg = error?.message ?? 'Unable to save readiness evidence projection.';
+    const safe = msg.replace(/\b(constraint|trigger|policy|function)\s+["']?\w+["']?/gi, '[database rule]');
+    throw new SihRouteError('INVALID_EVIDENCE_PROJECTION', 400, safe);
   }
   const row = Array.isArray(data) ? data[0] : data;
   return row as Record<string, unknown>;

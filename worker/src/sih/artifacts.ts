@@ -6,6 +6,7 @@ import type {
   SihEnv,
 } from './types';
 import { SihRouteError } from './types';
+import { buildSupabaseStorageHeaders } from './storageHeaders';
 
 function bufferToHex(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
@@ -42,15 +43,12 @@ export async function registerArtifact(
     throw new SihRouteError('TRUSTED_PERSISTENCE_FAILURE', 500, 'Storage configuration is missing.');
   }
 
-  // Fetch actual stored bytes from Supabase Storage API using elevated key
+  // Build storage headers: modern sb_secret_* keys must NOT go into Authorization Bearer.
   const storageUrl = `${env.SUPABASE_URL.replace(/\/$/, '')}/storage/v1/object/career-evidence-private/${req.storageObjectPath}`;
   let storageResponse: Response;
   try {
     storageResponse = await fetch(storageUrl, {
-      headers: {
-        apikey: elevatedKey,
-        Authorization: `Bearer ${elevatedKey}`,
-      },
+      headers: buildSupabaseStorageHeaders(elevatedKey),
     });
   } catch {
     throw new SihRouteError('TRUSTED_PERSISTENCE_FAILURE', 500, 'Failed to connect to storage.');
@@ -60,7 +58,8 @@ export async function registerArtifact(
     throw new SihRouteError('ARTIFACT_NOT_FOUND', 404, 'Storage object was not found.');
   }
   if (!storageResponse.ok) {
-    throw new SihRouteError('TRUSTED_PERSISTENCE_FAILURE', 500, `Storage fetch failed with status ${storageResponse.status}`);
+    // Safe: never forward raw storage error body which may contain internal details.
+    throw new SihRouteError('TRUSTED_PERSISTENCE_FAILURE', 500, `Storage fetch returned an unexpected response.`);
   }
 
   const fileBytes = await storageResponse.arrayBuffer();
@@ -78,57 +77,64 @@ export async function registerArtifact(
   });
 
   if (error || !data) {
-    const message = error ? (error as any).message : 'Unable to register artifact.';
-    if (message.includes('conflict') || message.includes('differs')) {
-      throw new SihRouteError('SNAPSHOT_CONFLICT', 409, message);
+    // Classify bounded errors; never forward raw DB message
+    const rawMsg: string = error ? String((error as unknown as Record<string, unknown>).message ?? '') : '';
+    if (rawMsg.includes('conflict') || rawMsg.includes('differs')) {
+      throw new SihRouteError('SNAPSHOT_CONFLICT', 409, 'Artifact registration conflict: immutable material mismatch.');
     }
-    throw new SihRouteError('TRUSTED_PERSISTENCE_FAILURE', 500, message);
+    throw new SihRouteError('TRUSTED_PERSISTENCE_FAILURE', 500, 'Unable to register artifact.');
   }
 
-  const row = Array.isArray(data) ? data[0] : data;
+  const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown>;
   return {
-    id: row.id,
-    subjectActorId: row.subject_actor_id,
-    storageBucketId: row.storage_bucket_id,
-    storageObjectPath: row.storage_object_path,
-    mediaType: row.media_type,
-    displayName: row.display_name,
-    integrityFingerprint: row.integrity_fingerprint,
-    scanStatus: row.scan_status,
-    createdAt: row.created_at,
+    id: row.id as string,
+    subjectActorId: row.subject_actor_id as string,
+    storageBucketId: row.storage_bucket_id as string,
+    storageObjectPath: row.storage_object_path as string,
+    mediaType: row.media_type as string,
+    displayName: row.display_name as string,
+    integrityFingerprint: row.integrity_fingerprint as string,
+    scanStatus: row.scan_status as string,
+    createdAt: row.created_at as string,
   };
 }
 
+/**
+ * Derive artifact-backed evidence via the trusted RPC.
+ *
+ * The derivation_kind is always 'artifact_backed' (server-defined; browser cannot override).
+ * The derived evidence ID is server-assigned (deterministic from source+artifact+kind).
+ * Only canonical production confirmation methods are accepted.
+ */
 export async function deriveArtifactBackedEvidence(
   elevatedClient: SupabaseClient,
   actorId: string,
   req: DeriveArtifactBackedEvidenceRequest,
 ): Promise<Record<string, unknown>> {
-  const validMethods = ['structured_human_entry', 'ai_assisted_review', 'direct_confirmation', 'self_assessment_review'];
-  if (!validMethods.includes(req.confirmationMethod)) {
-    throw new SihRouteError('INVALID_REQUEST', 400, 'Invalid human confirmation method for derivation.');
-  }
-
-  const derivedId = req.derivedEvidenceId ?? crypto.randomUUID();
   const { data, error } = await elevatedClient.schema('sih26044').rpc('derive_artifact_backed_evidence', {
-    p_derived_evidence_id: derivedId,
     p_source_evidence_record_id: req.sourceEvidenceRecordId,
     p_artifact_id: req.artifactId,
     p_subject_actor_id: actorId,
     p_literal_claim: req.literalClaim ?? null,
-    p_derivation_kind: req.derivationKind,
     p_confirmed_by_actor_id: actorId,
     p_confirmation_method: req.confirmationMethod,
   });
 
   if (error || !data) {
-    const msg = error ? (error as any).message : 'Unable to derive artifact-backed evidence.';
-    if (msg.includes('clean scan status')) {
-      throw new SihRouteError('ARTIFACT_NOT_USABLE', 400, msg);
+    // Classify bounded errors; never forward raw DB message
+    const rawMsg: string = error ? String((error as unknown as Record<string, unknown>).message ?? '') : '';
+    if (rawMsg.includes('clean scan status') || rawMsg.includes('scan_status')) {
+      throw new SihRouteError('ARTIFACT_NOT_USABLE', 400, 'Artifact must have a clean scan status to back evidence.');
     }
-    throw new SihRouteError('INVALID_REQUEST', 400, msg);
+    if (rawMsg.includes('Source evidence') || rawMsg.includes('Artifact does not')) {
+      throw new SihRouteError('INVALID_REQUEST', 400, 'Source evidence or artifact not found or does not belong to actor.');
+    }
+    if (rawMsg.includes('Artifact must be linked')) {
+      throw new SihRouteError('INVALID_REQUEST', 400, 'Artifact must be linked to the source evidence before derivation.');
+    }
+    throw new SihRouteError('TRUSTED_PERSISTENCE_FAILURE', 500, 'Unable to derive artifact-backed evidence.');
   }
 
-  const row = Array.isArray(data) ? data[0] : data;
-  return row as Record<string, unknown>;
+  const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown>;
+  return row;
 }

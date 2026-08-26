@@ -76,7 +76,8 @@ export interface SaveEvidenceProjectionRequest {
   capabilityAssertion?: 'supports' | 'partial' | 'does_not_meet' | 'not_applicable';
   directness: 'direct' | 'explicit_claim' | 'indirect';
   observedAt: string;
-  confirmationMethod: 'structured_human_entry' | 'ai_assisted_review' | 'direct_confirmation' | 'self_assessment_review';
+  /** Canonical human confirmation methods: structured_human_entry, ai_assisted_review. */
+  confirmationMethod: 'structured_human_entry' | 'ai_assisted_review';
 }
 
 export interface SaveEvidenceProjectionResponse {
@@ -124,12 +125,11 @@ export interface CreateApplicationSnapshotResponse {
 }
 
 export interface DeriveArtifactBackedEvidenceRequest {
-  derivedEvidenceId?: string;
   sourceEvidenceRecordId: string;
   artifactId: string;
   literalClaim?: string;
-  derivationKind: string;
-  confirmationMethod: 'structured_human_entry' | 'ai_assisted_review' | 'direct_confirmation' | 'self_assessment_review';
+  /** Only canonical production methods; direct_confirmation and self_assessment_review are not permitted. */
+  confirmationMethod: 'structured_human_entry' | 'ai_assisted_review';
 }
 
 export interface DeriveArtifactBackedEvidenceResponse {
