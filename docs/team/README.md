@@ -28,6 +28,8 @@ These five PR1 assignments are only the first integration sequence. They do not 
 
 Laya and Madhu are separate owners. Neither person owns the other person's screens or behavior.
 
+Platform note: Laya uses macOS. Her `03_BEGINNER_IMPLEMENTATION_GUIDE.md` contains the controlling macOS environment instructions and replaces the Windows-only preflight in the shared Git guide. The shared branch, commit, Draft PR, review and no-self-merge rules still apply.
+
 ## Required reading order
 
 1. All files in `docs/team/shared/`.
