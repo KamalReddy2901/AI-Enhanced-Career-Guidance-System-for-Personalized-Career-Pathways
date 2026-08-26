@@ -131,7 +131,7 @@ export async function createAndFinalizeApplicationSnapshot(
     };
   });
 
-  const snapshotId = crypto.randomUUID();
+  const snapshotId = crypto.randomUUID(); // placeholder; replaced by server-assigned deterministic ID
   const capturedAt = new Date().toISOString();
 
   // 6. Build allowlisted production recruiter projection
@@ -157,9 +157,10 @@ export async function createAndFinalizeApplicationSnapshot(
     evidence: selectedEvidenceItems,
   });
 
-  // 7. Insert snapshot records via elevated RPC
+  // 7. Insert snapshot records via elevated RPC (migration 014: 14-param, deterministic ID)
+  // p_id and p_captured_at removed; server assigns deterministic UUID via uuid_generate_v5.
+  // p_applicant_actor_id added for actor ownership validation.
   const { data: createdSnapshot, error: createError } = await dbElevated.rpc('create_application_snapshot', {
-    p_id: snapshotId,
     p_application_id: req.applicationId,
     p_opportunity_version_id: req.opportunityVersionId,
     p_readiness_result_id: readinessResult.resultId,
@@ -173,25 +174,33 @@ export async function createAndFinalizeApplicationSnapshot(
     p_requirement_responses: req.requirementResponses ?? {},
     p_selected_evidence_ids: req.selectedEvidenceRecordIds,
     p_consent_grant_ids: [req.consentGrantId],
-    p_captured_at: capturedAt,
+    p_applicant_actor_id: actorId,
   });
 
   if (createError || !createdSnapshot) {
-    throw new SihRouteError('TRUSTED_PERSISTENCE_FAILURE', 500, createError ? (createError as any).message : 'Unable to create application snapshot.');
+    const rawMsg = createError?.message ?? '';
+    const safe = rawMsg.replace(/\b(constraint|trigger|policy|function)\s+["']?\w+["']?/gi, '[database rule]');
+    throw new SihRouteError('TRUSTED_PERSISTENCE_FAILURE', 500, safe || 'Unable to create application snapshot.');
   }
+
+  // Server assigned the deterministic snapshot ID
+  const createdRow = Array.isArray(createdSnapshot) ? createdSnapshot[0] : createdSnapshot;
+  const serverSnapshotId = String(createdRow?.snapshot_id ?? createdRow?.id ?? snapshotId);
 
   // 8. Finalize snapshot with user client (carrying applicant JWT for current_actor_id() check)
   const { data: fingerprint, error: finalizeError } = await dbUser.rpc('finalize_application_snapshot', {
-    requested_snapshot_id: snapshotId,
+    requested_snapshot_id: serverSnapshotId,
   });
 
   if (finalizeError || !fingerprint) {
-    throw new SihRouteError('TRUSTED_PERSISTENCE_FAILURE', 500, finalizeError ? (finalizeError as any).message : 'Snapshot finalization failed.');
+    const rawMsg = finalizeError?.message ?? '';
+    const safe = rawMsg.replace(/\b(constraint|trigger|policy|function)\s+["']?\w+["']?/gi, '[database rule]');
+    throw new SihRouteError('TRUSTED_PERSISTENCE_FAILURE', 500, safe || 'Snapshot finalization failed.');
   }
 
   return {
     ok: true,
-    snapshotId,
+    snapshotId: serverSnapshotId,
     integrityFingerprint: fingerprint as string,
     finalizedAt: capturedAt,
     recruiterProjection,
