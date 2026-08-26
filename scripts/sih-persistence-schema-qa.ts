@@ -28,6 +28,7 @@ assert.deepEqual(migrationFiles, [
   '202608260012_d2_foundation_trusted_persistence.sql',
   '202608260013_worker_consent_active_grant.sql',
   '202608260014_foundation_freeze_hardening.sql',
+  '202608260015_foundation_freeze_final_consistency.sql',
 ]);
 
 const migrationSources = await Promise.all(migrationFiles.map(async file => ({
