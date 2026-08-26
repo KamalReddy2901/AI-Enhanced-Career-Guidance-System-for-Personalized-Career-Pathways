@@ -263,6 +263,11 @@ assert.match(d2ConsentGrantSql, /grant\s+execute\s+on\s+function\s+sih26044\.is_
   'Migration 013 must grant is_consent_active to service_role for the Worker application-snapshot path');
 assert.doesNotMatch(d2ConsentGrantSql, /grant\s+execute\s+on\s+function\s+sih26044\.is_consent_active[\s\S]*?to\s+(?:authenticated|anon|public)\b/i,
   'Migration 013 must not re-grant is_consent_active to browser or anonymous roles');
+// Migration 013: service_role needs SELECT on all sih26044 tables for direct Worker reads
+// (consent_evidence_records, actors, readiness_subject_facts, evidence_records, artifacts, etc.).
+// In local disposable Supabase, service_role bypasses RLS but still needs the pg privilege.
+assert.match(d2ConsentGrantSql, /grant\s+select\s+on\s+all\s+tables\s+in\s+schema\s+sih26044\s+to\s+service_role/i,
+  'Migration 013 must grant SELECT on all sih26044 tables to service_role for direct Worker reads');
 
 const d2InputTableSql = [...normalizedSql.matchAll(/create\s+table\s+(?:if\s+not\s+exists\s+)?sih26044\.readiness_(?:subject_facts|evidence_projections|input_snapshots)[\s\S]*?\n\);/gi)]
   .map(match => match[0]).join('\n');
