@@ -7,6 +7,7 @@ import { handleSihRequest } from '../src/sih/routes.ts';
 import { evaluateEffectiveMemberships } from '../src/sih/membershipEval.ts';
 import { computeSha256 } from '../src/sih/artifacts.ts';
 import { SihRouteError } from '../src/sih/types.ts';
+import { saveEvidenceProjection } from '../src/sih/readiness.ts';
 import {
   computeOpportunityReadiness,
   OPPORTUNITY_READINESS_ENGINE_VERSION,
@@ -206,6 +207,42 @@ test('POST /sih/readiness/evidence-projections validates evidenceRecordId and di
   );
   assert.equal(response.status, 200);
   assert.equal(called, true);
+});
+
+test('readiness projection database errors remain bounded in the public response', async () => {
+  const internalMessage = 'function sih26044.secret_internal_rule failed';
+  const elevatedClient = {
+    schema: () => ({
+      rpc: async () => ({ data: null, error: { message: internalMessage } }),
+    }),
+  };
+  const deps = {
+    recompute: async () => ({}),
+    saveEvidenceProjection: async (_request, _env, projection) => saveEvidenceProjection(
+      elevatedClient,
+      '20000000-0000-4000-8000-000000000001',
+      projection,
+    ),
+  };
+  const response = await handleSihRequest(
+    request({
+      evidenceRecordId: '60000000-0000-4000-8000-000000000001',
+      directness: 'direct',
+      observedAt: '2026-08-26T00:00:00Z',
+      confirmationMethod: 'structured_human_entry',
+    }, 'Bearer valid.token.value', '/sih/readiness/evidence-projections'),
+    env, respond, deps,
+  );
+  const body = await response.json();
+  assert.equal(response.status, 400);
+  assert.deepEqual(body, {
+    ok: false,
+    error: {
+      code: 'INVALID_EVIDENCE_PROJECTION',
+      message: 'Unable to save readiness evidence projection.',
+    },
+  });
+  assert.doesNotMatch(JSON.stringify(body), /sih26044|secret_internal_rule|function|constraint|policy|sql/i);
 });
 
 test('POST /sih/artifacts/register validates artifactId and storageObjectPath and dispatches', async () => {

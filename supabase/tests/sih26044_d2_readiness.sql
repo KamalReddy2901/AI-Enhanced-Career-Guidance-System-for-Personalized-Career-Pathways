@@ -17,6 +17,17 @@ begin
 end
 $$;
 
+create or replace function pg_temp.assert_blocked_like(command text, expected text, message text)
+returns void language plpgsql as $$
+declare caught text;
+begin
+  begin execute command; exception when others then get stacked diagnostics caught = message_text; end;
+  if caught is null or caught not like expected then
+    raise exception 'ASSERTION FAILED: % (received: %)', message, coalesce(caught, 'no error');
+  end if;
+end
+$$;
+
 create or replace function pg_temp.d2_result_body(result_id uuid, actor_id uuid)
 returns jsonb language sql immutable as $$
   select jsonb_build_object(
@@ -91,6 +102,15 @@ select pg_temp.assert_true(
   (select count(*) = 1 from pg_proc as proc join pg_namespace as ns on ns.oid = proc.pronamespace
    where ns.nspname = 'sih26044' and proc.proname = 'save_readiness_evidence_projection'),
   'save_readiness_evidence_projection must expose exactly one canonical signature'
+);
+select pg_temp.assert_true(
+  not has_function_privilege('anon', 'sih26044.save_readiness_evidence_projection(uuid,uuid,uuid,text,text,text,smallint,numeric,sih26044.readiness_capability_assertion,sih26044.readiness_evidence_directness,timestamptz,uuid,text)', 'EXECUTE')
+  and not has_function_privilege('authenticated', 'sih26044.save_readiness_evidence_projection(uuid,uuid,uuid,text,text,text,smallint,numeric,sih26044.readiness_capability_assertion,sih26044.readiness_evidence_directness,timestamptz,uuid,text)', 'EXECUTE'),
+  'browser roles must not execute the canonical readiness projection RPC'
+);
+select pg_temp.assert_true(
+  has_function_privilege('service_role', 'sih26044.save_readiness_evidence_projection(uuid,uuid,uuid,text,text,text,smallint,numeric,sih26044.readiness_capability_assertion,sih26044.readiness_evidence_directness,timestamptz,uuid,text)', 'EXECUTE'),
+  'service_role must execute the one canonical readiness projection signature'
 );
 select pg_temp.assert_true(
   (select count(*) = 1 from pg_proc as proc join pg_namespace as ns on ns.oid = proc.pronamespace
@@ -223,6 +243,85 @@ insert into sih26044.evidence_records (
   'Initial self-reported SQL skill', 'self_reported', 'unverified',
   'global_skill', 'sql', 'SQL', 'd2_test', statement_timestamp()
 );
+
+-- 7a. Canonical strong-typed readiness evidence projection and idempotency.
+set local role service_role;
+select pg_temp.assert_true(
+  (select count(*) = 1
+   from sih26044.save_readiness_evidence_projection(
+    '60000000-0000-4000-8000-0000000000d1'::uuid,
+    '20000000-0000-4000-8000-0000000000d1'::uuid,
+    null::uuid, 'sql'::text, 'SQL'::text, null::text, 3::smallint, 2.50::numeric,
+    'supports'::sih26044.readiness_capability_assertion,
+    'direct'::sih26044.readiness_evidence_directness,
+    '2026-08-26T00:00:00Z'::timestamptz,
+    '20000000-0000-4000-8000-0000000000d1'::uuid,
+    'structured_human_entry'::text
+  ) as projection
+  where projection.evidence_record_id = '60000000-0000-4000-8000-0000000000d1'::uuid),
+  'valid projection creation must return the canonical evidence row'
+);
+set local role postgres;
+select pg_temp.assert_true(
+  (select evidence_record_id = '60000000-0000-4000-8000-0000000000d1'::uuid
+      and human_confirmed is true
+      and confirmed_by_actor_id = '20000000-0000-4000-8000-0000000000d1'::uuid
+      and confirmation_method = 'structured_human_entry'
+   from sih26044.readiness_evidence_projections
+   where evidence_record_id = '60000000-0000-4000-8000-0000000000d1'::uuid),
+  'valid projection must retain canonical evidence identity and human confirmation trace'
+);
+set local role service_role;
+select pg_temp.assert_true(
+  (select count(*) = 1
+   from sih26044.save_readiness_evidence_projection(
+    '60000000-0000-4000-8000-0000000000d1'::uuid,
+    '20000000-0000-4000-8000-0000000000d1'::uuid,
+    null::uuid, 'sql'::text, 'SQL'::text, null::text, 3::smallint, 2.50::numeric,
+    'supports'::sih26044.readiness_capability_assertion,
+    'direct'::sih26044.readiness_evidence_directness,
+    '2026-08-26T00:00:00Z'::timestamptz,
+    '20000000-0000-4000-8000-0000000000d1'::uuid,
+    'structured_human_entry'::text
+  ) as projection
+  where projection.evidence_record_id = '60000000-0000-4000-8000-0000000000d1'::uuid),
+  'identical retry must return the same canonical projection'
+);
+set local role postgres;
+select pg_temp.assert_true(
+  (select count(*) = 1 from sih26044.readiness_evidence_projections
+   where evidence_record_id = '60000000-0000-4000-8000-0000000000d1'::uuid),
+  'identical projection retry must leave exactly one canonical row'
+);
+select pg_temp.assert_true(
+  (select count(*) = 1 from sih26044.audit_events
+   where action = 'project_readiness_evidence'
+     and resource_type = 'readiness_evidence_projections'
+     and resource_id = '60000000-0000-4000-8000-0000000000d1'),
+  'identical projection retry must leave exactly one authoritative audit event'
+);
+set local role service_role;
+select pg_temp.assert_blocked_like(
+  $command$select * from sih26044.save_readiness_evidence_projection(
+    '60000000-0000-4000-8000-0000000000d1'::uuid, '20000000-0000-4000-8000-0000000000d1'::uuid,
+    null::uuid, 'sql'::text, 'SQL'::text, null::text, 4::smallint, 2.50::numeric,
+    'supports'::sih26044.readiness_capability_assertion, 'direct'::sih26044.readiness_evidence_directness,
+    '2026-08-26T00:00:00Z'::timestamptz, '20000000-0000-4000-8000-0000000000d1'::uuid,
+    'structured_human_entry'::text)$command$,
+  'Capability projection conflict:%',
+  'changed proficiency must raise the canonical semantic conflict'
+);
+select pg_temp.assert_blocked_like(
+  $command$select * from sih26044.save_readiness_evidence_projection(
+    '60000000-0000-4000-8000-0000000000d1'::uuid, '20000000-0000-4000-8000-0000000000d1'::uuid,
+    null::uuid, 'sql'::text, 'SQL'::text, null::text, 3::smallint, 2.50::numeric,
+    'supports'::sih26044.readiness_capability_assertion, 'direct'::sih26044.readiness_evidence_directness,
+    '2026-08-26T00:00:00Z'::timestamptz, '20000000-0000-4000-8000-0000000000d1'::uuid,
+    'direct_confirmation'::text)$command$,
+  'Invalid human confirmation method%',
+  'noncanonical confirmation methods must be rejected'
+);
+set local role postgres;
 insert into sih26044.evidence_artifact_links (
   evidence_record_id, artifact_id, linked_by_actor_id
 ) values (

@@ -31,6 +31,7 @@ assert.deepEqual(migrationFiles, [
   '202608260015_foundation_freeze_final_consistency.sql',
   '202608260016_foundation_freeze_execution_fix.sql',
   '202608260017_foundation_rpc_surface_repair.sql',
+  '202608260018_readiness_projection_runtime_fix.sql',
 ]);
 
 const migrationSources = await Promise.all(migrationFiles.map(async file => ({
@@ -45,6 +46,7 @@ const d2ReadinessSql = migrationSources.find(item => item.file.endsWith('011_d2_
 const d2FoundationSql = migrationSources.find(item => item.file.endsWith('012_d2_foundation_trusted_persistence.sql'))?.source ?? '';
 const d2ConsentGrantSql = migrationSources.find(item => item.file.endsWith('013_worker_consent_active_grant.sql'))?.source ?? '';
 const finalRpcRepairSql = migrationSources.find(item => item.file.endsWith('017_foundation_rpc_surface_repair.sql'))?.source ?? '';
+const finalProjectionRuntimeSql = migrationSources.find(item => item.file.endsWith('018_readiness_projection_runtime_fix.sql'))?.source ?? '';
 const localConfig = await readFile(configPath, 'utf8');
 
 const createdTables = [...normalizedSql.matchAll(/create\s+table(?:\s+if\s+not\s+exists)?\s+sih26044\.([a-z0-9_]+)/gi)]
@@ -258,6 +260,35 @@ assert.match(finalRpcRepairSql, /on\s+conflict\s+do\s+nothing/i,
   'The canonical artifact derivation repair must avoid a named PL/pgSQL conflict target');
 assert.match(finalRpcRepairSql, /'artifact_backed'\s*,\s*'unverified'/i,
   'Artifact derivation must preserve provenance/verification separation');
+
+// Migration 018 is the final canonical save_readiness_evidence_projection implementation.
+const canonicalProjectionFunc = finalProjectionRuntimeSql.match(
+  /create\s+or\s+replace\s+function\s+sih26044\.save_readiness_evidence_projection[\s\S]*?\$\$\s*;/i,
+)?.[0] ?? '';
+assert.ok(canonicalProjectionFunc, 'Migration 018 must define the final canonical projection RPC');
+assert.match(canonicalProjectionFunc, /p_proficiency\s+smallint/i);
+assert.match(canonicalProjectionFunc, /p_capability_assertion\s+sih26044\.readiness_capability_assertion/i);
+assert.match(canonicalProjectionFunc, /p_directness\s+sih26044\.readiness_evidence_directness/i);
+assert.match(canonicalProjectionFunc, /v_existing\.evidence_record_id\s+is\s+not\s+null/i);
+assert.doesNotMatch(canonicalProjectionFunc, /v_existing\.id\b/i);
+assert.match(canonicalProjectionFunc, /p_confirmed_by_actor_id\s+is\s+null\s+or\s+p_confirmed_by_actor_id\s*<>\s*p_subject_actor_id/i);
+assert.match(canonicalProjectionFunc, /confirming_actor\.status\s*=\s*'active'/i);
+assert.match(canonicalProjectionFunc, /p_confirmation_method\s+not\s+in\s*\(\s*'structured_human_entry'\s*,\s*'ai_assisted_review'\s*\)/i);
+for (const field of [
+  'subject_actor_id', 'requirement_id', 'skill_id', 'literal_skill_label',
+  'literal_requirement_wording', 'proficiency', 'experience_years',
+  'capability_assertion', 'directness', 'observed_at', 'human_confirmed',
+  'confirmed_by_actor_id', 'confirmation_method',
+]) {
+  assert.match(canonicalProjectionFunc, new RegExp(`v_existing\\.${field}\\s+is\\s+distinct\\s+from`, 'i'),
+    `Canonical projection retry must compare immutable field ${field} null-safely`);
+}
+assert.match(canonicalProjectionFunc, /perform\s+sih26044\.record_authoritative_audit\s*\(/i);
+const compactProjectionRuntimeSql = finalProjectionRuntimeSql.replace(/\s+/g, '').toLowerCase();
+const compactProjectionSignature = 'sih26044.save_readiness_evidence_projection(uuid,uuid,uuid,text,text,text,smallint,numeric,sih26044.readiness_capability_assertion,sih26044.readiness_evidence_directness,timestamptz,uuid,text)';
+assert.ok(compactProjectionRuntimeSql.includes(`revokeallonfunction${compactProjectionSignature}frompublic,anon,authenticated;`));
+assert.ok(compactProjectionRuntimeSql.includes(`grantexecuteonfunction${compactProjectionSignature}toservice_role;`));
+assert.doesNotMatch(finalProjectionRuntimeSql, /grant\s+execute\s+on\s+function\s+sih26044\.save_readiness_evidence_projection[\s\S]*?to\s+(?:public|anon|authenticated)\b/i);
 
 // D2 Foundation: recursive key check, input snapshots, derivations, artifacts, audit
 assert.match(d2FoundationSql, /create\s+or\s+replace\s+function\s+sih26044\.has_prohibited_json_keys/i);

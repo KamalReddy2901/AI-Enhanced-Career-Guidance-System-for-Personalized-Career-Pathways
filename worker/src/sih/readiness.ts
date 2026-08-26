@@ -333,7 +333,7 @@ export async function saveEvidenceProjection(
     throw new SihRouteError('INVALID_REQUEST', 400, 'Invalid human confirmation method for capability projection.');
   }
 
-  const { data, error} = await elevatedClient.schema('sih26044').rpc('save_readiness_evidence_projection', {
+  const { data, error } = await elevatedClient.schema('sih26044').rpc('save_readiness_evidence_projection', {
     p_evidence_record_id: req.evidenceRecordId,
     p_subject_actor_id: actorId,
     p_requirement_id: req.requirementId ?? null,
@@ -349,9 +349,11 @@ export async function saveEvidenceProjection(
     p_confirmation_method: req.confirmationMethod,
   });
   if (error || !data) {
-    const msg = error?.message ?? 'Unable to save readiness evidence projection.';
-    const safe = msg.replace(/\b(constraint|trigger|policy|function)\s+["']?\w+["']?/gi, '[database rule]');
-    throw new SihRouteError('INVALID_EVIDENCE_PROJECTION', 400, safe);
+    throw new SihRouteError(
+      'INVALID_EVIDENCE_PROJECTION',
+      400,
+      'Unable to save readiness evidence projection.',
+    );
   }
   const row = Array.isArray(data) ? data[0] : data;
   return row as Record<string, unknown>;

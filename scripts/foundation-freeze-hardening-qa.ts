@@ -32,6 +32,8 @@ const migrationFiles = [
   '202608260014_foundation_freeze_hardening.sql',
   '202608260015_foundation_freeze_final_consistency.sql',
   '202608260016_foundation_freeze_execution_fix.sql',
+  '202608260017_foundation_rpc_surface_repair.sql',
+  '202608260018_readiness_projection_runtime_fix.sql',
 ];
 
 const migrationSources = await Promise.all(migrationFiles.map(async file => ({
