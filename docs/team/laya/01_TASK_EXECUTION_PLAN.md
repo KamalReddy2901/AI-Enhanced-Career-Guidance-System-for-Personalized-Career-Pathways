@@ -42,7 +42,7 @@ Acceptance: no invented employer claims, deadlines or connector status; eligibil
 
 Consume the canonical readiness result. Present the readiness band plus the explanatory vector and requirement-evidence matrix. Each requirement must show state, supporting evidence references/provenance, missing/unknown reason and appropriate next route. Never calculate readiness in the component.
 
-Acceptance: Priya's flagship evidence change can visibly move `BUILDING EVIDENCE → NEAR READY → READY FOR REVIEW` only through canonical state updates; no “85% match” framing.
+Acceptance: Ananya's flagship evidence change can visibly move `BUILDING EVIDENCE → NEAR READY → READY FOR REVIEW` only through canonical state updates; no “85% match” framing.
 
 ### L5 — State and accessibility hardening
 
