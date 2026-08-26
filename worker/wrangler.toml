@@ -7,3 +7,5 @@ ENVIRONMENT = "production"
 
 # SUPABASE_URL and SUPABASE_ANON_KEY are configured as Worker secrets. They
 # let the worker validate the caller's bearer token before proxying an AI call.
+# SUPABASE_ELEVATED_KEY is also an encrypted Worker secret used only after the
+# caller has been resolved through sih26044.current_actor_id().

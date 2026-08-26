@@ -8,6 +8,7 @@ const migrationsRoot = join(repositoryRoot, 'supabase', 'migrations');
 const testsPath = join(repositoryRoot, 'supabase', 'tests', 'sih26044_rls.sql');
 const packagePath = join(repositoryRoot, 'package.json');
 const ciPath = join(repositoryRoot, '.github', 'workflows', 'ci.yml');
+const configPath = join(repositoryRoot, 'supabase', 'config.toml');
 
 const migrationFiles = (await readdir(migrationsRoot))
   .filter(file => file.endsWith('.sql'))
@@ -23,6 +24,7 @@ assert.deepEqual(migrationFiles, [
   '202608260008_artifact_and_confirmation_hardening.sql',
   '202608260009_verifier_and_storage_rls_fix.sql',
   '202608260010_consent_and_helper_hardening.sql',
+  '202608260011_d2_trusted_readiness_persistence.sql',
 ]);
 
 const migrationSources = await Promise.all(migrationFiles.map(async file => ({
@@ -33,6 +35,8 @@ const sql = migrationSources.map(item => item.source).join('\n');
 const normalizedSql = sql.replace(/--.*$/gm, '');
 const hardeningSql = migrationSources.find(item => item.file.endsWith('007_security_integrity_hardening.sql'))?.source ?? '';
 const finalHardeningSql = migrationSources.find(item => item.file.endsWith('008_artifact_and_confirmation_hardening.sql'))?.source ?? '';
+const d2ReadinessSql = migrationSources.find(item => item.file.endsWith('011_d2_trusted_readiness_persistence.sql'))?.source ?? '';
+const localConfig = await readFile(configPath, 'utf8');
 
 const createdTables = [...normalizedSql.matchAll(/create\s+table\s+sih26044\.([a-z0-9_]+)/gi)]
   .map(match => match[1]);
@@ -206,6 +210,23 @@ for (const match of securityDefinerFunctions) {
 }
 assert.doesNotMatch(normalizedSql, /is_(?:super_?)?admin|admin_bypass|bypass_rls/i,
   'Universal administrator bypass helpers are prohibited');
+
+// D2-A: narrow trusted readiness boundary and deterministic idempotency.
+assert.match(localConfig, /schemas\s*=\s*\[\s*"public"\s*,\s*"storage"\s*,\s*"graphql_public"\s*,\s*"sih26044"\s*\]/,
+  'Local PostgREST must add sih26044 without removing the normal exposed schemas');
+assert.match(d2ReadinessSql, /create\s+or\s+replace\s+function\s+sih26044\.persist_trusted_readiness_result/i);
+assert.match(d2ReadinessSql, /security\s+definer[\s\S]*?set\s+search_path\s*=\s*pg_catalog\s*,\s*sih26044/i);
+assert.match(d2ReadinessSql, /revoke\s+all\s+on\s+function\s+sih26044\.persist_trusted_readiness_result[\s\S]*?from\s+public\s*,\s*anon\s*,\s*authenticated/i);
+assert.match(d2ReadinessSql, /grant\s+execute\s+on\s+function\s+sih26044\.persist_trusted_readiness_result[\s\S]*?to\s+service_role/i);
+assert.doesNotMatch(d2ReadinessSql, /grant\s+(?:all|insert|update|delete)[\s\S]*?to\s+service_role/i,
+  'D2 elevated role must not receive direct custom-schema mutation privileges');
+assert.match(d2ReadinessSql, /create\s+unique\s+index\s+opportunity_readiness_results_semantic_identity/i);
+assert.match(d2ReadinessSql, /on\s+conflict\s+do\s+nothing/i,
+  'Trusted persistence RPC must use append-only idempotency without updating history');
+const d2InputTableSql = [...d2ReadinessSql.matchAll(/create\s+table\s+sih26044\.readiness_(?:subject_facts|evidence_projections)[\s\S]*?\n\);/gi)]
+  .map(match => match[0]).join('\n');
+assert.doesNotMatch(d2InputTableSql, /riasec|work_values|aspiration|counselor_history|private_guidance/i,
+  'D2 readiness input tables must not represent private Engine A/guidance fields');
 
 // Migration 010 hardening: canonical consent semantics and explicit privileges
 const allCanVerifyEvidenceFuncs = [...normalizedSql.matchAll(

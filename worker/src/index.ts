@@ -1,13 +1,13 @@
 import { MODELS, USAGE_MODEL_TIER } from './models';
 import { executeWithKeyRotation, KeyPool } from './keyRotation';
 import { shouldRetryWithoutJsonMode } from './responsePolicy';
+import { handleSihRequest } from './sih/routes';
+import type { SihEnv } from './sih/types';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-export interface Env {
+export interface Env extends SihEnv {
   GROQ_API_KEYS: string;
-  SUPABASE_URL: string;
-  SUPABASE_ANON_KEY: string;
 }
 
 const ALLOWED_ORIGINS = new Set([
@@ -46,7 +46,7 @@ async function hasValidSupabaseSession(request: Request, env: Env): Promise<bool
   }
 }
 
-function jsonResponse(
+export function jsonResponse(
   data: unknown,
   status = 200,
   origin: string | null = null,
@@ -169,6 +169,10 @@ export default {
     }
 
     const url = new URL(request.url);
+
+    if (url.pathname === '/sih' || url.pathname.startsWith('/sih/')) {
+      return handleSihRequest(request, env, (data, status = 200) => jsonResponse(data, status, origin));
+    }
 
     if (url.pathname !== '/ai' || request.method !== 'POST') {
       return jsonResponse({ error: 'Not found' }, 404, origin);

@@ -12,3 +12,5 @@ ENVIRONMENT = "production"
 #   GROQ_API_KEYS       comma-separated Groq key pool
 #   SUPABASE_URL        Supabase project origin
 #   SUPABASE_ANON_KEY   Supabase anonymous key used to validate bearer tokens
+#   SUPABASE_ELEVATED_KEY server-only Supabase sb_secret_* key (local tests may
+#                         use the disposable service-role key)

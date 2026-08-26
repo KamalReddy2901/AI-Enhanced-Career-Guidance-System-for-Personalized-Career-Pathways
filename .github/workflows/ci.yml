@@ -2,8 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, foundation/sih26044-v0.1]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -98,3 +99,39 @@ jobs:
 
       - name: Run Worker tests
         run: npm test
+
+      - name: Verify Worker bundle
+        run: npx wrangler deploy --dry-run
+
+  database:
+    name: Disposable Supabase D2-A
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start minimal disposable Supabase
+        run: npx --yes supabase@latest start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      - name: Run D1 database execution gate
+        run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_rls.sql
+
+      - name: Run D2-A trusted-role security gate
+        run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_d2_readiness.sql
+
+      - name: Run D2-A Worker integration gate
+        run: npm run qa:d2-readiness-integration
+
+      - name: Stop disposable Supabase
+        if: always()
+        run: npx --yes supabase@latest stop --no-backup
