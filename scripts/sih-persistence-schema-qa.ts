@@ -30,6 +30,7 @@ assert.deepEqual(migrationFiles, [
   '202608260014_foundation_freeze_hardening.sql',
   '202608260015_foundation_freeze_final_consistency.sql',
   '202608260016_foundation_freeze_execution_fix.sql',
+  '202608260017_foundation_rpc_surface_repair.sql',
 ]);
 
 const migrationSources = await Promise.all(migrationFiles.map(async file => ({
@@ -43,6 +44,7 @@ const finalHardeningSql = migrationSources.find(item => item.file.endsWith('008_
 const d2ReadinessSql = migrationSources.find(item => item.file.endsWith('011_d2_trusted_readiness_persistence.sql'))?.source ?? '';
 const d2FoundationSql = migrationSources.find(item => item.file.endsWith('012_d2_foundation_trusted_persistence.sql'))?.source ?? '';
 const d2ConsentGrantSql = migrationSources.find(item => item.file.endsWith('013_worker_consent_active_grant.sql'))?.source ?? '';
+const finalRpcRepairSql = migrationSources.find(item => item.file.endsWith('017_foundation_rpc_surface_repair.sql'))?.source ?? '';
 const localConfig = await readFile(configPath, 'utf8');
 
 const createdTables = [...normalizedSql.matchAll(/create\s+table(?:\s+if\s+not\s+exists)?\s+sih26044\.([a-z0-9_]+)/gi)]
@@ -246,6 +248,16 @@ assert.match(d2FoundationSql, /revoke\s+all\s+on\s+function\s+sih26044\.persist_
 assert.match(d2FoundationSql, /grant\s+execute\s+on\s+function\s+sih26044\.persist_trusted_readiness_result[\s\S]*?to\s+service_role/i);
 assert.doesNotMatch(d2FoundationSql, /grant\s+(?:all|insert|update|delete)[\s\S]*?to\s+service_role/i,
   'D2 elevated role must not receive direct custom-schema mutation privileges');
+assert.match(finalRpcRepairSql, /drop\s+function\s+if\s+exists\s+sih26044\.persist_trusted_readiness_result\s*\([\s\S]*?timestamptz\s*\)/i,
+  'The obsolete pre-canonical-input readiness RPC overload must be removed');
+assert.match(finalRpcRepairSql, /drop\s+function\s+if\s+exists\s+sih26044\.derive_artifact_backed_evidence\s*\([\s\S]*?uuid\s*,\s*text\s*,\s*text\s*,\s*uuid\s*,\s*text\s*\)/i,
+  'The obsolete eight-argument artifact derivation overload must be removed');
+assert.match(finalRpcRepairSql, /drop\s+function\s+if\s+exists\s+sih26044\.create_application_snapshot\s*\([\s\S]*?timestamptz\s*\)/i,
+  'The obsolete client-shaped snapshot overload must be removed');
+assert.match(finalRpcRepairSql, /on\s+conflict\s+do\s+nothing/i,
+  'The canonical artifact derivation repair must avoid a named PL/pgSQL conflict target');
+assert.match(finalRpcRepairSql, /'artifact_backed'\s*,\s*'unverified'/i,
+  'Artifact derivation must preserve provenance/verification separation');
 
 // D2 Foundation: recursive key check, input snapshots, derivations, artifacts, audit
 assert.match(d2FoundationSql, /create\s+or\s+replace\s+function\s+sih26044\.has_prohibited_json_keys/i);

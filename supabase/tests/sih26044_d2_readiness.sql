@@ -80,6 +80,29 @@ select pg_temp.assert_true(
   'only the intended server role receives RPC execution'
 );
 
+-- The public Worker RPC names must resolve to one canonical signature each.
+-- This is intentionally catalog-backed rather than a source-regex assertion.
+select pg_temp.assert_true(
+  (select count(*) = 1 from pg_proc as proc join pg_namespace as ns on ns.oid = proc.pronamespace
+   where ns.nspname = 'sih26044' and proc.proname = 'persist_trusted_readiness_result'),
+  'persist_trusted_readiness_result must expose exactly one canonical signature'
+);
+select pg_temp.assert_true(
+  (select count(*) = 1 from pg_proc as proc join pg_namespace as ns on ns.oid = proc.pronamespace
+   where ns.nspname = 'sih26044' and proc.proname = 'save_readiness_evidence_projection'),
+  'save_readiness_evidence_projection must expose exactly one canonical signature'
+);
+select pg_temp.assert_true(
+  (select count(*) = 1 from pg_proc as proc join pg_namespace as ns on ns.oid = proc.pronamespace
+   where ns.nspname = 'sih26044' and proc.proname = 'derive_artifact_backed_evidence'),
+  'derive_artifact_backed_evidence must expose exactly one canonical signature'
+);
+select pg_temp.assert_true(
+  (select count(*) = 1 from pg_proc as proc join pg_namespace as ns on ns.oid = proc.pronamespace
+   where ns.nspname = 'sih26044' and proc.proname = 'create_application_snapshot'),
+  'create_application_snapshot must expose exactly one canonical signature'
+);
+
 -- 2. Prohibited key filter verification (Keys blocked vs legitimate text values allowed)
 select pg_temp.assert_true(
   sih26044.has_prohibited_json_keys('{"riasec":{"realistic":10}}'::jsonb),
