@@ -188,6 +188,10 @@ select * from sih26044.update_artifact_scan_status(
 );
 
 -- 7. Evidence record and artifact-backed derivation
+-- The service role is intentionally denied direct evidence-table mutation. Use the
+-- migration-test owner only to seed the weak source fixture, then return to the
+-- trusted role for derivation and audit assertions.
+set local role postgres;
 insert into sih26044.evidence_records (
   id, subject_actor_id, literal_claim, provenance, initial_verification_state,
   scope_kind, scope_skill_id, scope_literal_skill_label, source_system, source_captured_at
@@ -196,6 +200,7 @@ insert into sih26044.evidence_records (
   'Initial self-reported SQL skill', 'self_reported', 'unverified',
   'global_skill', 'sql', 'SQL', 'd2_test', statement_timestamp()
 );
+set local role service_role;
 
 insert into sih26044.evidence_artifact_links (
   evidence_record_id, artifact_id, linked_by_actor_id
