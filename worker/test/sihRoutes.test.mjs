@@ -4,7 +4,7 @@ import worker from '../src/index.ts';
 import { extractBearerToken } from '../src/sih/auth.ts';
 import { canonicalJson, deterministicResultId } from '../src/sih/canonicalJson.ts';
 import { handleSihRequest } from '../src/sih/routes.ts';
-import { evaluateEffectiveMemberships } from '../src/sih/readiness.ts';
+import { evaluateEffectiveMemberships } from '../src/sih/membershipEval.ts';
 import { computeSha256 } from '../src/sih/artifacts.ts';
 import { SihRouteError } from '../src/sih/types.ts';
 import {
