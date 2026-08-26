@@ -26,6 +26,7 @@ assert.deepEqual(migrationFiles, [
   '202608260010_consent_and_helper_hardening.sql',
   '202608260011_d2_trusted_readiness_persistence.sql',
   '202608260012_d2_foundation_trusted_persistence.sql',
+  '202608260013_worker_consent_active_grant.sql',
 ]);
 
 const migrationSources = await Promise.all(migrationFiles.map(async file => ({
@@ -38,6 +39,7 @@ const hardeningSql = migrationSources.find(item => item.file.endsWith('007_secur
 const finalHardeningSql = migrationSources.find(item => item.file.endsWith('008_artifact_and_confirmation_hardening.sql'))?.source ?? '';
 const d2ReadinessSql = migrationSources.find(item => item.file.endsWith('011_d2_trusted_readiness_persistence.sql'))?.source ?? '';
 const d2FoundationSql = migrationSources.find(item => item.file.endsWith('012_d2_foundation_trusted_persistence.sql'))?.source ?? '';
+const d2ConsentGrantSql = migrationSources.find(item => item.file.endsWith('013_worker_consent_active_grant.sql'))?.source ?? '';
 const localConfig = await readFile(configPath, 'utf8');
 
 const createdTables = [...normalizedSql.matchAll(/create\s+table(?:\s+if\s+not\s+exists)?\s+sih26044\.([a-z0-9_]+)/gi)]
@@ -254,6 +256,13 @@ assert.match(d2FoundationSql, /create\s+or\s+replace\s+function\s+sih26044\.deri
 assert.match(d2FoundationSql, /create\s+or\s+replace\s+function\s+sih26044\.create_application_snapshot/i);
 assert.match(d2FoundationSql, /create\s+or\s+replace\s+function\s+sih26044\.record_authoritative_audit/i);
 assert.match(d2FoundationSql, /audit_events_principal_check/i);
+
+// Migration 013: is_consent_active must be callable by service_role for the Worker trusted path,
+// while remaining blocked for browser (authenticated/anon) callers.
+assert.match(d2ConsentGrantSql, /grant\s+execute\s+on\s+function\s+sih26044\.is_consent_active\s*\(\s*uuid\s*,\s*uuid\s*,\s*uuid\s*,\s*sih26044\.consent_purpose\s*\)\s+to\s+service_role/i,
+  'Migration 013 must grant is_consent_active to service_role for the Worker application-snapshot path');
+assert.doesNotMatch(d2ConsentGrantSql, /grant\s+execute\s+on\s+function\s+sih26044\.is_consent_active[\s\S]*?to\s+(?:authenticated|anon|public)\b/i,
+  'Migration 013 must not re-grant is_consent_active to browser or anonymous roles');
 
 const d2InputTableSql = [...normalizedSql.matchAll(/create\s+table\s+(?:if\s+not\s+exists\s+)?sih26044\.readiness_(?:subject_facts|evidence_projections|input_snapshots)[\s\S]*?\n\);/gi)]
   .map(match => match[0]).join('\n');

@@ -354,8 +354,13 @@ const snapshotRes = await call(userA.token, '/sih/applications/snapshot', {
   selectedEvidenceRecordIds: [ids.evidence1],
   consentGrantId: ids.consent1,
 });
+// Diagnostic: log bounded error if snapshot fails (status, error code only; no tokens/SQL/private data)
+const snapshotBody = await snapshotRes.json() as any;
+if (snapshotRes.status !== 200) {
+  console.error(`[DIAGNOSTIC] snapshot status=${snapshotRes.status} code=${snapshotBody?.error?.code ?? 'unknown'} msg=${snapshotBody?.error?.message ?? ''}`);
+}
 assert.equal(snapshotRes.status, 200);
-const snapshotJson = (await snapshotRes.json() as any);
+const snapshotJson = snapshotBody;
 assert.ok(snapshotJson.snapshotId);
 assert.ok(snapshotJson.integrityFingerprint);
 assert.equal(snapshotJson.recruiterProjection.applicant.displayName, 'D2 Learner A');
