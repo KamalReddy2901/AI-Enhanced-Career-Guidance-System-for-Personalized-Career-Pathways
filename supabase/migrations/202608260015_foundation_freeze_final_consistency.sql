@@ -450,9 +450,9 @@ begin
   end if;
 
   if not exists (
-    select 1 from sih26044.evidence_artifact_links
-    where evidence_record_id = p_source_evidence_record_id
-      and artifact_id = p_artifact_id
+    select 1 from sih26044.evidence_artifact_links eal
+    where eal.evidence_record_id = p_source_evidence_record_id
+      and eal.artifact_id = p_artifact_id
   ) then
     raise exception 'Artifact must be linked to source evidence before derivation';
   end if;
@@ -462,10 +462,10 @@ begin
   end if;
 
   -- Check for existing derivation (semantic uniqueness)
-  select * into v_existing_derivation from sih26044.evidence_derivations
-    where source_evidence_record_id = p_source_evidence_record_id
-      and artifact_id = p_artifact_id
-      and derivation_kind = 'artifact_backed';
+  select * into v_existing_derivation from sih26044.evidence_derivations ed
+    where ed.source_evidence_record_id = p_source_evidence_record_id
+      and ed.artifact_id = p_artifact_id
+      and ed.derivation_kind = 'artifact_backed';
 
   if v_existing_derivation.id is not null then
     -- Existing derivation found; compare semantic claim (migration 015)
