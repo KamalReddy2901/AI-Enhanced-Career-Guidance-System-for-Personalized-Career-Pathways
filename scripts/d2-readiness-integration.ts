@@ -288,16 +288,20 @@ assert.ifError(scanErr);
 assert.equal((scanUpdated as any[])[0].scan_status, 'clean');
 
 // 5. Artifact-backed evidence derivation
-const derivedEvidenceId = '60000000-0000-4000-8000-000000000099';
 const deriveRes = await call(userA.token, '/sih/evidence/derive-artifact-backed', {
-  derivedEvidenceId,
   sourceEvidenceRecordId: ids.evidence1,
   artifactId: ids.artifact1,
   literalClaim: 'Artifact backed SQL certificate evidence',
-  derivationKind: 'artifact_attachment',
-  confirmationMethod: 'direct_confirmation',
+  confirmationMethod: 'structured_human_entry',
 });
 assert.equal(deriveRes.status, 200);
+
+const deriveBody = await deriveRes.json() as any;
+const derivedEvidenceId: string = deriveBody?.derivedEvidenceRecord?.id ?? '';
+assert.ok(derivedEvidenceId, 'derive-artifact-backed must return derived evidence ID');
+
+// Wait a moment for DB visibility
+await new Promise(r => setTimeout(r, 200));
 
 const { data: derivedRow } = await clientA.schema('sih26044')
   .from('evidence_records')
