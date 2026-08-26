@@ -136,6 +136,18 @@ export async function assembleOpportunityReadinessInput(
   const evidenceSignals = evidence.flatMap((record): ReadinessEvidenceSignal[] => {
     const projection = projectionById.get(record.id);
     if (!projection) return [];
+    
+    // Only consume human-confirmed projections with complete trace
+    if (
+      !projection.human_confirmed ||
+      !projection.confirmed_by_actor_id ||
+      !projection.confirmed_at ||
+      !projection.confirmation_method ||
+      !['structured_human_entry', 'ai_assisted_review'].includes(projection.confirmation_method)
+    ) {
+      return [];
+    }
+    
     const currentState = verificationState(record, events);
     if (!confirmedStates.has(currentState)) return [];
     // Only clean artifacts contribute to trusted readiness signals in Engine B
@@ -316,7 +328,7 @@ export async function saveEvidenceProjection(
   actorId: string,
   req: SaveEvidenceProjectionRequest,
 ): Promise<Record<string, unknown>> {
-  const validMethods = ['structured_human_entry', 'ai_assisted_review', 'direct_confirmation', 'self_assessment_review'];
+  const validMethods = ['structured_human_entry', 'ai_assisted_review'];
   if (!validMethods.includes(req.confirmationMethod)) {
     throw new SihRouteError('INVALID_REQUEST', 400, 'Invalid human confirmation method for capability projection.');
   }

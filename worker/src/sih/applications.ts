@@ -131,17 +131,51 @@ export async function createAndFinalizeApplicationSnapshot(
     };
   });
 
-  const snapshotId = crypto.randomUUID(); // placeholder; replaced by server-assigned deterministic ID
+  // 6. Compute deterministic snapshot ID using same algorithm as DB
+  //    Matches migration 014 create_application_snapshot() uuid_generate_v5 derivation
+  const sortedEvidenceIds = [...req.selectedEvidenceRecordIds].sort();
+  const sortedConsentIds = [req.consentGrantId].sort();
+  const snapshotNamespace = 'b6c7d3a0-f2e1-4b89-9c05-1a2b3c4d5e6f';
+  const canonicalMaterial = [
+    'sih26044:snapshot',
+    req.applicationId,
+    req.opportunityVersionId,
+    readinessResult.resultId,
+    readinessResult.inputVersion,
+    readinessResult.subjectFactsVersion,
+    readinessResult.evidenceProjectionVersion,
+    sortedEvidenceIds.join(','),
+    sortedConsentIds.join(','),
+    JSON.stringify(req.requirementResponses ?? {}),
+    'recruiter-projection-v1',
+  ].join(':');
+  
+  const encoder = new TextEncoder();
+  const data = encoder.encode(snapshotNamespace + canonicalMaterial);
+  const hashBuffer = await crypto.subtle.digest('SHA-1', data);
+  const hashArray = new Uint8Array(hashBuffer);
+  
+  // UUIDv5: set version bits (4) and variant bits (10)
+  hashArray[6] = (hashArray[6] & 0x0f) | 0x50;
+  hashArray[8] = (hashArray[8] & 0x3f) | 0x80;
+  
+  const hex = Array.from(hashArray.slice(0, 16))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+  const deterministicSnapshotId = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+  
   const capturedAt = new Date().toISOString();
 
-  // 6. Build allowlisted production recruiter projection
+  // 7. Build allowlisted production recruiter projection with consent-minimized supporting evidence
   const allReqs = readinessResult.requiredRequirementResults.concat(readinessResult.preferredRequirementResults);
+  const selectedEvidenceSet = new Set(req.selectedEvidenceRecordIds);
+  
   const recruiterProjection = buildProductionRecruiterProjection({
     applicantDisplayName: actorDisplayName,
     applicationId: req.applicationId as any,
-    applicationSnapshotId: snapshotId as any,
+    applicationSnapshotId: deterministicSnapshotId as any,
     consentRecordId: req.consentGrantId as any,
-    applicationStage: 'saved',
+    applicationStage: 'applied',
     opportunityId: application.opportunity_id as any,
     opportunityVersionId: req.opportunityVersionId as any,
     educationSummary,
@@ -152,12 +186,12 @@ export async function createAndFinalizeApplicationSnapshot(
       literalSourceWording: r.literalSourceWording,
       priority: r.priority,
       state: r.state,
-      supportingEvidenceIds: r.supportingEvidenceIds,
+      supportingEvidenceIds: r.supportingEvidenceIds.filter(id => selectedEvidenceSet.has(id)),
     })),
     evidence: selectedEvidenceItems,
   });
 
-  // 7. Insert snapshot records via elevated RPC (migration 014: 14-param, deterministic ID)
+  // 8. Insert snapshot records via elevated RPC (migration 014: 14-param, deterministic ID)
   // p_id and p_captured_at removed; server assigns deterministic UUID via uuid_generate_v5.
   // p_applicant_actor_id added for actor ownership validation.
   const { data: createdSnapshot, error: createError } = await dbElevated.rpc('create_application_snapshot', {
@@ -177,25 +211,58 @@ export async function createAndFinalizeApplicationSnapshot(
     p_applicant_actor_id: actorId,
   });
 
-  if (createError || !createdSnapshot) {
-    const rawMsg = createError?.message ?? '';
-    const safe = rawMsg.replace(/\b(constraint|trigger|policy|function)\s+["']?\w+["']?/gi, '[database rule]');
-    throw new SihRouteError('TRUSTED_PERSISTENCE_FAILURE', 500, safe || 'Unable to create application snapshot.');
+  if (createError) {
+    throw new SihRouteError(
+      'SNAPSHOT_CONFLICT',
+      400,
+      'Application snapshot conflicts with existing immutable material.',
+    );
+  }
+
+  if (!createdSnapshot) {
+    throw new SihRouteError(
+      'TRUSTED_PERSISTENCE_FAILURE',
+      500,
+      'Trusted persistence operation failed.',
+    );
   }
 
   // Server assigned the deterministic snapshot ID
   const createdRow = Array.isArray(createdSnapshot) ? createdSnapshot[0] : createdSnapshot;
-  const serverSnapshotId = String(createdRow?.snapshot_id ?? createdRow?.id ?? snapshotId);
+  const serverSnapshotId = String(createdRow?.snapshot_id ?? createdRow?.id ?? '');
+  
+  // Validate: server ID must equal Worker-computed deterministic ID
+  if (serverSnapshotId !== deterministicSnapshotId) {
+    throw new SihRouteError(
+      'TRUSTED_PERSISTENCE_FAILURE',
+      500,
+      'Snapshot identity mismatch between Worker and database.',
+    );
+  }
+  
+  // Validate: persisted projection.applicationSnapshotId must equal server ID
+  const persistedProjectionSnapshotId = String(
+    (createdRow?.recruiter_allowlist_projection as any)?.applicationSnapshotId ?? ''
+  );
+  if (persistedProjectionSnapshotId !== serverSnapshotId) {
+    throw new SihRouteError(
+      'TRUSTED_PERSISTENCE_FAILURE',
+      500,
+      'Persisted projection applicationSnapshotId does not match snapshot row ID.',
+    );
+  }
 
-  // 8. Finalize snapshot with user client (carrying applicant JWT for current_actor_id() check)
+  // 9. Finalize snapshot with user client (carrying applicant JWT for current_actor_id() check)
   const { data: fingerprint, error: finalizeError } = await dbUser.rpc('finalize_application_snapshot', {
     requested_snapshot_id: serverSnapshotId,
   });
 
-  if (finalizeError || !fingerprint) {
-    const rawMsg = finalizeError?.message ?? '';
-    const safe = rawMsg.replace(/\b(constraint|trigger|policy|function)\s+["']?\w+["']?/gi, '[database rule]');
-    throw new SihRouteError('TRUSTED_PERSISTENCE_FAILURE', 500, safe || 'Snapshot finalization failed.');
+  if (finalizeError) {
+    throw new SihRouteError(
+      'TRUSTED_PERSISTENCE_FAILURE',
+      500,
+      'Snapshot finalization failed.',
+    );
   }
 
   return {

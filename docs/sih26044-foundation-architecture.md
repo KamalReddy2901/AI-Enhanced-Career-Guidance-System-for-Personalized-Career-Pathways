@@ -32,31 +32,35 @@ CareerCase is strictly distinguished from generic job boards, ATS, LMS, or chatb
 ## 2. Status Categorization
 
 ### IMPLEMENTED
-- **Database Persistence**: Migrations `001` through `012` in `sih26044` schema with strict RLS, append-only triggers, and least-privilege SECURITY DEFINER functions.
+- **Database Persistence**: Migrations `001` through `015` in `sih26044` schema with strict RLS, append-only triggers, and least-privilege SECURITY DEFINER functions.
 - **Engine B Integration**: Direct, single-source import of `computeOpportunityReadiness()` inside Cloudflare Worker.
 - **Deterministic Historical Snapshotting**: Immutable readiness results and semantic input snapshots (`sih26044.readiness_input_snapshots`).
 - **Organization Membership Semantics**: Exact D1 active membership semantics (`status = 'active'`, `valid_from <= now`, `valid_until is null or > now`, `org.status = 'active'`) with deterministic historical row collapse.
 - **Privacy Key Filter**: Recursive JSON key filter blocking prohibited keys (`riasec`, `work_values`, `private_aspirations`, `counselor_history`, `financial_constraints`, `guardian_data`, `hiring_probability`, `candidate_rank`) while preserving legitimate text values containing words like "aspiration" or "counselor".
 - **Trusted Subject-Fact Materialization**: Narrow RPC `materialize_readiness_subject_facts` updating purpose-relevant facts with authoritative audit events.
-- **Evidence Capability Projections**: Narrow RPC `save_readiness_evidence_projection` with human confirmation validation.
-- **Direct Storage Upload & Trusted Registration**: Authenticated uploads to private bucket `career-evidence-private/<actor>/<artifact>/<filename>` verified by Worker through server-side byte download and Web Crypto SHA-256 computation.
+- **Evidence Capability Projections**: Narrow RPC `save_readiness_evidence_projection` with human confirmation validation (canonical methods: `structured_human_entry`, `ai_assisted_review`).
+- **Direct Storage Upload & Trusted Registration**: Authenticated uploads to private bucket `career-evidence-private/<actor>/<artifact>/<filename>` verified by Worker through server-side byte download and Web Crypto SHA-256 computation; modern Supabase `sb_secret_*` key compatibility.
 - **Artifact Scan Lifecycle**: Conservative initial status `not_scanned`; only `clean` artifacts contribute to Engine B readiness signals; dedicated service-role scan transition RPC.
-- **Derived Artifact-Backed Evidence**: Explicit append-only lineage in `sih26044.evidence_derivations`; does not rewrite original weak evidence or silently inherit verifications.
-- **Production Recruiter Projection & Application Snapshot**: Strict allowlist projection module without `syntheticPersona` or generic object spreading; user-context finalization; content-derived SHA-256 fingerprint; immediate access revocation upon consent withdrawal.
+- **Derived Artifact-Backed Evidence**: Explicit append-only lineage in `sih26044.evidence_derivations` with semantic uniqueness constraint; does not rewrite original weak evidence or silently inherit verifications; idempotent retry with conflict detection.
+- **Production Recruiter Projection & Application Snapshot**: Strict allowlist projection module without `syntheticPersona` or generic object spreading; deterministic snapshot ID via `uuid_generate_v5`; submission stage `'applied'`; consent-minimized supporting evidence; user-context finalization; content-derived SHA-256 fingerprint; immediate access revocation upon consent withdrawal.
 - **Authoritative Audit**: Strict principal discipline supporting either `actor_id` OR `system_principal`.
 - **Typed SIH Client & DAL**: Typed `SihTrustedApiClient` and `SihBrowserDal`.
+- **Dual-Client Pattern**: User-context Supabase client (anon key + JWT passthrough) for RLS-filtered reads; elevated service_role client for trusted-write RPCs only.
+- **Safe Error Contract**: All Worker RPC errors return bounded, deliberately authored messages; raw database error text never forwarded to browser.
 
 ### INTEGRATION-READY
 - **Hosted Supabase Config**: Local `config.toml` exposes `sih26044` schema; ready for production hosted configuration.
 - **Cloudflare Worker Deployment**: Production secrets and routes ready for Wrangler deployment.
-- **Real Security Scanner**: Service-role scan status adapter ready for external malware scanning daemon.
-- **External Connectors**: Bounded connector proposal boundary ready for NCS, SIDH, AICTE, NATS, NAPS, DigiLocker ingestion workflows.
+
+### TARGET ARCHITECTURE / NOT CONFIGURED
+- **Real Security Scanner**: Service-role scan status adapter contract ready; no vendor/daemon configured.
+- **External Connectors (NCS, SIDH, AICTE, NATS, NAPS, DigiLocker)**: `ConnectorDescriptor` interface defined; no concrete bounded connector adapters implemented.
 
 ### CONTROLLED PROTOTYPE
 - `/demo` synthetic flow and personas under `src/app/demo/`.
 
 ### NOT-LIVE LIMITATIONS
-- No live external APIs (NCS, AICTE, DigiLocker) are currently configured.
+- No live external APIs (NCS, AICTE, DigiLocker, NATS, NAPS, SIDH) are currently configured.
 - No live third-party anti-malware vendor scanner is currently running.
 - Hosted Supabase custom exposed schema configuration requires production environment deployment.
 

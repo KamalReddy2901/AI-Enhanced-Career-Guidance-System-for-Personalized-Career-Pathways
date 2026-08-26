@@ -70,6 +70,9 @@ jobs:
       - name: Run SIH26044 persistence schema security QA
         run: npm run qa:sih-persistence-schema
 
+      - name: Run SIH26044 foundation freeze hardening QA
+        run: npm run qa:foundation-freeze-hardening
+
       - name: Build production client
         run: npm run build
 
