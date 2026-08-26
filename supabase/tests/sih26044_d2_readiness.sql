@@ -208,24 +208,29 @@ insert into sih26044.evidence_artifact_links (
 );
 set local role service_role;
 
+-- 7b. derive_artifact_backed_evidence (new 6-param signature from migration 014)
+-- p_derived_evidence_id and p_derivation_kind are removed (server-assigned).
+-- Only canonical confirmation methods; direct_confirmation is not permitted.
+-- Derived record UUID is deterministic from (source + artifact), not caller-supplied.
 select * from sih26044.derive_artifact_backed_evidence(
-  '60000000-0000-4000-8000-0000000000d2',
   '60000000-0000-4000-8000-0000000000d1',
   '90000000-0000-4000-8000-0000000000d1',
   '20000000-0000-4000-8000-0000000000d1',
   'Artifact backed SQL claim',
-  'artifact_attachment',
   '20000000-0000-4000-8000-0000000000d1',
-  'direct_confirmation'
+  'structured_human_entry'
 );
 
--- Prove derived record has provenance = artifact_backed and initial_verification_state = unverified
--- The trusted role receives no generic evidence SELECT privilege either; inspect
--- the fixture through the migration-test owner and then restore the trusted role.
+-- Prove derived record has provenance = artifact_backed and initial_verification_state = unverified.
+-- The deterministic ID is computed by the function; look up by source record + provenance.
 set local role postgres;
 select pg_temp.assert_true(
-  (select provenance = 'artifact_backed' and initial_verification_state = 'unverified'
-   from sih26044.evidence_records where id = '60000000-0000-4000-8000-0000000000d2'),
+  (select count(*) = 1
+   from sih26044.evidence_records er
+   join sih26044.evidence_derivations ed on ed.derived_evidence_record_id = er.id
+   where ed.source_evidence_record_id = '60000000-0000-4000-8000-0000000000d1'
+     and er.provenance = 'artifact_backed'
+     and er.initial_verification_state = 'unverified'),
   'Derived record must have artifact_backed provenance and unverified state'
 );
 set local role service_role;
