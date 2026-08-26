@@ -51,7 +51,9 @@ export async function createAndFinalizeApplicationSnapshot(
   }
 
   // 3. Verify all selected evidence records are covered by this consent
-  const { data: coveredEvidence, error: coveredErr } = await dbElevated
+  // Use user-context client (RLS-authenticated) so the subject can only see
+  // their own consent_evidence_records; no elevated SELECT required.
+  const { data: coveredEvidence, error: coveredErr } = await dbUser
     .from('consent_evidence_records')
     .select('evidence_record_id')
     .eq('consent_grant_id', req.consentGrantId);
@@ -71,11 +73,12 @@ export async function createAndFinalizeApplicationSnapshot(
   }
 
   // 4. Query applicant actor info and subject facts for education summary
+  // All reads below are subject-owned data -- use user-context client (RLS active).
   const [actorRes, factsRes, evidenceRes] = await Promise.all([
-    dbElevated.from('actors').select('display_name').eq('id', actorId).maybeSingle(),
-    dbElevated.from('readiness_subject_facts').select('education_level, graduation_year').eq('subject_actor_id', actorId).maybeSingle(),
+    dbUser.from('actors').select('display_name').eq('id', actorId).maybeSingle(),
+    dbUser.from('readiness_subject_facts').select('education_level, graduation_year').eq('subject_actor_id', actorId).maybeSingle(),
     req.selectedEvidenceRecordIds.length
-      ? dbElevated.from('evidence_records').select('*').in('id', req.selectedEvidenceRecordIds)
+      ? dbUser.from('evidence_records').select('*').in('id', req.selectedEvidenceRecordIds)
       : Promise.resolve({ data: [] as Row[], error: null }),
   ]);
 
@@ -89,14 +92,14 @@ export async function createAndFinalizeApplicationSnapshot(
   const selectedEvidenceRows = (evidenceRes.data ?? []) as Row[];
   const evidenceIds = selectedEvidenceRows.map(r => r.id);
   const [linksRes, eventsRes] = evidenceIds.length ? await Promise.all([
-    dbElevated.from('evidence_artifact_links').select('evidence_record_id, artifact_id').in('evidence_record_id', evidenceIds),
-    dbElevated.from('verification_events').select('evidence_record_id, sequence_number, action').in('evidence_record_id', evidenceIds),
+    dbUser.from('evidence_artifact_links').select('evidence_record_id, artifact_id').in('evidence_record_id', evidenceIds),
+    dbUser.from('verification_events').select('evidence_record_id, sequence_number, action').in('evidence_record_id', evidenceIds),
   ]) : [{ data: [] }, { data: [] }];
 
   const links = (linksRes.data ?? []) as Row[];
   const linkedArtifactIds = [...new Set(links.map(l => l.artifact_id))];
   const artifactRows = linkedArtifactIds.length
-    ? ((await dbElevated.from('artifacts').select('id, display_name, scan_status').in('id', linkedArtifactIds)).data ?? []) as Row[]
+    ? ((await dbUser.from('artifacts').select('id, display_name, scan_status').in('id', linkedArtifactIds)).data ?? []) as Row[]
     : [];
 
   const cleanArtifactMap = new Map(
