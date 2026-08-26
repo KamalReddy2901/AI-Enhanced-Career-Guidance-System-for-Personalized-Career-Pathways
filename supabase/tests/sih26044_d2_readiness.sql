@@ -200,14 +200,13 @@ insert into sih26044.evidence_records (
   'Initial self-reported SQL skill', 'self_reported', 'unverified',
   'global_skill', 'sql', 'SQL', 'd2_test', statement_timestamp()
 );
-set local role service_role;
-
 insert into sih26044.evidence_artifact_links (
   evidence_record_id, artifact_id, linked_by_actor_id
 ) values (
   '60000000-0000-4000-8000-0000000000d1', '90000000-0000-4000-8000-0000000000d1',
   '20000000-0000-4000-8000-0000000000d1'
 );
+set local role service_role;
 
 select * from sih26044.derive_artifact_backed_evidence(
   '60000000-0000-4000-8000-0000000000d2',
