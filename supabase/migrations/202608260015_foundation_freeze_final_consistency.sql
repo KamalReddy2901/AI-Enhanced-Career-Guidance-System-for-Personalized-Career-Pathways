@@ -9,6 +9,17 @@
 -- NO new RPCs.
 -- ONLY inline validation strengthening inside existing RPCs.
 
+-- Drop functions that change return types (CREATE OR REPLACE cannot change return type)
+drop function if exists sih26044.save_readiness_evidence_projection(
+  uuid, uuid, uuid, text, text, text, smallint, numeric,
+  sih26044.readiness_capability_assertion, sih26044.readiness_evidence_directness,
+  timestamptz, uuid, text
+) cascade;
+
+drop function if exists sih26044.derive_artifact_backed_evidence(
+  uuid, uuid, uuid, text, uuid, text
+) cascade;
+
 -- ======================================================================================
 -- A. Strengthen create_application_snapshot() with complete projection validation
 -- ======================================================================================
@@ -385,6 +396,14 @@ comment on function sih26044.save_readiness_evidence_projection(
 ) is
   'Migration 015: Strengthened conflict detection on ALL semantic projection material.';
 
+revoke all on function sih26044.save_readiness_evidence_projection(
+  uuid, uuid, uuid, text, text, text, text, numeric, text, text, timestamptz, uuid, text
+) from public, anon, authenticated;
+
+grant execute on function sih26044.save_readiness_evidence_projection(
+  uuid, uuid, uuid, text, text, text, text, numeric, text, text, timestamptz, uuid, text
+) to service_role;
+
 -- ======================================================================================
 -- C. Strengthen derive_artifact_backed_evidence() with semantic claim comparison
 -- ======================================================================================
@@ -507,3 +526,11 @@ comment on function sih26044.derive_artifact_backed_evidence(
   uuid, uuid, uuid, text, uuid, text
 ) is
   'Migration 015: Strengthened derivation conflict detection with semantic claim comparison.';
+
+revoke all on function sih26044.derive_artifact_backed_evidence(
+  uuid, uuid, uuid, text, uuid, text
+) from public, anon, authenticated;
+
+grant execute on function sih26044.derive_artifact_backed_evidence(
+  uuid, uuid, uuid, text, uuid, text
+) to service_role;
