@@ -257,7 +257,9 @@ begin
 end;
 $$;
 
-comment on function sih26044.create_application_snapshot is
+comment on function sih26044.create_application_snapshot(
+  uuid, uuid, uuid, text, text, text, text, text, text, jsonb, jsonb, uuid[], uuid[], uuid
+) is
   'Migration 015: Strengthened snapshot validation (projection ID/stage/band/evidence exactness).';
 
 -- ======================================================================================
@@ -378,7 +380,9 @@ begin
 end;
 $$;
 
-comment on function sih26044.save_readiness_evidence_projection is
+comment on function sih26044.save_readiness_evidence_projection(
+  uuid, uuid, uuid, text, text, text, text, numeric, text, text, timestamptz, uuid, text
+) is
   'Migration 015: Strengthened conflict detection on ALL semantic projection material.';
 
 -- ======================================================================================
@@ -499,5 +503,7 @@ begin
 end;
 $$;
 
-comment on function sih26044.derive_artifact_backed_evidence is
+comment on function sih26044.derive_artifact_backed_evidence(
+  uuid, uuid, uuid, text, uuid, text
+) is
   'Migration 015: Strengthened derivation conflict detection with semantic claim comparison.';
