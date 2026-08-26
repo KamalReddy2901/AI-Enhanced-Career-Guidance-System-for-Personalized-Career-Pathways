@@ -220,11 +220,15 @@ select * from sih26044.derive_artifact_backed_evidence(
 );
 
 -- Prove derived record has provenance = artifact_backed and initial_verification_state = unverified
+-- The trusted role receives no generic evidence SELECT privilege either; inspect
+-- the fixture through the migration-test owner and then restore the trusted role.
+set local role postgres;
 select pg_temp.assert_true(
   (select provenance = 'artifact_backed' and initial_verification_state = 'unverified'
    from sih26044.evidence_records where id = '60000000-0000-4000-8000-0000000000d2'),
   'Derived record must have artifact_backed provenance and unverified state'
 );
+set local role service_role;
 
 -- 8. Audit event principal integrity
 select sih26044.record_authoritative_audit(
