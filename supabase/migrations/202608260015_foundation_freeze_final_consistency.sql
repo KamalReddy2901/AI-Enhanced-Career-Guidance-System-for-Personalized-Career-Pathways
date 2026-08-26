@@ -495,12 +495,11 @@ begin
 
   insert into sih26044.evidence_records (
     id, subject_actor_id, provenance, initial_verification_state,
-    scope_kind, literal_claim, confirmed_by_actor_id,
-    confirmation_method, created_at
+    scope_kind, literal_claim, source_system, source_captured_at, created_at
   ) values (
     v_derived_id, p_subject_actor_id, 'artifact_backed', 'human_verified',
     'global_skill', coalesce(p_literal_claim, v_source.literal_claim),
-    p_confirmed_by_actor_id, p_confirmation_method, statement_timestamp()
+    'sih26044', statement_timestamp(), statement_timestamp()
   ) on conflict (id) do nothing;
 
   insert into sih26044.evidence_derivations (
