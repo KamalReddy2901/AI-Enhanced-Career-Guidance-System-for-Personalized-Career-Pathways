@@ -79,6 +79,20 @@ where id = '50000000-0000-4000-8000-0000000000d1';
 
 -- 1. Function privileges checks
 select pg_temp.assert_true(
+  not exists (
+    select 1
+    from pg_proc as proc
+    join pg_namespace as ns on ns.oid = proc.pronamespace
+    where ns.nspname = 'sih26044'
+      and proc.prorettype = 'trigger'::regtype
+      and (
+        has_function_privilege('anon', proc.oid, 'EXECUTE')
+        or has_function_privilege('authenticated', proc.oid, 'EXECUTE')
+      )
+  ),
+  'trigger-only functions must not remain directly executable by browser roles'
+);
+select pg_temp.assert_true(
   not has_function_privilege('anon', 'sih26044.persist_trusted_readiness_result(uuid,uuid,uuid,uuid,text,text,text,text,text,sih26044.readiness_band,jsonb,timestamptz,jsonb)', 'EXECUTE'),
   'anon/PUBLIC must not execute the trusted readiness RPC'
 );
