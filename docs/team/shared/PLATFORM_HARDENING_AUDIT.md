@@ -52,7 +52,7 @@ Migration owners are expected to be `postgres` in the managed/local migration co
 | `record_authoritative_audit`, `persist_trusted_readiness_result`, `materialize_readiness_subject_facts`, `save_readiness_evidence_projection`, `register_trusted_artifact`, `update_artifact_scan_status`, `derive_artifact_backed_evidence`, `plan_application_snapshot_identity`, `create_application_snapshot` | DEFINER | no | no | yes | Trusted Worker only | Intentionally bypass RLS for validated persistence | Correct service-only grants; exact signatures are catalog-tested |
 | All functions returning `trigger` in schema `sih26044` | Mixed; several DEFINER | no | no | trigger invocation only | PostgreSQL triggers | Enforce immutability, confirmation, linkage, and sequencing | Fixed in forward migration: default PUBLIC/browser EXECUTE revoked |
 
-Residual limitation: Supabase advisors and the catalog owner/grant matrix require a running local stack or hosted database access. The current workstation has neither Docker/Podman nor an authenticated Supabase CLI profile, so advisor output was not available locally. CI remains the executable source of truth for clean migration replay and catalog assertions.
+Residual limitation: the catalog-backed privilege assertions run in disposable CI because the current workstation has neither Docker/Podman nor an authenticated Supabase CLI profile. The dedicated database workflow also runs local Supabase security/performance advisors after clean replay, fails on advisor errors, and retains warnings for review rather than labeling the schema universally clean.
 
 ## Browser/trusted mutation classification
 
