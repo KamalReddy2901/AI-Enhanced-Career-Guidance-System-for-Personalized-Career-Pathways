@@ -54,6 +54,8 @@ Migration owners are expected to be `postgres` in the managed/local migration co
 
 Residual limitation: the catalog-backed privilege assertions run in disposable CI because the current workstation has neither Docker/Podman nor an authenticated Supabase CLI profile. The dedicated database workflow also runs local Supabase security/performance advisors after clean replay, fails on advisor errors, and retains warnings for review rather than labeling the schema universally clean.
 
+Advisor result on clean migration replay: no `ERROR` findings and four performance `WARN` findings. `actors_insert_self` should wrap `auth.uid()` in `select` to avoid per-row re-evaluation. `artifacts`, `evidence_artifact_links`, and `evidence_records` each have separate subject and assigned-verifier permissive `SELECT` policies; this is intentional authorization separation but has a measurable policy-evaluation cost. These warnings remain open because consolidating policies is a performance refactor, not required to close the execute-privilege defect, and must preserve exact verifier consent boundaries.
+
 ## Browser/trusted mutation classification
 
 | Mutation | Classification | Authority/invariant |
