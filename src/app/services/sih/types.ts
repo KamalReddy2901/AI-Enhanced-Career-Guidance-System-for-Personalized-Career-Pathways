@@ -1,5 +1,125 @@
 import type { OpportunityReadinessResult, ReadinessSubjectInput } from '../../domain/readiness';
+import type {
+  ApplicationStage,
+  ConsentPurpose,
+  EvidenceProvenance,
+  EvidenceProposalSource,
+  EvidenceVisibility,
+  VerificationAction,
+  VerificationState,
+} from '../../domain';
 import type { ProductionRecruiterProjection } from './productionRecruiterProjection';
+
+export type EvidenceScopeReadModel =
+  | { readonly kind: 'global_skill'; readonly skillId?: string; readonly literalSkillLabel: string }
+  | { readonly kind: 'opportunity'; readonly opportunityId: string; readonly requirementId?: string }
+  | { readonly kind: 'organization'; readonly organizationId: string }
+  | { readonly kind: 'outcome'; readonly outcomeEventId: string };
+
+export interface EvidenceVerificationReferenceReadModel {
+  readonly requestId: string;
+  readonly eventId: string;
+  readonly action: VerificationAction;
+  readonly state: VerificationState;
+  readonly occurredAt: string;
+}
+
+/** Browser-facing evidence row. This is deliberately not the canonical
+ * EvidenceRecord because artifacts and consent links are separately RLS-bound. */
+export interface EvidenceRecordReadModel {
+  readonly id: string;
+  readonly subjectActorId: string;
+  readonly literalClaim: string;
+  readonly provenance: EvidenceProvenance;
+  readonly initialVerificationState: VerificationState;
+  readonly proposalSource?: EvidenceProposalSource;
+  readonly scope: EvidenceScopeReadModel;
+  readonly source: {
+    readonly system: string;
+    readonly recordId?: string;
+    readonly url?: string;
+    readonly capturedAt: string;
+  };
+  readonly visibility: EvidenceVisibility;
+  readonly createdAt: string;
+  readonly currentVerification?: EvidenceVerificationReferenceReadModel;
+}
+
+export interface EvidenceArtifactReadModel {
+  readonly id: string;
+  readonly evidenceRecordId: string;
+  readonly mediaType: string;
+  readonly displayName: string;
+  readonly storageBucketId: string;
+  readonly storageObjectPath: string;
+  readonly integrityFingerprint?: string;
+  readonly scanStatus: 'pending' | 'clean' | 'quarantined' | 'rejected' | 'not_scanned';
+  readonly linkedAt: string;
+  readonly createdAt: string;
+}
+
+export type VerificationRequestStatus = 'requested' | 'accepted' | 'closed' | 'cancelled';
+
+export interface VerificationRequestReadModel {
+  readonly id: string;
+  readonly evidenceRecordId: string;
+  readonly subjectActorId: string;
+  readonly requestedVerifierActorId?: string;
+  readonly requestedVerifierOrganizationId?: string;
+  readonly consentGrantId: string;
+  readonly scope: EvidenceScopeReadModel;
+  readonly status: VerificationRequestStatus;
+  readonly requestedAt: string;
+  readonly expiresAt?: string;
+  readonly closedAt?: string;
+}
+
+export interface VerificationEventReadModel {
+  readonly id: string;
+  readonly verificationRequestId: string;
+  readonly evidenceRecordId: string;
+  readonly action: VerificationAction;
+  readonly actorId: string;
+  readonly actorOrganizationId?: string;
+  readonly reason?: string;
+  readonly supersedesEventId?: string;
+  readonly occurredAt: string;
+}
+
+export interface ApplicationReadModel {
+  readonly id: string;
+  readonly applicantActorId: string;
+  readonly opportunityId: string;
+  readonly opportunityVersionId: string;
+  readonly ownerOrganizationId: string;
+  readonly initialStage: 'saved' | 'preparing';
+  readonly currentStage: ApplicationStage;
+  readonly createdAt: string;
+}
+
+export interface ApplicationEventReadModel {
+  readonly id: string;
+  readonly applicationId: string;
+  readonly fromStage: ApplicationStage;
+  readonly toStage: ApplicationStage;
+  readonly eventKind: 'stage_transition' | 'human_rejection';
+  readonly actorId: string;
+  readonly reason?: string;
+  readonly note?: string;
+  readonly occurredAt: string;
+}
+
+export interface ConsentGrantReadModel {
+  readonly id: string;
+  readonly subjectActorId: string;
+  readonly granteeOrganizationId: string;
+  readonly purpose: Extract<ConsentPurpose, 'application_review'>;
+  readonly evidenceRecordIds: readonly string[];
+  readonly status: 'granted' | 'withdrawn' | 'expired';
+  readonly grantedAt: string;
+  readonly expiresAt?: string;
+  readonly withdrawnAt?: string;
+}
 
 export type SihTrustedApiErrorCode =
   | 'UNAUTHENTICATED'
