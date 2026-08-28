@@ -25,6 +25,7 @@
     "qa:demo-flow": "tsx scripts/demo-flow-qa.ts",
     "qa:recruiter-projection": "tsx scripts/recruiter-projection-qa.ts",
     "qa:sih-persistence-schema": "tsx scripts/sih-persistence-schema-qa.ts",
+    "qa:sih-browser-reads": "tsx scripts/sih-browser-read-contracts-qa.ts",
     "qa:d2-readiness-integration": "tsx scripts/d2-readiness-integration.ts",
     "qa:foundation-freeze-hardening": "tsx scripts/foundation-freeze-hardening-qa.ts"
   },
