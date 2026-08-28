@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Opportunity, OpportunityType, OpportunityVersion } from '../../../../domain';
+import OpportunityCard from './OpportunityCard';
 
 interface OpportunityExplorerProps {
   readonly opportunities: readonly Opportunity[];
@@ -20,6 +21,14 @@ const TYPE_OPTIONS: readonly OpportunityType[] = [
   'fdp',
   'consultancy',
   'collaborative_research',
+];
+
+const STATUS_OPTIONS: readonly Opportunity['status'][] = [
+  'published',
+  'paused',
+  'closed',
+  'draft',
+  'archived',
 ];
 
 function formatLabel(value: string): string {
@@ -47,6 +56,7 @@ export function OpportunityExplorer({
 
     return opportunities.filter(opportunity => {
       if (status !== 'all' && opportunity.status !== status) return false;
+
       const version = versionFor(opportunity, versions);
       if (!version) return false;
       if (type !== 'all' && version.type !== type) return false;
@@ -117,11 +127,7 @@ export function OpportunityExplorer({
               className="min-h-11 border-2 border-black bg-white px-3 text-sm"
             >
               <option value="all">All statuses</option>
-              <option value="published">Published</option>
-              <option value="paused">Paused</option>
-              <option value="closed">Closed</option>
-              <option value="draft">Draft</option>
-              <option value="archived">Archived</option>
+              {STATUS_OPTIONS.map(option => <option key={option} value={option}>{formatLabel(option)}</option>)}
             </select>
           </label>
 
@@ -159,40 +165,12 @@ export function OpportunityExplorer({
             if (!version) return null;
 
             return (
-              <article key={opportunity.id} className="flex h-full flex-col border-2 border-black bg-white p-4 shadow-[4px_4px_0_#111]">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="border border-black bg-[#f7f4ed] px-2 py-1 font-mono-ui text-[10px] font-bold uppercase">
-                    {formatLabel(version.type)}
-                  </span>
-                  <span className="font-mono-ui text-[10px] font-bold uppercase">{formatLabel(opportunity.status)}</span>
-                </div>
-
-                <h2 className="mt-4 text-xl font-black leading-tight">{version.title}</h2>
-                <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-black/70">{version.description}</p>
-
-                <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-black/20 pt-4">
-                  <div>
-                    <dt className="font-mono-ui text-[10px] font-bold uppercase text-black/55">Version</dt>
-                    <dd className="mt-1 text-sm font-black">v{version.version}</dd>
-                  </div>
-                  <div>
-                    <dt className="font-mono-ui text-[10px] font-bold uppercase text-black/55">Source</dt>
-                    <dd className="mt-1 break-words text-sm font-black">{version.source.sourceSystem}</dd>
-                  </div>
-                </dl>
-
-                <div className="mt-auto pt-5">
-                  <button
-                    type="button"
-                    onClick={() => onSelectOpportunity?.(opportunity.id)}
-                    className="min-h-11 w-full border-2 border-black bg-[#e7ff57] px-4 py-2 text-left font-mono-ui text-xs font-black uppercase focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/25"
-                    aria-label={`Open ${version.title}`}
-                  >
-                    Open opportunity →
-                  </button>
-                  <p className="mt-2 break-all font-mono-ui text-[9px] text-black/45">Opportunity ID: {opportunity.id}</p>
-                </div>
-              </article>
+              <OpportunityCard
+                key={opportunity.id}
+                opportunity={opportunity}
+                opportunityVersion={version}
+                onViewDetails={() => onSelectOpportunity?.(opportunity.id)}
+              />
             );
           })}
         </div>
@@ -200,3 +178,5 @@ export function OpportunityExplorer({
     </section>
   );
 }
+
+export default OpportunityExplorer;
