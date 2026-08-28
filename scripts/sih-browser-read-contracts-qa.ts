@@ -64,17 +64,14 @@ const applicationId = 'application-1' as ApplicationId;
       source_system: 'student_entry', source_record_id: 'entry-1', source_url: null,
       source_captured_at: '2026-08-28T08:00:00.000Z', visibility: 'private', created_at: '2026-08-28T08:00:00.000Z',
     }]),
-    ok([{
-      id: 'event-1', sequence_number: 2, verification_request_id: 'request-1', evidence_record_id: evidenceId,
-      action: 'verified_by_human', actor_id: 'verifier-1', actor_organization_id: 'org-1', reason: null,
-      supersedes_event_id: null, occurred_at: '2026-08-28T09:00:00.000Z',
-    }]),
   ]);
   const rows = await dal.listEvidenceForSubject(actorId);
   assert.equal(rows[0]?.scope.kind, 'global_skill');
-  assert.equal(rows[0]?.currentVerification?.state, 'human_verified');
-  assert.equal(rows[0]?.currentVerification?.eventId, 'event-1');
-  assert.deepEqual(queries.map(query => query.table), ['evidence_records', 'verification_events']);
+  assert.equal(rows[0]?.initialVerificationState, 'unverified');
+  assert.equal('currentVerification' in (rows[0] ?? {}), false,
+    'Evidence ledger rows must not expose a universal verification state');
+  assert.deepEqual(queries.map(query => query.table), ['evidence_records'],
+    'Evidence ledger must not collapse events from multiple requests into one evidence-level state');
   assert.ok(queries.every(query => query.select && query.select !== '*'));
 }
 
@@ -149,5 +146,9 @@ const applicationId = 'application-1' as ApplicationId;
 const browserDalSource = await readFile(fileURLToPath(new URL('../src/app/services/sih/browserDal.ts', import.meta.url)), 'utf8');
 assert.doesNotMatch(browserDalSource, /\.select\(\s*['"]\*['"]\s*\)/, 'SIH browser DAL reads must not use select(*)');
 assert.doesNotMatch(browserDalSource, /readiness_percentage|hiring_probability|candidate_rank/i);
+const evidenceLedgerMethod = browserDalSource.match(/async listEvidenceForSubject[\s\S]*?\n  }\n\n  async listArtifactsForEvidence/)?.[0] ?? '';
+assert.ok(evidenceLedgerMethod, 'Evidence ledger read method must remain present');
+assert.doesNotMatch(evidenceLedgerMethod, /verification_events|currentVerification|latestByEvidence/,
+  'Evidence ledger must not derive a cross-request universal verification state');
 
 console.log('SIH browser read contract QA passed.');

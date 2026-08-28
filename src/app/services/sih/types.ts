@@ -16,14 +16,6 @@ export type EvidenceScopeReadModel =
   | { readonly kind: 'organization'; readonly organizationId: string }
   | { readonly kind: 'outcome'; readonly outcomeEventId: string };
 
-export interface EvidenceVerificationReferenceReadModel {
-  readonly requestId: string;
-  readonly eventId: string;
-  readonly action: VerificationAction;
-  readonly state: VerificationState;
-  readonly occurredAt: string;
-}
-
 /** Browser-facing evidence row. This is deliberately not the canonical
  * EvidenceRecord because artifacts and consent links are separately RLS-bound. */
 export interface EvidenceRecordReadModel {
@@ -42,7 +34,6 @@ export interface EvidenceRecordReadModel {
   };
   readonly visibility: EvidenceVisibility;
   readonly createdAt: string;
-  readonly currentVerification?: EvidenceVerificationReferenceReadModel;
 }
 
 export interface EvidenceArtifactReadModel {

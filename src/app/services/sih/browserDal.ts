@@ -252,18 +252,6 @@ function mapVerificationEvent(row: VerificationEventRow): VerificationEventReadM
   };
 }
 
-function verificationStateFor(action: VerificationAction): EvidenceRecordReadModel['initialVerificationState'] | undefined {
-  switch (action) {
-    case 'self_confirmed': return 'self_confirmed';
-    case 'verified_by_human': return 'human_verified';
-    case 'verified_by_issuer': return 'issuer_verified';
-    case 'disputed': return 'disputed';
-    case 'revoked': return 'revoked';
-    case 'corrected': return 'corrected';
-    case 'submitted_for_review': return undefined;
-  }
-}
-
 export class SihBrowserDal {
   constructor(private readonly supabase: SupabaseClient) {}
 
@@ -276,32 +264,18 @@ export class SihBrowserDal {
       .select(evidenceSelect).eq('subject_actor_id', subjectActorId).order('created_at', { ascending: false });
     if (error) throw error;
     const rows = (data ?? []) as EvidenceRecordRow[];
-    if (rows.length === 0) return [];
-
-    const evidenceIds = rows.map(row => row.id);
-    const { data: eventsData, error: eventsError } = await this.db().from('verification_events')
-      .select(verificationEventSelect).in('evidence_record_id', evidenceIds).order('sequence_number', { ascending: false });
-    if (eventsError) throw eventsError;
-    const latestByEvidence = new Map<string, VerificationEventRow>();
-    for (const event of (eventsData ?? []) as VerificationEventRow[]) if (!latestByEvidence.has(event.evidence_record_id)) latestByEvidence.set(event.evidence_record_id, event);
-
-    return rows.map(row => {
-      const event = latestByEvidence.get(row.id);
-      const currentState = event ? verificationStateFor(event.action) ?? row.initial_verification_state : undefined;
-      return {
-        id: row.id,
-        subjectActorId: row.subject_actor_id,
-        literalClaim: row.literal_claim,
-        provenance: row.provenance,
-        initialVerificationState: row.initial_verification_state,
-        proposalSource: row.proposal_source ?? undefined,
-        scope: mapScope(row),
-        source: { system: row.source_system, recordId: row.source_record_id ?? undefined, url: row.source_url ?? undefined, capturedAt: row.source_captured_at },
-        visibility: row.visibility,
-        createdAt: row.created_at,
-        currentVerification: event && currentState ? { requestId: event.verification_request_id, eventId: event.id, action: event.action, state: currentState, occurredAt: event.occurred_at } : undefined,
-      };
-    });
+    return rows.map(row => ({
+      id: row.id,
+      subjectActorId: row.subject_actor_id,
+      literalClaim: row.literal_claim,
+      provenance: row.provenance,
+      initialVerificationState: row.initial_verification_state,
+      proposalSource: row.proposal_source ?? undefined,
+      scope: mapScope(row),
+      source: { system: row.source_system, recordId: row.source_record_id ?? undefined, url: row.source_url ?? undefined, capturedAt: row.source_captured_at },
+      visibility: row.visibility,
+      createdAt: row.created_at,
+    }));
   }
 
   async listArtifactsForEvidence(evidenceRecordId: EvidenceRecordId): Promise<EvidenceArtifactReadModel[]> {
