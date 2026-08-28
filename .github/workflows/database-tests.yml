@@ -59,6 +59,9 @@ jobs:
       - name: Replay all migrations from a clean local database
         run: supabase db reset --local
 
+      - name: Inspect Supabase database advisors
+        run: supabase db advisors --local --type all --level warn --fail-on error
+
       - name: Execute SIH26044 relational and RLS SQL assertions
         env:
           PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
