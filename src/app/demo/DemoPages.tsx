@@ -1,5 +1,7 @@
 import { Link } from 'react-router';
 import { EvidenceTimeline } from '../components/demo/EvidenceTimeline';
+import Explorer from '../components/sih/student/explorer/Explorer';
+import Readiness from '../components/sih/student/readiness/Readiness';
 import { EvidenceProvenanceBadge, RequirementEvidenceMatrix } from '../components/demo/RequirementEvidenceMatrix';
 import { ReadinessVector } from '../components/demo/ReadinessVector';
 import { useDemoSih } from '../context/DemoSihContext';
@@ -95,9 +97,20 @@ export function DemoStudentPage() {
         title="Prove what exists. Preserve what is unknown."
         description="The matrix shows evidence state, not employability or hiring likelihood. Actions append controlled records and retain every earlier result."
       />
+            <div className="mt-10">
+        <Explorer opportunityVersion={state.fixture.opportunityVersion}/>
+      </div>
       <div className="grid gap-6 xl:grid-cols-[1fr_22rem]">
         <div className="grid gap-8">
           <ReadinessVector result={currentReadiness} />
+          <Readiness
+  band={currentReadiness.readinessBand}
+  requiredCoverage={currentReadiness.requiredCoverage}
+  verificationCoverage={currentReadiness.verificationCoverage}
+  partialCount={currentReadiness.partialCount}
+  gapCount={currentReadiness.gapCount}
+  workSamples={currentReadiness.relevantWorkSamples}
+/>
           <RequirementEvidenceMatrix readiness={currentReadiness} ledger={state.evidenceLedger} verificationEvents={state.verificationEvents} />
         </div>
         <aside className="grid content-start gap-4" aria-label="Controlled student actions">
