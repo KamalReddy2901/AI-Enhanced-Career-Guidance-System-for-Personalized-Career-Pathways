@@ -2,7 +2,7 @@
                  Pre-Implementation Inspection Report
                          Inspection Only • No Repository Changes • No Implementation Code
 
-
+    
 Final Verdict
 
                                  BLOCKED — KAMAL DECISION REQUIRED
