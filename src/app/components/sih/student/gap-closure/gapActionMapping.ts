@@ -36,10 +36,13 @@ function actionForRequirement(requirement: RequirementReadinessResult): GapClosu
   if (requirement.category === 'experience') {
     return [{ ...base, id: `${requirement.requirementId}:experience`, group: 'capability', kind: 'EXPERIENCE', reason: 'The requirement calls for scoped experience. No provider or outcome is promised.', expectedEvidence: requirement.evidenceExpectation }];
   }
-  return [
+  const capabilityActions: GapClosureAction[] = [
     { ...base, id: `${requirement.requirementId}:practice`, group: 'capability', kind: 'PRACTICE', reason: 'Relevant capability is only partially established or currently not met.', expectedEvidence: 'A scoped practice record that addresses the requirement.' },
     { ...base, id: `${requirement.requirementId}:learn`, group: 'capability', kind: 'LEARN', reason: 'Learning may help develop the stated capability. This interface does not prescribe a provider or course.', expectedEvidence: 'Evidence appropriate to the requirement after learning.' },
   ];
+  return requirement.state === 'PARTIAL' && requirement.supportingEvidenceIds.length > 0
+    ? [{ ...base, id: `${requirement.requirementId}:prove`, group: 'evidence', kind: 'PROVE_EXISTING', reason: 'Relevant evidence exists but does not yet establish the full requirement. Strengthen or clarify that evidence first where appropriate.', expectedEvidence: requirement.evidenceExpectation }, ...capabilityActions]
+    : capabilityActions;
 }
 
 export function buildGapClosureActions(result: OpportunityReadinessResult, opportunityVersion: OpportunityVersion): GapClosureAction[] {
