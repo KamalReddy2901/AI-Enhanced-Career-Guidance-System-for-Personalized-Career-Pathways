@@ -1,5 +1,10 @@
-import type { EligibilityRule, EligibilityEducationLevel } from '../../../domain/opportunity';
-import type { ActorId } from '../../../domain';
+import type {
+  EligibilityRule,
+  EligibilityRuleDefinition,
+  EligibilityEducationLevel
+} from '../../../domain/opportunity';
+import type { ActorId, IsoTimestamp, OrganizationId } from '../../../domain/shared';
+import type { HumanConfirmationMethod } from '../../../domain/shared';
 
 interface Props {
   readonly rules: readonly EligibilityRule[];
@@ -7,7 +12,7 @@ interface Props {
   readonly currentActorId: ActorId;
 }
 
-const KINDS = [
+const KINDS: readonly EligibilityRuleDefinition['kind'][] = [
   'custom',
   'education_level',
   'graduation_year',
@@ -18,33 +23,182 @@ const KINDS = [
   'work_authorization',
   'language',
   'explicit_prerequisite'
-] as const;
+];
+
+// ─── Typed rule constructors ──────────────────────────────────────────────────
+// Each returns a complete EligibilityRule for that kind, so no `as any` needed.
+
+function makeUnconfirmedTrace(): {
+  readonly humanConfirmed: false;
+  readonly confirmedByActorId: undefined;
+  readonly confirmedAt: undefined;
+  readonly confirmationMethod: undefined;
+} {
+  return {    humanConfirmed: false,
+    confirmedByActorId: undefined,
+    confirmedAt: undefined,
+    confirmationMethod: undefined
+  };
+}
+
+function resetTrace(rule: EligibilityRule): any {
+  const next = { ...rule, humanConfirmed: false as const } as any;
+  delete next.confirmedByActorId;
+  delete next.confirmedAt;
+  delete next.confirmationMethod;
+  return next;
+}
+
+function makeConfirmedTrace(actorId: ActorId): {
+  readonly humanConfirmed: true;
+  readonly confirmedByActorId: ActorId;
+  readonly confirmedAt: IsoTimestamp;
+  readonly confirmationMethod: HumanConfirmationMethod;
+} {
+  return {
+    humanConfirmed: true,
+    confirmedByActorId: actorId,
+    confirmedAt: new Date().toISOString() as IsoTimestamp,
+    confirmationMethod: 'structured_human_entry'
+  };
+}
+
+function makeCustomRule(wording: string): EligibilityRule {
+  return { kind: 'custom', machineEnforced: false as const, literalSourceWording: wording, ...makeUnconfirmedTrace() };
+}
+
+function makeEducationLevelRule(wording: string): EligibilityRule {
+  return { kind: 'education_level', operator: 'at_least', value: 'undergraduate' as EligibilityEducationLevel, literalSourceWording: wording, ...makeUnconfirmedTrace() };
+}
+
+function makeGraduationYearRule(wording: string): EligibilityRule {
+  return { kind: 'graduation_year', operator: 'after', value: new Date().getFullYear(), literalSourceWording: wording, ...makeUnconfirmedTrace() };
+}
+
+function makeLocationRule(wording: string): EligibilityRule {
+  return { kind: 'location', operator: 'in', values: [] as readonly string[], requiresPhysicalPresence: true as const, literalSourceWording: wording, ...makeUnconfirmedTrace() };
+}
+
+function makeOrgMembershipRule(wording: string): EligibilityRule {
+  return { kind: 'organization_membership', organizationIds: [] as readonly OrganizationId[], literalSourceWording: wording, ...makeUnconfirmedTrace() };
+}
+
+function makeAvailabilityRule(wording: string): EligibilityRule {
+  return { kind: 'availability', factKey: '', expectedValue: true as string | boolean, literalSourceWording: wording, ...makeUnconfirmedTrace() };
+}
+
+function makeLicenceRule(wording: string): EligibilityRule {
+  return { kind: 'licence_registration', licenceCode: '', expectedValue: true as string | boolean, literalSourceWording: wording, ...makeUnconfirmedTrace() };
+}
+
+function makeWorkAuthRule(wording: string): EligibilityRule {
+  return { kind: 'work_authorization', jurisdiction: 'IN', literalSourceWording: wording, ...makeUnconfirmedTrace() };
+}
+
+function makeLanguageRule(wording: string): EligibilityRule {
+  return { kind: 'language', language: 'en', literalSourceWording: wording, ...makeUnconfirmedTrace() };
+}
+
+function makeExplicitPrereqRule(wording: string): EligibilityRule {
+  return { kind: 'explicit_prerequisite', factKey: '', expectedValue: true as string | boolean, literalSourceWording: wording, ...makeUnconfirmedTrace() };
+}
+
+function makeRuleForKind(kind: EligibilityRuleDefinition['kind'], wording: string): EligibilityRule {
+  switch (kind) {
+    case 'custom': return makeCustomRule(wording);
+    case 'education_level': return makeEducationLevelRule(wording);
+    case 'graduation_year': return makeGraduationYearRule(wording);
+    case 'location': return makeLocationRule(wording);
+    case 'organization_membership': return makeOrgMembershipRule(wording);
+    case 'availability': return makeAvailabilityRule(wording);
+    case 'licence_registration': return makeLicenceRule(wording);
+    case 'work_authorization': return makeWorkAuthRule(wording);
+    case 'language': return makeLanguageRule(wording);
+    case 'explicit_prerequisite': return makeExplicitPrereqRule(wording);
+  }
+}
+
+// ─── Typed field updaters ─────────────────────────────────────────────────────
+// Each produces a new complete rule with the updated field + reset trace.
+
+function updateEducationLevel(
+  rule: Extract<EligibilityRule, { kind: 'education_level' }>,
+  field: 'operator' | 'value',
+  val: string
+): EligibilityRule {
+  if (field === 'operator') {
+    return { ...resetTrace(rule), operator: val as 'at_least' | 'equals' };
+  }
+  return { ...resetTrace(rule), value: val as EligibilityEducationLevel };
+}
+
+function updateGraduationYearOperator(
+  rule: Extract<EligibilityRule, { kind: 'graduation_year' }>,
+  op: 'before' | 'after' | 'between'
+): EligibilityRule {
+  if (op === 'between') {
+    const yr = new Date().getFullYear();
+    return { kind: 'graduation_year', operator: 'between', value: [yr, yr + 2] as readonly [number, number], literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
+  }
+  return { kind: 'graduation_year', operator: op, value: new Date().getFullYear(), literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
+}
+
+function updateGraduationYearValue(
+  rule: Extract<EligibilityRule, { kind: 'graduation_year' }>,
+  val: number,
+  rangeIndex?: 0 | 1
+): EligibilityRule {
+  if (rule.operator === 'between' && rangeIndex !== undefined) {
+    const prev = rule.value as readonly [number, number];
+    const next: readonly [number, number] = rangeIndex === 0 ? [val, prev[1]] : [prev[0], val];
+    return { kind: 'graduation_year', operator: 'between', value: next, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
+  }
+  return { ...resetTrace(rule), value: val };
+}
+
+function updateLocationOperator(
+  rule: Extract<EligibilityRule, { kind: 'location' }>,
+  op: 'in' | 'not_in'
+): EligibilityRule {
+  return { ...resetTrace(rule), operator: op };
+}
+
+function updateLocationValues(
+  rule: Extract<EligibilityRule, { kind: 'location' }>,
+  vals: readonly string[]
+): EligibilityRule {
+  return { ...resetTrace(rule), values: vals };
+}
+
+function updateLocationPresence(
+  rule: Extract<EligibilityRule, { kind: 'location' }>,
+  val: boolean
+): EligibilityRule {
+  // requiresPhysicalPresence is always true in the type, but we keep the checkbox for UX
+  return { ...resetTrace(rule), requiresPhysicalPresence: val as true };
+}
+
+function parseExpectedValue(raw: string): string | boolean {
+  if (raw === 'true') return true;
+  if (raw === 'false') return false;
+  return raw;
+}
 
 export default function OpportunityEligibilitySection({ rules, onChange, currentActorId }: Props) {
   const addRule = () => {
-    onChange([
-      ...rules,
-      {
-        kind: 'custom',
-        machineEnforced: false,
-        literalSourceWording: '',
-        humanConfirmed: false
-      } as EligibilityRule
-    ]);
+    onChange([...rules, makeCustomRule('')]);
   };
 
-  const updateRule = (index: number, updates: Partial<EligibilityRule>) => {
+  const replaceRule = (index: number, newRule: EligibilityRule) => {
     const next = [...rules];
-    next[index] = { ...next[index], ...updates } as EligibilityRule;
-    // Changing literal wording, kind, or any structured field resets confirmation
-    if (Object.keys(updates).some(k => k !== 'humanConfirmed' && k !== 'confirmedByActorId' && k !== 'confirmedAt' && k !== 'confirmationMethod')) {
-      const rule = next[index] as any;
-      rule.humanConfirmed = false;
-      delete rule.confirmedByActorId;
-      delete rule.confirmedAt;
-      delete rule.confirmationMethod;
-    }
+    next[index] = newRule;
     onChange(next);
+  };
+
+  const updateLiteralWording = (index: number, wording: string) => {
+    const rule = rules[index];
+    const updated = { ...resetTrace(rule), literalSourceWording: wording } as EligibilityRule;
+    replaceRule(index, updated);
   };
 
   const removeRule = (index: number) => {
@@ -54,56 +208,14 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
   };
 
   const handleConfirmRule = (index: number) => {
-    const next = [...rules];
-    const rule = { ...next[index] } as any;
-    rule.humanConfirmed = true;
-    rule.confirmedByActorId = currentActorId;
-    rule.confirmedAt = new Date().toISOString();
-    rule.confirmationMethod = 'structured_human_entry';
-    next[index] = rule;
-    onChange(next);
+    const rule = rules[index];
+    const confirmed = { ...rule, ...makeConfirmedTrace(currentActorId) } as EligibilityRule;
+    replaceRule(index, confirmed);
   };
 
-  const handleKindChange = (index: number, newKind: typeof KINDS[number]) => {
-    const literalSourceWording = rules[index].literalSourceWording;
-    let newRule: any = {
-      literalSourceWording,
-      humanConfirmed: false
-    };
-
-    switch (newKind) {
-      case 'custom':
-        newRule = { ...newRule, kind: 'custom', machineEnforced: false };
-        break;
-      case 'education_level':
-        newRule = { ...newRule, kind: 'education_level', operator: 'at_least', value: 'undergraduate' };
-        break;
-      case 'graduation_year':
-        newRule = { ...newRule, kind: 'graduation_year', operator: 'after', value: new Date().getFullYear() };
-        break;
-      case 'location':
-        newRule = { ...newRule, kind: 'location', operator: 'in', values: [], requiresPhysicalPresence: true };
-        break;
-      case 'organization_membership':
-        newRule = { ...newRule, kind: 'organization_membership', organizationIds: [] };
-        break;
-      case 'availability':
-      case 'explicit_prerequisite':
-        newRule = { ...newRule, kind: newKind, factKey: '', expectedValue: true };
-        break;
-      case 'licence_registration':
-        newRule = { ...newRule, kind: newKind, licenceCode: '', expectedValue: true };
-        break;
-      case 'work_authorization':
-        newRule = { ...newRule, kind: 'work_authorization', jurisdiction: 'IN' };
-        break;
-      case 'language':
-        newRule = { ...newRule, kind: 'language', language: 'en' };
-        break;
-    }
-    const next = [...rules];
-    next[index] = newRule;
-    onChange(next);
+  const handleKindChange = (index: number, newKind: EligibilityRuleDefinition['kind']) => {
+    const wording = rules[index].literalSourceWording;
+    replaceRule(index, makeRuleForKind(newKind, wording));
   };
 
   const renderStructuredFields = (rule: EligibilityRule, index: number) => {
@@ -116,7 +228,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
               <select
                 className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
                 value={rule.operator}
-                onChange={e => updateRule(index, { operator: e.target.value as 'at_least' | 'equals' })}
+                onChange={e => replaceRule(index, updateEducationLevel(rule, 'operator', e.target.value))}
               >
                 <option value="at_least">At Least</option>
                 <option value="equals">Equals</option>
@@ -127,7 +239,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
               <select
                 className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
                 value={rule.value}
-                onChange={e => updateRule(index, { value: e.target.value as EligibilityEducationLevel })}
+                onChange={e => replaceRule(index, updateEducationLevel(rule, 'value', e.target.value))}
               >
                 <option value="below_10">Below 10th</option>
                 <option value="class_10">Class 10</option>
@@ -139,7 +251,8 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
             </div>
           </>
         );
-            case 'graduation_year':
+
+      case 'graduation_year':
         return (
           <>
             <div>
@@ -147,14 +260,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
               <select
                 className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
                 value={rule.operator}
-                onChange={e => {
-                  const op = e.target.value as 'before' | 'after' | 'between';
-                  if (op === 'between') {
-                    updateRule(index, { operator: op, value: [new Date().getFullYear(), new Date().getFullYear() + 2] } as any);
-                  } else {
-                    updateRule(index, { operator: op, value: new Date().getFullYear() } as any);
-                  }
-                }}
+                onChange={e => replaceRule(index, updateGraduationYearOperator(rule, e.target.value as 'before' | 'after' | 'between'))}
               >
                 <option value="after">After</option>
                 <option value="before">Before</option>
@@ -168,14 +274,14 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
                   <input
                     type="number"
                     className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
-                    value={(rule.value as [number, number])[0]}
-                    onChange={e => updateRule(index, { value: [parseInt(e.target.value, 10), (rule.value as [number, number])[1]] } as any)}
+                    value={(rule.value as readonly [number, number])[0]}
+                    onChange={e => replaceRule(index, updateGraduationYearValue(rule, parseInt(e.target.value, 10), 0))}
                   />
                   <input
                     type="number"
                     className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
-                    value={(rule.value as [number, number])[1]}
-                    onChange={e => updateRule(index, { value: [(rule.value as [number, number])[0], parseInt(e.target.value, 10)] } as any)}
+                    value={(rule.value as readonly [number, number])[1]}
+                    onChange={e => replaceRule(index, updateGraduationYearValue(rule, parseInt(e.target.value, 10), 1))}
                   />
                 </div>
               ) : (
@@ -183,7 +289,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
                   type="number"
                   className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
                   value={rule.value as number}
-                  onChange={e => updateRule(index, { value: parseInt(e.target.value, 10) } as any)}
+                  onChange={e => replaceRule(index, updateGraduationYearValue(rule, parseInt(e.target.value, 10)))}
                 />
               )}
             </div>
@@ -198,7 +304,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
               <select
                 className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
                 value={rule.operator}
-                onChange={e => updateRule(index, { operator: e.target.value as 'in' | 'not_in' } as any)}
+                onChange={e => replaceRule(index, updateLocationOperator(rule, e.target.value as 'in' | 'not_in'))}
               >
                 <option value="in">In</option>
                 <option value="not_in">Not In</option>
@@ -209,8 +315,8 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
               <input
                 type="text"
                 className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
-                value={rule.values.join(', ')}
-                onChange={e => updateRule(index, { values: e.target.value.split(',').map(v => v.trim()).filter(Boolean) } as any)}
+                value={[...rule.values].join(', ')}
+                onChange={e => replaceRule(index, updateLocationValues(rule, e.target.value.split(',').map(v => v.trim()).filter(Boolean)))}
               />
             </div>
             <div className="flex items-center gap-2 sm:col-span-2">
@@ -219,7 +325,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
                 id={`requiresPhysicalPresence-${index}`}
                 className="h-4 w-4 border-2 border-black accent-black"
                 checked={rule.requiresPhysicalPresence}
-                onChange={e => updateRule(index, { requiresPhysicalPresence: e.target.checked } as any)}
+                onChange={e => replaceRule(index, updateLocationPresence(rule, e.target.checked))}
               />
               <label htmlFor={`requiresPhysicalPresence-${index}`} className="font-mono-ui text-[11px] font-black uppercase">
                 Requires Physical Presence
@@ -235,8 +341,11 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
             <input
               type="text"
               className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
-              value={rule.organizationIds.join(', ')}
-              onChange={e => updateRule(index, { organizationIds: e.target.value.split(',').map(v => v.trim()).filter(Boolean) as any } as any)}
+              value={[...rule.organizationIds].join(', ')}
+              onChange={e => {
+                const ids = e.target.value.split(',').map(v => v.trim()).filter(Boolean) as OrganizationId[];
+                replaceRule(index, { ...resetTrace(rule), organizationIds: ids });
+              }}
             />
           </div>
         );
@@ -251,7 +360,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
                 type="text"
                 className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
                 value={rule.factKey}
-                onChange={e => updateRule(index, { factKey: e.target.value } as any)}
+                onChange={e => replaceRule(index, { ...resetTrace(rule), factKey: e.target.value })}
               />
             </div>
             <div>
@@ -260,7 +369,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
                 type="text"
                 className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
                 value={rule.expectedValue.toString()}
-                onChange={e => updateRule(index, { expectedValue: e.target.value === 'true' ? true : e.target.value === 'false' ? false : e.target.value } as any)}
+                onChange={e => replaceRule(index, { ...resetTrace(rule), expectedValue: parseExpectedValue(e.target.value) })}
               />
             </div>
           </>
@@ -275,7 +384,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
                 type="text"
                 className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
                 value={rule.licenceCode}
-                onChange={e => updateRule(index, { licenceCode: e.target.value } as any)}
+                onChange={e => replaceRule(index, { ...resetTrace(rule), licenceCode: e.target.value })}
               />
             </div>
             <div>
@@ -284,7 +393,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
                 type="text"
                 className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
                 value={rule.expectedValue.toString()}
-                onChange={e => updateRule(index, { expectedValue: e.target.value === 'true' ? true : e.target.value === 'false' ? false : e.target.value } as any)}
+                onChange={e => replaceRule(index, { ...resetTrace(rule), expectedValue: parseExpectedValue(e.target.value) })}
               />
             </div>
           </>
@@ -298,7 +407,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
               type="text"
               className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
               value={rule.jurisdiction}
-              onChange={e => updateRule(index, { jurisdiction: e.target.value } as any)}
+              onChange={e => replaceRule(index, { ...resetTrace(rule), jurisdiction: e.target.value })}
             />
           </div>
         );
@@ -311,7 +420,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
               type="text"
               className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
               value={rule.language}
-              onChange={e => updateRule(index, { language: e.target.value } as any)}
+              onChange={e => replaceRule(index, { ...resetTrace(rule), language: e.target.value })}
             />
           </div>
         );
@@ -386,7 +495,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
                   <select
                     className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
                     value={rule.kind}
-                    onChange={e => handleKindChange(i, e.target.value as any)}
+                    onChange={e => handleKindChange(i, e.target.value as EligibilityRuleDefinition['kind'])}
                   >
                     {KINDS.map(k => (
                       <option key={k} value={k}>{k.replace(/_/g, ' ')}</option>
@@ -402,7 +511,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
                     type="text"
                     className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
                     value={rule.literalSourceWording}
-                    onChange={e => updateRule(i, { literalSourceWording: e.target.value })}
+                    onChange={e => updateLiteralWording(i, e.target.value)}
                     placeholder="e.g. Must have graduated after 2022"
                   />
                 </div>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type {
   OpportunityRequirement,
   RequirementPriority,
@@ -11,8 +12,9 @@ import type {
   LogisticsOpportunityRequirement,
   LiteralOpportunityRequirement
 } from '../../../domain/opportunity';
-import type { ActorId } from '../../../domain';
-import type { SkillReviewSuggestion } from '../../../domain/skillResolution';
+import type { ActorId, IsoTimestamp, OpportunityRequirementId } from '../../../domain/shared';
+import type { SkillReviewSuggestion, CanonicalResolutionState } from '../../../domain/skillResolution';
+import type { HumanConfirmationMethod } from '../../../domain/shared';
 import SkillResolutionBadge from './SkillResolutionBadge';
 
 interface Props {
@@ -31,10 +33,20 @@ const CATEGORIES = [
   { value: 'logistics', label: 'Logistics' }
 ];
 
-// Minimal stub for new requirements before they are saved/confirmed
-function createBlankRequirement(index: number): OpportunityRequirement {
+type RequirementCategory = OpportunityRequirement['category'];
+
+/** Resets the HumanConfirmationTrace to unconfirmed. */
+function resetTrace(req: OpportunityRequirement): OpportunityRequirement {
+  const next = { ...req, humanConfirmed: false as const } as any;
+  delete next.confirmedByActorId;
+  delete next.confirmedAt;
+  delete next.confirmationMethod;
+  return next;
+}
+
+function createBlankRequirement(index: number): LiteralOpportunityRequirement {
   return {
-    id: `draft-req-${Date.now()}-${index}` as any,
+    id: `draft-req-${Date.now()}-${index}` as OpportunityRequirementId,
     category: 'other_literal',
     priority: 'required',
     importance: 3,
@@ -45,7 +57,16 @@ function createBlankRequirement(index: number): OpportunityRequirement {
   };
 }
 
+/** Per-requirement manual resolution editing state (not persisted in domain). */
+interface ManualResolutionDraft {
+  readonly skillId: string;
+  readonly label: string;
+}
+
 export default function OpportunityRequirementsSection({ requirements, onChange, currentActorId }: Props) {
+  // Track which requirement indices are in "manual resolve" mode, and their draft values
+  const [manualDrafts, setManualDrafts] = useState<Record<number, ManualResolutionDraft>>({});
+
   const addRequirement = () => {
     onChange([...requirements, createBlankRequirement(requirements.length)]);
   };
@@ -53,20 +74,18 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
   const updateRequirement = (index: number, updates: Partial<OpportunityRequirement>) => {
     const next = [...requirements];
     next[index] = { ...next[index], ...updates } as OpportunityRequirement;
-    // Any edit to literalSourceWording or major fields resets human confirmation
-    if (Object.keys(updates).some(k => ['literalSourceWording', 'priority', 'importance', 'evidenceExpectation', 'hardGate', 'category'].includes(k))) {
-      const req = next[index] as any;
-      req.humanConfirmed = false;
-      delete req.confirmedByActorId;
-      delete req.confirmedAt;
-      delete req.confirmationMethod;
+    const highImpactKeys = ['literalSourceWording', 'priority', 'importance', 'evidenceExpectation', 'hardGate', 'category'];
+    if (Object.keys(updates).some(k => highImpactKeys.includes(k))) {
+      next[index] = resetTrace(next[index]);
 
-      if (req.category === 'skill') {
-        if ('literalSourceWording' in updates || !req.canonicalResolution) {
-          req.canonicalResolution = {
+      if (next[index].category === 'skill') {
+        const skillReq = next[index] as SkillOpportunityRequirement;
+        if ('literalSourceWording' in updates || !skillReq.canonicalResolution) {
+          const resolution: CanonicalResolutionState = {
             state: 'unresolved',
-            literalText: req.literalSourceWording
+            literalText: skillReq.literalSourceWording
           };
+          (next[index] as any).canonicalResolution = resolution;
         }
       }
     }
@@ -77,21 +96,136 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
     const next = [...requirements];
     next.splice(index, 1);
     onChange(next);
+    // Clean up any manual draft for this index
+    setManualDrafts(prev => {
+      const copy = { ...prev };
+      delete copy[index];
+      return copy;
+    });
   };
 
-  const handleConfirmRequirement = (index: number, method: 'structured_human_entry' | 'ai_assisted_review' | 'controlled_fixture') => {
+  const handleConfirmRequirement = (index: number, method: HumanConfirmationMethod) => {
     const next = [...requirements];
-    const req = { ...next[index] } as any;
-    req.humanConfirmed = true;
-    req.confirmedByActorId = currentActorId;
-    req.confirmedAt = new Date().toISOString();
-    req.confirmationMethod = method;
-    next[index] = req;
+    const confirmed: OpportunityRequirement = {
+      ...next[index],
+      humanConfirmed: true,
+      confirmedByActorId: currentActorId,
+      confirmedAt: new Date().toISOString() as IsoTimestamp,
+      confirmationMethod: method
+    } as OpportunityRequirement;
+    next[index] = confirmed;
     onChange(next);
+  };
+
+  /** Accept a supplied suggestion — single atomic state update. */
+  const handleAcceptSuggestion = (index: number, suggestion: SkillReviewSuggestion) => {
+    const next = [...requirements];
+    const resolution: CanonicalResolutionState = {
+      state: 'resolved',
+      skillId: suggestion.skillId,
+      matchKind: 'alias'
+    };
+    const accepted: SkillOpportunityRequirement = {
+      ...next[index] as SkillOpportunityRequirement,
+      canonicalResolution: resolution,
+      humanConfirmed: true,
+      confirmedByActorId: currentActorId,
+      confirmedAt: new Date().toISOString() as IsoTimestamp,
+      confirmationMethod: 'controlled_fixture' as HumanConfirmationMethod
+    };
+    next[index] = accepted;
+    onChange(next);
+  };
+
+  /** Reject all suggestions — revert to unresolved preserving literal wording. */
+  const handleRejectSuggestions = (index: number) => {
+    const next = [...requirements];
+    const req = next[index] as SkillOpportunityRequirement;
+    const resolution: CanonicalResolutionState = {
+      state: 'unresolved',
+      literalText: req.literalSourceWording
+    };
+    const rejected: SkillOpportunityRequirement = {
+      ...req,
+      canonicalResolution: resolution
+    };
+    next[index] = rejected;
+    onChange(next);
+    // Close manual resolve panel if open
+    setManualDrafts(prev => {
+      const copy = { ...prev };
+      delete copy[index];
+      return copy;
+    });
+  };
+
+  /** Open manual resolution panel. */
+  const openManualResolve = (index: number) => {
+    setManualDrafts(prev => ({
+      ...prev,
+      [index]: { skillId: '', label: '' }
+    }));
+  };
+
+  /** Cancel manual resolution — close the panel without changing state. */
+  const cancelManualResolve = (index: number) => {
+    setManualDrafts(prev => {
+      const copy = { ...prev };
+      delete copy[index];
+      return copy;
+    });
+  };
+
+  /** Confirm a manually entered canonical skill ID/label. */
+  const confirmManualResolve = (index: number) => {
+    const draft = manualDrafts[index];
+    if (!draft) return;
+
+    const next = [...requirements];
+    const req = next[index] as SkillOpportunityRequirement;
+
+    if (draft.skillId.trim() === '') {
+      // No trustworthy canonical skill ID — keep unresolved
+      const resolution: CanonicalResolutionState = {
+        state: 'unresolved',
+        literalText: req.literalSourceWording
+      };
+      const updated: SkillOpportunityRequirement = {
+        ...req,
+        canonicalResolution: resolution,
+        humanConfirmed: true,
+        confirmedByActorId: currentActorId,
+        confirmedAt: new Date().toISOString() as IsoTimestamp,
+        confirmationMethod: 'structured_human_entry' as HumanConfirmationMethod
+      };
+      next[index] = updated;
+    } else {
+      // Human-supplied canonical skill ID
+      const resolution: CanonicalResolutionState = {
+        state: 'resolved',
+        skillId: draft.skillId.trim(),
+        matchKind: 'alias'
+      };
+      const updated: SkillOpportunityRequirement = {
+        ...req,
+        canonicalResolution: resolution,
+        humanConfirmed: true,
+        confirmedByActorId: currentActorId,
+        confirmedAt: new Date().toISOString() as IsoTimestamp,
+        confirmationMethod: 'structured_human_entry' as HumanConfirmationMethod
+      };
+      next[index] = updated;
+    }
+
+    onChange(next);
+    cancelManualResolve(index);
   };
 
   const renderSkillReview = (req: SkillOpportunityRequirement, index: number) => {
     if (!req.canonicalResolution || req.canonicalResolution.state !== 'review_required') return null;
+
+    const draft = manualDrafts[index];
+    const isManualMode = draft !== undefined;
 
     return (
       <div className="mt-4 border-2 border-dashed border-[#ff5c35] bg-[#fffaf5] p-4">
@@ -110,21 +244,7 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  const next = [...requirements];
-                  const nextReq = { ...next[index] } as any;
-                  nextReq.canonicalResolution = {
-                    state: 'resolved',
-                    skillId: suggestion.skillId,
-                    matchKind: 'alias'
-                  };
-                  nextReq.humanConfirmed = true;
-                  nextReq.confirmedByActorId = currentActorId;
-                  nextReq.confirmedAt = new Date().toISOString();
-                  nextReq.confirmationMethod = 'controlled_fixture';
-                  next[index] = nextReq;
-                  onChange(next);
-                }}
+                onClick={() => handleAcceptSuggestion(index, suggestion)}
                 className="border-2 border-black bg-[#e7ff57] px-3 py-1 font-mono-ui text-[10px] font-black uppercase tracking-wide transition-colors hover:bg-black hover:text-[#e7ff57]"
               >
                 Accept
@@ -132,31 +252,83 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
             </div>
           ))}
         </div>
-        <div className="mt-4 flex gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              const next = [...requirements];
-              const nextReq = { ...next[index] } as any;
-              nextReq.canonicalResolution = {
-                state: 'unresolved',
-                literalText: req.literalSourceWording
-              };
-              next[index] = nextReq;
-              onChange(next);
-            }}
-            className="border-2 border-black bg-white px-3 py-1 font-mono-ui text-[10px] font-black uppercase tracking-wide text-black transition-colors hover:bg-black hover:text-white"
-          >
-            Reject suggestion(s) / keep unresolved
-          </button>
-          <button
-            type="button"
-            className="border-2 border-black bg-white px-3 py-1 font-mono-ui text-[10px] font-black uppercase tracking-wide text-black opacity-50"
-            disabled
-          >
-            Edit / resolve manually (Demo only)
-          </button>
-        </div>
+
+        {isManualMode ? (
+          <div className="mt-4 border-2 border-black bg-white p-4">
+            <p className="mb-2 font-mono-ui text-[10px] font-black uppercase text-black">Manual Resolution</p>
+            <p className="mb-3 text-xs text-black/60">
+              Original wording: <span className="font-bold">"{req.literalSourceWording}"</span>
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block font-mono-ui text-[10px] font-black uppercase text-[#d63c1d]">
+                  Canonical Skill ID
+                </label>
+                <input
+                  type="text"
+                  className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
+                  value={draft.skillId}
+                  onChange={e => setManualDrafts(prev => ({
+                    ...prev,
+                    [index]: { ...prev[index], skillId: e.target.value }
+                  }))}
+                  placeholder="e.g. skill:react-js"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block font-mono-ui text-[10px] font-black uppercase text-[#d63c1d]">
+                  Canonical Label
+                </label>
+                <input
+                  type="text"
+                  className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
+                  value={draft.label}
+                  onChange={e => setManualDrafts(prev => ({
+                    ...prev,
+                    [index]: { ...prev[index], label: e.target.value }
+                  }))}
+                  placeholder="e.g. React.js"
+                />
+              </div>
+            </div>
+            <p className="mt-2 text-xs text-black/50">
+              Leave Canonical Skill ID blank to confirm as unresolved (no fabricated ID).
+            </p>
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={() => confirmManualResolve(index)}
+                className="border-2 border-black bg-black px-3 py-1 font-mono-ui text-[10px] font-black uppercase tracking-wide text-white transition-colors hover:bg-transparent hover:text-black"
+              >
+                Confirm Manual Resolution
+              </button>
+              <button
+                type="button"
+                onClick={() => cancelManualResolve(index)}
+                className="border-2 border-black bg-white px-3 py-1 font-mono-ui text-[10px] font-black uppercase tracking-wide text-black transition-colors hover:bg-black hover:text-white"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              onClick={() => openManualResolve(index)}
+              className="border-2 border-black bg-white px-3 py-1 font-mono-ui text-[10px] font-black uppercase tracking-wide text-black transition-colors hover:bg-black hover:text-white"
+            >
+              Edit / resolve manually
+            </button>
+            <button
+              type="button"
+              onClick={() => handleRejectSuggestions(index)}
+              className="border-2 border-black bg-white px-3 py-1 font-mono-ui text-[10px] font-black uppercase tracking-wide text-black transition-colors hover:bg-black hover:text-white"
+            >
+              Reject suggestion(s) / keep unresolved
+            </button>
+          </div>
+        )}
       </div>
     );
   };
@@ -215,7 +387,7 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
                   <select
                     className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
                     value={req.category}
-                    onChange={e => updateRequirement(i, { category: e.target.value as any })}
+                    onChange={e => updateRequirement(i, { category: e.target.value as RequirementCategory })}
                   >
                     {CATEGORIES.map(c => (
                       <option key={c.value} value={c.value}>{c.label}</option>
