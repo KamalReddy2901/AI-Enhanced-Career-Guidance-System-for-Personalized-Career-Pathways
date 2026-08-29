@@ -222,6 +222,21 @@ function mapScope(row: Pick<EvidenceRecordRow, 'scope_kind' | 'scope_skill_id' |
   }
 }
 
+function mapEvidenceRecord(row: EvidenceRecordRow): EvidenceRecordReadModel {
+  return {
+    id: row.id,
+    subjectActorId: row.subject_actor_id,
+    literalClaim: row.literal_claim,
+    provenance: row.provenance,
+    initialVerificationState: row.initial_verification_state,
+    proposalSource: row.proposal_source ?? undefined,
+    scope: mapScope(row),
+    source: { system: row.source_system, recordId: row.source_record_id ?? undefined, url: row.source_url ?? undefined, capturedAt: row.source_captured_at },
+    visibility: row.visibility,
+    createdAt: row.created_at,
+  };
+}
+
 function mapVerificationRequest(row: VerificationRequestRow): VerificationRequestReadModel {
   return {
     id: row.id,
@@ -264,18 +279,13 @@ export class SihBrowserDal {
       .select(evidenceSelect).eq('subject_actor_id', subjectActorId).order('created_at', { ascending: false });
     if (error) throw error;
     const rows = (data ?? []) as EvidenceRecordRow[];
-    return rows.map(row => ({
-      id: row.id,
-      subjectActorId: row.subject_actor_id,
-      literalClaim: row.literal_claim,
-      provenance: row.provenance,
-      initialVerificationState: row.initial_verification_state,
-      proposalSource: row.proposal_source ?? undefined,
-      scope: mapScope(row),
-      source: { system: row.source_system, recordId: row.source_record_id ?? undefined, url: row.source_url ?? undefined, capturedAt: row.source_captured_at },
-      visibility: row.visibility,
-      createdAt: row.created_at,
-    }));
+    return rows.map(mapEvidenceRecord);
+  }
+
+  async getEvidenceRecord(evidenceRecordId: EvidenceRecordId): Promise<EvidenceRecordReadModel | null> {
+    const { data, error } = await this.db().from('evidence_records').select(evidenceSelect).eq('id', evidenceRecordId).maybeSingle();
+    if (error) throw error;
+    return data ? mapEvidenceRecord(data as EvidenceRecordRow) : null;
   }
 
   async listArtifactsForEvidence(evidenceRecordId: EvidenceRecordId): Promise<EvidenceArtifactReadModel[]> {

@@ -53,21 +53,36 @@ const ok = (data: unknown): FakeResponse => ({ data, error: null });
 const actorId = 'actor-1' as ActorId;
 const evidenceId = 'evidence-1' as EvidenceRecordId;
 const applicationId = 'application-1' as ApplicationId;
+const evidenceRow = {
+  id: evidenceId, subject_actor_id: actorId, literal_claim: 'Built an accessible prototype',
+  provenance: 'self_reported', initial_verification_state: 'unverified', proposal_source: 'user_entry',
+  scope_kind: 'global_skill', scope_skill_id: null, scope_literal_skill_label: 'Accessibility testing',
+  scope_opportunity_id: null, scope_requirement_id: null, scope_organization_id: null, scope_outcome_event_id: null,
+  source_system: 'student_entry', source_record_id: 'entry-1', source_url: null,
+  source_captured_at: '2026-08-28T08:00:00.000Z', visibility: 'private', created_at: '2026-08-28T08:00:00.000Z',
+} as const;
+const evidenceReadModel = {
+  id: evidenceId,
+  subjectActorId: actorId,
+  literalClaim: 'Built an accessible prototype',
+  provenance: 'self_reported',
+  initialVerificationState: 'unverified',
+  proposalSource: 'user_entry',
+  scope: { kind: 'global_skill', skillId: undefined, literalSkillLabel: 'Accessibility testing' },
+  source: {
+    system: 'student_entry',
+    recordId: 'entry-1',
+    url: undefined,
+    capturedAt: '2026-08-28T08:00:00.000Z',
+  },
+  visibility: 'private',
+  createdAt: '2026-08-28T08:00:00.000Z',
+} as const;
 
 {
-  const { dal, queries } = fakeDal([
-    ok([{
-      id: evidenceId, subject_actor_id: actorId, literal_claim: 'Built an accessible prototype',
-      provenance: 'self_reported', initial_verification_state: 'unverified', proposal_source: 'user_entry',
-      scope_kind: 'global_skill', scope_skill_id: null, scope_literal_skill_label: 'Accessibility testing',
-      scope_opportunity_id: null, scope_requirement_id: null, scope_organization_id: null, scope_outcome_event_id: null,
-      source_system: 'student_entry', source_record_id: 'entry-1', source_url: null,
-      source_captured_at: '2026-08-28T08:00:00.000Z', visibility: 'private', created_at: '2026-08-28T08:00:00.000Z',
-    }]),
-  ]);
+  const { dal, queries } = fakeDal([ok([evidenceRow])]);
   const rows = await dal.listEvidenceForSubject(actorId);
-  assert.equal(rows[0]?.scope.kind, 'global_skill');
-  assert.equal(rows[0]?.initialVerificationState, 'unverified');
+  assert.deepEqual(rows, [evidenceReadModel]);
   assert.equal('currentVerification' in (rows[0] ?? {}), false,
     'Evidence ledger rows must not expose a universal verification state');
   assert.deepEqual(queries.map(query => query.table), ['evidence_records'],
@@ -79,6 +94,23 @@ const applicationId = 'application-1' as ApplicationId;
   const { dal, queries } = fakeDal([ok([])]);
   assert.deepEqual(await dal.listEvidenceForSubject(actorId), []);
   assert.deepEqual(queries.map(query => query.table), ['evidence_records']);
+}
+
+{
+  const { dal, queries } = fakeDal([ok(evidenceRow), ok(null)]);
+  assert.deepEqual(await dal.getEvidenceRecord(evidenceId), evidenceReadModel,
+    'Targeted evidence read must preserve the canonical evidence read-model mapping');
+  assert.equal(await dal.getEvidenceRecord('inaccessible-evidence' as EvidenceRecordId), null,
+    'Missing and RLS-inaccessible evidence must map to null');
+  assert.deepEqual(queries.map(query => query.table), ['evidence_records', 'evidence_records'],
+    'Verifier detail must query evidence_records only');
+  assert.deepEqual(queries[0]?.filters, [['eq', 'id', evidenceId]],
+    'Targeted evidence read must use an exact id filter');
+  assert.deepEqual(queries[1]?.filters, [['eq', 'id', 'inaccessible-evidence']],
+    'Targeted evidence read must not require a bulk subject evidence query');
+  assert.equal(queries[0]?.select, queries[1]?.select);
+  assert.ok(queries.every(query => query.select && query.select !== '*'),
+    'Targeted evidence reads must reuse the explicit evidence select');
 }
 
 {
@@ -150,5 +182,15 @@ const evidenceLedgerMethod = browserDalSource.match(/async listEvidenceForSubjec
 assert.ok(evidenceLedgerMethod, 'Evidence ledger read method must remain present');
 assert.doesNotMatch(evidenceLedgerMethod, /verification_events|currentVerification|latestByEvidence/,
   'Evidence ledger must not derive a cross-request universal verification state');
+const targetedEvidenceMethod = browserDalSource.match(/async getEvidenceRecord[\s\S]*?\n  }\n\n  async listArtifactsForEvidence/)?.[0] ?? '';
+assert.ok(targetedEvidenceMethod, 'Targeted evidence record read method must remain present');
+assert.match(targetedEvidenceMethod, /\.from\(['"]evidence_records['"]\)/,
+  'Targeted evidence read must query evidence_records');
+assert.match(targetedEvidenceMethod, /\.select\(evidenceSelect\)/,
+  'Targeted evidence read must reuse the explicit evidence select');
+assert.match(targetedEvidenceMethod, /\.eq\(['"]id['"], evidenceRecordId\)/,
+  'Targeted evidence read must use the exact evidence record id filter');
+assert.doesNotMatch(targetedEvidenceMethod, /subject_actor_id|listEvidenceForSubject/,
+  'Verifier detail must not depend on a bulk subject evidence read');
 
 console.log('SIH browser read contract QA passed.');
