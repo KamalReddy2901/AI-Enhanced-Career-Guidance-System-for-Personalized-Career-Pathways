@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import type { Actor, CollaborationEngagement, Organization } from '../../../domain';
+import { FacultyEngagementWorkspace } from './FacultyEngagementWorkspace';
 import {
   collaborationGroup,
   collaborationGroupLabel,
@@ -76,6 +77,7 @@ export function FacultyCollaborationDetail({ engagement, organizations, personas
           </section>
         </aside>
       </div>
+      <FacultyEngagementWorkspace engagement={engagement} organizations={organizations} personas={personas} />
     </div>
   );
 }
