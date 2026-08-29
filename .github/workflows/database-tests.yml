@@ -59,6 +59,9 @@ jobs:
       - name: Replay all migrations from a clean local database
         run: supabase db reset --local
 
+      - name: Inspect Supabase database advisors
+        run: supabase db advisors --local --type all --level warn --fail-on error
+
       - name: Execute SIH26044 relational and RLS SQL assertions
         env:
           PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
@@ -71,7 +74,7 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
             -f supabase/tests/sih26044_rls.sql
           sql_assertion_count="$(grep -Ec '^(select|[[:space:]]+perform) pg_temp\.assert_(true|blocked)\(' supabase/tests/sih26044_rls.sql)"
-          test "$sql_assertion_count" -eq 51
+          test "$sql_assertion_count" -eq 52
           echo "EXECUTED SQL assertions: $sql_assertion_count"
 
       - name: Execute SIH26044 D2 readiness and trust assertions
