@@ -33,6 +33,8 @@ assert.deepEqual(migrationFiles, [
   '202608260017_foundation_rpc_surface_repair.sql',
   '202608260018_readiness_projection_runtime_fix.sql',
   '20260827202029_restrict_trigger_function_execute.sql',
+  '20260829120148_opportunity_publish_audit_hardening.sql',
+  '20260829172859_verification_request_returning_rls_fix.sql',
 ]);
 
 const migrationSources = await Promise.all(migrationFiles.map(async file => ({
@@ -49,6 +51,8 @@ const d2ConsentGrantSql = migrationSources.find(item => item.file.endsWith('013_
 const finalRpcRepairSql = migrationSources.find(item => item.file.endsWith('017_foundation_rpc_surface_repair.sql'))?.source ?? '';
 const finalProjectionRuntimeSql = migrationSources.find(item => item.file.endsWith('018_readiness_projection_runtime_fix.sql'))?.source ?? '';
 const triggerPrivilegeSql = migrationSources.find(item => item.file.endsWith('restrict_trigger_function_execute.sql'))?.source ?? '';
+const publishAuditSql = migrationSources.find(item => item.file.endsWith('opportunity_publish_audit_hardening.sql'))?.source ?? '';
+const verificationRequestReturningRlsSql = migrationSources.find(item => item.file.endsWith('verification_request_returning_rls_fix.sql'))?.source ?? '';
 const localConfig = await readFile(configPath, 'utf8');
 
 const createdTables = [...normalizedSql.matchAll(/create\s+table(?:\s+if\s+not\s+exists)?\s+sih26044\.([a-z0-9_]+)/gi)]
@@ -93,6 +97,21 @@ assert.equal(
 );
 assert.ok(evidencePolicies.some(policy => /assigned_verifier/i.test(policy)),
   'Exact assigned-verifier evidence access must remain explicit');
+
+const verificationRequestSelectPolicy = activePolicyStatements.find(policy =>
+  /create\s+policy\s+verification_requests_select_bounded\b/i.test(policy)
+  && /on\s+sih26044\.verification_requests\b/i.test(policy)
+) ?? '';
+assert.match(
+  verificationRequestSelectPolicy,
+  /using\s*\(\s*subject_actor_id\s*=\s*sih26044\.current_actor_id\(\)\s+or\s+sih26044\.can_access_verification_request\(id\)\s*\)/i,
+  'Verification-request SELECT must authorize the subject directly and preserve bounded verifier authorization',
+);
+assert.doesNotMatch(
+  verificationRequestReturningRlsSql,
+  /create\s+or\s+replace\s+function\s+sih26044\.(?:can_access_verification_request|can_create_verification_request|can_verify_evidence|is_consent_active)/i,
+  'Returning repair must not alter existing subject creation, verifier, or consent helper semantics',
+);
 
 const appendOnlyTables = [
   'evidence_records',
@@ -370,6 +389,21 @@ assert.match(normalizedSql, /grant\s+execute\s+on\s+function\s+sih26044\.is_orph
 
 assert.match(normalizedSql, /all consumed requirements and eligibility rules need complete human confirmation/i);
 assert.match(normalizedSql, /published opportunity versions are immutable/i);
+const finalPublishFunction = publishAuditSql.match(
+  /create\s+or\s+replace\s+function\s+sih26044\.publish_opportunity_version[\s\S]*?\$\$\s*;/i,
+)?.[0] ?? '';
+assert.ok(finalPublishFunction, 'Final opportunity publication function must remain present');
+assert.match(finalPublishFunction, /publisher_actor_id\s*:=\s*sih26044\.current_actor_id\(\)/i,
+  'Publication must derive the responsible actor from the authenticated session');
+assert.match(finalPublishFunction, /for\s+update\s+of\s+v\s*,\s*o/i,
+  'Publication must lock the version and opportunity for an atomic transition');
+assert.match(finalPublishFunction, /perform\s+sih26044\.record_authoritative_audit\s*\(/i,
+  'Publication must record an authoritative human publisher audit');
+assert.match(finalPublishFunction, /'opportunity\.version_published'/i);
+assert.match(publishAuditSql, /revoke\s+all\s+on\s+function\s+sih26044\.publish_opportunity_version\s*\(\s*uuid\s*\)\s+from\s+public\s*,\s*anon/i);
+assert.match(publishAuditSql, /grant\s+execute\s+on\s+function\s+sih26044\.publish_opportunity_version\s*\(\s*uuid\s*\)\s+to\s+authenticated/i);
+assert.doesNotMatch(publishAuditSql, /grant\s+execute[\s\S]*?to\s+service_role/i,
+  'The human publication boundary must not be exposed as a service-role automation contract');
 assert.match(normalizedSql, /extensions\.digest\([\s\S]*?'sha256'/i,
   'Application snapshot integrity fingerprint must be content-derived using SHA-256');
 assert.match(normalizedSql, /not a digital signature/i);
@@ -459,6 +493,7 @@ const requiredRlsTestClaims = [
   'production client cannot claim controlled confirmation method',
   'confirmed eligibility edit invalidates stale confirmation',
   'freshly reconfirmed edited content can publish',
+  'published opportunity version records exact human publisher audit',
   'outcome cannot target unrelated learner/application',
   'valid application-linked outcome can be recorded by authorized human actor',
   'valid storage path uses exactly actor/artifact folders plus filename',
@@ -474,6 +509,16 @@ const requiredRlsTestClaims = [
   'assigned verifier cannot read evidence after consent expires',
   'assigned verifier still cannot browse unrelated evidence after consent expires',
   'assigned verifier cannot append verification event after consent expires',
+  'verification request cannot be created without active evidence_verification consent',
+  'verification request cannot be created when consent omits the exact evidence record',
+  'authenticated subject can insert verification request with returning',
+  'authenticated subject can subsequently select own verification request',
+  'authorized assigned verifier can select active verification requests',
+  'assigned verifier cannot read unconsented sibling evidence',
+  'unrelated authenticated actor cannot select active verification requests',
+  'expired consent removes assigned verifier request access',
+  'withdrawn consent removes assigned verifier request access',
+  'withdrawn consent removes assigned verifier exact-evidence access',
 ];
 for (const claim of requiredRlsTestClaims) assert.match(rlsTests, new RegExp(claim, 'i'));
 

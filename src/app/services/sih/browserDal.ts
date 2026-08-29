@@ -108,6 +108,12 @@ export interface ListApplicationsInput {
   readonly initialStage?: 'saved' | 'preparing';
 }
 
+export interface ListApplicationsForRecruiterOrganizationInput extends ListApplicationsInput {
+  /** Transparent workflow filtering only. This is applied after the append-only
+   * application event history has been composed into the current stage. */
+  readonly currentStage?: ApplicationStage;
+}
+
 interface EvidenceRecordRow {
   id: string;
   subject_actor_id: string;
@@ -222,6 +228,21 @@ function mapScope(row: Pick<EvidenceRecordRow, 'scope_kind' | 'scope_skill_id' |
   }
 }
 
+function mapEvidenceRecord(row: EvidenceRecordRow): EvidenceRecordReadModel {
+  return {
+    id: row.id,
+    subjectActorId: row.subject_actor_id,
+    literalClaim: row.literal_claim,
+    provenance: row.provenance,
+    initialVerificationState: row.initial_verification_state,
+    proposalSource: row.proposal_source ?? undefined,
+    scope: mapScope(row),
+    source: { system: row.source_system, recordId: row.source_record_id ?? undefined, url: row.source_url ?? undefined, capturedAt: row.source_captured_at },
+    visibility: row.visibility,
+    createdAt: row.created_at,
+  };
+}
+
 function mapVerificationRequest(row: VerificationRequestRow): VerificationRequestReadModel {
   return {
     id: row.id,
@@ -264,18 +285,13 @@ export class SihBrowserDal {
       .select(evidenceSelect).eq('subject_actor_id', subjectActorId).order('created_at', { ascending: false });
     if (error) throw error;
     const rows = (data ?? []) as EvidenceRecordRow[];
-    return rows.map(row => ({
-      id: row.id,
-      subjectActorId: row.subject_actor_id,
-      literalClaim: row.literal_claim,
-      provenance: row.provenance,
-      initialVerificationState: row.initial_verification_state,
-      proposalSource: row.proposal_source ?? undefined,
-      scope: mapScope(row),
-      source: { system: row.source_system, recordId: row.source_record_id ?? undefined, url: row.source_url ?? undefined, capturedAt: row.source_captured_at },
-      visibility: row.visibility,
-      createdAt: row.created_at,
-    }));
+    return rows.map(mapEvidenceRecord);
+  }
+
+  async getEvidenceRecord(evidenceRecordId: EvidenceRecordId): Promise<EvidenceRecordReadModel | null> {
+    const { data, error } = await this.db().from('evidence_records').select(evidenceSelect).eq('id', evidenceRecordId).maybeSingle();
+    if (error) throw error;
+    return data ? mapEvidenceRecord(data as EvidenceRecordRow) : null;
   }
 
   async listArtifactsForEvidence(evidenceRecordId: EvidenceRecordId): Promise<EvidenceArtifactReadModel[]> {
@@ -330,6 +346,24 @@ export class SihBrowserDal {
     if (error) throw error;
     const rows = (data ?? []) as ApplicationRow[];
     return this.mapApplicationsWithCurrentStage(rows);
+  }
+
+  async listApplicationsForRecruiterOrganization(
+    ownerOrganizationId: OrganizationId,
+    input: ListApplicationsForRecruiterOrganizationInput = {},
+  ): Promise<ApplicationReadModel[]> {
+    let query = this.db().from('applications').select(applicationSelect)
+      .eq('owner_organization_id', ownerOrganizationId)
+      .order('created_at', { ascending: false });
+    if (input.opportunityId) query = query.eq('opportunity_id', input.opportunityId);
+    if (input.opportunityVersionId) query = query.eq('opportunity_version_id', input.opportunityVersionId);
+    if (input.initialStage) query = query.eq('initial_stage', input.initialStage);
+    const { data, error } = await query;
+    if (error) throw error;
+    const applications = await this.mapApplicationsWithCurrentStage((data ?? []) as ApplicationRow[]);
+    return input.currentStage
+      ? applications.filter(application => application.currentStage === input.currentStage)
+      : applications;
   }
 
   async getApplication(applicationId: ApplicationId): Promise<ApplicationReadModel | null> {
@@ -499,5 +533,19 @@ export class SihBrowserDal {
     }).select().single();
     if (error) throw error;
     return data;
+  }
+
+  /** Explicit high-impact publication action. The database function derives
+   * actor authority from the authenticated session, validates confirmation,
+   * freezes the version, updates the current version, and records the publisher. */
+  async publishOpportunityVersion(opportunityVersionId: OpportunityVersionId): Promise<OpportunityVersionId> {
+    const { data, error } = await this.db().rpc('publish_opportunity_version', {
+      requested_version_id: opportunityVersionId,
+    });
+    if (error) throw error;
+    if (data !== opportunityVersionId) {
+      throw new Error('Published opportunity version identity did not match the requested version.');
+    }
+    return data as OpportunityVersionId;
   }
 }
