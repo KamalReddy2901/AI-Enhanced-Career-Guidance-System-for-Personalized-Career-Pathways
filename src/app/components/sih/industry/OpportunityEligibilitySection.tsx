@@ -1,11 +1,26 @@
 import type { EligibilityRule } from '../../../domain/opportunity';
+import type { ActorId } from '../../../domain';
 
 interface Props {
   readonly rules: readonly EligibilityRule[];
   readonly onChange: (rules: EligibilityRule[]) => void;
+  readonly currentActorId: ActorId;
 }
 
-export default function OpportunityEligibilitySection({ rules, onChange }: Props) {
+const KINDS = [
+  'custom',
+  'education_level',
+  'graduation_year',
+  'location',
+  'organization_membership',
+  'availability',
+  'licence_registration',
+  'work_authorization',
+  'language',
+  'explicit_prerequisite'
+] as const;
+
+export default function OpportunityEligibilitySection({ rules, onChange, currentActorId }: Props) {
   const addRule = () => {
     onChange([
       ...rules,
@@ -21,15 +36,76 @@ export default function OpportunityEligibilitySection({ rules, onChange }: Props
   const updateRule = (index: number, updates: Partial<EligibilityRule>) => {
     const next = [...rules];
     next[index] = { ...next[index], ...updates } as EligibilityRule;
-    if ('literalSourceWording' in updates) {
-      (next[index] as any).humanConfirmed = false;
+
+    // Changing literal wording or kind resets confirmation
+    if ('literalSourceWording' in updates || 'kind' in updates) {
+      const rule = next[index] as any;
+      rule.humanConfirmed = false;
+      delete rule.confirmedByActorId;
+      delete rule.confirmedAt;
+      delete rule.confirmationMethod;
     }
+
     onChange(next);
   };
 
   const removeRule = (index: number) => {
     const next = [...rules];
     next.splice(index, 1);
+    onChange(next);
+  };
+
+  const handleConfirmRule = (index: number) => {
+    const next = [...rules];
+    const rule = { ...next[index] } as any;
+    rule.humanConfirmed = true;
+    rule.confirmedByActorId = currentActorId;
+    rule.confirmedAt = new Date().toISOString();
+    rule.confirmationMethod = 'structured_human_entry';
+    next[index] = rule;
+    onChange(next);
+  };
+
+  const handleKindChange = (index: number, newKind: typeof KINDS[number]) => {
+    const next = [...rules];
+    let newRule: any = {
+      literalSourceWording: next[index].literalSourceWording,
+      humanConfirmed: false
+    };
+
+    switch (newKind) {
+      case 'custom':
+        newRule = { ...newRule, kind: 'custom', machineEnforced: false };
+        break;
+      case 'education_level':
+        newRule = { ...newRule, kind: 'education_level', operator: 'at_least', value: 'bachelors' };
+        break;
+      case 'graduation_year':
+        newRule = { ...newRule, kind: 'graduation_year', operator: 'after', value: new Date().getFullYear() };
+        break;
+      case 'location':
+        newRule = { ...newRule, kind: 'location', operator: 'in', values: [], requiresPhysicalPresence: true };
+        break;
+      case 'organization_membership':
+        newRule = { ...newRule, kind: 'organization_membership', organizationIds: [] };
+        break;
+      case 'availability':
+      case 'licence_registration':
+      case 'explicit_prerequisite':
+        newRule = { ...newRule, kind: newKind, factKey: '', expectedValue: true };
+        if (newKind === 'licence_registration') {
+          newRule.licenceCode = '';
+          delete newRule.factKey;
+        }
+        break;
+      case 'work_authorization':
+        newRule = { ...newRule, kind: 'work_authorization', jurisdiction: 'IN' };
+        break;
+      case 'language':
+        newRule = { ...newRule, kind: 'language', language: 'en' };
+        break;
+    }
+    next[index] = newRule;
     onChange(next);
   };
 
@@ -57,9 +133,13 @@ export default function OpportunityEligibilitySection({ rules, onChange }: Props
                   <span className="bg-black px-2 py-1 font-mono-ui text-[10px] font-black uppercase text-white">
                     {rule.kind.replace('_', ' ')}
                   </span>
-                  {rule.humanConfirmed && (
+                  {rule.humanConfirmed ? (
                     <span className="bg-[#16a34a] px-2 py-1 font-mono-ui text-[10px] font-black uppercase text-white">
                       Confirmed
+                    </span>
+                  ) : (
+                    <span className="bg-amber-500 px-2 py-1 font-mono-ui text-[10px] font-black uppercase text-white">
+                      Unconfirmed
                     </span>
                   )}
                 </div>
@@ -72,18 +152,47 @@ export default function OpportunityEligibilitySection({ rules, onChange }: Props
                 </button>
               </div>
 
-              <div>
-                <label className="mb-2 block font-mono-ui text-[10px] font-black uppercase text-[#d63c1d]">
-                  Literal Source Wording
-                </label>
-                <input
-                  type="text"
-                  className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
-                  value={rule.literalSourceWording}
-                  onChange={e => updateRule(i, { literalSourceWording: e.target.value })}
-                  placeholder="e.g. Must be a current student"
-                />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="mb-2 block font-mono-ui text-[10px] font-black uppercase text-[#d63c1d]">
+                    Kind
+                  </label>
+                  <select
+                    className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
+                    value={rule.kind}
+                    onChange={e => handleKindChange(i, e.target.value as any)}
+                  >
+                    {KINDS.map(k => (
+                      <option key={k} value={k}>{k.replace(/_/g, ' ')}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="mb-2 block font-mono-ui text-[10px] font-black uppercase text-[#d63c1d]">
+                    Literal Source Wording
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
+                    value={rule.literalSourceWording}
+                    onChange={e => updateRule(i, { literalSourceWording: e.target.value })}
+                    placeholder="e.g. Must have graduated after 2022"
+                  />
+                </div>
               </div>
+
+              {!rule.humanConfirmed && (
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => handleConfirmRule(i)}
+                    className="border-2 border-black bg-black px-4 py-2 font-mono-ui text-[10px] font-black uppercase tracking-wide text-white transition-colors hover:bg-transparent hover:text-black focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
+                  >
+                    Confirm Rule Structure
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>

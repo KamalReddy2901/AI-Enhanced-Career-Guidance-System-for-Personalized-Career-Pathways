@@ -4,21 +4,12 @@ import type { TransitionApplicationStageInput } from '../../../services/sih/brow
 
 interface Props {
   readonly currentStage: ApplicationStage;
+  readonly allowedNextStages: readonly ApplicationStage[];
   readonly onTransition: (input: Omit<TransitionApplicationStageInput, 'applicationId'>) => Promise<void>;
   readonly isProcessing: boolean;
 }
 
-const HUMAN_STAGES: ApplicationStage[] = [
-  'under_review',
-  'interview',
-  'shortlisted',
-  'offered',
-  'accepted',
-  'declined',
-  'rejected_by_human',
-];
-
-export default function HumanStageActionPanel({ currentStage, onTransition, isProcessing }: Props) {
+export default function HumanStageActionPanel({ currentStage, allowedNextStages, onTransition, isProcessing }: Props) {
   const [selectedStage, setSelectedStage] = useState<ApplicationStage | ''>('');
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
@@ -74,7 +65,7 @@ export default function HumanStageActionPanel({ currentStage, onTransition, isPr
             className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
           >
             <option value="" disabled>Select stage...</option>
-            {HUMAN_STAGES.filter(s => s !== currentStage).map(s => (
+            {allowedNextStages.map(s => (
               <option key={s} value={s}>{s.replace(/_/g, ' ').toUpperCase()}</option>
             ))}
           </select>

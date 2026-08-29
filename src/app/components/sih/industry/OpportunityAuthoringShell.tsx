@@ -1,18 +1,25 @@
 import { useState } from 'react';
 import type { OpportunityVersion, OpportunityRequirement, EligibilityRule } from '../../../domain/opportunity';
-import type { SihBrowserDal } from '../../../services/sih/browserDal';
+import type { ActorId, OpportunityVersionId } from '../../../domain';
 import OpportunityBasicsSection, { type OpportunityBasicsDraft } from './OpportunityBasicsSection';
 import OpportunityRequirementsSection from './OpportunityRequirementsSection';
 import OpportunityEligibilitySection from './OpportunityEligibilitySection';
 import OpportunityReviewPanel from './OpportunityReviewPanel';
 
 interface Props {
-  readonly dal: SihBrowserDal;
-  // If editing an existing draft, it would be passed here.
   readonly initialDraft?: Partial<OpportunityVersion>;
+  readonly persistedOpportunityVersionId?: OpportunityVersionId;
+  readonly onPublishPersistedVersion?: (opportunityVersionId: OpportunityVersionId) => Promise<void>;
+  readonly currentActorId: ActorId;
 }
 
-export default function OpportunityAuthoringShell({ dal, initialDraft }: Props) {
+export default function OpportunityAuthoringShell({
+  initialDraft,
+  persistedOpportunityVersionId,
+  onPublishPersistedVersion,
+  currentActorId
+}: Props) {
+  const [isDirty, setIsDirty] = useState(false);
   const [basics, setBasics] = useState<OpportunityBasicsDraft>({
     title: initialDraft?.title ?? '',
     description: initialDraft?.description ?? '',
@@ -30,21 +37,40 @@ export default function OpportunityAuthoringShell({ dal, initialDraft }: Props) 
   );
 
   const [isPublishing, setIsPublishing] = useState(false);
-  const [publishError, setPublishError] = useState<string | null>(null);
+  const [publishStatus, setPublishStatus] = useState<{ type: 'error' | 'success', message: string } | null>(null);
+
+  const handleBasicsChange = (newBasics: OpportunityBasicsDraft) => {
+    setBasics(newBasics);
+    setIsDirty(true);
+  };
+
+  const handleRequirementsChange = (newReqs: OpportunityRequirement[]) => {
+    setRequirements(newReqs);
+    setIsDirty(true);
+  };
+
+  const handleRulesChange = (newRules: EligibilityRule[]) => {
+    setRules(newRules);
+    setIsDirty(true);
+  };
 
   const handlePublish = async () => {
-    if (!initialDraft?.id) {
-      setPublishError('Draft persistence is blocked. Cannot publish a brand new draft from UI alone.');
+    if (isDirty) {
+      setPublishStatus({ type: 'error', message: 'Local authoring changes are not yet persisted. Production draft-save integration is pending.' });
+      return;
+    }
+    if (!persistedOpportunityVersionId || !onPublishPersistedVersion) {
+      setPublishStatus({ type: 'error', message: 'Publishing requires a persisted draft and integration callback.' });
       return;
     }
 
     try {
       setIsPublishing(true);
-      setPublishError(null);
-      await dal.publishOpportunityVersion(initialDraft.id);
-      alert('Opportunity published successfully!');
+      setPublishStatus(null);
+      await onPublishPersistedVersion(persistedOpportunityVersionId);
+      setPublishStatus({ type: 'success', message: 'Opportunity published successfully!' });
     } catch (err) {
-      setPublishError(err instanceof Error ? err.message : 'Unknown publish error');
+      setPublishStatus({ type: 'error', message: err instanceof Error ? err.message : 'Unknown publish error' });
     } finally {
       setIsPublishing(false);
     }
@@ -61,16 +87,23 @@ export default function OpportunityAuthoringShell({ dal, initialDraft }: Props) 
         </p>
       </div>
 
-      <OpportunityBasicsSection draft={basics} onChange={setBasics} />
+      <OpportunityBasicsSection draft={basics} onChange={handleBasicsChange} />
       
-      <OpportunityRequirementsSection requirements={requirements} onChange={setRequirements} />
+      <OpportunityRequirementsSection requirements={requirements} onChange={handleRequirementsChange} currentActorId={currentActorId} />
       
-      <OpportunityEligibilitySection rules={rules} onChange={setRules} />
+      <OpportunityEligibilitySection rules={rules} onChange={handleRulesChange} currentActorId={currentActorId} />
 
-      {publishError && (
-        <div className="border-l-4 border-[#d63c1d] bg-[#f7f4ed] p-4 text-[#d63c1d]">
-          <p className="font-mono-ui text-sm font-bold">Publishing Failed</p>
-          <p className="text-sm">{publishError}</p>
+      {isDirty && (
+        <div className="border-l-4 border-amber-500 bg-amber-50 p-4 text-amber-900">
+          <p className="font-mono-ui text-sm font-bold">Unsaved Changes</p>
+          <p className="text-sm">Local authoring changes are not yet persisted. Production draft-save integration is pending.</p>
+        </div>
+      )}
+
+      {publishStatus && (
+        <div className={`border-l-4 p-4 ${publishStatus.type === 'error' ? 'border-[#d63c1d] bg-[#f7f4ed] text-[#d63c1d]' : 'border-green-600 bg-green-50 text-green-900'}`}>
+          <p className="font-mono-ui text-sm font-bold">{publishStatus.type === 'error' ? 'Publishing Failed' : 'Success'}</p>
+          <p className="text-sm">{publishStatus.message}</p>
         </div>
       )}
 
@@ -79,7 +112,8 @@ export default function OpportunityAuthoringShell({ dal, initialDraft }: Props) 
         eligibilityRules={rules}
         onPublish={handlePublish}
         isPublishing={isPublishing}
-        opportunityVersionId={initialDraft?.id}
+        opportunityVersionId={persistedOpportunityVersionId}
+        publishDisabled={isDirty || !persistedOpportunityVersionId || !onPublishPersistedVersion}
       />
     </div>
   );

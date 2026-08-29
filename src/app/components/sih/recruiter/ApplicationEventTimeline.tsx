@@ -21,8 +21,6 @@ export default function ApplicationEventTimeline({ events }: Props) {
 
       <div className="space-y-4">
         {events.map((ev, i) => {
-          const isHumanEvent = ev.eventKind === 'human_rejection' || (ev.eventKind === 'stage_transition' && ev.actorId !== 'system');
-          
           return (
             <div key={ev.id} className="relative pl-4">
               {/* Timeline line connecting items */}
@@ -30,7 +28,7 @@ export default function ApplicationEventTimeline({ events }: Props) {
                 <div className="absolute bottom-0 left-[7px] top-4 w-0.5 bg-black/20" />
               )}
               {/* Timeline dot */}
-              <div className={`absolute left-1 top-1.5 h-2 w-2 rounded-full border-2 border-black ${isHumanEvent ? 'bg-[#d63c1d]' : 'bg-black'}`} />
+              <div className="absolute left-1 top-1.5 h-2 w-2 rounded-full border-2 border-black bg-black" />
 
               <div className="mb-1 flex items-center justify-between">
                 <span className="font-mono-ui text-[10px] font-black uppercase">
@@ -46,7 +44,7 @@ export default function ApplicationEventTimeline({ events }: Props) {
               </p>
 
               <div className="mt-1 font-mono-ui text-[9px] text-black/60">
-                Actor: {ev.actorId.substring(0, 8)}...
+                Actor: {ev.actorId}
               </div>
 
               {ev.reason && (

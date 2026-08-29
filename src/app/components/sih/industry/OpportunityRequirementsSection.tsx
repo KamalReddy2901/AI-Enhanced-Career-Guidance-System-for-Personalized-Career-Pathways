@@ -2,14 +2,34 @@ import type {
   OpportunityRequirement,
   RequirementPriority,
   RequirementImportance,
-  RequirementEvidenceExpectation
+  RequirementEvidenceExpectation,
+  SkillOpportunityRequirement,
+  ExperienceOpportunityRequirement,
+  QualificationOpportunityRequirement,
+  DocumentEvidenceOpportunityRequirement,
+  QuestionnaireOpportunityRequirement,
+  LogisticsOpportunityRequirement,
+  LiteralOpportunityRequirement
 } from '../../../domain/opportunity';
+import type { ActorId } from '../../../domain';
+import type { SkillReviewSuggestion } from '../../../domain/skillResolution';
 import SkillResolutionBadge from './SkillResolutionBadge';
 
 interface Props {
   readonly requirements: readonly OpportunityRequirement[];
   readonly onChange: (requirements: OpportunityRequirement[]) => void;
+  readonly currentActorId: ActorId;
 }
+
+const CATEGORIES = [
+  { value: 'other_literal', label: 'Other Literal' },
+  { value: 'skill', label: 'Skill' },
+  { value: 'experience', label: 'Experience' },
+  { value: 'qualification', label: 'Qualification' },
+  { value: 'document_evidence', label: 'Document Evidence' },
+  { value: 'questionnaire', label: 'Questionnaire' },
+  { value: 'logistics', label: 'Logistics' }
+];
 
 // Minimal stub for new requirements before they are saved/confirmed
 function createBlankRequirement(index: number): OpportunityRequirement {
@@ -25,7 +45,7 @@ function createBlankRequirement(index: number): OpportunityRequirement {
   };
 }
 
-export default function OpportunityRequirementsSection({ requirements, onChange }: Props) {
+export default function OpportunityRequirementsSection({ requirements, onChange, currentActorId }: Props) {
   const addRequirement = () => {
     onChange([...requirements, createBlankRequirement(requirements.length)]);
   };
@@ -33,9 +53,13 @@ export default function OpportunityRequirementsSection({ requirements, onChange 
   const updateRequirement = (index: number, updates: Partial<OpportunityRequirement>) => {
     const next = [...requirements];
     next[index] = { ...next[index], ...updates } as OpportunityRequirement;
-    // Any edit resets human confirmation
-    if ('literalSourceWording' in updates) {
-      (next[index] as any).humanConfirmed = false;
+    // Any edit to literalSourceWording or major fields resets human confirmation
+    if (Object.keys(updates).some(k => ['literalSourceWording', 'priority', 'importance', 'evidenceExpectation', 'hardGate', 'category'].includes(k))) {
+      const req = next[index] as any;
+      req.humanConfirmed = false;
+      delete req.confirmedByActorId;
+      delete req.confirmedAt;
+      delete req.confirmationMethod;
     }
     onChange(next);
   };
@@ -44,6 +68,61 @@ export default function OpportunityRequirementsSection({ requirements, onChange 
     const next = [...requirements];
     next.splice(index, 1);
     onChange(next);
+  };
+
+  const handleConfirmRequirement = (index: number, method: 'structured_human_entry' | 'ai_assisted_review' | 'controlled_fixture') => {
+    const next = [...requirements];
+    const req = { ...next[index] } as any;
+    req.humanConfirmed = true;
+    req.confirmedByActorId = currentActorId;
+    req.confirmedAt = new Date().toISOString();
+    req.confirmationMethod = method;
+    next[index] = req;
+    onChange(next);
+  };
+
+  const renderSkillReview = (req: SkillOpportunityRequirement, index: number) => {
+    if (!req.canonicalResolution || req.canonicalResolution.state !== 'review_required') return null;
+
+    return (
+      <div className="mt-4 border-2 border-dashed border-[#ff5c35] bg-[#fffaf5] p-4">
+        <p className="font-mono-ui text-[10px] font-black uppercase text-[#ff5c35]">Review Required</p>
+        <p className="mt-1 text-sm text-black/80">
+          The system found potential skill matches for: <span className="font-bold">"{req.canonicalResolution.literalText}"</span>
+        </p>
+        <p className="mt-1 font-mono-ui text-[10px] text-black/50">Controlled prototype — not live AI</p>
+
+        <div className="mt-3 grid gap-2">
+          {req.canonicalResolution.suggestions.map((suggestion, sIdx) => (
+            <div key={sIdx} className="flex items-center justify-between border border-black/10 bg-white p-2">
+              <div>
+                <p className="text-sm font-bold">{suggestion.label}</p>
+                <p className="font-mono-ui text-[10px] text-black/50">Score: {suggestion.score.toFixed(2)} — Suggestion only</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = [...requirements];
+                  const nextReq = { ...next[index] } as any;
+                  nextReq.canonicalResolution = {
+                    state: 'resolved',
+                    skillId: suggestion.skillId,
+                    matchKind: 'exact'
+                  };
+                  next[index] = nextReq;
+                  onChange(next);
+                  // Explicit confirmation
+                  handleConfirmRequirement(index, 'controlled_fixture');
+                }}
+                className="border-2 border-black bg-[#e7ff57] px-3 py-1 font-mono-ui text-[10px] font-black uppercase tracking-wide transition-colors hover:bg-black hover:text-[#e7ff57]"
+              >
+                Accept
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -70,12 +149,16 @@ export default function OpportunityRequirementsSection({ requirements, onChange 
                   <span className="bg-black px-2 py-1 font-mono-ui text-[10px] font-black uppercase text-white">
                     {req.category.replace('_', ' ')}
                   </span>
-                  {req.category === 'skill' && req.canonicalResolution && (
-                    <SkillResolutionBadge resolution={req.canonicalResolution} />
+                  {req.category === 'skill' && (req as SkillOpportunityRequirement).canonicalResolution && (
+                    <SkillResolutionBadge resolution={(req as SkillOpportunityRequirement).canonicalResolution} />
                   )}
-                  {req.humanConfirmed && (
+                  {req.humanConfirmed ? (
                     <span className="bg-[#16a34a] px-2 py-1 font-mono-ui text-[10px] font-black uppercase text-white">
                       Confirmed
+                    </span>
+                  ) : (
+                    <span className="bg-amber-500 px-2 py-1 font-mono-ui text-[10px] font-black uppercase text-white">
+                      Unconfirmed
                     </span>
                   )}
                 </div>
@@ -89,6 +172,21 @@ export default function OpportunityRequirementsSection({ requirements, onChange 
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="mb-2 block font-mono-ui text-[10px] font-black uppercase text-[#d63c1d]">
+                    Category
+                  </label>
+                  <select
+                    className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
+                    value={req.category}
+                    onChange={e => updateRequirement(i, { category: e.target.value as any })}
+                  >
+                    {CATEGORIES.map(c => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="sm:col-span-2">
                   <label className="mb-2 block font-mono-ui text-[10px] font-black uppercase text-[#d63c1d]">
                     Literal Source Wording
@@ -118,6 +216,21 @@ export default function OpportunityRequirementsSection({ requirements, onChange 
 
                 <div>
                   <label className="mb-2 block font-mono-ui text-[10px] font-black uppercase text-[#d63c1d]">
+                    Importance (1-3)
+                  </label>
+                  <select
+                    className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
+                    value={req.importance}
+                    onChange={e => updateRequirement(i, { importance: parseInt(e.target.value, 10) as RequirementImportance })}
+                  >
+                    <option value="1">1 - Low</option>
+                    <option value="2">2 - Medium</option>
+                    <option value="3">3 - High</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-2 block font-mono-ui text-[10px] font-black uppercase text-[#d63c1d]">
                     Evidence Expectation
                   </label>
                   <select
@@ -131,19 +244,38 @@ export default function OpportunityRequirementsSection({ requirements, onChange 
                   </select>
                 </div>
                 
-                <div className="flex items-center gap-2 sm:col-span-2">
-                  <input
-                    type="checkbox"
-                    id={`hardGate-${req.id}`}
-                    className="h-4 w-4 border-2 border-black accent-black"
-                    checked={req.hardGate}
-                    onChange={e => updateRequirement(i, { hardGate: e.target.checked })}
-                  />
-                  <label htmlFor={`hardGate-${req.id}`} className="font-mono-ui text-[11px] font-black uppercase">
-                    Is Hard Gate (Auto-disqualify if missing)
-                  </label>
+                <div className="flex flex-col gap-1 sm:col-span-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id={`hardGate-${req.id}`}
+                      className="h-4 w-4 border-2 border-black accent-black"
+                      checked={req.hardGate}
+                      onChange={e => updateRequirement(i, { hardGate: e.target.checked })}
+                    />
+                    <label htmlFor={`hardGate-${req.id}`} className="font-mono-ui text-[11px] font-black uppercase">
+                      Hard readiness / eligibility gate
+                    </label>
+                  </div>
+                  <p className="text-xs text-black/60 pl-6">
+                    A hard gate can affect deterministic opportunity eligibility/readiness. It does not automatically reject an application or make a recruitment decision.
+                  </p>
                 </div>
               </div>
+
+              {req.category === 'skill' && renderSkillReview(req as SkillOpportunityRequirement, i)}
+
+              {!req.humanConfirmed && (
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => handleConfirmRequirement(i, 'structured_human_entry')}
+                    className="border-2 border-black bg-black px-4 py-2 font-mono-ui text-[10px] font-black uppercase tracking-wide text-white transition-colors hover:bg-transparent hover:text-black focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
+                  >
+                    Confirm Requirement Structure
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>

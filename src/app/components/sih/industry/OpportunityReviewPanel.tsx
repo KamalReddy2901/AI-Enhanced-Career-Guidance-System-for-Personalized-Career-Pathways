@@ -6,14 +6,15 @@ interface Props {
   readonly onPublish: () => void;
   readonly isPublishing: boolean;
   readonly opportunityVersionId?: string;
+  readonly publishDisabled?: boolean;
 }
 
-export default function OpportunityReviewPanel({ requirements, eligibilityRules, onPublish, isPublishing, opportunityVersionId }: Props) {
+export default function OpportunityReviewPanel({ requirements, eligibilityRules, onPublish, isPublishing, opportunityVersionId, publishDisabled }: Props) {
   const reqsUnconfirmed = requirements.filter(r => !r.humanConfirmed).length;
   const rulesUnconfirmed = eligibilityRules.filter(r => !r.humanConfirmed).length;
   const totalUnconfirmed = reqsUnconfirmed + rulesUnconfirmed;
 
-  const canPublish = totalUnconfirmed === 0 && !!opportunityVersionId && requirements.length > 0;
+  const canPublish = totalUnconfirmed === 0 && !publishDisabled && requirements.length > 0;
 
   return (
     <section className="border-2 border-black bg-[#111] p-6 text-white shadow-[4px_4px_0_#d63c1d]">
