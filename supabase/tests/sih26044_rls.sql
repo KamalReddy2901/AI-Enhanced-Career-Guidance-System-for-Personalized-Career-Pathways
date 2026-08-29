@@ -487,6 +487,16 @@ select pg_temp.assert_true(
   (select status = 'published' from sih26044.opportunity_versions where id = '51000000-0000-0000-0000-000000000002'),
   'freshly reconfirmed edited content can publish'
 );
+select pg_temp.assert_true(
+  (select count(*) = 1
+   from sih26044.audit_events
+   where actor_id = '20000000-0000-0000-0000-000000000003'
+     and organization_id = '30000000-0000-0000-0000-000000000001'
+     and action = 'opportunity.version_published'
+     and resource_type = 'opportunity_versions'
+     and resource_id = '51000000-0000-0000-0000-000000000002'),
+  'published opportunity version records exact human publisher audit'
+);
 reset role;
 
 set local role authenticated;

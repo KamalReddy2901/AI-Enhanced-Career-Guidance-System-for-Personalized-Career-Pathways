@@ -7,6 +7,7 @@ import { SihBrowserDal } from '../src/app/services/sih';
 
 interface FakeResponse { data: unknown; error: null }
 interface RecordedQuery { table: string; select?: string; filters: Array<[string, string, unknown]> }
+interface RecordedRpc { name: string; args: Record<string, unknown> }
 
 class FakeQuery implements PromiseLike<FakeResponse> {
   private readonly recorded: RecordedQuery;
@@ -31,9 +32,11 @@ class FakeQuery implements PromiseLike<FakeResponse> {
   }
 }
 
-function fakeDal(responses: FakeResponse[]) {
+function fakeDal(responses: FakeResponse[], rpcResponses: FakeResponse[] = []) {
   const queries: RecordedQuery[] = [];
+  const rpcs: RecordedRpc[] = [];
   let offset = 0;
+  let rpcOffset = 0;
   const client = {
     schema(schema: string) {
       assert.equal(schema, 'sih26044');
@@ -43,10 +46,16 @@ function fakeDal(responses: FakeResponse[]) {
           assert.ok(response, `Missing fake response for ${table}`);
           return new FakeQuery(response, table, queries);
         },
+        rpc(name: string, args: Record<string, unknown>) {
+          rpcs.push({ name, args });
+          const response = rpcResponses[rpcOffset++];
+          assert.ok(response, `Missing fake response for RPC ${name}`);
+          return Promise.resolve(response);
+        },
       };
     },
   } as unknown as SupabaseClient;
-  return { dal: new SihBrowserDal(client), queries };
+  return { dal: new SihBrowserDal(client), queries, rpcs };
 }
 
 const ok = (data: unknown): FakeResponse => ({ data, error: null });
@@ -163,6 +172,34 @@ const evidenceReadModel = {
 }
 
 {
+  const application = { id: applicationId, applicant_actor_id: actorId, opportunity_id: 'opportunity-1', opportunity_version_id: 'version-1', owner_organization_id: 'org-1', initial_stage: 'saved', created_at: '2026-08-28T08:00:00.000Z' };
+  const { dal, queries } = fakeDal([
+    ok([application]),
+    ok([{ application_id: applicationId, to_stage: 'under_review', sequence_number: 2 }]),
+  ]);
+  const rows = await dal.listApplicationsForRecruiterOrganization('org-1' as any, {
+    opportunityId: 'opportunity-1' as any,
+    currentStage: 'under_review',
+  });
+  assert.equal(rows[0]?.currentStage, 'under_review');
+  assert.deepEqual(queries.map(query => query.table), ['applications', 'application_events']);
+  assert.ok(queries[0]?.filters.some(([, column, value]) => column === 'owner_organization_id' && value === 'org-1'),
+    'Recruiter discovery must be explicitly organization-scoped in addition to RLS');
+  assert.ok(queries[0]?.filters.some(([, column, value]) => column === 'opportunity_id' && value === 'opportunity-1'));
+  assert.ok(queries.every(query => query.select && query.select !== '*'));
+}
+
+{
+  const versionId = '51000000-0000-4000-8000-000000000001';
+  const { dal, rpcs } = fakeDal([], [ok(versionId)]);
+  assert.equal(await dal.publishOpportunityVersion(versionId as any), versionId);
+  assert.deepEqual(rpcs, [{
+    name: 'publish_opportunity_version',
+    args: { requested_version_id: versionId },
+  }]);
+}
+
+{
   const { dal, queries } = fakeDal([
     ok([{ id: 'consent-1', subject_actor_id: actorId, grantee_organization_id: 'org-1', purpose: 'application_review', granted_at: '2026-08-28T08:00:00.000Z', expires_at: null }]),
     ok([{ consent_grant_id: 'consent-1', sequence_number: 2, action: 'withdrawn', occurred_at: '2026-08-28T10:00:00.000Z' }]),
@@ -192,5 +229,20 @@ assert.match(targetedEvidenceMethod, /\.eq\(['"]id['"], evidenceRecordId\)/,
   'Targeted evidence read must use the exact evidence record id filter');
 assert.doesNotMatch(targetedEvidenceMethod, /subject_actor_id|listEvidenceForSubject/,
   'Verifier detail must not depend on a bulk subject evidence read');
+const recruiterApplicationIndexMethod = browserDalSource.match(/async listApplicationsForRecruiterOrganization[\s\S]*?\n  }\n\n  async getApplication/)?.[0] ?? '';
+assert.ok(recruiterApplicationIndexMethod, 'Recruiter organization application index must remain present');
+assert.match(recruiterApplicationIndexMethod, /\.from\(['"]applications['"]\)/);
+assert.match(recruiterApplicationIndexMethod, /\.eq\(['"]owner_organization_id['"], ownerOrganizationId\)/,
+  'Recruiter discovery must apply an organization workflow filter while RLS remains the authority');
+assert.match(recruiterApplicationIndexMethod, /mapApplicationsWithCurrentStage/,
+  'Recruiter discovery must compose current stage from append-only application events');
+assert.doesNotMatch(recruiterApplicationIndexMethod, /listApplicationsForApplicant|readiness|score|rank|probability/i,
+  'Recruiter discovery must not reuse applicant discovery or introduce candidate scoring');
+const publishMethod = browserDalSource.match(/async publishOpportunityVersion[\s\S]*?\n  }\n}/)?.[0] ?? '';
+assert.ok(publishMethod, 'Explicit opportunity publication method must remain present');
+assert.match(publishMethod, /\.rpc\(['"]publish_opportunity_version['"]/,
+  'Publication must use the guarded database contract rather than draft table mutation');
+assert.doesNotMatch(publishMethod, /\.from\(['"](?:opportunities|opportunity_versions)['"]\).*?\.update/s,
+  'Publication must not bypass the guarded database contract');
 
 console.log('SIH browser read contract QA passed.');

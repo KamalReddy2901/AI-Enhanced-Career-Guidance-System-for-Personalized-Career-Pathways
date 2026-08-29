@@ -108,6 +108,12 @@ export interface ListApplicationsInput {
   readonly initialStage?: 'saved' | 'preparing';
 }
 
+export interface ListApplicationsForRecruiterOrganizationInput extends ListApplicationsInput {
+  /** Transparent workflow filtering only. This is applied after the append-only
+   * application event history has been composed into the current stage. */
+  readonly currentStage?: ApplicationStage;
+}
+
 interface EvidenceRecordRow {
   id: string;
   subject_actor_id: string;
@@ -342,6 +348,24 @@ export class SihBrowserDal {
     return this.mapApplicationsWithCurrentStage(rows);
   }
 
+  async listApplicationsForRecruiterOrganization(
+    ownerOrganizationId: OrganizationId,
+    input: ListApplicationsForRecruiterOrganizationInput = {},
+  ): Promise<ApplicationReadModel[]> {
+    let query = this.db().from('applications').select(applicationSelect)
+      .eq('owner_organization_id', ownerOrganizationId)
+      .order('created_at', { ascending: false });
+    if (input.opportunityId) query = query.eq('opportunity_id', input.opportunityId);
+    if (input.opportunityVersionId) query = query.eq('opportunity_version_id', input.opportunityVersionId);
+    if (input.initialStage) query = query.eq('initial_stage', input.initialStage);
+    const { data, error } = await query;
+    if (error) throw error;
+    const applications = await this.mapApplicationsWithCurrentStage((data ?? []) as ApplicationRow[]);
+    return input.currentStage
+      ? applications.filter(application => application.currentStage === input.currentStage)
+      : applications;
+  }
+
   async getApplication(applicationId: ApplicationId): Promise<ApplicationReadModel | null> {
     const { data, error } = await this.db().from('applications').select(applicationSelect).eq('id', applicationId).maybeSingle();
     if (error) throw error;
@@ -509,5 +533,19 @@ export class SihBrowserDal {
     }).select().single();
     if (error) throw error;
     return data;
+  }
+
+  /** Explicit high-impact publication action. The database function derives
+   * actor authority from the authenticated session, validates confirmation,
+   * freezes the version, updates the current version, and records the publisher. */
+  async publishOpportunityVersion(opportunityVersionId: OpportunityVersionId): Promise<OpportunityVersionId> {
+    const { data, error } = await this.db().rpc('publish_opportunity_version', {
+      requested_version_id: opportunityVersionId,
+    });
+    if (error) throw error;
+    if (data !== opportunityVersionId) {
+      throw new Error('Published opportunity version identity did not match the requested version.');
+    }
+    return data as OpportunityVersionId;
   }
 }
