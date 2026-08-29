@@ -16,6 +16,8 @@ import type {
   ApplicationEventReadModel,
   ApplicationReadModel,
   ConsentGrantReadModel,
+  CompleteVerificationRequestDecisionInput,
+  CompleteVerificationRequestDecisionResult,
   EvidenceArtifactReadModel,
   EvidenceRecordReadModel,
   EvidenceScopeReadModel,
@@ -23,6 +25,11 @@ import type {
   VerificationRequestReadModel,
   VerificationRequestStatus,
 } from './types';
+
+type NonTerminalVerificationAction = Exclude<
+  VerificationAction,
+  'verified_by_human' | 'verified_by_issuer' | 'disputed'
+>;
 
 export type EvidenceScopeKind = 'global_skill' | 'opportunity' | 'organization' | 'outcome';
 
@@ -68,7 +75,7 @@ export interface RequestVerificationInput {
 export interface AppendVerificationEventInput {
   readonly verificationRequestId: string;
   readonly evidenceRecordId: EvidenceRecordId;
-  readonly action: VerificationAction;
+  readonly action: NonTerminalVerificationAction;
   readonly actorOrganizationId?: OrganizationId;
   readonly reason?: string;
   readonly supersedesEventId?: string;
@@ -167,6 +174,33 @@ interface VerificationEventRow {
   reason: string | null;
   supersedes_event_id: string | null;
   occurred_at: string;
+}
+
+interface CompleteVerificationRequestDecisionRow {
+  request_id: string;
+  request_evidence_record_id: string;
+  request_subject_actor_id: string;
+  request_requested_verifier_actor_id: string | null;
+  request_requested_verifier_organization_id: string | null;
+  request_consent_grant_id: string;
+  request_scope_kind: EvidenceScopeKind;
+  request_scope_skill_id: string | null;
+  request_scope_literal_skill_label: string | null;
+  request_scope_opportunity_id: string | null;
+  request_scope_requirement_id: string | null;
+  request_scope_organization_id: string | null;
+  request_scope_outcome_event_id: string | null;
+  request_status: VerificationRequestStatus;
+  request_requested_at: string;
+  request_expires_at: string | null;
+  request_closed_at: string | null;
+  event_id: string;
+  event_sequence_number: number;
+  event_action: VerificationAction;
+  event_actor_id: string;
+  event_actor_organization_id: string | null;
+  event_reason: string | null;
+  event_occurred_at: string;
 }
 
 interface ApplicationRow {
@@ -506,6 +540,55 @@ export class SihBrowserDal {
     }).select().single();
     if (error) throw error;
     return data;
+  }
+
+  async completeVerificationRequestDecision(
+    input: CompleteVerificationRequestDecisionInput,
+  ): Promise<CompleteVerificationRequestDecisionResult> {
+    const { data, error } = await this.db().rpc('complete_verification_request_decision', {
+      requested_verification_request_id: input.verificationRequestId,
+      requested_evidence_record_id: input.evidenceRecordId,
+      requested_action: input.action,
+      requested_actor_organization_id: input.actorOrganizationId,
+      requested_reason: input.reason ?? null,
+    });
+    if (error) throw error;
+    const row = (Array.isArray(data) ? data[0] : data) as CompleteVerificationRequestDecisionRow | undefined;
+    if (!row) throw new Error('Verification decision RPC returned no result');
+
+    return {
+      verificationRequest: mapVerificationRequest({
+        id: row.request_id,
+        evidence_record_id: row.request_evidence_record_id,
+        subject_actor_id: row.request_subject_actor_id,
+        requested_verifier_actor_id: row.request_requested_verifier_actor_id,
+        requested_verifier_organization_id: row.request_requested_verifier_organization_id,
+        consent_grant_id: row.request_consent_grant_id,
+        scope_kind: row.request_scope_kind,
+        scope_skill_id: row.request_scope_skill_id,
+        scope_literal_skill_label: row.request_scope_literal_skill_label,
+        scope_opportunity_id: row.request_scope_opportunity_id,
+        scope_requirement_id: row.request_scope_requirement_id,
+        scope_organization_id: row.request_scope_organization_id,
+        scope_outcome_event_id: row.request_scope_outcome_event_id,
+        status: row.request_status,
+        requested_at: row.request_requested_at,
+        expires_at: row.request_expires_at,
+        closed_at: row.request_closed_at,
+      }),
+      verificationEvent: mapVerificationEvent({
+        id: row.event_id,
+        sequence_number: row.event_sequence_number,
+        verification_request_id: row.request_id,
+        evidence_record_id: row.request_evidence_record_id,
+        action: row.event_action,
+        actor_id: row.event_actor_id,
+        actor_organization_id: row.event_actor_organization_id,
+        reason: row.event_reason,
+        supersedes_event_id: null,
+        occurred_at: row.event_occurred_at,
+      }),
+    };
   }
 
   async createApplication(applicantActorId: string, input: CreateApplicationInput) {
