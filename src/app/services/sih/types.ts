@@ -4,7 +4,9 @@ import type {
   ConsentPurpose,
   EvidenceProvenance,
   EvidenceProposalSource,
+  EvidenceRecordId,
   EvidenceVisibility,
+  OrganizationId,
   VerificationAction,
   VerificationState,
 } from '../../domain';
@@ -75,6 +77,24 @@ export interface VerificationEventReadModel {
   readonly reason?: string;
   readonly supersedesEventId?: string;
   readonly occurredAt: string;
+}
+
+export type TerminalVerificationDecisionAction =
+  | 'verified_by_human'
+  | 'verified_by_issuer'
+  | 'disputed';
+
+export interface CompleteVerificationRequestDecisionInput {
+  readonly verificationRequestId: string;
+  readonly evidenceRecordId: EvidenceRecordId;
+  readonly action: TerminalVerificationDecisionAction;
+  readonly actorOrganizationId: OrganizationId;
+  readonly reason?: string;
+}
+
+export interface CompleteVerificationRequestDecisionResult {
+  readonly verificationRequest: VerificationRequestReadModel;
+  readonly verificationEvent: VerificationEventReadModel;
 }
 
 export interface ApplicationReadModel {
