@@ -45,6 +45,7 @@ const DemoMentorPage = lazy(() => import('./demo/DemoPages').then(m => ({ defaul
 const DemoRecruiterPage = lazy(() => import('./demo/DemoPages').then(m => ({ default: m.DemoRecruiterPage })));
 const DemoInstitutionPage = lazy(() => import('./demo/DemoPages').then(m => ({ default: m.DemoInstitutionPage })));
 const DemoFacultyPage = lazy(() => import('./demo/DemoPages').then(m => ({ default: m.DemoFacultyPage })));
+const DemoFacultyCollaborationDetailPage = lazy(() => import('./demo/DemoPages').then(m => ({ default: m.DemoFacultyCollaborationDetailPage })));
 
 export const router = createBrowserRouter([
   {
@@ -97,6 +98,7 @@ export const router = createBrowserRouter([
       { path: 'recruiter', Component: DemoRecruiterPage },
       { path: 'institution', Component: DemoInstitutionPage },
       { path: 'faculty', Component: DemoFacultyPage },
+      { path: 'faculty/:collaborationId', Component: DemoFacultyCollaborationDetailPage },
       { path: '*', Component: DemoOverviewPage },
     ],
   },

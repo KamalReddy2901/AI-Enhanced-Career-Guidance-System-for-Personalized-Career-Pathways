@@ -70,6 +70,42 @@ const evidenceRow = {
   source_system: 'student_entry', source_record_id: 'entry-1', source_url: null,
   source_captured_at: '2026-08-28T08:00:00.000Z', visibility: 'private', created_at: '2026-08-28T08:00:00.000Z',
 } as const;
+
+{
+  const decisionRow = {
+    request_id: 'request-terminal-1', request_evidence_record_id: evidenceId,
+    request_subject_actor_id: actorId, request_requested_verifier_actor_id: 'verifier-1',
+    request_requested_verifier_organization_id: 'org-1', request_consent_grant_id: 'consent-1',
+    request_scope_kind: 'global_skill', request_scope_skill_id: null,
+    request_scope_literal_skill_label: 'Accessibility testing', request_scope_opportunity_id: null,
+    request_scope_requirement_id: null, request_scope_organization_id: null,
+    request_scope_outcome_event_id: null, request_status: 'closed',
+    request_requested_at: '2026-08-30T08:00:00.000Z', request_expires_at: null,
+    request_closed_at: '2026-08-30T09:00:00.000Z', event_id: 'event-terminal-1',
+    event_sequence_number: 41, event_action: 'verified_by_human', event_actor_id: 'verifier-1',
+    event_actor_organization_id: 'org-1', event_reason: null,
+    event_occurred_at: '2026-08-30T09:00:00.000Z',
+  } as const;
+  const { dal, queries, rpcs } = fakeDal([], [ok([decisionRow])]);
+  const result = await dal.completeVerificationRequestDecision({
+    verificationRequestId: 'request-terminal-1', evidenceRecordId: evidenceId,
+    action: 'verified_by_human', actorOrganizationId: 'org-1',
+  });
+  assert.equal(result.verificationRequest.status, 'closed');
+  assert.equal(result.verificationRequest.closedAt, result.verificationEvent.occurredAt);
+  assert.equal(result.verificationEvent.action, 'verified_by_human');
+  assert.deepEqual(queries, [], 'Atomic terminal completion must not issue independent table writes');
+  assert.deepEqual(rpcs, [{
+    name: 'complete_verification_request_decision',
+    args: {
+      requested_verification_request_id: 'request-terminal-1',
+      requested_evidence_record_id: evidenceId,
+      requested_action: 'verified_by_human',
+      requested_actor_organization_id: 'org-1',
+      requested_reason: null,
+    },
+  }]);
+}
 const evidenceReadModel = {
   id: evidenceId,
   subjectActorId: actorId,
@@ -245,5 +281,17 @@ assert.match(publishMethod, /\.rpc\(['"]publish_opportunity_version['"]/,
   'Publication must use the guarded database contract rather than draft table mutation');
 assert.doesNotMatch(publishMethod, /\.from\(['"](?:opportunities|opportunity_versions)['"]\).*?\.update/s,
   'Publication must not bypass the guarded database contract');
+const completionMethod = browserDalSource.match(/async completeVerificationRequestDecision[\s\S]*?\n  }\n\n  async createApplication/)?.[0] ?? '';
+assert.ok(completionMethod, 'Atomic terminal verification completion method must remain present');
+assert.match(completionMethod, /\.rpc\(['"]complete_verification_request_decision['"]/,
+  'Terminal verification completion must use the canonical atomic RPC');
+assert.doesNotMatch(completionMethod, /\.from\(['"]verification_(?:requests|events)['"]\)|\.update\s*\(/,
+  'Terminal verification completion must not split event append and request closure into browser writes');
+assert.match(browserDalSource, /type NonTerminalVerificationAction = Exclude<[\s\S]*?'verified_by_human'[\s\S]*?'verified_by_issuer'[\s\S]*?'disputed'/,
+  'Generic append input must exclude terminal verifier actions');
+
+const serviceTypesSource = await readFile(fileURLToPath(new URL('../src/app/services/sih/types.ts', import.meta.url)), 'utf8');
+assert.match(serviceTypesSource, /type TerminalVerificationDecisionAction\s*=\s*\| 'verified_by_human'\s*\| 'verified_by_issuer'\s*\| 'disputed'/,
+  'Terminal verification action type must remain exactly bounded');
 
 console.log('SIH browser read contract QA passed.');
