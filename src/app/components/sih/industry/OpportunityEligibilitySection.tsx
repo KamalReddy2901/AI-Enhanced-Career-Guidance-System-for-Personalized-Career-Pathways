@@ -34,19 +34,40 @@ function makeUnconfirmedTrace(): {
   readonly confirmedAt: undefined;
   readonly confirmationMethod: undefined;
 } {
-  return {    humanConfirmed: false,
+  return {
+    humanConfirmed: false,
     confirmedByActorId: undefined,
     confirmedAt: undefined,
     confirmationMethod: undefined
   };
 }
 
-function resetTrace(rule: EligibilityRule): any {
-  const next = { ...rule, humanConfirmed: false as const } as any;
-  delete next.confirmedByActorId;
-  delete next.confirmedAt;
-  delete next.confirmationMethod;
-  return next;
+function resetTrace(rule: EligibilityRule): EligibilityRule {
+  switch (rule.kind) {
+    case 'custom':
+      return { kind: 'custom', machineEnforced: false, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
+    case 'education_level':
+      return { kind: 'education_level', operator: rule.operator, value: rule.value, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
+    case 'graduation_year':
+      if (rule.operator === 'between') {
+        return { kind: 'graduation_year', operator: 'between', value: rule.value, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
+      }
+      return { kind: 'graduation_year', operator: rule.operator, value: rule.value, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
+    case 'location':
+      return { kind: 'location', operator: rule.operator, values: rule.values, requiresPhysicalPresence: true, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
+    case 'organization_membership':
+      return { kind: 'organization_membership', organizationIds: rule.organizationIds, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
+    case 'availability':
+      return { kind: 'availability', factKey: rule.factKey, expectedValue: rule.expectedValue, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
+    case 'licence_registration':
+      return { kind: 'licence_registration', licenceCode: rule.licenceCode, expectedValue: rule.expectedValue, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
+    case 'work_authorization':
+      return { kind: 'work_authorization', jurisdiction: rule.jurisdiction, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
+    case 'language':
+      return { kind: 'language', language: rule.language, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
+    case 'explicit_prerequisite':
+      return { kind: 'explicit_prerequisite', factKey: rule.factKey, expectedValue: rule.expectedValue, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
+  }
 }
 
 function makeConfirmedTrace(actorId: ActorId): {
@@ -64,11 +85,11 @@ function makeConfirmedTrace(actorId: ActorId): {
 }
 
 function makeCustomRule(wording: string): EligibilityRule {
-  return { kind: 'custom', machineEnforced: false as const, literalSourceWording: wording, ...makeUnconfirmedTrace() };
+  return { kind: 'custom', machineEnforced: false, literalSourceWording: wording, ...makeUnconfirmedTrace() };
 }
 
 function makeEducationLevelRule(wording: string): EligibilityRule {
-  return { kind: 'education_level', operator: 'at_least', value: 'undergraduate' as EligibilityEducationLevel, literalSourceWording: wording, ...makeUnconfirmedTrace() };
+  return { kind: 'education_level', operator: 'at_least', value: 'undergraduate', literalSourceWording: wording, ...makeUnconfirmedTrace() };
 }
 
 function makeGraduationYearRule(wording: string): EligibilityRule {
@@ -76,19 +97,19 @@ function makeGraduationYearRule(wording: string): EligibilityRule {
 }
 
 function makeLocationRule(wording: string): EligibilityRule {
-  return { kind: 'location', operator: 'in', values: [] as readonly string[], requiresPhysicalPresence: true as const, literalSourceWording: wording, ...makeUnconfirmedTrace() };
+  return { kind: 'location', operator: 'in', values: [], requiresPhysicalPresence: true, literalSourceWording: wording, ...makeUnconfirmedTrace() };
 }
 
 function makeOrgMembershipRule(wording: string): EligibilityRule {
-  return { kind: 'organization_membership', organizationIds: [] as readonly OrganizationId[], literalSourceWording: wording, ...makeUnconfirmedTrace() };
+  return { kind: 'organization_membership', organizationIds: [], literalSourceWording: wording, ...makeUnconfirmedTrace() };
 }
 
 function makeAvailabilityRule(wording: string): EligibilityRule {
-  return { kind: 'availability', factKey: '', expectedValue: true as string | boolean, literalSourceWording: wording, ...makeUnconfirmedTrace() };
+  return { kind: 'availability', factKey: '', expectedValue: true, literalSourceWording: wording, ...makeUnconfirmedTrace() };
 }
 
 function makeLicenceRule(wording: string): EligibilityRule {
-  return { kind: 'licence_registration', licenceCode: '', expectedValue: true as string | boolean, literalSourceWording: wording, ...makeUnconfirmedTrace() };
+  return { kind: 'licence_registration', licenceCode: '', expectedValue: true, literalSourceWording: wording, ...makeUnconfirmedTrace() };
 }
 
 function makeWorkAuthRule(wording: string): EligibilityRule {
@@ -100,7 +121,7 @@ function makeLanguageRule(wording: string): EligibilityRule {
 }
 
 function makeExplicitPrereqRule(wording: string): EligibilityRule {
-  return { kind: 'explicit_prerequisite', factKey: '', expectedValue: true as string | boolean, literalSourceWording: wording, ...makeUnconfirmedTrace() };
+  return { kind: 'explicit_prerequisite', factKey: '', expectedValue: true, literalSourceWording: wording, ...makeUnconfirmedTrace() };
 }
 
 function makeRuleForKind(kind: EligibilityRuleDefinition['kind'], wording: string): EligibilityRule {
@@ -119,7 +140,6 @@ function makeRuleForKind(kind: EligibilityRuleDefinition['kind'], wording: strin
 }
 
 // ─── Typed field updaters ─────────────────────────────────────────────────────
-// Each produces a new complete rule with the updated field + reset trace.
 
 function updateEducationLevel(
   rule: Extract<EligibilityRule, { kind: 'education_level' }>,
@@ -127,9 +147,9 @@ function updateEducationLevel(
   val: string
 ): EligibilityRule {
   if (field === 'operator') {
-    return { ...resetTrace(rule), operator: val as 'at_least' | 'equals' };
+    return { kind: 'education_level', operator: val as 'at_least' | 'equals', value: rule.value, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
   }
-  return { ...resetTrace(rule), value: val as EligibilityEducationLevel };
+  return { kind: 'education_level', operator: rule.operator, value: val as EligibilityEducationLevel, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
 }
 
 function updateGraduationYearOperator(
@@ -138,7 +158,7 @@ function updateGraduationYearOperator(
 ): EligibilityRule {
   if (op === 'between') {
     const yr = new Date().getFullYear();
-    return { kind: 'graduation_year', operator: 'between', value: [yr, yr + 2] as readonly [number, number], literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
+    return { kind: 'graduation_year', operator: 'between', value: [yr, yr + 2], literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
   }
   return { kind: 'graduation_year', operator: op, value: new Date().getFullYear(), literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
 }
@@ -153,29 +173,21 @@ function updateGraduationYearValue(
     const next: readonly [number, number] = rangeIndex === 0 ? [val, prev[1]] : [prev[0], val];
     return { kind: 'graduation_year', operator: 'between', value: next, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
   }
-  return { ...resetTrace(rule), value: val };
+  return { kind: 'graduation_year', operator: rule.operator as 'before' | 'after', value: val, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
 }
 
 function updateLocationOperator(
   rule: Extract<EligibilityRule, { kind: 'location' }>,
   op: 'in' | 'not_in'
 ): EligibilityRule {
-  return { ...resetTrace(rule), operator: op };
+  return { kind: 'location', operator: op, values: rule.values, requiresPhysicalPresence: true, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
 }
 
 function updateLocationValues(
   rule: Extract<EligibilityRule, { kind: 'location' }>,
   vals: readonly string[]
 ): EligibilityRule {
-  return { ...resetTrace(rule), values: vals };
-}
-
-function updateLocationPresence(
-  rule: Extract<EligibilityRule, { kind: 'location' }>,
-  val: boolean
-): EligibilityRule {
-  // requiresPhysicalPresence is always true in the type, but we keep the checkbox for UX
-  return { ...resetTrace(rule), requiresPhysicalPresence: val as true };
+  return { kind: 'location', operator: rule.operator, values: vals, requiresPhysicalPresence: true, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() };
 }
 
 function parseExpectedValue(raw: string): string | boolean {
@@ -197,8 +209,11 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
 
   const updateLiteralWording = (index: number, wording: string) => {
     const rule = rules[index];
-    const updated = { ...resetTrace(rule), literalSourceWording: wording } as EligibilityRule;
-    replaceRule(index, updated);
+    // resetTrace strips confirmation and rebuilds
+    const updated = resetTrace(rule);
+    // Replace the literal wording
+    const withNewWording = { ...updated, literalSourceWording: wording } as EligibilityRule;
+    replaceRule(index, withNewWording);
   };
 
   const removeRule = (index: number) => {
@@ -320,16 +335,9 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
               />
             </div>
             <div className="flex items-center gap-2 sm:col-span-2">
-              <input
-                type="checkbox"
-                id={`requiresPhysicalPresence-${index}`}
-                className="h-4 w-4 border-2 border-black accent-black"
-                checked={rule.requiresPhysicalPresence}
-                onChange={e => replaceRule(index, updateLocationPresence(rule, e.target.checked))}
-              />
-              <label htmlFor={`requiresPhysicalPresence-${index}`} className="font-mono-ui text-[11px] font-black uppercase">
-                Requires Physical Presence
-              </label>
+              <span className="font-mono-ui text-[11px] font-black uppercase">
+                Requires Physical Presence: <span className="text-[#16a34a]">Yes (Fixed)</span>
+              </span>
             </div>
           </>
         );
@@ -344,7 +352,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
               value={[...rule.organizationIds].join(', ')}
               onChange={e => {
                 const ids = e.target.value.split(',').map(v => v.trim()).filter(Boolean) as OrganizationId[];
-                replaceRule(index, { ...resetTrace(rule), organizationIds: ids });
+                replaceRule(index, { kind: 'organization_membership', organizationIds: ids, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() });
               }}
             />
           </div>
@@ -360,7 +368,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
                 type="text"
                 className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
                 value={rule.factKey}
-                onChange={e => replaceRule(index, { ...resetTrace(rule), factKey: e.target.value })}
+                onChange={e => replaceRule(index, { kind: rule.kind, factKey: e.target.value, expectedValue: rule.expectedValue, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() })}
               />
             </div>
             <div>
@@ -369,7 +377,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
                 type="text"
                 className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
                 value={rule.expectedValue.toString()}
-                onChange={e => replaceRule(index, { ...resetTrace(rule), expectedValue: parseExpectedValue(e.target.value) })}
+                onChange={e => replaceRule(index, { kind: rule.kind, factKey: rule.factKey, expectedValue: parseExpectedValue(e.target.value), literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() })}
               />
             </div>
           </>
@@ -384,7 +392,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
                 type="text"
                 className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
                 value={rule.licenceCode}
-                onChange={e => replaceRule(index, { ...resetTrace(rule), licenceCode: e.target.value })}
+                onChange={e => replaceRule(index, { kind: 'licence_registration', licenceCode: e.target.value, expectedValue: rule.expectedValue, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() })}
               />
             </div>
             <div>
@@ -393,7 +401,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
                 type="text"
                 className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
                 value={rule.expectedValue.toString()}
-                onChange={e => replaceRule(index, { ...resetTrace(rule), expectedValue: parseExpectedValue(e.target.value) })}
+                onChange={e => replaceRule(index, { kind: 'licence_registration', licenceCode: rule.licenceCode, expectedValue: parseExpectedValue(e.target.value), literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() })}
               />
             </div>
           </>
@@ -407,7 +415,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
               type="text"
               className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
               value={rule.jurisdiction}
-              onChange={e => replaceRule(index, { ...resetTrace(rule), jurisdiction: e.target.value })}
+              onChange={e => replaceRule(index, { kind: 'work_authorization', jurisdiction: e.target.value, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() })}
             />
           </div>
         );
@@ -420,7 +428,7 @@ export default function OpportunityEligibilitySection({ rules, onChange, current
               type="text"
               className="w-full border-2 border-black p-2 text-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
               value={rule.language}
-              onChange={e => replaceRule(index, { ...resetTrace(rule), language: e.target.value })}
+              onChange={e => replaceRule(index, { kind: 'language', language: e.target.value, literalSourceWording: rule.literalSourceWording, ...makeUnconfirmedTrace() })}
             />
           </div>
         );
