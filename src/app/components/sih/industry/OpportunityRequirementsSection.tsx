@@ -60,6 +60,15 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
       delete req.confirmedByActorId;
       delete req.confirmedAt;
       delete req.confirmationMethod;
+
+      if (req.category === 'skill') {
+        if ('literalSourceWording' in updates || !req.canonicalResolution) {
+          req.canonicalResolution = {
+            state: 'unresolved',
+            literalText: req.literalSourceWording
+          };
+        }
+      }
     }
     onChange(next);
   };
@@ -107,12 +116,14 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
                   nextReq.canonicalResolution = {
                     state: 'resolved',
                     skillId: suggestion.skillId,
-                    matchKind: 'exact'
+                    matchKind: 'alias'
                   };
+                  nextReq.humanConfirmed = true;
+                  nextReq.confirmedByActorId = currentActorId;
+                  nextReq.confirmedAt = new Date().toISOString();
+                  nextReq.confirmationMethod = 'controlled_fixture';
                   next[index] = nextReq;
                   onChange(next);
-                  // Explicit confirmation
-                  handleConfirmRequirement(index, 'controlled_fixture');
                 }}
                 className="border-2 border-black bg-[#e7ff57] px-3 py-1 font-mono-ui text-[10px] font-black uppercase tracking-wide transition-colors hover:bg-black hover:text-[#e7ff57]"
               >
@@ -120,6 +131,31 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
               </button>
             </div>
           ))}
+        </div>
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              const next = [...requirements];
+              const nextReq = { ...next[index] } as any;
+              nextReq.canonicalResolution = {
+                state: 'unresolved',
+                literalText: req.literalSourceWording
+              };
+              next[index] = nextReq;
+              onChange(next);
+            }}
+            className="border-2 border-black bg-white px-3 py-1 font-mono-ui text-[10px] font-black uppercase tracking-wide text-black transition-colors hover:bg-black hover:text-white"
+          >
+            Reject suggestion(s) / keep unresolved
+          </button>
+          <button
+            type="button"
+            className="border-2 border-black bg-white px-3 py-1 font-mono-ui text-[10px] font-black uppercase tracking-wide text-black opacity-50"
+            disabled
+          >
+            Edit / resolve manually (Demo only)
+          </button>
         </div>
       </div>
     );
@@ -243,7 +279,6 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
                     <option value="human_or_issuer_expected">Human/Issuer Expected</option>
                   </select>
                 </div>
-                
                 <div className="flex flex-col gap-1 sm:col-span-2">
                   <div className="flex items-center gap-2">
                     <input
