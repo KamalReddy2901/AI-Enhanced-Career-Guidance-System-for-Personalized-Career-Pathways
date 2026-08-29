@@ -32,6 +32,7 @@ assert.deepEqual(migrationFiles, [
   '202608260016_foundation_freeze_execution_fix.sql',
   '202608260017_foundation_rpc_surface_repair.sql',
   '202608260018_readiness_projection_runtime_fix.sql',
+  '20260827202029_restrict_trigger_function_execute.sql',
 ]);
 
 const migrationSources = await Promise.all(migrationFiles.map(async file => ({
@@ -47,6 +48,7 @@ const d2FoundationSql = migrationSources.find(item => item.file.endsWith('012_d2
 const d2ConsentGrantSql = migrationSources.find(item => item.file.endsWith('013_worker_consent_active_grant.sql'))?.source ?? '';
 const finalRpcRepairSql = migrationSources.find(item => item.file.endsWith('017_foundation_rpc_surface_repair.sql'))?.source ?? '';
 const finalProjectionRuntimeSql = migrationSources.find(item => item.file.endsWith('018_readiness_projection_runtime_fix.sql'))?.source ?? '';
+const triggerPrivilegeSql = migrationSources.find(item => item.file.endsWith('restrict_trigger_function_execute.sql'))?.source ?? '';
 const localConfig = await readFile(configPath, 'utf8');
 
 const createdTables = [...normalizedSql.matchAll(/create\s+table(?:\s+if\s+not\s+exists)?\s+sih26044\.([a-z0-9_]+)/gi)]
@@ -237,6 +239,28 @@ for (const match of securityDefinerFunctions) {
     `SECURITY DEFINER helper ${match[1]} needs an explicit safe search_path`);
   assert.doesNotMatch(match[0], /select\s+\*\s+from\s+sih26044\.organization_memberships/i,
     `Authorization helper ${match[1]} must return minimum information, not membership rows`);
+}
+for (const triggerFunction of [
+  'reject_historical_mutation',
+  'protect_published_opportunity_version',
+  'protect_published_opportunity_child',
+  'validate_verification_request_scope',
+  'append_initial_consent_event',
+  'validate_application_opportunity_boundary',
+  'enforce_application_event_sequence',
+  'protect_finalized_snapshot',
+  'protect_finalized_snapshot_link',
+  'enforce_authenticated_requirement_confirmation',
+  'enforce_authenticated_eligibility_confirmation',
+  'protect_artifact_core_metadata',
+  'validate_application_linked_outcome',
+  'validate_readiness_evidence_projection',
+]) {
+  assert.match(
+    triggerPrivilegeSql,
+    new RegExp(`revoke\\s+all\\s+on\\s+function\\s+sih26044\\.${triggerFunction}\\(\\)\\s+from\\s+public\\s*,\\s*anon\\s*,\\s*authenticated`, 'i'),
+    `Trigger-only function ${triggerFunction} must not retain default Data API execution`,
+  );
 }
 assert.doesNotMatch(normalizedSql, /is_(?:super_?)?admin|admin_bypass|bypass_rls/i,
   'Universal administrator bypass helpers are prohibited');
