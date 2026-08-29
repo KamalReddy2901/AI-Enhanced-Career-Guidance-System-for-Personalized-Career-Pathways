@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { StickFigure } from '../components/StickFigure';
 import { useGuidance } from '../context/GuidanceContext';
@@ -14,6 +14,7 @@ import { addSkillEvidence, calculateCompleteness } from '../engine/skillProfile'
 import type { SkillClaim, SkillClaimProposal, Proficiency } from '../engine/types';
 import { logProgress } from '../services/guidanceDb';
 import { WhyPanel, type ScoreEvidence } from '../components/guidance/WhyPanel';
+
 import { motion } from 'motion/react';
 import { TextReveal } from '../motion/TextReveal';
 import { useT } from '../i18n';
@@ -23,6 +24,13 @@ import { Undo2, Redo2, RotateCcw, Plus, Trash2, Edit2, Sparkles } from 'lucide-r
 import { toast } from 'sonner';
 import { LocationAutocomplete } from '../components/form/LocationAutocomplete';
 import { SkillDiscoveryChat } from '../components/guidance/SkillDiscoveryChat';
+import { supabase } from '../services/supabase';
+import { SihBrowserDal, type RequestVerificationInput } from '../services/sih/browserDal';
+import type { EvidenceRecordReadModel } from '../services/sih/types';
+import type { ActorId, EvidenceRecordId, OrganizationId, OpportunityId, OpportunityRequirementId } from '../domain/shared';
+import { VerificationRequestForm, type VerificationRequestFormData } from '../components/sih/verification/VerificationRequestForm';
+import { ShieldCheck } from 'lucide-react';
+
 
 interface PendingResumeReview {
   skills: Array<{ proposal: SkillClaimProposal; included: boolean }>;
@@ -59,10 +67,90 @@ export function PassportPage() {
   const [validating, setValidating] = useState<SkillClaim | null>(null);
   const [editingConstraints, setEditingConstraints] = useState(false);
   const [editingSkillProficiency, setEditingSkillProficiency] = useState<string | null>(null);
-  const [scoreEvidence, setScoreEvidence] = useState<ScoreEvidence | null>(null);
   const [addingManualSkill, setAddingManualSkill] = useState(false);
   const [manualSkillName, setManualSkillName] = useState('');
   const [manualSkillProficiency, setManualSkillProficiency] = useState<Proficiency>(2);
+  const [scoreEvidence, setScoreEvidence] = useState<ScoreEvidence | null>(null);
+
+  // --- SIH Verification Flow State ---
+  const [sihEvidence, setSihEvidence] = useState<EvidenceRecordReadModel[]>([]);
+  const [requestingVerificationFor, setRequestingVerificationFor] = useState<EvidenceRecordReadModel | null>(null);
+  const [isSubmittingVerification, setIsSubmittingVerification] = useState(false);
+  const [verificationError, setVerificationError] = useState<Error | null>(null);
+  const [verificationSuccess, setVerificationSuccess] = useState(false);
+
+  useEffect(() => {
+    if (user && supabase) {
+      const dal = new SihBrowserDal(supabase);
+      dal.listEvidenceForSubject(user.id as ActorId).then(setSihEvidence).catch(console.error);
+    }
+  }, [user]);
+
+  const handleVerificationRequestSubmit = async (data: VerificationRequestFormData) => {
+    if (!user || !requestingVerificationFor) return;
+    if (!supabase) {
+      setVerificationError(new Error('Database client not configured'));
+      return;
+    }
+    setIsSubmittingVerification(true);
+    setVerificationError(null);
+    try {
+      const dal = new SihBrowserDal(supabase);
+      
+      // 1. Grant consent first
+      const grant = await dal.grantConsent(user.id as ActorId, {
+        purpose: 'evidence_verification',
+        evidenceRecordIds: [requestingVerificationFor.id as EvidenceRecordId],
+        granteeOrganizationId: (data.requestedVerifierOrganizationId?.trim() || undefined) as OrganizationId | undefined,
+      });
+
+      // 2. Map scope correctly
+      const scope = requestingVerificationFor.scope;
+      let scopeFields: Partial<RequestVerificationInput> = {};
+      
+      switch (scope.kind) {
+        case 'global_skill':
+          scopeFields = {
+            scopeSkillId: scope.skillId,
+            scopeLiteralSkillLabel: scope.literalSkillLabel,
+          };
+          break;
+        case 'opportunity':
+          scopeFields = {
+            scopeOpportunityId: scope.opportunityId as OpportunityId,
+            scopeRequirementId: scope.requirementId as OpportunityRequirementId | undefined,
+          };
+          break;
+        case 'organization':
+          scopeFields = {
+            scopeOrganizationId: scope.organizationId as OrganizationId,
+          };
+          break;
+        case 'outcome':
+          // No scope fields to map for outcome in RequestVerificationInput
+          break;
+      }
+
+      const input: RequestVerificationInput = {
+        evidenceRecordId: requestingVerificationFor.id as EvidenceRecordId,
+        consentGrantId: grant.id,
+        scopeKind: scope.kind,
+        ...scopeFields,
+        requestedVerifierActorId: (data.requestedVerifierActorId?.trim() || undefined) as ActorId | undefined,
+        requestedVerifierOrganizationId: (data.requestedVerifierOrganizationId?.trim() || undefined) as OrganizationId | undefined,
+      };
+
+      await dal.requestVerification(user.id as ActorId, input);
+      setVerificationSuccess(true);
+    } catch (err) {
+      setVerificationError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setIsSubmittingVerification(false);
+    }
+  };
+
+
+
   const [editingAspiration, setEditingAspiration] = useState(false);
   const [aspirationText, setAspirationText] = useState('');
   const [showSkillDiscovery, setShowSkillDiscovery] = useState(false);
@@ -1097,6 +1185,65 @@ export function PassportPage() {
         </div>
       )}
       
+
+      {/* SIH Evidence Records for Verification */}
+      <div className="card-sketch mb-6 bg-[var(--paper-raised)] p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-2xl font-bold">SIH Evidence Records</h2>
+        </div>
+        <div className="space-y-4">
+          {sihEvidence.map(record => (
+            <div key={record.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-[var(--ink-faint)] rounded-md bg-white">
+              <div>
+                <p className="font-semibold text-sm">{record.literalClaim}</p>
+                <div className="flex gap-2 text-xs text-muted-foreground mt-1">
+                  <span className="capitalize">{record.provenance.replace('_', ' ')}</span>
+                  <span>•</span>
+                  <span>Scope: {record.scope.kind.replace('_', ' ')}</span>
+                  <span>•</span>
+                  <span>{new Date(record.createdAt).toLocaleDateString()}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setRequestingVerificationFor(record);
+                  setVerificationSuccess(false);
+                  setVerificationError(null);
+                }}
+                className="shrink-0 font-mono-ui text-xs bg-[var(--ink)] text-[var(--paper)] px-4 py-2 rounded-full hover:bg-[var(--ink-soft)] transition-colors inline-flex items-center gap-1.5"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Request Verification
+              </button>
+            </div>
+          ))}
+          {sihEvidence.length === 0 && (
+            <p className="text-sm text-muted-foreground">No SIH evidence records found for this account.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Verification Request Modal */}
+      {requestingVerificationFor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-w-xl w-full bg-[var(--paper)] shadow-[var(--shadow-hard)] max-h-[90vh] overflow-y-auto rounded-lg">
+            <VerificationRequestForm
+              evidence={requestingVerificationFor}
+              isSubmitting={isSubmittingVerification}
+              error={verificationError}
+              isSuccess={verificationSuccess}
+              onSubmit={handleVerificationRequestSubmit}
+              onCancel={() => {
+                setRequestingVerificationFor(null);
+                setVerificationSuccess(false);
+                setVerificationError(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+
       {/* Manual Skill Addition Dialog */}
       {addingManualSkill && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
