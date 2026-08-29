@@ -179,7 +179,9 @@ insert into sih26044.evidence_records (
   scope_kind, scope_literal_skill_label, source_system, source_captured_at
 ) values
   ('60000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'Learner A literal claim', 'self_reported', 'self_confirmed', 'global_skill', 'Quantum Ceramics', 'local_test', now()),
-  ('60000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000002', 'Learner B literal claim', 'self_reported', 'self_confirmed', 'global_skill', 'Ceramics', 'local_test', now());
+  ('60000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000002', 'Learner B literal claim', 'self_reported', 'self_confirmed', 'global_skill', 'Ceramics', 'local_test', now()),
+  ('60000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000001', 'Learner A unconsented sibling claim', 'self_reported', 'self_confirmed', 'global_skill', 'Unconsented Sibling', 'local_test', now()),
+  ('60000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000001', 'Learner A withdrawal test claim', 'self_reported', 'self_confirmed', 'global_skill', 'Withdrawal Test', 'local_test', now());
 
 insert into sih26044.opportunity_readiness_results (
   id, subject_actor_id, opportunity_id, opportunity_version_id, engine_version,
@@ -193,10 +195,12 @@ insert into sih26044.consent_grants (
   id, subject_actor_id, grantee_organization_id, purpose, created_by_actor_id
 ) values
   ('62000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', 'application_review', '20000000-0000-0000-0000-000000000001'),
-  ('62000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000003', 'evidence_verification', '20000000-0000-0000-0000-000000000001');
+  ('62000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000003', 'evidence_verification', '20000000-0000-0000-0000-000000000001'),
+  ('62000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000003', 'evidence_verification', '20000000-0000-0000-0000-000000000001');
 insert into sih26044.consent_evidence_records (consent_grant_id, evidence_record_id) values
   ('62000000-0000-0000-0000-000000000001', '60000000-0000-0000-0000-000000000001'),
-  ('62000000-0000-0000-0000-000000000002', '60000000-0000-0000-0000-000000000001');
+  ('62000000-0000-0000-0000-000000000002', '60000000-0000-0000-0000-000000000001'),
+  ('62000000-0000-0000-0000-000000000003', '60000000-0000-0000-0000-000000000004');
 
 insert into sih26044.verification_requests (
   id, evidence_record_id, subject_actor_id, requested_verifier_actor_id,
@@ -232,6 +236,52 @@ insert into sih26044.application_snapshot_consents values
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000001';
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.verification_requests (
+    id, evidence_record_id, subject_actor_id, requested_verifier_actor_id,
+    requested_verifier_organization_id, consent_grant_id, scope_kind,
+    scope_literal_skill_label, status
+  ) values (
+    '63100000-0000-0000-0000-000000000001', '60000000-0000-0000-0000-000000000001',
+    '20000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000005',
+    '30000000-0000-0000-0000-000000000003', '62000000-0000-0000-0000-000000000001',
+    'global_skill', 'Quantum Ceramics', 'requested'
+  ) returning id$sql$,
+  'verification request cannot be created without active evidence_verification consent'
+);
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.verification_requests (
+    id, evidence_record_id, subject_actor_id, requested_verifier_actor_id,
+    requested_verifier_organization_id, consent_grant_id, scope_kind,
+    scope_literal_skill_label, status
+  ) values (
+    '63100000-0000-0000-0000-000000000002', '60000000-0000-0000-0000-000000000003',
+    '20000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000005',
+    '30000000-0000-0000-0000-000000000003', '62000000-0000-0000-0000-000000000002',
+    'global_skill', 'Unconsented Sibling', 'requested'
+  ) returning id$sql$,
+  'verification request cannot be created when consent omits the exact evidence record'
+);
+with inserted as (
+  insert into sih26044.verification_requests (
+    id, evidence_record_id, subject_actor_id, requested_verifier_actor_id,
+    requested_verifier_organization_id, consent_grant_id, scope_kind,
+    scope_literal_skill_label, status
+  ) values (
+    '63000000-0000-0000-0000-000000000002', '60000000-0000-0000-0000-000000000004',
+    '20000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000005',
+    '30000000-0000-0000-0000-000000000003', '62000000-0000-0000-0000-000000000003',
+    'global_skill', 'Withdrawal Test', 'requested'
+  ) returning id
+)
+select pg_temp.assert_true(
+  (select count(*) = 1 from inserted),
+  'authenticated subject can insert verification request with returning'
+);
+select pg_temp.assert_true(
+  (select count(*) = 1 from sih26044.verification_requests where id = '63000000-0000-0000-0000-000000000002'),
+  'authenticated subject can subsequently select own verification request'
+);
 select pg_temp.assert_blocked(
   $sql$insert into sih26044.evidence_records (
     id, subject_actor_id, literal_claim, provenance, initial_verification_state,
@@ -506,8 +556,16 @@ reset role;
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000005';
+select pg_temp.assert_true(
+  (select count(*) = 2 from sih26044.verification_requests where id in (
+    '63000000-0000-0000-0000-000000000001',
+    '63000000-0000-0000-0000-000000000002'
+  )),
+  'authorized assigned verifier can select active verification requests'
+);
 select pg_temp.assert_true((select count(*) = 1 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000001'), 'assigned verifier can read exactly requested evidence');
-select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000002'), 'assigned verifier cannot browse unrelated evidence');
+select pg_temp.assert_true((select count(*) = 1 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000004'), 'assigned verifier can read exact evidence covered by withdrawal-test consent');
+select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000003'), 'assigned verifier cannot read unconsented sibling evidence');
 
 -- Authenticated verifier appends verification event while consent is active
 insert into sih26044.verification_events (
@@ -516,6 +574,17 @@ insert into sih26044.verification_events (
   '64000000-0000-0000-0000-000000000001', '63000000-0000-0000-0000-000000000001',
   '60000000-0000-0000-0000-000000000001', 'verified_by_issuer',
   '20000000-0000-0000-0000-000000000005', '30000000-0000-0000-0000-000000000003', 'Bounded issuer review'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000006';
+select pg_temp.assert_true(
+  (select count(*) = 0 from sih26044.verification_requests where id in (
+    '63000000-0000-0000-0000-000000000001',
+    '63000000-0000-0000-0000-000000000002'
+  )),
+  'unrelated authenticated actor cannot select active verification requests'
 );
 reset role;
 
@@ -532,6 +601,7 @@ insert into sih26044.consent_lifecycle_events (
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000005';
+select pg_temp.assert_true((select count(*) = 0 from sih26044.verification_requests where id = '63000000-0000-0000-0000-000000000001'), 'expired consent removes assigned verifier request access');
 select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000001'), 'assigned verifier cannot read evidence after consent expires');
 select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000002'), 'assigned verifier still cannot browse unrelated evidence after consent expires');
 
@@ -546,6 +616,25 @@ select pg_temp.assert_blocked(
   )$sql$,
   'assigned verifier cannot append verification event after consent expires'
 );
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000001';
+insert into sih26044.consent_lifecycle_events (
+  id, consent_grant_id, action, actor_id, reason
+) values (
+  'b1000000-0000-0000-0000-000000000002',
+  '62000000-0000-0000-0000-000000000003',
+  'withdrawn',
+  '20000000-0000-0000-0000-000000000001',
+  'Consent lifecycle regression test: verify withdrawal blocks verifier access'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000005';
+select pg_temp.assert_true((select count(*) = 0 from sih26044.verification_requests where id = '63000000-0000-0000-0000-000000000002'), 'withdrawn consent removes assigned verifier request access');
+select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000004'), 'withdrawn consent removes assigned verifier exact-evidence access');
 reset role;
 
 set local role authenticated;

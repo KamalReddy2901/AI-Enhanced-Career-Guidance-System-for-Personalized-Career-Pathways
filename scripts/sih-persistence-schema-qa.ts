@@ -34,6 +34,7 @@ assert.deepEqual(migrationFiles, [
   '202608260018_readiness_projection_runtime_fix.sql',
   '20260827202029_restrict_trigger_function_execute.sql',
   '20260829120148_opportunity_publish_audit_hardening.sql',
+  '20260829172859_verification_request_returning_rls_fix.sql',
 ]);
 
 const migrationSources = await Promise.all(migrationFiles.map(async file => ({
@@ -51,6 +52,7 @@ const finalRpcRepairSql = migrationSources.find(item => item.file.endsWith('017_
 const finalProjectionRuntimeSql = migrationSources.find(item => item.file.endsWith('018_readiness_projection_runtime_fix.sql'))?.source ?? '';
 const triggerPrivilegeSql = migrationSources.find(item => item.file.endsWith('restrict_trigger_function_execute.sql'))?.source ?? '';
 const publishAuditSql = migrationSources.find(item => item.file.endsWith('opportunity_publish_audit_hardening.sql'))?.source ?? '';
+const verificationRequestReturningRlsSql = migrationSources.find(item => item.file.endsWith('verification_request_returning_rls_fix.sql'))?.source ?? '';
 const localConfig = await readFile(configPath, 'utf8');
 
 const createdTables = [...normalizedSql.matchAll(/create\s+table(?:\s+if\s+not\s+exists)?\s+sih26044\.([a-z0-9_]+)/gi)]
@@ -95,6 +97,21 @@ assert.equal(
 );
 assert.ok(evidencePolicies.some(policy => /assigned_verifier/i.test(policy)),
   'Exact assigned-verifier evidence access must remain explicit');
+
+const verificationRequestSelectPolicy = activePolicyStatements.find(policy =>
+  /create\s+policy\s+verification_requests_select_bounded\b/i.test(policy)
+  && /on\s+sih26044\.verification_requests\b/i.test(policy)
+) ?? '';
+assert.match(
+  verificationRequestSelectPolicy,
+  /using\s*\(\s*subject_actor_id\s*=\s*sih26044\.current_actor_id\(\)\s+or\s+sih26044\.can_access_verification_request\(id\)\s*\)/i,
+  'Verification-request SELECT must authorize the subject directly and preserve bounded verifier authorization',
+);
+assert.doesNotMatch(
+  verificationRequestReturningRlsSql,
+  /create\s+or\s+replace\s+function\s+sih26044\.(?:can_access_verification_request|can_create_verification_request|can_verify_evidence|is_consent_active)/i,
+  'Returning repair must not alter existing subject creation, verifier, or consent helper semantics',
+);
 
 const appendOnlyTables = [
   'evidence_records',
@@ -492,6 +509,16 @@ const requiredRlsTestClaims = [
   'assigned verifier cannot read evidence after consent expires',
   'assigned verifier still cannot browse unrelated evidence after consent expires',
   'assigned verifier cannot append verification event after consent expires',
+  'verification request cannot be created without active evidence_verification consent',
+  'verification request cannot be created when consent omits the exact evidence record',
+  'authenticated subject can insert verification request with returning',
+  'authenticated subject can subsequently select own verification request',
+  'authorized assigned verifier can select active verification requests',
+  'assigned verifier cannot read unconsented sibling evidence',
+  'unrelated authenticated actor cannot select active verification requests',
+  'expired consent removes assigned verifier request access',
+  'withdrawn consent removes assigned verifier request access',
+  'withdrawn consent removes assigned verifier exact-evidence access',
 ];
 for (const claim of requiredRlsTestClaims) assert.match(rlsTests, new RegExp(claim, 'i'));
 
