@@ -1,7 +1,10 @@
 import { Link } from 'react-router';
+import { useParams } from 'react-router';
 import { EvidenceTimeline } from '../components/demo/EvidenceTimeline';
 import { EvidenceProvenanceBadge, RequirementEvidenceMatrix } from '../components/demo/RequirementEvidenceMatrix';
 import { ReadinessVector } from '../components/demo/ReadinessVector';
+import { FacultyCollaborationDetail } from '../components/sih/faculty/FacultyCollaborationDetail';
+import { FacultyExplorer } from '../components/sih/faculty/FacultyExplorer';
 import { useDemoSih } from '../context/DemoSihContext';
 import { DEMO_IDS } from './demoFixtures';
 import { applicationStageLabel } from './demoScenario';
@@ -319,26 +322,17 @@ export function DemoFacultyPage() {
         title="Collaboration is a first-class product surface."
         description="These synthetic engagements use the shared CollaborationEngagement contract. Faculty participation includes research, development and workshops—not only student verification."
       />
-      <div className="grid gap-4 lg:grid-cols-3">
-        {state.fixture.collaborations.map(engagement => (
-          <article key={engagement.id} className="flex min-h-72 flex-col border-2 border-black bg-white p-5 shadow-[4px_4px_0_#111]">
-            <div className="flex items-start justify-between gap-3">
-              <span className="font-mono-ui text-[10px] font-black uppercase tracking-wide text-[#d63c1d]">{engagement.kind.replaceAll('_', ' ')}</span>
-              <span className="border border-black bg-[#e7ff57] px-2 py-1 font-mono-ui text-[9px] font-bold uppercase">{engagement.status}</span>
-            </div>
-            <h2 className="mt-6 text-2xl font-black">{engagement.objectives[0]}</h2>
-            <ul className="mt-4 grid gap-2 text-sm text-black/65">{engagement.objectives.slice(1).map(objective => <li key={objective}>→ {objective}</li>)}</ul>
-            <dl className="mt-auto grid gap-2 border-t border-black/20 pt-4 font-mono-ui text-[10px]">
-              <div><dt className="uppercase text-black/45">Partners</dt><dd>{engagement.partnerOrganizationIds.length}</dd></div>
-              <div><dt className="uppercase text-black/45">Participants</dt><dd>{engagement.participantActorIds.length} controlled persona(s)</dd></div>
-            </dl>
-          </article>
-        ))}
-      </div>
+      <FacultyExplorer collaborations={state.fixture.collaborations} organizations={state.fixture.organizations} personas={state.fixture.personas} />
       <section className="mt-8 border-2 border-black bg-[#fff4c7] p-5">
         <h2 className="text-xl font-black">Shared-domain proof</h2>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed">Collaborative research, a faculty development program and a workshop are represented as canonical engagements between the controlled educational institution and controlled industry partner. No live institution integration is claimed.</p>
       </section>
     </div>
   );
+}
+
+export function DemoFacultyCollaborationDetailPage() {
+  const { state } = useDemoSih();
+  const { collaborationId } = useParams();
+  return <FacultyCollaborationDetail engagement={state.fixture.collaborations.find(item => item.id === collaborationId)} organizations={state.fixture.organizations} personas={state.fixture.personas} />;
 }
