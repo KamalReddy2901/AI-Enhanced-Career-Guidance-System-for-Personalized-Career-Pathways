@@ -288,8 +288,15 @@ export function DemoInstitutionPage() {
   ] as const;
   const visibleMetricData = points.filter(point => point.metric === selectedMetric);
   const readinessCount = points.find(point => point.metric === 'readiness_distribution' && point.dimensions.readiness_band === 'READY_FOR_REVIEW')?.value ?? 0;
-  const evidenceGapMetric = points.find(point => point.metric === 'evidence_gap_distribution');
+  const evidenceGapMetric = points.find(point => point.metric === 'evidence_gap_distribution' && point.dimensions.category === 'inspectable_work_sample');
+  const evidenceGapTargetValue = evidenceGapMetric?.suppressed ? 'Suppressed' : evidenceGapMetric?.value ?? 0;
+  const evidenceGapTargetSize = evidenceGapMetric?.cohortSize ?? 0;
   const actionOwner = 'Dev — synthetic T&P analyst';
+  const nextInterventionLabel = interventionStatus === 'approved'
+    ? 'Start intervention'
+    : interventionStatus === 'in_progress'
+      ? 'Complete intervention'
+      : 'Intervention completed';
 
   return (
     <div>
@@ -353,26 +360,34 @@ export function DemoInstitutionPage() {
           <p className="mt-2 text-sm leading-relaxed text-black/70">A single evidence-gap signal can be translated into a human-owned intervention without claiming causal proof. All controls remain local to the controlled demo runtime.</p>
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <div className="border border-black bg-white p-3"><p className="font-mono-ui text-[10px] uppercase text-black/55">Ready for review</p><p className="mt-3 text-3xl font-black">{readinessCount}</p></div>
-            <div className="border border-black bg-white p-3"><p className="font-mono-ui text-[10px] uppercase text-black/55">Evidence gap</p><p className="mt-3 text-3xl font-black">{evidenceGapMetric?.suppressed ? 'Suppressed' : evidenceGapMetric?.value ?? 0}</p></div>
+            <div className="border border-black bg-white p-3"><p className="font-mono-ui text-[10px] uppercase text-black/55">Evidence-gap target</p><p className="mt-3 text-3xl font-black">{evidenceGapTargetValue}</p></div>
             <div className="border border-black bg-white p-3"><p className="font-mono-ui text-[10px] uppercase text-black/55">Follow-up owner</p><p className="mt-3 text-sm font-black">{actionOwner}</p></div>
           </div>
           <div className="mt-5 border-2 border-black bg-white p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="font-mono-ui text-[10px] font-black uppercase tracking-wide text-[#d63c1d]">Intervention loop</p>
-                <h3 className="mt-2 text-2xl font-black">Evidence gap follow-up review</h3>
+                <h3 className="mt-2 text-2xl font-black">Evidence-gap follow-up review</h3>
               </div>
               <span className="border border-black bg-[#e7ff57] px-2 py-1 font-mono-ui text-[9px] font-black uppercase">{interventionStatus}</span>
             </div>
-            <p className="mt-4 text-sm leading-relaxed text-black/70">Target cohort: synthetic learners in the evidence-gap group. Rationale: missing inspectable work sample and context is limiting readiness updates. Owner: {actionOwner}.</p>
+            <p className="mt-4 text-sm leading-relaxed text-black/70">Target cohort: synthetic learners in the inspectable-work-sample evidence-gap group. Rationale: missing inspectable work sample and context is limiting readiness updates. Owner: {actionOwner}. Cohort size: {evidenceGapTargetSize}.</p>
             <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
-              <div><dt className="font-mono-ui text-[10px] uppercase text-black/55">Target</dt><dd className="mt-1">{readinessCount} records in ready-for-review cohort</dd></div>
+              <div><dt className="font-mono-ui text-[10px] uppercase text-black/55">Target</dt><dd className="mt-1">{evidenceGapTargetValue === 'Suppressed' ? 'Suppressed' : `${evidenceGapTargetValue} records in evidence-gap cohort`}</dd></div>
               <div><dt className="font-mono-ui text-[10px] uppercase text-black/55">Review window</dt><dd className="mt-1">Due in 7 days</dd></div>
               <div><dt className="font-mono-ui text-[10px] uppercase text-black/55">Status</dt><dd className="mt-1">{interventionStatus.replaceAll('_', ' ')}</dd></div>
               <div><dt className="font-mono-ui text-[10px] uppercase text-black/55">Outcome</dt><dd className="mt-1">{outcomeUpdated ? 'Training workshop logged' : 'Awaiting outcome update'}</dd></div>
             </dl>
             <div className="mt-5 flex flex-wrap gap-2">
-              <button type="button" onClick={() => setInterventionStatus('in_progress')} className="min-h-11 border-2 border-black bg-[#111] px-4 py-3 font-mono-ui text-[10px] font-black uppercase text-white">Approve intervention</button>
+              {interventionStatus === 'approved' && (
+                <button type="button" onClick={() => setInterventionStatus('in_progress')} className="min-h-11 border-2 border-black bg-[#111] px-4 py-3 font-mono-ui text-[10px] font-black uppercase text-white">Start intervention</button>
+              )}
+              {interventionStatus === 'in_progress' && (
+                <button type="button" onClick={() => setInterventionStatus('completed')} className="min-h-11 border-2 border-black bg-[#111] px-4 py-3 font-mono-ui text-[10px] font-black uppercase text-white">Complete intervention</button>
+              )}
+              {interventionStatus === 'completed' && (
+                <span className="min-h-11 border-2 border-black bg-[#e7ff57] px-4 py-3 font-mono-ui text-[10px] font-black uppercase">Intervention completed</span>
+              )}
               <button type="button" onClick={() => setOutcomeUpdated(value => !value)} className="min-h-11 border-2 border-black bg-[#e7ff57] px-4 py-3 font-mono-ui text-[10px] font-black uppercase">{outcomeUpdated ? 'Unmark outcome' : 'Record outcome update'}</button>
             </div>
           </div>

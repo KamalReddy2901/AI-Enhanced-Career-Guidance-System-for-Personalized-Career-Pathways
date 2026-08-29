@@ -43,7 +43,7 @@ export function FacultyCollaborationDetail({ engagement, organizations, personas
       <header className="mt-6 max-w-4xl">
         <p className="font-mono-ui text-xs font-black uppercase tracking-[0.2em] text-[#d63c1d]">{collaborationGroupLabel(group)}</p>
         <h1 className="mt-2 text-4xl font-black leading-[0.95] sm:text-6xl">{engagement.objectives[0] ?? 'Controlled collaboration'}</h1>
-        <p className="mt-4 text-base leading-relaxed text-black/70">Read-only detail for a synthetic {collaborationKindLabel(engagement.kind)} engagement. No application or expression-of-interest action is represented in N2.</p>
+        <p className="mt-4 text-base leading-relaxed text-black/70">Read-only canonical collaboration detail with a controlled local faculty engagement workspace below. Interest and milestone actions are synthetic demo state only and are not persisted.</p>
       </header>
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.8fr]">
         <section className="border-2 border-black bg-white p-5 shadow-[5px_5px_0_#111]">
