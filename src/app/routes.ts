@@ -48,7 +48,7 @@ const ReadinessPage = lazy(() => import("./sih/SihStudentProductionPages").then(
 const GapClosurePage = lazy(() => import("./sih/SihStudentProductionPages").then((m) => ({ default: m.GapClosurePage })));
 const EvidencePage = lazy(() => import("./sih/SihStudentProductionPages").then((m) => ({ default: m.EvidencePage })));
 const ApplicationsPage = lazy(() => import("./sih/SihStudentProductionPages").then((m) => ({ default: m.ApplicationsPage })));
-const ApplicationPreparationPage = lazy(() => import("./sih/SihStudentProductionPages").then((m) => ({ default: m.ApplicationPreparationPage })));
+const ApplicationPreparationPage = lazy(() => import("./sih/SihApplicationPreparationPage").then((m) => ({ default: m.ApplicationPreparationPage })));
 const IndustryOpportunitiesPage = lazy(() => import("./sih/SihIndustryProductionPages").then((m) => ({ default: m.IndustryOpportunitiesPage })));
 const IndustryNewOpportunityPage = lazy(() => import("./sih/SihIndustryProductionPages").then((m) => ({ default: m.IndustryNewOpportunityPage })));
 const ApplicantsPage = lazy(() => import("./sih/SihRecruiterProductionPage").then((m) => ({ default: m.ApplicantsPage })));
