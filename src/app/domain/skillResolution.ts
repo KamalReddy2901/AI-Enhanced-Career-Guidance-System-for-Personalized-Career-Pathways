@@ -15,6 +15,12 @@ export interface SkillReviewSuggestion {
 }
 
 export type CanonicalResolutionState =
-  | { readonly state: 'resolved'; readonly skillId: string; readonly matchKind: 'exact' | 'alias' }
+  | {
+      readonly state: 'resolved';
+      readonly skillId: string;
+      readonly matchKind: 'exact' | 'alias';
+      /** Persisted canonical label. Optional for backward compatibility; production authoring refuses resolved writes when absent. */
+      readonly label?: string;
+    }
   | { readonly state: 'review_required'; readonly literalText: string; readonly suggestions: readonly SkillReviewSuggestion[] }
   | { readonly state: 'unresolved'; readonly literalText: string };
