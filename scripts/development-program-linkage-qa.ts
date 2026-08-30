@@ -70,7 +70,7 @@ assert.ok(sqlAssertionCount >= 18, `Expected at least 18 development-program SQL
 for (const boundary of [
   'authorized provider author creates exactly version 1 draft',
   'does not implicitly publish',
-  'review-required target blocks publication',
+  'review-required program target blocks publication',
   'controlled-fixture confirmation cannot enter production',
   'unrelated tenant cannot author a program',
   'exact canonical skill linkage',
