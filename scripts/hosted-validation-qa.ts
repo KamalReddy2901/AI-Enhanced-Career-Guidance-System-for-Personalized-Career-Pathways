@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+
+const preflight = readFileSync('scripts/hosted-sih-preflight.ts', 'utf8');
+const fixture = readFileSync('scripts/hosted-sih-fixture.ts', 'utf8');
+const runbook = readFileSync('docs/sih26044-hosted-validation-runbook.md', 'utf8');
+assert.match(preflight, /mmwgnsggnllwgshipnwh/);
+assert.match(preflight, /READ_ONLY_PREFLIGHT/);
+assert.match(preflight, /migration-list/);
+assert.match(fixture, /CREATE_CONTROLLED_SIH_FIXTURES/);
+assert.match(fixture, /example\.invalid/);
+assert.match(fixture, /No real organizations/);
+assert.doesNotMatch(fixture, /VITE_/);
+assert.match(runbook, /SUPABASE_ACCESS_TOKEN/);
+assert.match(runbook, /Never reset/);
+const missingCredentials = spawnSync('npx', ['tsx', 'scripts/hosted-sih-preflight.ts'], { encoding: 'utf8', env: { PATH: process.env.PATH ?? '' } });
+assert.notEqual(missingCredentials.status, 0);
+assert.match(`${missingCredentials.stdout}${missingCredentials.stderr}`, /SIH_SUPABASE_URL is required/);
+console.log('Hosted validation readiness QA passed: 10 assertions');

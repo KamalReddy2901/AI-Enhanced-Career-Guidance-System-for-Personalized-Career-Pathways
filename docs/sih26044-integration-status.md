@@ -19,6 +19,7 @@ Last updated: 2026-08-30
 - Hosted Supabase schema migrations through `submission_trigger_lock_authority`.
 - Trigger-only database functions removed from direct `PUBLIC`, `anon`, and `authenticated` execution.
 - Trusted Cloudflare Worker authentication, bounded public errors, 64 KiB request limit and per-caller/path rate limiting configuration.
+- Credential-gated hosted migration preflight and controlled synthetic-identity bootstrap tooling, with no browser access to privileged credentials.
 
 ## Controlled prototype
 
@@ -37,6 +38,7 @@ Last updated: 2026-08-30
 - Leaked-password protection must be enabled in Supabase Auth configuration; the database connector cannot mutate this Auth setting.
 - Browser-level keyboard, responsive and screen-reader regression is not yet automated.
 - Cloudflare preview and production deployment require the account's deployment credentials and configured Worker secrets.
+- Hosted migration reconciliation, controlled identity provisioning, authenticated role smoke testing and deployment remain unexecuted because this workspace has no approved Supabase Auth-admin/service credentials or Cloudflare deployment credentials. The repeatable operator procedure is documented in `docs/sih26044-hosted-validation-runbook.md`.
 - `careercase.pages.dev` remains the legacy deployment until preview and authenticated smoke gates pass.
 
 ## Claim boundaries
