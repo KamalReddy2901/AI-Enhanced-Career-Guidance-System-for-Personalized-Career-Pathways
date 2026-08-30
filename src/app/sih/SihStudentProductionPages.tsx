@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import type {
   EvidenceRecordId,
   OpportunityReadinessResult,
-  OpportunityVersionId,
 } from '../domain';
 import OpportunityExplorer from '../components/sih/student/explorer/OpportunityExplorer';
 import OpportunityDetail from '../components/sih/student/explorer/OpportunityDetail';
@@ -11,7 +10,7 @@ import ReadinessCasefile from '../components/sih/student/readiness/ReadinessCase
 import GapClosurePlan from '../components/sih/student/gap-closure/GapClosurePlan';
 import ApplicationPreparationWorkspace from '../components/sih/student/application/ApplicationPreparationWorkspace';
 import ApplicationFinalizationPanel from '../components/sih/student/application/ApplicationFinalizationPanel';
-import type { EvidenceRecordReadModel } from '../services/sih/types';
+import type { ApplicationReadModel, EvidenceRecordReadModel } from '../services/sih/types';
 import {
   ProductionOpportunityReads,
   type ProductionOpportunityBundle,
@@ -251,6 +250,7 @@ export function ReadinessPage() {
           {recomputing ? 'Recomputing…' : result ? 'Recompute canonical readiness' : 'Compute canonical readiness'}
         </button>
         {bundle && <Link to={`/opportunities/${bundle.version.id}`} className="min-h-11 border-2 border-black px-4 py-3 font-mono-ui text-xs font-black uppercase">Opportunity details</Link>}
+        {bundle && result && <Link to={`/gap-closure?opportunityVersionId=${bundle.version.id}`} className="min-h-11 border-2 border-black bg-white px-4 py-3 font-mono-ui text-xs font-black uppercase">Open gap-closure plan</Link>}
       </div>
       <ReadinessCasefile
         result={result}
@@ -440,7 +440,7 @@ export function ApplicationPreparationPage() {
 
 export function ApplicationsPage() {
   const { actorId, dal } = useSihProduction();
-  const [rows, setRows] = useState<readonly Awaited<ReturnType<NonNullable<typeof dal>['listApplicationsForApplicant']>>>([]);
+  const [rows, setRows] = useState<readonly ApplicationReadModel[]>([]);
   const [error, setError] = useState<string>();
 
   useEffect(() => {
