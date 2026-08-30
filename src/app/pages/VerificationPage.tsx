@@ -3,28 +3,36 @@ import { useAuth } from '../context/AuthContext';
 import { SihBrowserDal } from '../services/sih/browserDal';
 import { VerificationRequestInbox } from '../components/sih/verification/VerificationRequestInbox';
 import { VerificationRequestDetail } from '../components/sih/verification/VerificationRequestDetail';
-import type { 
-  VerificationRequestReadModel, 
+import type {
+  VerificationRequestReadModel,
   EvidenceRecordReadModel,
+  VerificationEventReadModel,
+  VerifierActingContextReadModel,
+  TerminalVerificationDecisionAction,
 } from '../services/sih/types';
-import type { VerificationEvent } from '../domain/evidence';
 import type { ExtendedArtifactReference } from '../components/evidence/ArtifactPreview';
 import { supabase } from '../services/supabase';
-import type { ActorId, EvidenceRecordId, OrganizationId } from '../domain/shared';
+import type { EvidenceArtifactId, EvidenceRecordId } from '../domain/shared';
+
+interface VerificationDecisionFormData {
+  readonly action: TerminalVerificationDecisionAction;
+  readonly reason?: string;
+}
 
 export function VerificationPage() {
   const { user } = useAuth();
-  
+
   const [requests, setRequests] = useState<VerificationRequestReadModel[]>([]);
+  const [actingContexts, setActingContexts] = useState<VerifierActingContextReadModel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
-  
+
   const [selectedRequest, setSelectedRequest] = useState<VerificationRequestReadModel | undefined>();
   const [evidence, setEvidence] = useState<EvidenceRecordReadModel | undefined>();
   const [artifacts, setArtifacts] = useState<ExtendedArtifactReference[] | undefined>();
-  const [history, setHistory] = useState<VerificationEvent[] | undefined>();
+  const [history, setHistory] = useState<VerificationEventReadModel[] | undefined>();
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<Error | null>(null);
 
@@ -35,14 +43,28 @@ export function VerificationPage() {
 
   useEffect(() => {
     if (!user) return;
-    
+
     let active = true;
     setIsLoading(true);
-    
-    dal.listVerificationRequestsForVerifier({ requestedVerifierActorId: user.id as ActorId })
-      .then(data => {
+
+    dal.getCurrentVerifierActingContexts()
+      .then(async contexts => {
         if (!active) return;
-        setRequests(data);
+        setActingContexts(contexts);
+        if (contexts.length === 0) {
+          setRequests([]);
+          return;
+        }
+        const actorId = contexts[0].actorId;
+        const requestGroups = await Promise.all([
+          dal.listVerificationRequestsForVerifier({ requestedVerifierActorId: actorId }),
+          ...contexts.map(context => dal.listVerificationRequestsForVerifier({
+            requestedVerifierOrganizationId: context.organizationId,
+          })),
+        ]);
+        if (!active) return;
+        const uniqueRequests = new Map(requestGroups.flat().map(request => [request.id, request]));
+        setRequests([...uniqueRequests.values()]);
         setError(null);
       })
       .catch(err => {
@@ -52,7 +74,7 @@ export function VerificationPage() {
       .finally(() => {
         if (active) setIsLoading(false);
       });
-      
+
     return () => { active = false; };
   }, [user, dal]);
 
@@ -74,19 +96,27 @@ export function VerificationPage() {
       try {
         const req = await dal.getVerificationRequest(selectedRequestId!);
         if (!req) throw new Error('Verification request not found.');
-        
+
         const ev = await dal.getEvidenceRecord(req.evidenceRecordId as EvidenceRecordId);
         if (!ev) throw new Error('Associated evidence record not found.');
-        
+
         const arts = await dal.listArtifactsForEvidence(req.evidenceRecordId as EvidenceRecordId);
-        
+
         const evts = await dal.listVerificationEvents({ verificationRequestId: req.id });
 
         if (!active) return;
         setSelectedRequest(req);
         setEvidence(ev);
-        setArtifacts(arts as unknown as ExtendedArtifactReference[]);
-        setHistory(evts as unknown as VerificationEvent[]);
+        setArtifacts(arts.map(artifact => ({
+          id: artifact.id as EvidenceArtifactId,
+          mediaType: artifact.mediaType,
+          storageReference: `${artifact.storageBucketId}/${artifact.storageObjectPath}`,
+          displayName: artifact.displayName,
+          checksum: artifact.integrityFingerprint,
+          scanStatus: artifact.scanStatus,
+          integrityFingerprint: artifact.integrityFingerprint,
+        })));
+        setHistory(evts);
       } catch (err) {
         if (!active) return;
         setDetailError(err instanceof Error ? err : new Error(String(err)));
@@ -103,8 +133,19 @@ export function VerificationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const handleActionSubmit = async (data: any) => {
+  const selectedActingContext = selectedRequest
+    ? actingContexts.find(context => context.organizationId === selectedRequest.requestedVerifierOrganizationId)
+      ?? (selectedRequest.requestedVerifierActorId
+        ? actingContexts.find(context => context.actorId === selectedRequest.requestedVerifierActorId)
+        : undefined)
+    : undefined;
+
+  const handleActionSubmit = async (data: VerificationDecisionFormData) => {
     if (!selectedRequest || !selectedRequestId) return;
+    if (!selectedActingContext) {
+      setDetailError(new Error('No active authorized verifier organization matches this request.'));
+      return;
+    }
     setIsSubmitting(true);
     setDetailError(null);
     try {
@@ -112,18 +153,14 @@ export function VerificationPage() {
         verificationRequestId: selectedRequest.id,
         evidenceRecordId: selectedRequest.evidenceRecordId as EvidenceRecordId,
         action: data.action,
-        // The authenticated user's org id should be used if they have one,
-        // but for now we pass the requested org if it exists, or a dummy,
-        // because the RPC `complete_verification_request_decision` enforces RLS
-        // or uses the session actor id. Wait, the API requires `actorOrganizationId`.
-        actorOrganizationId: (selectedRequest.requestedVerifierOrganizationId ?? 'ORG-unknown') as OrganizationId,
+        actorOrganizationId: selectedActingContext.organizationId,
         reason: data.reason,
       });
       setIsSuccess(true);
 
       // Refresh request history
       const evts = await dal.listVerificationEvents({ verificationRequestId: selectedRequest.id });
-      setHistory(evts as unknown as VerificationEvent[]);
+      setHistory(evts);
 
       const req = await dal.getVerificationRequest(selectedRequest.id);
       if (req) {
@@ -149,7 +186,7 @@ export function VerificationPage() {
   return (
     <div className="min-h-screen bg-[var(--paper)] p-4 md:p-8">
       <div className="mx-auto max-w-5xl space-y-6">
-        
+
         <header className="mb-8 border-b-2 border-[var(--ink)] pb-6">
           <h1 className="font-display text-4xl leading-[1.25]">Verifier Dashboard</h1>
           <p className="mt-2 text-sm text-[var(--ink-soft)]">Review and manage your pending verification requests.</p>
@@ -175,6 +212,7 @@ export function VerificationPage() {
                   setIsSuccess(false);
                 }}
                 onSubmit={handleActionSubmit}
+                canVerifyAsIssuer={selectedActingContext?.roles.includes('issuer_verifier') ?? false}
               />
             )}
           </div>

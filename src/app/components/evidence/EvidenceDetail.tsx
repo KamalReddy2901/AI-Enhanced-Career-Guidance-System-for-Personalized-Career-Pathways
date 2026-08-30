@@ -69,10 +69,10 @@ export function EvidenceDetail({ evidence, historyEvents = [], onFetchArtifactUr
         <div className="flex flex-col gap-4">
           <h3 className="text-lg font-semibold tracking-tight">Attached Artifacts</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {evidence.artifacts.map((artifact: any) => (
-              <ArtifactPreview 
-                key={artifact.id} 
-                artifact={artifact} 
+            {evidence.artifacts.map(artifact => (
+              <ArtifactPreview
+                key={artifact.id}
+                artifact={artifact}
                 onFetchPreviewUrl={onFetchArtifactUrl}
               />
             ))}

@@ -25,8 +25,8 @@ export function EvidenceCard({ evidence, onClick }: EvidenceCardProps) {
   };
 
   return (
-    <Card 
-      className={`cursor-pointer hover:border-primary transition-colors ${onClick ? 'interactive' : ''}`} 
+    <Card
+      className={`cursor-pointer hover:border-primary transition-colors ${onClick ? 'interactive' : ''}`}
       onClick={() => onClick?.(evidence)}
     >
       <CardHeader>

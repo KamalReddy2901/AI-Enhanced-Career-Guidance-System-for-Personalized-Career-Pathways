@@ -36,7 +36,7 @@ export function VerificationRequestInbox({
 
   const getStatusBadge = (request: VerificationRequestReadModel) => {
     const isExpired = request.expiresAt && new Date(request.expiresAt) < new Date();
-    
+
     if (isExpired && request.status === 'requested') {
       return <Badge variant="destructive" className="shrink-0 bg-red-100 text-red-800 hover:bg-red-200 border-red-200 dark:bg-red-900/30 dark:text-red-400">Expired</Badge>;
     }
@@ -106,7 +106,7 @@ export function VerificationRequestInbox({
       {sortedRequests.map((request) => (
         <Card key={request.id} className={`transition-colors hover:bg-muted/30 ${request.status === 'requested' ? 'border-l-4 border-l-primary' : ''}`}>
           <div className="p-4 sm:p-5 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-            
+
             <div className="flex flex-col gap-1.5 flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold text-base truncate" title={request.subjectActorId}>
@@ -114,17 +114,17 @@ export function VerificationRequestInbox({
                 </span>
                 {getStatusBadge(request)}
               </div>
-              
+
               <div className="text-sm text-muted-foreground mt-1 break-words">
                 <span className="font-medium text-foreground">Requested scope:</span> {renderScope(request.scope)}
               </div>
-              
+
               <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
                 <span className="flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5" />
                   Requested on {new Date(request.requestedAt).toLocaleDateString()}
                 </span>
-                
+
                 {request.expiresAt && (
                   <span className={`flex items-center gap-1.5 ${isExpired(request) && request.status === 'requested' ? 'text-destructive font-medium' : ''}`}>
                     <AlertCircle className="w-3.5 h-3.5" />
@@ -134,7 +134,7 @@ export function VerificationRequestInbox({
               </div>
             </div>
 
-            <Button 
+            <Button
               onClick={() => onOpenRequest(request.id)}
               variant={request.status === 'requested' ? 'default' : 'secondary'}
               className="w-full sm:w-auto shrink-0 mt-2 sm:mt-0"
@@ -145,7 +145,7 @@ export function VerificationRequestInbox({
           </div>
         </Card>
       ))}
-      
+
       {isLoading && requests.length > 0 && (
         <div className="flex items-center justify-center p-4 text-muted-foreground text-sm">
           <Loader2 className="w-4 h-4 animate-spin mr-2" />

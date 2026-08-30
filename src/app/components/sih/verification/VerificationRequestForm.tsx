@@ -37,6 +37,9 @@ export function VerificationRequestForm({
       console.warn("VerificationRequestForm: Submission blocked because consent is not granted.");
       return;
     }
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(verifierOrgId.trim())) {
+      return;
+    }
     await onSubmit({
       requestedVerifierActorId: verifierActorId.trim(),
       requestedVerifierOrganizationId: verifierOrgId.trim(),
@@ -115,28 +118,28 @@ export function VerificationRequestForm({
           <div className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="verifierActorId" className="text-sm font-medium">
-                Requested Verifier ID (Optional)
+                Institution-provided verifier ID (Optional)
               </label>
               <input
                 id="verifierActorId"
                 type="text"
                 value={verifierActorId}
                 onChange={(e) => setVerifierActorId(e.target.value)}
-                placeholder="e.g. mentor-123"
+                placeholder="Paste an authorized verifier UUID"
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isSubmitting}
               />
             </div>
             <div className="space-y-2">
               <label htmlFor="verifierOrgId" className="text-sm font-medium">
-                Requested Organization ID (Optional)
+                Verifier organization ID
               </label>
               <input
                 id="verifierOrgId"
                 type="text"
                 value={verifierOrgId}
                 onChange={(e) => setVerifierOrgId(e.target.value)}
-                placeholder="e.g. org-abc"
+                placeholder="Paste the authorized organization UUID"
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isSubmitting}
               />
@@ -159,7 +162,7 @@ export function VerificationRequestForm({
               </label>
             </div>
             <p className="text-xs text-muted-foreground pl-7">
-              Standard requests expire automatically after 30 days if unanswered.
+              Use identifiers supplied by an authorized institution directory. The database rejects unrelated or unauthorized verifiers. A searchable directory remains an integration requirement.
             </p>
           </div>
 
@@ -175,7 +178,7 @@ export function VerificationRequestForm({
               Cancel
             </Button>
           )}
-          <Button type="submit" disabled={Boolean(isSubmitting || !consentGranted)}>
+          <Button type="submit" disabled={Boolean(isSubmitting || !consentGranted || !/^[0-9a-f-]{36}$/i.test(verifierOrgId.trim()))}>
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />

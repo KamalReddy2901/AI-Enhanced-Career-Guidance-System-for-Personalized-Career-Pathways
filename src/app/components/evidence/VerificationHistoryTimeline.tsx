@@ -1,14 +1,24 @@
 import React from 'react';
-import type { VerificationEvent } from '../../domain/evidence';
+import type { VerificationAction } from '../../domain/evidence';
+
+interface VerificationTimelineEvent {
+  readonly id: string;
+  readonly action: VerificationAction;
+  readonly actorId: string;
+  readonly actorOrganizationId?: string;
+  readonly reason?: string;
+  readonly supersedesEventId?: string;
+  readonly occurredAt: string;
+}
 import { Badge } from '../ui/badge';
 
 interface VerificationHistoryTimelineProps {
-  events: VerificationEvent[];
+  events: readonly VerificationTimelineEvent[];
 }
 
 export function VerificationHistoryTimeline({ events }: VerificationHistoryTimelineProps) {
   // Sort events chronologically (oldest first)
-  const sortedEvents = [...events].sort((a, b) => 
+  const sortedEvents = [...events].sort((a, b) =>
     new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime()
   );
 

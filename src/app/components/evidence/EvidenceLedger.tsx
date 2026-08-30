@@ -16,15 +16,15 @@ export function EvidenceLedger({ evidenceList, onEvidenceSelect }: EvidenceLedge
   return (
     <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto p-4">
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-card p-4 rounded-lg border">
-        <Input 
-          placeholder="Search claims..." 
+        <Input
+          placeholder="Search claims..."
           value={filters.searchQuery ?? ''}
           onChange={(e: any) => setFilters(f => ({ ...f, searchQuery: e.target.value }))}
           className="max-w-xs"
         />
         <div className="flex gap-4">
-          <Select 
-            value={filters.verificationState ?? 'all'} 
+          <Select
+            value={filters.verificationState ?? 'all'}
             onValueChange={(val: any) => setFilters(f => ({ ...f, verificationState: val }))}
           >
             <SelectTrigger className="w-[180px]">
@@ -40,8 +40,8 @@ export function EvidenceLedger({ evidenceList, onEvidenceSelect }: EvidenceLedge
             </SelectContent>
           </Select>
 
-          <Select 
-            value={filters.visibility ?? 'all'} 
+          <Select
+            value={filters.visibility ?? 'all'}
             onValueChange={(val: any) => setFilters(f => ({ ...f, visibility: val }))}
           >
             <SelectTrigger className="w-[180px]">
@@ -65,10 +65,10 @@ export function EvidenceLedger({ evidenceList, onEvidenceSelect }: EvidenceLedge
           </div>
         ) : (
           filteredEvidence.map(record => (
-            <EvidenceCard 
-              key={record.id} 
-              evidence={record} 
-              onClick={onEvidenceSelect} 
+            <EvidenceCard
+              key={record.id}
+              evidence={record}
+              onClick={onEvidenceSelect}
             />
           ))
         )}

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../..
 import { Button } from '../../ui/button';
 import { ArrowLeft, FileText, History, Info, ShieldAlert } from 'lucide-react';
 import type { VerificationRequestReadModel, EvidenceRecordReadModel } from '../../../services/sih/types';
-import type { VerificationEvent } from '../../../domain/evidence';
+import type { VerificationEventReadModel } from '../../../services/sih/types';
 import { VerificationActionForm, type VerificationActionFormData } from './VerificationActionForm';
 import { ArtifactPreview, type ExtendedArtifactReference } from '../../evidence/ArtifactPreview';
 import { VerificationHistoryTimeline } from '../../evidence/VerificationHistoryTimeline';
@@ -13,7 +13,8 @@ export interface VerificationRequestDetailProps {
   request: VerificationRequestReadModel;
   evidence?: EvidenceRecordReadModel;
   artifacts?: ExtendedArtifactReference[];
-  history?: VerificationEvent[];
+  history?: VerificationEventReadModel[];
+  canVerifyAsIssuer?: boolean;
   isSubmitting?: boolean;
   error?: Error | null;
   isSuccess?: boolean;
@@ -31,6 +32,7 @@ export function VerificationRequestDetail({
   isSuccess,
   onBack,
   onSubmit,
+  canVerifyAsIssuer,
 }: VerificationRequestDetailProps) {
   const renderScope = () => {
     const scope = request.scope;
@@ -68,7 +70,7 @@ export function VerificationRequestDetail({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Context & Evidence */}
         <div className="lg:col-span-2 space-y-6">
-          
+
           {/* Verification Request Info & Scope */}
           <Card>
             <CardHeader className="pb-4 border-b">
@@ -180,7 +182,7 @@ export function VerificationRequestDetail({
 
         {/* Right Column: History & Action */}
         <div className="space-y-6">
-          
+
           {/* Action Form */}
           <VerificationActionForm
             request={request}
@@ -188,6 +190,7 @@ export function VerificationRequestDetail({
             error={error}
             isSuccess={isSuccess}
             onSubmit={onSubmit}
+            canVerifyAsIssuer={canVerifyAsIssuer}
           />
 
           {/* History Timeline */}
@@ -211,7 +214,7 @@ export function VerificationRequestDetail({
               )}
             </CardContent>
           </Card>
-          
+
         </div>
       </div>
     </div>

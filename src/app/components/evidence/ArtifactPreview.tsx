@@ -82,7 +82,7 @@ export function ArtifactPreview({ artifact, onFetchPreviewUrl }: ArtifactPreview
         </div>
       );
     }
-    
+
     if (error) {
       return (
         <div className="flex flex-col items-center justify-center h-48 bg-destructive/10 rounded-md text-destructive">
@@ -104,15 +104,15 @@ export function ArtifactPreview({ artifact, onFetchPreviewUrl }: ArtifactPreview
       return (
         <div className="relative w-full h-48 overflow-hidden rounded-md bg-muted/20 flex items-center justify-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img 
-            src={previewUrl} 
+          <img
+            src={previewUrl}
             alt={artifact.displayName}
             className="max-w-full max-h-full object-contain"
           />
         </div>
       );
     }
-    
+
     // For non-images or generic files
     return (
       <div className="flex flex-col items-center justify-center h-48 bg-muted/20 rounded-md">

@@ -31,6 +31,7 @@ export function useEvidenceArtifactUpload(
     setError(null);
     setUploadProgress(0);
 
+    let uploadedObjectPath: string | undefined;
     try {
       if (!actorId) {
         throw new Error('Unauthenticated: Missing actor context.');
@@ -39,7 +40,7 @@ export function useEvidenceArtifactUpload(
       // Generate artifact ID according to project convention (UUID)
       const artifactId = crypto.randomUUID();
       const safeFilename = sanitizeFilename(file.name);
-      
+
       // Target path: <actor-id>/<artifact-id>/<safe-filename>
       const storageObjectPath = `${actorId}/${artifactId}/${safeFilename}`;
 
@@ -54,7 +55,8 @@ export function useEvidenceArtifactUpload(
       if (uploadError || !uploadData) {
         throw new Error(`Storage upload failed: ${uploadError?.message ?? 'Unknown error'}`);
       }
-      
+      uploadedObjectPath = storageObjectPath;
+
       setUploadProgress(50);
 
       // Register with trusted API
@@ -82,6 +84,9 @@ export function useEvidenceArtifactUpload(
       setUploadProgress(100);
       return artifact;
     } catch (err) {
+      if (uploadedObjectPath) {
+        await supabase.storage.from('career-evidence-private').remove([uploadedObjectPath]).catch(() => undefined);
+      }
       const wrappedError = err instanceof Error ? err : new Error(String(err));
       setError(wrappedError);
       throw wrappedError;

@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '../../ui/button';
 import { CheckCircle, Loader2, ShieldAlert } from 'lucide-react';
 import type { VerificationRequestReadModel } from '../../../services/sih/types';
-import type { VerificationAction } from '../../../domain/evidence';
+import type { TerminalVerificationDecisionAction } from '../../../services/sih/types';
 
 export interface VerificationActionFormData {
-  action: VerificationAction;
+  action: TerminalVerificationDecisionAction;
   reason?: string;
 }
 
@@ -17,6 +17,7 @@ export interface VerificationActionFormProps {
   isSuccess?: boolean;
   onCancel?: () => void;
   onSubmit: (data: VerificationActionFormData) => Promise<void> | void;
+  canVerifyAsIssuer?: boolean;
 }
 
 export function VerificationActionForm({
@@ -26,10 +27,11 @@ export function VerificationActionForm({
   isSuccess = false,
   onCancel,
   onSubmit,
+  canVerifyAsIssuer = false,
 }: VerificationActionFormProps) {
   const [reason, setReason] = useState('');
 
-  const handleAction = async (action: VerificationAction) => {
+  const handleAction = async (action: TerminalVerificationDecisionAction) => {
     await onSubmit({
       action,
       reason: reason.trim() || undefined,
@@ -110,7 +112,7 @@ export function VerificationActionForm({
               <div className="text-sm">{request.expiresAt ? new Date(request.expiresAt).toLocaleString() : 'N/A'}</div>
             </div>
           </div>
-          
+
           <div className="flex items-start gap-2 text-xs text-muted-foreground border-l-2 border-primary/50 pl-2 mt-4">
             <ShieldAlert className="w-4 h-4 shrink-0 text-primary/70" />
             <p>
@@ -147,36 +149,36 @@ export function VerificationActionForm({
               Cancel
             </Button>
           )}
-          
-          <Button 
-            type="button" 
-            variant="destructive" 
-            onClick={() => handleAction('disputed')} 
-            disabled={isSubmitting || request.status !== 'requested'}
+
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => handleAction('disputed')}
+            disabled={isSubmitting || (request.status !== 'requested' && request.status !== 'accepted')}
           >
             {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
             Dispute
           </Button>
 
-          <Button 
-            type="button" 
-            variant="secondary" 
-            onClick={() => handleAction('verified_by_human')} 
-            disabled={isSubmitting || request.status !== 'requested'}
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => handleAction('verified_by_human')}
+            disabled={isSubmitting || (request.status !== 'requested' && request.status !== 'accepted')}
           >
             {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
             Verify (Human)
           </Button>
 
-          <Button 
-            type="button" 
-            variant="default" 
-            onClick={() => handleAction('verified_by_issuer')} 
-            disabled={isSubmitting || request.status !== 'requested'}
+          {canVerifyAsIssuer && <Button
+            type="button"
+            variant="default"
+            onClick={() => handleAction('verified_by_issuer')}
+            disabled={isSubmitting || (request.status !== 'requested' && request.status !== 'accepted')}
           >
             {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
             Verify (Issuer)
-          </Button>
+          </Button>}
         </div>
       </div>
     </Card>
