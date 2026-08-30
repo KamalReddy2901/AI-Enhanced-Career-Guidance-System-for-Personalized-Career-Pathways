@@ -32,6 +32,13 @@ function Notice({ children }: { readonly children: ReactNode }) { return <div cl
 function label(value: string) { return value.replaceAll('_', ' '); }
 function usePrograms() { return useMemo(() => supabase ? new ProductionDevelopmentPrograms(supabase) : null, []); }
 function authorMemberships(memberships: readonly SihMembershipContext[]) { return memberships.filter((membership) => membership.roles.some((role) => AUTHOR_ROLES.has(role))); }
+function toDateTimeLocal(value?: string): string {
+  if (!value) return '';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '';
+  const local = new Date(parsed.getTime() - parsed.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
 
 export function DevelopmentProgramsPage() {
   const service = usePrograms();
@@ -100,14 +107,22 @@ const emptyDraft = (): DraftState => ({ kind: 'training', title: '', description
 
 function targetFromEditable(target: EditableTarget): DevelopmentProgramSkillTarget {
   const selected = target.canonicalSkillId ? SKILLS.find((skill) => skill.id === target.canonicalSkillId) : undefined;
+  const literal = target.literalSourceWording.trim();
+  const matchKind = selected && literal.toLocaleLowerCase() === selected.name.toLocaleLowerCase() ? 'exact' as const : 'alias' as const;
   return {
     literalSourceWording: target.literalSourceWording,
-    canonicalResolution: selected ? { state: 'resolved', skillId: selected.id, label: selected.name, matchKind: 'exact' } : { state: 'unresolved', literalText: target.literalSourceWording },
+    canonicalResolution: selected ? { state: 'resolved', skillId: selected.id, label: selected.name, matchKind } : { state: 'unresolved', literalText: target.literalSourceWording },
     humanConfirmed: target.reviewed,
     ...(target.reviewed ? { confirmationMethod: 'structured_human_entry' as const } : {}),
   };
 }
-function editableFromTarget(target: DevelopmentProgramSkillTarget): EditableTarget { return { literalSourceWording: target.literalSourceWording, canonicalSkillId: target.canonicalResolution.state === 'resolved' ? target.canonicalResolution.skillId : '', reviewed: target.humanConfirmed }; }
+function editableFromTarget(target: DevelopmentProgramSkillTarget, resetReview = false): EditableTarget {
+  return {
+    literalSourceWording: target.literalSourceWording,
+    canonicalSkillId: target.canonicalResolution.state === 'resolved' ? target.canonicalResolution.skillId : '',
+    reviewed: resetReview ? false : target.humanConfirmed,
+  };
+}
 
 export function DevelopmentProgramAuthoringPage() {
   const { developmentProgramVersionId } = useParams();
@@ -133,8 +148,9 @@ export function DevelopmentProgramAuthoringPage() {
     let active = true;
     void service.getManagedVersion(developmentProgramVersionId as DevelopmentProgramVersionId).then((version) => {
       if (!active || !version) return;
+      const successorSource = version.status === 'published';
       setProviderId(version.providerOrganizationId); setProgramId(version.developmentProgramId); setVersionId(version.id); setVersionNumber(version.versionNumber); setLoadedVersionStatus(version.status);
-      setDraft({ kind: version.kind, title: version.title, description: version.description, deliveryMode: version.deliveryMode, externalRegistrationUrl: version.externalRegistrationUrl ?? '', startsAt: version.startsAt ?? '', endsAt: version.endsAt ?? '', targets: version.skillTargets.map(editableFromTarget) });
+      setDraft({ kind: version.kind, title: version.title, description: version.description, deliveryMode: version.deliveryMode, externalRegistrationUrl: version.externalRegistrationUrl ?? '', startsAt: toDateTimeLocal(version.startsAt), endsAt: toDateTimeLocal(version.endsAt), targets: version.skillTargets.map((target) => editableFromTarget(target, successorSource)) });
       setDirty(false);
     }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'Unable to load program version.'); });
     return () => { active = false; };
@@ -164,7 +180,7 @@ export function DevelopmentProgramAuthoringPage() {
   return <Frame eyebrow="Conservative canonical resolution" title={loadedVersionStatus === 'published' ? 'Create Program Successor' : 'Author Development Program'} description="Keep provider wording literal. Canonical skill selection is an explicit human action; leaving the canonical field blank retains the target as unresolved literal wording. Publication never certifies learner completion.">
     {providers.length === 0 ? <Notice>Your authenticated memberships do not grant development-program authoring authority.</Notice> : <form className="grid gap-5" onSubmit={(event) => void save(event)}>
       {error && <Notice>{error}</Notice>}
-      {versionNumber && <Notice>Program version v{versionNumber} · {loadedVersionStatus}. {loadedVersionStatus === 'published' ? 'Published content is immutable; saving creates a successor draft and requires target review again.' : 'Save the exact draft before publication.'}</Notice>}
+      {versionNumber && <Notice>Program version v{versionNumber} · {loadedVersionStatus}. {loadedVersionStatus === 'published' ? 'Published content is immutable. Creating a successor preserves wording/mapping for review but clears every prior confirmation; each target must be explicitly reconfirmed.' : 'Save the exact draft before publication.'}</Notice>}
       <label className="grid gap-1 text-sm font-bold">Provider organization<select disabled={Boolean(programId)} className="min-h-11 border-2 border-black bg-white px-3 disabled:opacity-60" value={providerId ?? ''} onChange={(event) => { setProviderId(event.target.value as OrganizationId); setDirty(true); }}>{providers.map((provider) => <option key={provider.organizationId} value={provider.organizationId}>{provider.organizationName}</option>)}</select></label>
       <div className="grid gap-4 md:grid-cols-2"><label className="grid gap-1 text-sm font-bold">Program kind<select className="min-h-11 border-2 border-black bg-white px-3" value={draft.kind} onChange={(event) => patch({ kind: event.target.value as DevelopmentProgramKind })}>{KIND_OPTIONS.map((value) => <option key={value} value={value}>{label(value)}</option>)}</select></label><label className="grid gap-1 text-sm font-bold">Delivery mode<select className="min-h-11 border-2 border-black bg-white px-3" value={draft.deliveryMode} onChange={(event) => patch({ deliveryMode: event.target.value as DevelopmentDeliveryMode })}>{DELIVERY_OPTIONS.map((value) => <option key={value} value={value}>{label(value)}</option>)}</select></label></div>
       <label className="grid gap-1 text-sm font-bold">Title<input className="min-h-11 border-2 border-black px-3" value={draft.title} onChange={(event) => patch({ title: event.target.value })} /></label>
