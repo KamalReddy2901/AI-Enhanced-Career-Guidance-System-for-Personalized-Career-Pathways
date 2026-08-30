@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ActorId, OpportunityVersion, OrganizationId } from '../../../../domain';
+import type { ActorId, EvidenceRecordId, OpportunityVersion, OrganizationId } from '../../../../domain';
 import { SihBrowserDal } from '../../../../services/sih/browserDal';
 import { SihTrustedApiClient } from '../../../../services/sih/SihTrustedApiClient';
 import { SihTrustedApiError, type ApplicationEventReadModel, type ApplicationReadModel, type ConsentGrantReadModel, type CreateApplicationSnapshotResponse } from '../../../../services/sih/types';
@@ -10,15 +10,15 @@ type Props = {
   readonly applicantActorId: ActorId;
   readonly opportunityVersion: OpportunityVersion;
   readonly ownerOrganizationId: OrganizationId;
-  readonly selectedEvidenceRecordIds: readonly string[];
+  readonly selectedEvidenceRecordIds: readonly EvidenceRecordId[];
   readonly availability?: 'loading' | 'unauthorized' | 'error' | 'stale';
 };
 
 type Status = 'idle' | 'working' | 'error' | 'success';
 
 function hasExactEvidenceSet(
-  selectedEvidenceRecordIds: readonly string[],
-  consentEvidenceRecordIds: readonly string[],
+  selectedEvidenceRecordIds: readonly EvidenceRecordId[],
+  consentEvidenceRecordIds: readonly EvidenceRecordId[],
 ): boolean {
   if (selectedEvidenceRecordIds.length !== consentEvidenceRecordIds.length) return false;
   const selected = new Set(selectedEvidenceRecordIds);

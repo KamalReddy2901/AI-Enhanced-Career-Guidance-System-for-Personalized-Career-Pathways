@@ -267,7 +267,7 @@ function mapScope(row: Pick<EvidenceRecordRow, 'scope_kind' | 'scope_skill_id' |
 
 function mapEvidenceRecord(row: EvidenceRecordRow): EvidenceRecordReadModel {
   return {
-    id: row.id,
+    id: row.id as EvidenceRecordId,
     subjectActorId: row.subject_actor_id,
     literalClaim: row.literal_claim,
     provenance: row.provenance,
@@ -463,13 +463,13 @@ export class SihBrowserDal {
     for (const event of (data ?? []) as Array<{ application_id: string; to_stage: ApplicationStage; sequence_number: number }>) {
       if (!currentStages.has(event.application_id)) currentStages.set(event.application_id, event.to_stage);
     }
-    return rows.map(row => ({ id: row.id, applicantActorId: row.applicant_actor_id, opportunityId: row.opportunity_id, opportunityVersionId: row.opportunity_version_id, ownerOrganizationId: row.owner_organization_id, initialStage: row.initial_stage, currentStage: currentStages.get(row.id) ?? row.initial_stage, createdAt: row.created_at }));
+    return rows.map(row => ({ id: row.id as ApplicationId, applicantActorId: row.applicant_actor_id, opportunityId: row.opportunity_id, opportunityVersionId: row.opportunity_version_id, ownerOrganizationId: row.owner_organization_id, initialStage: row.initial_stage, currentStage: currentStages.get(row.id) ?? row.initial_stage, createdAt: row.created_at }));
   }
 
   async listApplicationEvents(applicationId: ApplicationId): Promise<ApplicationEventReadModel[]> {
     const { data, error } = await this.db().from('application_events').select(applicationEventSelect).eq('application_id', applicationId).order('sequence_number', { ascending: true });
     if (error) throw error;
-    return ((data ?? []) as ApplicationEventRow[]).map(row => ({ id: row.id, applicationId: row.application_id, fromStage: row.from_stage, toStage: row.to_stage, eventKind: row.event_kind, actorId: row.actor_id, reason: row.reason ?? undefined, note: row.note ?? undefined, occurredAt: row.occurred_at }));
+    return ((data ?? []) as ApplicationEventRow[]).map(row => ({ id: row.id, applicationId: row.application_id as ApplicationId, fromStage: row.from_stage, toStage: row.to_stage, eventKind: row.event_kind, actorId: row.actor_id, reason: row.reason ?? undefined, note: row.note ?? undefined, occurredAt: row.occurred_at }));
   }
 
   async listApplicationReviewConsentsForSubject(subjectActorId: ActorId, granteeOrganizationId?: OrganizationId): Promise<ConsentGrantReadModel[]> {
@@ -496,7 +496,7 @@ export class SihBrowserDal {
       const latest = latestEvents.get(grant.id);
       const expired = grant.expires_at !== null && Date.parse(grant.expires_at) <= now;
       const status = expired || latest?.action === 'expired' ? 'expired' : latest?.action === 'withdrawn' ? 'withdrawn' : 'granted';
-      return { id: grant.id, subjectActorId: grant.subject_actor_id, granteeOrganizationId: grant.grantee_organization_id, purpose: grant.purpose, evidenceRecordIds: evidenceIds.get(grant.id) ?? [], status, grantedAt: grant.granted_at, expiresAt: grant.expires_at ?? undefined, withdrawnAt: latest?.action === 'withdrawn' ? latest.occurred_at : undefined };
+      return { id: grant.id as ConsentRecordId, subjectActorId: grant.subject_actor_id, granteeOrganizationId: grant.grantee_organization_id, purpose: grant.purpose, evidenceRecordIds: (evidenceIds.get(grant.id) ?? []) as EvidenceRecordId[], status, grantedAt: grant.granted_at, expiresAt: grant.expires_at ?? undefined, withdrawnAt: latest?.action === 'withdrawn' ? latest.occurred_at : undefined };
     });
   }
 

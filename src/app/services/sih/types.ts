@@ -2,8 +2,10 @@ import type { OpportunityReadinessResult, ReadinessSubjectInput } from '../../do
 import type {
   ActorId,
   ActorRole,
+  ApplicationId,
   ApplicationStage,
   ConsentPurpose,
+  ConsentRecordId,
   EvidenceProvenance,
   EvidenceProposalSource,
   EvidenceRecordId,
@@ -23,7 +25,7 @@ export type EvidenceScopeReadModel =
 /** Browser-facing evidence row. This is deliberately not the canonical
  * EvidenceRecord because artifacts and consent links are separately RLS-bound. */
 export interface EvidenceRecordReadModel {
-  readonly id: string;
+  readonly id: EvidenceRecordId;
   readonly subjectActorId: string;
   readonly literalClaim: string;
   readonly provenance: EvidenceProvenance;
@@ -106,7 +108,7 @@ export interface VerifierActingContextReadModel {
 }
 
 export interface ApplicationReadModel {
-  readonly id: string;
+  readonly id: ApplicationId;
   readonly applicantActorId: string;
   readonly opportunityId: string;
   readonly opportunityVersionId: string;
@@ -118,7 +120,7 @@ export interface ApplicationReadModel {
 
 export interface ApplicationEventReadModel {
   readonly id: string;
-  readonly applicationId: string;
+  readonly applicationId: ApplicationId;
   readonly fromStage: ApplicationStage;
   readonly toStage: ApplicationStage;
   readonly eventKind: 'stage_transition' | 'human_rejection';
@@ -129,11 +131,11 @@ export interface ApplicationEventReadModel {
 }
 
 export interface ConsentGrantReadModel {
-  readonly id: string;
+  readonly id: ConsentRecordId;
   readonly subjectActorId: string;
   readonly granteeOrganizationId: string;
   readonly purpose: Extract<ConsentPurpose, 'application_review'>;
-  readonly evidenceRecordIds: readonly string[];
+  readonly evidenceRecordIds: readonly EvidenceRecordId[];
   readonly status: 'granted' | 'withdrawn' | 'expired';
   readonly grantedAt: string;
   readonly expiresAt?: string;
