@@ -1,21 +1,27 @@
 # CareerCase
 
-**Explainable career matching and pathway planning for India.**
+**Evidence-backed Opportunity Readiness & Skills Intelligence for the academia–industry ecosystem.**
 
-[![Live demo](https://img.shields.io/badge/live-careercase.pages.dev-dc2626)](https://careercase.pages.dev/)
+[![Current legacy deployment](https://img.shields.io/badge/current-careercase.pages.dev-666)](https://careercase.pages.dev/)
 [![CI](https://github.com/KamalReddy2901/AI-Enhanced-Career-Guidance-System-for-Personalized-Career-Pathways/actions/workflows/ci.yml/badge.svg)](https://github.com/KamalReddy2901/AI-Enhanced-Career-Guidance-System-for-Personalized-Career-Pathways/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-111111.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6)](https://www.typescriptlang.org/)
 
 > A career decision should show its work. CareerCase turns a person's interests, aptitudes, values, skills, experience, aspirations, and constraints into ranked career matches, visible evidence, and practical next steps.
 
-**[Open the live product →](https://careercase.pages.dev/)**
+> `careercase.pages.dev` is the current legacy deployment. It must not be described as the integrated SIH26044 deployment until the convergence branch passes preview, authenticated smoke testing, production deployment, and post-deploy regression.
 
 ![CareerCase home page](./others/presentation-assets/homepage.jpg)
 
-CareerCase is a functional prototype for Smart India Hackathon 2026 problem statement **SIH260480**. Its core matching and pathway logic is deterministic and versioned; generative AI is used only for assisted exploration, extraction, and explanation.
+CareerCase is being developed for **SIH26044 — Portal for Academia–Industry Collaboration for Skill Mapping, Internships and Placement**. It evolves the existing guidance product into an evidence-backed opportunity-readiness and skills-intelligence layer without collapsing private career guidance into recruiter scoring.
 
-## What the prototype demonstrates
+The locked loop is:
+
+`Career Passport → Career Direction → Opportunity → Opportunity Readiness → Explainable Gap → Prove / Practice / Learn / Experience → Verification → Consented Application → Human Recruitment / Collaboration → Outcome → Updated Evidence → Institution / Industry Skills Intelligence → Intervention`
+
+Implementation truth and remaining limitations are tracked in [`docs/sih26044-integration-status.md`](./docs/sih26044-integration-status.md).
+
+## Engine A — Career Guidance
 
 `Profile → Understand → Match → Plan → Progress`
 
@@ -56,7 +62,9 @@ The data is a curated demonstration dataset grounded in NCO-2015 codes and NSQF 
 ## Architecture
 
 - **Client:** React 18, TypeScript, React Router 7, Vite 6, Tailwind CSS 4.
-- **Guidance engine:** versioned TypeScript knowledge modules and deterministic scoring/pathway functions.
+- **Engine A — Career Guidance:** versioned TypeScript knowledge modules and deterministic career-direction functions. RIASEC, values, private aspirations and counselor context remain private to this runtime.
+- **Engine B — Opportunity Readiness:** separate authenticated production runtime with deterministic, versioned, requirement-level readiness and `UNKNOWN ≠ UNSKILLED` semantics.
+- **Controlled Reference Implementation:** `/demo/*` remains isolated from production Supabase data and providers.
 - **Persistence:** browser-local fallback plus optional Supabase Auth/PostgreSQL with row-level security.
 - **AI gateway:** optional Cloudflare Worker proxy to Groq, with authenticated requests, model-tier routing, key rotation, quarantine, and retry policies.
 - **AI models:** `openai/gpt-oss-20b` for lighter tasks and `openai/gpt-oss-120b` for more complex tasks.
@@ -93,6 +101,9 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 # Optional: Worker origin only; the client appends /ai
 VITE_AI_PROXY_URL=https://your-worker.workers.dev
+
+# Trusted SIH service origin; the client appends /sih/*
+VITE_WORKER_URL=https://your-worker.workers.dev
 
 # Development-only direct Groq fallback; never use in a production build
 # VITE_GROQ_API_KEYS=gsk_...
@@ -162,9 +173,11 @@ worker/                  authenticated Cloudflare AI gateway and tests
 others/                  archived research, presentation, and implementation artifacts
 ```
 
-## Readiness
+## Readiness and claims
 
-CareerCase is **demo-ready and suitable for controlled prototype evaluation**. It is not yet production-ready: psychometric validation, representative field pilots, WCAG 2.2 AA verification, formal privacy/security review, live labour-market integrations, and government connector agreements are pending.
+Engine A and `/demo/*` are controlled prototypes. The SIH26044 database foundation, exact immutable application-snapshot binding, production route boundary, trusted Worker endpoints and core RLS controls are implemented. Authenticated multi-role fixtures, browser-level accessibility testing and an integrated production deployment are still pending and must not be claimed as complete.
+
+NCS, Skill India Digital Hub, AICTE, NATS/NAPS, DigiLocker/NAD and APAAR/ABC are target or integration-ready boundaries only; no live integration or government endorsement is claimed.
 
 ## License and contact
 
