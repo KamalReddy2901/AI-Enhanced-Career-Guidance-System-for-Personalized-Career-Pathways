@@ -98,6 +98,8 @@ assert.match(facultyReads, /collaboration_engagements/);
 assert.match(facultyReads, /collaboration_partner_organizations/);
 assert.match(facultyReads, /collaboration_participants/);
 assert.match(facultyReads, /collaboration_objectives/);
+assert.match(facultyReads, /collaboration_engagement_events/);
+assert.match(facultyPages, /Append-only production lifecycle/);
 assert.match(facultyDetail, /renderLocalWorkspace\s*=\s*true/, 'Reusable detail may keep the controlled demo workspace only behind an explicit prop');
 
 assert.match(industryPages, /OpportunityAuthoringShell/);
@@ -165,7 +167,7 @@ console.log(JSON.stringify({
   unknownHandoff: 'prove-or-clarify-via-gap-closure',
   recruiterProjection: 'exact-consented-snapshot',
   humanRecruitmentActions: true,
-  facultyCollaboration: 'rls-bound-read-only-production-surface',
+  facultyCollaboration: 'rls-bound-append-only-production-lifecycle',
   facultySyntheticActionsExcluded: true,
   industryAuthoring: 'atomic-authenticated-draft-save-plus-explicit-publish',
   institutionSkillsIntelligence: 'aggregate-rpc-only-with-cell-suppression',
