@@ -15,6 +15,7 @@ export type ApplicationEventId = DomainId<'ApplicationEvent'>;
 export type ConsentRecordId = DomainId<'ConsentRecord'>;
 export type AuditEventId = DomainId<'AuditEvent'>;
 export type CollaborationEngagementId = DomainId<'CollaborationEngagement'>;
+export type CollaborationEngagementEventId = DomainId<'CollaborationEngagementEvent'>;
 export type OutcomeEventId = DomainId<'OutcomeEvent'>;
 export type OpportunityReadinessResultId = DomainId<'OpportunityReadinessResult'>;
 export type InstitutionInterventionId = DomainId<'InstitutionIntervention'>;

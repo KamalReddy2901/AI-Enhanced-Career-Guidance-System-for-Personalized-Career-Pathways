@@ -1,4 +1,4 @@
-import type { ActorId, CollaborationEngagementId, IsoTimestamp, OpportunityId, OrganizationId } from './shared';
+import type { ActorId, CollaborationEngagementEventId, CollaborationEngagementId, IsoTimestamp, OpportunityId, OrganizationId } from './shared';
 
 export type CollaborationKind =
   | 'faculty_internship'
@@ -22,4 +22,26 @@ export interface CollaborationEngagement {
   readonly objectives: readonly string[];
   readonly startsAt?: IsoTimestamp;
   readonly endsAt?: IsoTimestamp;
+}
+
+export type CollaborationEventKind =
+  | 'created'
+  | 'status_transition'
+  | 'milestone'
+  | 'deliverable'
+  | 'feedback'
+  | 'outcome';
+
+export interface CollaborationEngagementEvent {
+  readonly id: CollaborationEngagementEventId;
+  readonly collaborationEngagementId: CollaborationEngagementId;
+  readonly sequenceNumber: number;
+  readonly kind: CollaborationEventKind;
+  readonly fromStatus?: CollaborationEngagement['status'];
+  readonly toStatus?: CollaborationEngagement['status'];
+  readonly title?: string;
+  readonly detail?: string;
+  readonly actorId: ActorId;
+  readonly organizationId: OrganizationId;
+  readonly occurredAt: IsoTimestamp;
 }

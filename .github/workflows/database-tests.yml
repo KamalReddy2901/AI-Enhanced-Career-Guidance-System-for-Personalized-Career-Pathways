@@ -107,6 +107,21 @@ jobs:
           test "$version_edit_assertion_count" -ge 10
           echo "EXECUTED opportunity-version-edit SQL assertions: $version_edit_assertion_count"
 
+      - name: Execute SIH26044 faculty engagement lifecycle assertions
+        env:
+          PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          case "$PGDATABASE_URL" in
+            postgresql://postgres:postgres@127.0.0.1:54322/postgres) ;;
+            *) echo "Refusing to execute against a non-local database URL" >&2; exit 1 ;;
+          esac
+          psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
+            -f supabase/tests/sih26044_faculty_engagement_lifecycle.sql
+          faculty_lifecycle_assertion_count="$(grep -Ec '^select pg_temp\.assert_(true|blocked)\(' supabase/tests/sih26044_faculty_engagement_lifecycle.sql)"
+          test "$faculty_lifecycle_assertion_count" -ge 12
+          echo "EXECUTED faculty-engagement-lifecycle SQL assertions: $faculty_lifecycle_assertion_count"
+
       - name: Execute SIH26044 institution aggregate privacy assertions
         env:
           PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres

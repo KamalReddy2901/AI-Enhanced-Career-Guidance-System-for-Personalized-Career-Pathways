@@ -177,6 +177,7 @@ const appendOnlyTables = [
   'application_snapshots',
   'application_events',
   'outcome_events',
+  'collaboration_engagement_events',
   'audit_events',
 ];
 for (const table of appendOnlyTables) {

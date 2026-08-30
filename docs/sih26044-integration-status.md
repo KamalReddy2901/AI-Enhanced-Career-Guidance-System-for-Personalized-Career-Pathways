@@ -15,6 +15,7 @@ Last updated: 2026-08-30
 - Exact immutable snapshot binding on the append-only transition to `applied`.
 - Human-only recruitment stages; no hiring probability, automatic rejection or opaque ranking.
 - Published opportunity-version immutability.
+- Faculty/industry collaboration lifecycle events for approval, activation, milestones, deliverables, feedback, completion and bounded outcomes; event history is append-only and actor-attributed.
 - Hosted Supabase schema migrations through `submission_trigger_lock_authority`.
 - Trigger-only database functions removed from direct `PUBLIC`, `anon`, and `authenticated` execution.
 - Trusted Cloudflare Worker authentication, bounded public errors, 64 KiB request limit and per-caller/path rate limiting configuration.

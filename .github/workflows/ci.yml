@@ -88,6 +88,9 @@ jobs:
       - name: Run opportunity version edit convergence QA
         run: npx tsx scripts/opportunity-version-edit-qa.ts
 
+      - name: Run faculty engagement lifecycle convergence QA
+        run: npx tsx scripts/faculty-engagement-lifecycle-qa.ts
+
       - name: Build production client
         run: npm run build
 
@@ -149,6 +152,9 @@ jobs:
 
       - name: Run opportunity version edit lifecycle gate
         run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_opportunity_version_edit.sql
+
+      - name: Run faculty engagement lifecycle gate
+        run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_faculty_engagement_lifecycle.sql
 
       - name: Run institution aggregate privacy gate
         run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_institution_analytics.sql
