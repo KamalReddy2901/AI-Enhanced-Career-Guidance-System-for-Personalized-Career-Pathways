@@ -122,6 +122,21 @@ jobs:
           test "$intervention_assertion_count" -ge 15
           echo "EXECUTED institution-intervention SQL assertions: $intervention_assertion_count"
 
+      - name: Execute SIH26044 industry aggregate privacy assertions
+        env:
+          PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          case "$PGDATABASE_URL" in
+            postgresql://postgres:postgres@127.0.0.1:54322/postgres) ;;
+            *) echo "Refusing to execute against a non-local database URL" >&2; exit 1 ;;
+          esac
+          psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
+            -f supabase/tests/sih26044_industry_analytics.sql
+          industry_assertion_count="$(grep -Ec '^(select|[[:space:]]+perform) pg_temp\.assert_(true|blocked)\(' supabase/tests/sih26044_industry_analytics.sql)"
+          test "$industry_assertion_count" -ge 15
+          echo "EXECUTED industry-analytics SQL assertions: $industry_assertion_count"
+
       - name: Execute SIH26044 D2 readiness and trust assertions
         env:
           PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres

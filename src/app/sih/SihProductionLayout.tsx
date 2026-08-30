@@ -18,6 +18,7 @@ export function SihProductionLayout() {
     links.push(
       ["Industry", "/industry/opportunities"],
       ["Applicants", "/industry/applicants"],
+      ["Industry Analytics", "/industry/analytics"],
     );
   if (roles.has("faculty") || roles.has("issuer_verifier"))
     links.push(["Faculty", "/faculty/collaborations"], ["Verification", "/verification"]);
