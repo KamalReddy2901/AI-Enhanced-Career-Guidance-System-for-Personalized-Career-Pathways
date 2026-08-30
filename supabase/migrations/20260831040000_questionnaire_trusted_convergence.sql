@@ -77,9 +77,9 @@ begin
   ) into v_has_authority;
 
   if not v_has_authority then
-    raise exception 'INSUFFICIENT_AUTHORITY' using
+    raise exception using
       errcode = 'SIH02',
-      message = 'Actor does not have recruiter or institution_admin authority for this organization.',
+      message = 'INSUFFICIENT_AUTHORITY: Actor does not have recruiter or institution_admin authority for this organization.',
       hint = 'Questionnaire authoring requires active membership with recruiter or institution_admin role.';
   end if;
 
@@ -206,7 +206,9 @@ begin
   ) into v_has_authority;
 
   if not v_has_authority then
-    raise exception 'INSUFFICIENT_AUTHORITY' using errcode = 'SIH02';
+    raise exception using
+      errcode = 'SIH02',
+      message = 'INSUFFICIENT_AUTHORITY: Actor does not have authority to publish this questionnaire.';
   end if;
 
   -- Derive authoritative publication timestamp
