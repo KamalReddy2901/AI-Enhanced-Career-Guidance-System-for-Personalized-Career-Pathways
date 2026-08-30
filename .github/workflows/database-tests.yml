@@ -92,6 +92,21 @@ jobs:
           test "$authoring_assertion_count" -ge 10
           echo "EXECUTED opportunity-authoring SQL assertions: $authoring_assertion_count"
 
+      - name: Execute SIH26044 opportunity version edit assertions
+        env:
+          PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          case "$PGDATABASE_URL" in
+            postgresql://postgres:postgres@127.0.0.1:54322/postgres) ;;
+            *) echo "Refusing to execute against a non-local database URL" >&2; exit 1 ;;
+          esac
+          psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
+            -f supabase/tests/sih26044_opportunity_version_edit.sql
+          version_edit_assertion_count="$(grep -Ec '^select pg_temp\.assert_(true|blocked)\(' supabase/tests/sih26044_opportunity_version_edit.sql)"
+          test "$version_edit_assertion_count" -ge 10
+          echo "EXECUTED opportunity-version-edit SQL assertions: $version_edit_assertion_count"
+
       - name: Execute SIH26044 institution aggregate privacy assertions
         env:
           PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres

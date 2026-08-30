@@ -85,6 +85,9 @@ jobs:
       - name: Run industry Skills Intelligence convergence QA
         run: npx tsx scripts/industry-skills-intelligence-qa.ts
 
+      - name: Run opportunity version edit convergence QA
+        run: npx tsx scripts/opportunity-version-edit-qa.ts
+
       - name: Build production client
         run: npm run build
 
@@ -143,6 +146,9 @@ jobs:
 
       - name: Run opportunity authoring atomicity gate
         run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_opportunity_authoring.sql
+
+      - name: Run opportunity version edit lifecycle gate
+        run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_opportunity_version_edit.sql
 
       - name: Run institution aggregate privacy gate
         run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_institution_analytics.sql

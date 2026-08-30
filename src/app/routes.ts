@@ -51,6 +51,7 @@ const ApplicationsPage = lazy(() => import("./sih/SihStudentProductionPages").th
 const ApplicationPreparationPage = lazy(() => import("./sih/SihApplicationPreparationPage").then((m) => ({ default: m.ApplicationPreparationPage })));
 const IndustryOpportunitiesPage = lazy(() => import("./sih/SihIndustryProductionPages").then((m) => ({ default: m.IndustryOpportunitiesPage })));
 const IndustryNewOpportunityPage = lazy(() => import("./sih/SihIndustryProductionPages").then((m) => ({ default: m.IndustryNewOpportunityPage })));
+const IndustryEditOpportunityPage = lazy(() => import("./sih/SihIndustryProductionPages").then((m) => ({ default: m.IndustryEditOpportunityPage })));
 const ApplicantsPage = lazy(() => import("./sih/SihRecruiterProductionPage").then((m) => ({ default: m.ApplicantsPage })));
 const IndustrySkillsIntelligencePage = lazy(() => import("./sih/SihIndustrySkillsIntelligencePage").then((m) => ({ default: m.IndustrySkillsIntelligencePage })));
 const FacultyPage = lazy(() => import("./sih/SihFacultyProductionPages").then((m) => ({ default: m.FacultyPage })));
@@ -129,6 +130,7 @@ export const router = createBrowserRouter([
           { path: "industry", Component: IndustryOpportunitiesPage },
           { path: "industry/opportunities", Component: IndustryOpportunitiesPage },
           { path: "industry/opportunities/new", Component: IndustryNewOpportunityPage },
+          { path: "industry/opportunities/:opportunityVersionId/edit", Component: IndustryEditOpportunityPage },
           { path: "industry/applicants", Component: ApplicantsPage },
           { path: "industry/applicants/:applicationId", Component: ApplicantsPage },
           { path: "industry/analytics", Component: IndustrySkillsIntelligencePage },

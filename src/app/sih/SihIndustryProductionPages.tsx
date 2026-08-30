@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router';
-import type { OpportunityId, OpportunityVersionId, OrganizationId } from '../domain';
+import { Link, useNavigate, useParams } from 'react-router';
+import type {
+  EligibilityRule,
+  OpportunityId,
+  OpportunityRequirement,
+  OpportunityVersion,
+  OpportunityVersionId,
+  OrganizationId,
+} from '../domain';
 import OpportunityAuthoringShell, {
   type OpportunityAuthoringDraftState,
 } from '../components/sih/industry/OpportunityAuthoringShell';
@@ -9,6 +16,10 @@ import {
   ProductionOpportunityAuthoring,
   type SavedProductionOpportunityDraft,
 } from '../services/sih/productionOpportunityAuthoring';
+import {
+  ProductionOpportunityReads,
+  type ManagedOpportunityVersionBundle,
+} from '../services/sih/productionOpportunityReads';
 import { supabase } from '../services/supabase';
 import { useSihProduction, type SihMembershipContext } from './SihProductionContext';
 
@@ -68,6 +79,10 @@ function authorMemberships(memberships: readonly SihMembershipContext[]): readon
 
 function useAuthoringService() {
   return useMemo(() => (supabase ? new ProductionOpportunityAuthoring(supabase) : null), []);
+}
+
+function useOpportunityReads() {
+  return useMemo(() => (supabase ? new ProductionOpportunityReads(supabase) : null), []);
 }
 
 function useManagedOpportunities() {
@@ -142,6 +157,38 @@ function useManagedOpportunities() {
   return { rows, loading, error, authorizedMemberships };
 }
 
+function clearRequirementConfirmation(requirement: OpportunityRequirement): OpportunityRequirement {
+  const source = { ...(requirement as unknown as Record<string, unknown>) };
+  delete source.humanConfirmed;
+  delete source.confirmedByActorId;
+  delete source.confirmedAt;
+  delete source.confirmationMethod;
+  return { ...source, humanConfirmed: false } as OpportunityRequirement;
+}
+
+function clearEligibilityConfirmation(rule: EligibilityRule): EligibilityRule {
+  const source = { ...(rule as unknown as Record<string, unknown>) };
+  delete source.humanConfirmed;
+  delete source.confirmedByActorId;
+  delete source.confirmedAt;
+  delete source.confirmationMethod;
+  return { ...source, humanConfirmed: false } as EligibilityRule;
+}
+
+function successorDraft(version: OpportunityVersion): OpportunityAuthoringDraftState {
+  return {
+    basics: {
+      title: version.title,
+      description: version.description,
+      type: version.type,
+      audiences: [...version.audiences],
+      closesAt: version.closesAt,
+    },
+    requirements: version.requirements.map(clearRequirementConfirmation),
+    eligibilityRules: version.eligibilityRules.map(clearEligibilityConfirmation),
+  };
+}
+
 export function IndustryOpportunitiesPage() {
   const { rows, loading, error, authorizedMemberships } = useManagedOpportunities();
   const organizationNameById = new Map(authorizedMemberships.map((membership) => [membership.organizationId, membership.organizationName]));
@@ -150,7 +197,7 @@ export function IndustryOpportunitiesPage() {
     <IndustryFrame
       eyebrow="Industry · human-authored opportunity intelligence"
       title="Opportunity Management"
-      description="Create and review versioned opportunities under authenticated organization authority. Draft save and publication are separate audited actions; review-only skill suggestions never become resolved automatically."
+      description="Create, edit and version opportunities under authenticated organization authority. Draft save and publication are separate audited actions; published versions remain immutable and changes begin as a new draft version."
     >
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-2 border-black bg-[#fff4c7] p-5">
         <div>
@@ -186,11 +233,17 @@ export function IndustryOpportunitiesPage() {
                 <div><dt className="font-mono-ui uppercase text-black/45">Opportunity status</dt><dd className="mt-1">{row.opportunityStatus}</dd></div>
                 <div><dt className="font-mono-ui uppercase text-black/45">Version ID</dt><dd className="mt-1 break-all font-mono-ui">{row.versionId}</dd></div>
               </dl>
-              {row.versionStatus === 'published' ? (
-                <Link to={`/opportunities/${row.versionId}`} className="mt-4 inline-flex min-h-10 items-center underline">Open published version</Link>
-              ) : (
-                <p className="mt-4 text-sm text-black/60">Draft editing for persisted versions is the next authoring convergence slice; published versions remain immutable.</p>
-              )}
+              <div className="mt-4 flex flex-wrap gap-4 text-sm">
+                {row.versionStatus === 'published' ? (
+                  <Link to={`/opportunities/${row.versionId}`} className="inline-flex min-h-10 items-center underline">Open published version</Link>
+                ) : null}
+                <Link
+                  to={`/industry/opportunities/${row.versionId}/edit`}
+                  className="inline-flex min-h-10 items-center font-black underline"
+                >
+                  {row.versionStatus === 'draft' ? 'Edit exact draft' : 'Create successor draft'}
+                </Link>
+              </div>
             </article>
           ))}
         </div>
@@ -274,6 +327,148 @@ export function IndustryNewOpportunityPage() {
           />
         </>
       )}
+    </IndustryFrame>
+  );
+}
+
+export function IndustryEditOpportunityPage() {
+  const { opportunityVersionId } = useParams();
+  const navigate = useNavigate();
+  const { actorId, memberships, dal } = useSihProduction();
+  const service = useAuthoringService();
+  const reads = useOpportunityReads();
+  const authorizedMemberships = useMemo(() => authorMemberships(memberships), [memberships]);
+  const [bundle, setBundle] = useState<ManagedOpportunityVersionBundle>();
+  const [loading, setLoading] = useState(Boolean(opportunityVersionId));
+  const [error, setError] = useState<string>();
+  const [creatingSuccessor, setCreatingSuccessor] = useState(false);
+
+  useEffect(() => {
+    if (!reads || !opportunityVersionId) {
+      setLoading(false);
+      return;
+    }
+    let active = true;
+    setLoading(true);
+    setError(undefined);
+    void reads.getManageableVersion(opportunityVersionId)
+      .then((next) => {
+        if (!active) return;
+        if (!next) setError('The requested opportunity version was not found or is not visible to this account.');
+        else setBundle(next);
+      })
+      .catch((reason) => {
+        if (active) setError(reason instanceof Error ? reason.message : 'Unable to load the exact opportunity version.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, [opportunityVersionId, reads]);
+
+  const authorizedOwner = bundle
+    ? authorizedMemberships.some((membership) => membership.organizationId === bundle.ownerOrganizationId)
+    : false;
+
+  const saveExistingDraft = async (draft: OpportunityAuthoringDraftState) => {
+    if (!service || !bundle || bundle.versionStatus !== 'draft') {
+      throw new Error('Only an exact persisted draft version can be edited in place.');
+    }
+    await service.saveDraft({
+      ownerOrganizationId: bundle.ownerOrganizationId,
+      opportunityId: bundle.opportunityId,
+      opportunityVersionId: bundle.version.id,
+      basics: draft.basics,
+      requirements: draft.requirements,
+      eligibilityRules: draft.eligibilityRules,
+    });
+  };
+
+  const publishDraft = async (versionId: OpportunityVersionId) => {
+    if (!dal || !bundle || versionId !== bundle.version.id) {
+      throw new Error('Publication requires the exact currently loaded persisted draft version.');
+    }
+    await dal.publishOpportunityVersion(versionId);
+    navigate('/industry/opportunities');
+  };
+
+  const createSuccessorDraft = async () => {
+    if (!service || !bundle || bundle.versionStatus !== 'published') return;
+    setCreatingSuccessor(true);
+    setError(undefined);
+    try {
+      const draft = successorDraft(bundle.version);
+      const saved = await service.saveDraft({
+        ownerOrganizationId: bundle.ownerOrganizationId,
+        opportunityId: bundle.opportunityId,
+        basics: draft.basics,
+        requirements: draft.requirements,
+        eligibilityRules: draft.eligibilityRules,
+      });
+      navigate(`/industry/opportunities/${saved.opportunityVersionId}/edit`, { replace: true });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Unable to create a successor draft version.');
+    } finally {
+      setCreatingSuccessor(false);
+    }
+  };
+
+  return (
+    <IndustryFrame
+      eyebrow="Exact version management · immutable publication"
+      title="Edit Opportunity Version"
+      description="Draft versions can be edited atomically. Published versions are never mutated; changing a published opportunity creates a new draft version whose high-impact requirement confirmations must be reviewed again before publication."
+    >
+      {loading ? <Notice>Loading exact opportunity version…</Notice> : null}
+      {error ? <Notice>{error}</Notice> : null}
+      {!loading && !error && bundle && !authorizedOwner ? (
+        <Notice>This account can view the version but does not hold an active authoring role for its owner organization. No edit or successor action is available.</Notice>
+      ) : null}
+      {!loading && !error && bundle && authorizedOwner && !service ? (
+        <Notice>Supabase opportunity authoring is not configured.</Notice>
+      ) : null}
+
+      {!loading && !error && actorId && bundle && authorizedOwner && service ? (
+        bundle.versionStatus === 'draft' ? (
+          <>
+            <section className="mx-auto mb-6 max-w-4xl border-2 border-black bg-[#fff4c7] p-5">
+              <p className="font-mono-ui text-[10px] font-black uppercase">Editing exact persisted draft</p>
+              <p className="mt-2 text-sm">Version {bundle.version.version} · owner organization locked to <span className="font-mono-ui">{bundle.ownerOrganizationId}</span>.</p>
+              <p className="mt-2 text-xs text-black/60">Saving replaces this draft's authored child requirements atomically. It never edits a published version and never publishes implicitly.</p>
+            </section>
+            <OpportunityAuthoringShell
+              key={bundle.version.id}
+              initialDraft={bundle.version}
+              currentActorId={actorId}
+              persistedOpportunityVersionId={bundle.version.id}
+              canonicalSkillOptions={canonicalSkillOptions}
+              onSaveDraft={saveExistingDraft}
+              onPublishPersistedVersion={publishDraft}
+              modeLabel="Authenticated production draft edit · exact version authority"
+            />
+          </>
+        ) : (
+          <section className="mx-auto max-w-4xl border-2 border-black bg-white p-6 shadow-[4px_4px_0_#111]">
+            <p className="font-mono-ui text-[10px] font-black uppercase tracking-wide text-[#d63c1d]">Published version {bundle.version.version} · frozen</p>
+            <h2 className="mt-2 text-2xl font-black">{bundle.version.title}</h2>
+            <p className="mt-3 text-sm leading-6 text-black/65">This exact published version remains immutable for historical readiness and application snapshots. A change starts a successor draft under the same opportunity identity.</p>
+            <div className="mt-5 border-2 border-black bg-[#fff4c7] p-4 text-sm leading-6">
+              Successor creation copies the published content but clears requirement and eligibility confirmation traces. A human author must review and reconfirm high-impact structure before the new version can be published.
+            </div>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button
+                type="button"
+                disabled={creatingSuccessor}
+                onClick={() => void createSuccessorDraft()}
+                className="min-h-11 border-2 border-black bg-black px-5 font-mono-ui text-xs font-black uppercase text-white disabled:opacity-50"
+              >
+                {creatingSuccessor ? 'Creating successor…' : 'Create successor draft'}
+              </button>
+              <Link to={`/opportunities/${bundle.version.id}`} className="inline-flex min-h-11 items-center px-3 font-black underline">Open frozen published version</Link>
+            </div>
+          </section>
+        )
+      ) : null}
     </IndustryFrame>
   );
 }
