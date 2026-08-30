@@ -1,4 +1,4 @@
-import type { IsoDate, IsoTimestamp, OrganizationId } from './shared';
+import type { IsoDate, IsoTimestamp, OpportunityVersionId, OrganizationId } from './shared';
 
 export type AggregateMetric =
   | 'opportunity_count'
@@ -8,12 +8,15 @@ export type AggregateMetric =
   | 'evidence_coverage'
   | 'engagement_count'
   | 'readiness_distribution'
+  | 'eligibility_distribution'
+  | 'requirement_support_distribution'
   | 'evidence_gap_distribution'
   | 'capability_gap_distribution'
   | 'eligibility_gap_distribution'
   | 'logistics_gap_distribution'
   | 'application_funnel'
   | 'recruitment_funnel'
+  | 'evidence_request_burden'
   | 'outcome_distribution'
   | 'intervention_effectiveness_association'
   | 'requirement_pattern'
@@ -23,9 +26,15 @@ export type AggregateMetric =
 
 export type AnalyticsInterpretation = 'descriptive' | 'associational';
 export type AggregateSuppressionReason = 'below_minimum_cell_size';
+export type AggregateAnalyticsAccessMode =
+  | 'institution_admin'
+  | 'policy_program_analyst'
+  | 'recruiter'
+  | 'industry_partner';
 
 export interface AggregateAnalyticsQuery {
   readonly organizationId?: OrganizationId;
+  readonly opportunityVersionId?: OpportunityVersionId;
   readonly metrics: readonly AggregateMetric[];
   readonly from: IsoDate | IsoTimestamp;
   readonly to: IsoDate | IsoTimestamp;
@@ -63,7 +72,7 @@ export interface AggregateAnalyticsOrganization {
 export interface AggregateAnalyticsResult {
   readonly generatedAt: IsoTimestamp;
   readonly organization?: AggregateAnalyticsOrganization;
-  readonly accessMode?: 'institution_admin' | 'policy_program_analyst';
+  readonly accessMode?: AggregateAnalyticsAccessMode;
   readonly query: AggregateAnalyticsQuery;
   readonly cohort?: AggregateAnalyticsCohort;
   readonly points: readonly AggregateAnalyticsPoint[];
@@ -74,5 +83,6 @@ export interface AggregateAnalyticsResult {
     readonly minimumCellSize: number;
     readonly policyLabel: string;
     readonly individualDrilldown: false;
+    readonly consentPurpose?: 'aggregate_analytics';
   };
 }
