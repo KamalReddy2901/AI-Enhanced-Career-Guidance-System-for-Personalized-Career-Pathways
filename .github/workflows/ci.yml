@@ -97,6 +97,9 @@ jobs:
       - name: Run development program linkage convergence QA
         run: npm run qa:development-program-linkage
 
+      - name: Run questionnaire domain logic QA
+        run: npm run qa:questionnaire
+
       - name: Run hosted validation readiness QA
         run: npm run qa:hosted-validation
 
@@ -173,6 +176,9 @@ jobs:
 
       - name: Run development program lifecycle and linkage gate
         run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_development_programs.sql
+
+      - name: Run questionnaire lifecycle and tenant isolation gate
+        run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_questionnaires.sql
 
       - name: Run institution aggregate privacy gate
         run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_institution_analytics.sql
