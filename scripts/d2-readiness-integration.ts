@@ -370,7 +370,7 @@ assert.ok(snapshotJson.integrityFingerprint);
 assert.equal(snapshotJson.recruiterProjection.applicant.displayName, 'D2 Learner A');
 assert.equal(snapshotJson.recruiterProjection.applicant.syntheticPersona, undefined);
 
-// Transition application to applied
+// Transition application to applied, binding the exact finalized immutable snapshot
 const { error: applyErr } = await clientA.schema('sih26044')
   .from('application_events')
   .insert({
@@ -379,6 +379,7 @@ const { error: applyErr } = await clientA.schema('sih26044')
     to_stage: 'applied',
     event_kind: 'stage_transition',
     actor_id: ids.actorA,
+    application_snapshot_id: snapshotJson.snapshotId,
   });
 assert.ifError(applyErr);
 
