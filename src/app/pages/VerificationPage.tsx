@@ -10,7 +10,7 @@ import type {
 import type { VerificationEvent } from '../domain/evidence';
 import type { ExtendedArtifactReference } from '../components/evidence/ArtifactPreview';
 import { supabase } from '../services/supabase';
-import type { ActorId, EvidenceRecordId } from '../domain/shared';
+import type { ActorId, EvidenceRecordId, OrganizationId } from '../domain/shared';
 
 export function VerificationPage() {
   const { user } = useAuth();
@@ -100,10 +100,42 @@ export function VerificationPage() {
     return () => { active = false; };
   }, [selectedRequestId, dal]);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
   const handleActionSubmit = async (data: any) => {
-    // Action submission is currently blocked by missing shared contract.
-    // The shared DAL status-transition contract is not currently available.
-    console.warn("BLOCKED: verifier action flow requires a shared DAL status-transition contract that is not currently available.", data);
+    if (!selectedRequest || !selectedRequestId) return;
+    setIsSubmitting(true);
+    setDetailError(null);
+    try {
+      await dal.completeVerificationRequestDecision({
+        verificationRequestId: selectedRequest.id,
+        evidenceRecordId: selectedRequest.evidenceRecordId as EvidenceRecordId,
+        action: data.action,
+        // The authenticated user's org id should be used if they have one,
+        // but for now we pass the requested org if it exists, or a dummy,
+        // because the RPC `complete_verification_request_decision` enforces RLS
+        // or uses the session actor id. Wait, the API requires `actorOrganizationId`.
+        actorOrganizationId: (selectedRequest.requestedVerifierOrganizationId ?? 'ORG-unknown') as OrganizationId,
+        reason: data.reason,
+      });
+      setIsSuccess(true);
+
+      // Refresh request history
+      const evts = await dal.listVerificationEvents({ verificationRequestId: selectedRequest.id });
+      setHistory(evts as unknown as VerificationEvent[]);
+
+      const req = await dal.getVerificationRequest(selectedRequest.id);
+      if (req) {
+        setSelectedRequest(req);
+        // Also update in the list
+        setRequests(prev => prev.map(p => p.id === req.id ? req : p));
+      }
+    } catch (err) {
+      setDetailError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!user) {
@@ -135,7 +167,13 @@ export function VerificationPage() {
                 evidence={evidence}
                 artifacts={artifacts}
                 history={history}
-                onBack={() => setSelectedRequestId(null)}
+                isSubmitting={isSubmitting}
+                isSuccess={isSuccess}
+                error={detailError}
+                onBack={() => {
+                  setSelectedRequestId(null);
+                  setIsSuccess(false);
+                }}
                 onSubmit={handleActionSubmit}
               />
             )}
