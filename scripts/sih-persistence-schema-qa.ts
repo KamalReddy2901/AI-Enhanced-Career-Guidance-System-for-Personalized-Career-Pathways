@@ -13,7 +13,7 @@ const configPath = join(repositoryRoot, 'supabase', 'config.toml');
 const migrationFiles = (await readdir(migrationsRoot))
   .filter(file => file.endsWith('.sql'))
   .sort();
-assert.deepEqual(migrationFiles, [
+const frozenFoundationMigrationFiles = [
   '202608260001_identity_tenancy.sql',
   '202608260002_opportunities.sql',
   '202608260003_evidence_readiness_consent.sql',
@@ -40,7 +40,22 @@ assert.deepEqual(migrationFiles, [
   '20260830091000_restrict_all_trigger_rpc_execute.sql',
   '20260830092000_resolution_status_compatibility.sql',
   '20260830093000_submission_trigger_lock_authority.sql',
-]);
+] as const;
+assert.deepEqual(
+  migrationFiles.slice(0, frozenFoundationMigrationFiles.length),
+  frozenFoundationMigrationFiles,
+  'Frozen SIH26044 foundation migration manifest changed. Post-foundation convergence migrations must be appended after the frozen manifest, never inserted into or rewritten inside it.',
+);
+const postFoundationMigrationFiles = migrationFiles.slice(frozenFoundationMigrationFiles.length);
+const frozenTail = frozenFoundationMigrationFiles[frozenFoundationMigrationFiles.length - 1];
+for (const file of postFoundationMigrationFiles) {
+  assert.ok(
+    file > frozenTail,
+    `Post-foundation migration ${file} must sort after the frozen foundation tail ${frozenTail}`,
+  );
+  assert.match(file, /^\d{12,14}_[a-z0-9_]+\.sql$/i,
+    `Post-foundation migration filename is not a timestamped SQL migration: ${file}`);
+}
 
 const migrationSources = await Promise.all(migrationFiles.map(async file => ({
   file,
@@ -561,6 +576,8 @@ const requiredRlsTestClaims = [
 for (const claim of requiredRlsTestClaims) assert.match(rlsTests, new RegExp(claim, 'i'));
 
 console.log(JSON.stringify({
+  frozenFoundationMigrationsInspected: frozenFoundationMigrationFiles,
+  postFoundationMigrationsInspected: postFoundationMigrationFiles,
   migrationsInspected: migrationFiles,
   sihTablesInspected: createdTables.length,
   policyDefinitionsInspected: policyStatements.length,
