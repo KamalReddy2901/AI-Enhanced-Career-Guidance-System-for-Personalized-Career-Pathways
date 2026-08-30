@@ -22,31 +22,57 @@ export type AggregateMetric =
   | 'curriculum_program_alignment';
 
 export type AnalyticsInterpretation = 'descriptive' | 'associational';
+export type AggregateSuppressionReason = 'below_minimum_cell_size';
 
 export interface AggregateAnalyticsQuery {
   readonly organizationId?: OrganizationId;
   readonly metrics: readonly AggregateMetric[];
-  readonly from: IsoDate;
-  readonly to: IsoDate;
+  readonly from: IsoDate | IsoTimestamp;
+  readonly to: IsoDate | IsoTimestamp;
   readonly groupBy: readonly ('opportunity_type' | 'audience' | 'stage' | 'month' | 'organization')[];
   readonly minimumCohortSize: number;
 }
 
+/** Suppressed cells structurally withhold the numerator, denominator, and
+ * cohort size instead of returning a hidden exact number next to a UI flag. */
 export interface AggregateAnalyticsPoint {
   readonly dimensions: Readonly<Record<string, string>>;
   readonly metric: AggregateMetric;
-  readonly value: number;
-  readonly cohortSize: number;
+  readonly value: number | null;
+  readonly denominator: number | null;
+  readonly cohortSize: number | null;
   readonly suppressed: boolean;
+  readonly suppressionReason: AggregateSuppressionReason | null;
   readonly interpretation: AnalyticsInterpretation;
   /** Aggregate analytics cannot represent intervention association as proof of
    * causality without a separately approved causal study contract. */
   readonly causalClaimed: false;
 }
 
+export interface AggregateAnalyticsCohort {
+  readonly size: number | null;
+  readonly suppressed: boolean;
+  readonly suppressionReason: AggregateSuppressionReason | null;
+}
+
+export interface AggregateAnalyticsOrganization {
+  readonly id: OrganizationId;
+  readonly displayName: string;
+}
+
 export interface AggregateAnalyticsResult {
   readonly generatedAt: IsoTimestamp;
+  readonly organization?: AggregateAnalyticsOrganization;
+  readonly accessMode?: 'institution_admin' | 'policy_program_analyst';
   readonly query: AggregateAnalyticsQuery;
+  readonly cohort?: AggregateAnalyticsCohort;
   readonly points: readonly AggregateAnalyticsPoint[];
   readonly methodologyVersion: string;
+  readonly sourceLabel?: string;
+  readonly scopeNote?: string;
+  readonly privacy?: {
+    readonly minimumCellSize: number;
+    readonly policyLabel: string;
+    readonly individualDrilldown: false;
+  };
 }

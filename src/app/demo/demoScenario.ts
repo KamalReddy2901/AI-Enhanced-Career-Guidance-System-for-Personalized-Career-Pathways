@@ -126,10 +126,12 @@ function aggregatePoint(
   const suppressed = cohortSize < minimumCohortSize;
   return {
     metric,
-    value: suppressed ? 0 : value,
-    cohortSize,
+    value: suppressed ? null : value,
+    denominator: suppressed ? null : cohortSize,
+    cohortSize: suppressed ? null : cohortSize,
     dimensions,
     suppressed,
+    suppressionReason: suppressed ? 'below_minimum_cell_size' : null,
     interpretation: 'descriptive',
     causalClaimed: false,
   };

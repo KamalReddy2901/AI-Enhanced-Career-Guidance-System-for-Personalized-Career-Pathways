@@ -107,8 +107,14 @@ assert.equal(afterOutcome.outcomeEvents[0].recordedBy, DEMO_IDS.recruiter);
 const outcomeAnalytics = buildDemoInstitutionAnalytics(afterOutcome);
 assert.equal(outcomeAnalytics.points.find(point => point.metric === 'outcome_count')?.value, (outcomeCountBefore ?? 0) + 1);
 assert.equal(outcomeAnalytics.points.every(point => point.causalClaimed === false), true);
-assert.equal(buildDemoInstitutionAnalytics(afterOutcome, 99).points.every(point => point.suppressed && point.value === 0), true,
-  'cohorts below the configured minimum must be suppressed');
+const suppressedAnalytics = buildDemoInstitutionAnalytics(afterOutcome, 99);
+assert.equal(suppressedAnalytics.points.every(point =>
+  point.suppressed
+  && point.value === null
+  && point.denominator === null
+  && point.cohortSize === null
+  && point.suppressionReason === 'below_minimum_cell_size'), true,
+  'cohorts below the configured minimum must structurally withhold exact aggregate counts');
 
 const reset = demoReducer(afterOutcome, { type: 'RESET_CONTROLLED_DEMO' });
 assert.deepEqual(reset, initial, 'reset must return byte-for-byte to the deterministic fixture baseline');
@@ -130,6 +136,7 @@ console.log(JSON.stringify({
   applicationStage: afterApply.application?.currentStage,
   recruiterHumanStage: afterShortlist.application?.currentStage,
   outcomeCount: afterOutcome.outcomeEvents.length,
+  aggregateSuppression: 'structural-null-withholding',
   resetByteEquivalent: true,
   failures: [],
 }, null, 2));
