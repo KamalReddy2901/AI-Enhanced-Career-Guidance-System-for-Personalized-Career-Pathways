@@ -55,6 +55,7 @@ const ApplicantsPage = lazy(() => import("./sih/SihRecruiterProductionPage").the
 const FacultyPage = lazy(() => import("./sih/SihFacultyProductionPages").then((m) => ({ default: m.FacultyPage })));
 const FacultyCollaborationDetailPage = lazy(() => import("./sih/SihFacultyProductionPages").then((m) => ({ default: m.FacultyCollaborationDetailPage })));
 const InstitutionSkillsIntelligencePage = lazy(() => import("./sih/SihInstitutionProductionPage").then((m) => ({ default: m.InstitutionSkillsIntelligencePage })));
+const InstitutionInterventionsPage = lazy(() => import("./sih/SihInstitutionInterventionsPage").then((m) => ({ default: m.InstitutionInterventionsPage })));
 const DemoOverviewPage = lazy(() => import("./demo/DemoPages").then((m) => ({ default: m.DemoOverviewPage })));
 const DemoStudentPage = lazy(() => import("./demo/DemoPages").then((m) => ({ default: m.DemoStudentPage })));
 const DemoMentorPage = lazy(() => import("./demo/DemoPages").then((m) => ({ default: m.DemoMentorPage })));
@@ -137,6 +138,7 @@ export const router = createBrowserRouter([
           { path: "faculty/collaboration", Component: FacultyPage },
           { path: "institution", Component: InstitutionSkillsIntelligencePage },
           { path: "institution/skills-intelligence", Component: InstitutionSkillsIntelligencePage },
+          { path: "institution/interventions", Component: InstitutionInterventionsPage },
         ],
       },
     ],

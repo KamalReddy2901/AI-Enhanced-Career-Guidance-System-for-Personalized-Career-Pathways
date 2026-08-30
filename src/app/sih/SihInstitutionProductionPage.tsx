@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router';
 import type { AggregateAnalyticsPoint, AggregateAnalyticsResult, AggregateMetric } from '../domain/analytics';
 import type { IsoTimestamp, OrganizationId } from '../domain/shared';
 import { supabase } from '../services/supabase';
@@ -257,6 +258,23 @@ export function InstitutionSkillsIntelligencePage() {
                   <strong>{result.privacy?.policyLabel ?? 'Aggregate reporting policy'}.</strong>{' '}
                   Exact values are withheld for cells below n={result.query.minimumCohortSize}. There is no individual drill-down from this surface.
                 </Notice>
+
+                {result.accessMode === 'institution_admin' && selectedOrganizationId ? (
+                  <section className="flex flex-wrap items-center justify-between gap-4 border-2 border-black bg-black p-5 text-white shadow-[4px_4px_0_#d63c1d]">
+                    <div>
+                      <h2 className="text-lg font-black">Turn a reportable signal into a human-owned action</h2>
+                      <p className="mt-1 max-w-3xl text-sm leading-6 text-white/65">
+                        The intervention workspace recomputes the selected aggregate cell server-side. Suppressed cells cannot be used to create an operational action.
+                      </p>
+                    </div>
+                    <Link
+                      to={`/institution/interventions?organizationId=${encodeURIComponent(selectedOrganizationId)}&from=${encodeURIComponent(String(result.query.from))}&to=${encodeURIComponent(String(result.query.to))}`}
+                      className="min-h-11 bg-[#e7ff57] px-4 py-3 font-mono-ui text-[10px] font-black uppercase text-black"
+                    >
+                      Plan human intervention
+                    </Link>
+                  </section>
+                ) : null}
 
                 <div className="space-y-10">
                   {metricOrder.map((metric) => (
