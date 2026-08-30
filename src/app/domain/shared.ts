@@ -21,6 +21,8 @@ export type OpportunityReadinessResultId = DomainId<'OpportunityReadinessResult'
 export type InstitutionInterventionId = DomainId<'InstitutionIntervention'>;
 export type InstitutionInterventionEventId = DomainId<'InstitutionInterventionEvent'>;
 export type InstitutionInterventionFollowupId = DomainId<'InstitutionInterventionFollowup'>;
+export type DevelopmentProgramId = DomainId<'DevelopmentProgram'>;
+export type DevelopmentProgramVersionId = DomainId<'DevelopmentProgramVersion'>;
 
 export type IsoDate = string & { readonly __isoDate: true };
 export type IsoTimestamp = string & { readonly __isoTimestamp: true };
