@@ -3,6 +3,8 @@ import type {
   Actor,
   ActorId,
   CollaborationEngagement,
+  CollaborationEngagementEvent,
+  CollaborationEngagementEventId,
   CollaborationEngagementId,
   IsoTimestamp,
   OpportunityId,
@@ -14,6 +16,7 @@ type Row = Record<string, any>;
 
 export interface ProductionFacultyCollaborationBundle {
   readonly engagements: readonly CollaborationEngagement[];
+  readonly events: readonly CollaborationEngagementEvent[];
   /** Only organizations visible through the caller's existing membership RLS are returned. */
   readonly organizations: readonly Organization[];
   /** Actor RLS is self-only. Other participant identities deliberately remain undisclosed. */
@@ -45,11 +48,11 @@ export class ProductionFacultyReads {
       'Unable to load authorized faculty–industry collaborations',
     );
     if (engagementRows.length === 0) {
-      return { engagements: [], organizations: [], visibleActors: [] };
+      return { engagements: [], events: [], organizations: [], visibleActors: [] };
     }
 
     const engagementIds = engagementRows.map((row) => row.id as string);
-    const [partnerRows, participantRows, objectiveRows] = await Promise.all([
+    const [partnerRows, participantRows, objectiveRows, eventRows] = await Promise.all([
       dataOrThrow<Row[]>(
         this.db()
           .from('collaboration_partner_organizations')
@@ -71,6 +74,14 @@ export class ProductionFacultyReads {
           .in('collaboration_engagement_id', engagementIds)
           .order('ordinal', { ascending: true }),
         'Unable to load collaboration objectives',
+      ),
+      dataOrThrow<Row[]>(
+        this.db()
+          .from('collaboration_engagement_events')
+          .select('id,collaboration_engagement_id,sequence_number,kind,from_status,to_status,title,detail,actor_id,organization_id,occurred_at')
+          .in('collaboration_engagement_id', engagementIds)
+          .order('sequence_number', { ascending: true }),
+        'Unable to load collaboration lifecycle events',
       ),
     ]);
 
@@ -135,19 +146,35 @@ export class ProductionFacultyReads {
       status: row.status,
     }));
 
-    return { engagements, organizations, visibleActors };
+    const events: CollaborationEngagementEvent[] = eventRows.map((row) => ({
+      id: row.id as CollaborationEngagementEventId,
+      collaborationEngagementId: row.collaboration_engagement_id as CollaborationEngagementId,
+      sequenceNumber: Number(row.sequence_number),
+      kind: row.kind,
+      ...(row.from_status ? { fromStatus: row.from_status } : {}),
+      ...(row.to_status ? { toStatus: row.to_status } : {}),
+      ...(row.title ? { title: row.title } : {}),
+      ...(row.detail ? { detail: row.detail } : {}),
+      actorId: row.actor_id as ActorId,
+      organizationId: row.organization_id as OrganizationId,
+      occurredAt: row.occurred_at as IsoTimestamp,
+    }));
+
+    return { engagements, events, organizations, visibleActors };
   }
 
   async getVisible(
     collaborationId: CollaborationEngagementId | string,
   ): Promise<{
     readonly engagement?: CollaborationEngagement;
+    readonly events: readonly CollaborationEngagementEvent[];
     readonly organizations: readonly Organization[];
     readonly visibleActors: readonly Actor[];
   }> {
     const bundle = await this.listVisible();
     return {
       engagement: bundle.engagements.find((item) => item.id === collaborationId),
+      events: bundle.events.filter((item) => item.collaborationEngagementId === collaborationId),
       organizations: bundle.organizations,
       visibleActors: bundle.visibleActors,
     };
