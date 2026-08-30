@@ -135,6 +135,9 @@ jobs:
       - name: Run D1 database execution gate
         run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_rls.sql
 
+      - name: Run opportunity authoring atomicity gate
+        run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_opportunity_authoring.sql
+
       - name: Run D2 trusted-role and foundation security gate
         run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_d2_readiness.sql
 
