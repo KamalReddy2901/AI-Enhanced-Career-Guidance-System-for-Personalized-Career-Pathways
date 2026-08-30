@@ -5,11 +5,6 @@ import type {
   RequirementImportance,
   RequirementEvidenceExpectation,
   SkillOpportunityRequirement,
-  ExperienceOpportunityRequirement,
-  QualificationOpportunityRequirement,
-  DocumentEvidenceOpportunityRequirement,
-  QuestionnaireOpportunityRequirement,
-  LogisticsOpportunityRequirement,
   LiteralOpportunityRequirement
 } from '../../../domain/opportunity';
 import type { ActorId, IsoTimestamp, OpportunityRequirementId } from '../../../domain/shared';
@@ -41,9 +36,6 @@ const CATEGORIES = [
 
 type RequirementCategory = OpportunityRequirement['category'];
 
-/** * Returns a new requirement object with the human confirmation trace reset to false/undefined.
- * Fully type-safe reconstruction using discriminated union, without any type casting.
- */
 function resetTrace(req: OpportunityRequirement): OpportunityRequirement {
   const base = {
     id: req.id,
@@ -92,13 +84,11 @@ function createBlankRequirement(index: number): LiteralOpportunityRequirement {
   };
 }
 
-/** Per-requirement manual resolution editing state */
 interface ManualResolutionDraft {
   readonly skillId?: string;
 }
 
 export default function OpportunityRequirementsSection({ requirements, onChange, currentActorId, canonicalSkillOptions }: Props) {
-  // Track which requirement indices are in "manual resolve" mode, and their selected canonical option
   const [manualDrafts, setManualDrafts] = useState<Record<number, ManualResolutionDraft>>({});
 
   const addRequirement = () => {
@@ -199,23 +189,27 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
 
   const handleConfirmRequirement = (index: number, method: HumanConfirmationMethod) => {
     const req = requirements[index];
+    if (req.category === 'skill' && req.canonicalResolution.state === 'review_required') {
+      return;
+    }
     const confirmed = {
       ...req,
       humanConfirmed: true,
       confirmedByActorId: currentActorId,
       confirmedAt: new Date().toISOString() as IsoTimestamp,
       confirmationMethod: method
-    } as OpportunityRequirement; // Intersection safe due to discriminated union setup
+    } as OpportunityRequirement;
     replaceRequirement(index, confirmed);
   };
 
-  /** Accept a supplied suggestion — single atomic state update. */
+  /** A review suggestion is never authoritative until the human explicitly accepts it. */
   const handleAcceptSuggestion = (index: number, suggestion: SkillReviewSuggestion) => {
     const req = requirements[index];
     if (req.category !== 'skill') return;
     const resolution: CanonicalResolutionState = {
       state: 'resolved',
       skillId: suggestion.skillId,
+      label: suggestion.label,
       matchKind: 'alias'
     };
     const accepted: SkillOpportunityRequirement = {
@@ -224,12 +218,11 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
       humanConfirmed: true,
       confirmedByActorId: currentActorId,
       confirmedAt: new Date().toISOString() as IsoTimestamp,
-      confirmationMethod: 'controlled_fixture'
+      confirmationMethod: 'structured_human_entry'
     };
     replaceRequirement(index, accepted);
   };
 
-  /** Reject all suggestions — revert to unresolved preserving literal wording. */
   const handleRejectSuggestions = (index: number) => {
     const req = requirements[index];
     if (req.category !== 'skill') return;
@@ -247,7 +240,6 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
       confirmationMethod: undefined
     };
     replaceRequirement(index, rejected);
-    // Close manual resolve panel if open
     setManualDrafts(prev => {
       const copy = { ...prev };
       delete copy[index];
@@ -255,7 +247,6 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
     });
   };
 
-  /** Open manual resolution panel. */
   const openManualResolve = (index: number) => {
     setManualDrafts(prev => ({
       ...prev,
@@ -263,7 +254,6 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
     }));
   };
 
-  /** Cancel manual resolution — close the panel without changing state. */
   const cancelManualResolve = (index: number) => {
     setManualDrafts(prev => {
       const copy = { ...prev };
@@ -272,7 +262,6 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
     });
   };
 
-  /** Confirm a manually selected canonical skill option. */
   const confirmManualResolve = (index: number) => {
     const draft = manualDrafts[index];
     if (!draft || !draft.skillId) return;
@@ -286,6 +275,7 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
     const resolution: CanonicalResolutionState = {
       state: 'resolved',
       skillId: opt.id,
+      label: opt.label,
       matchKind: 'alias'
     };
     const updated: SkillOpportunityRequirement = {
@@ -301,7 +291,6 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
     cancelManualResolve(index);
   };
 
-  /** Explicitly confirm that this requirement should remain unresolved. */
   const confirmKeepUnresolved = (index: number) => {
     const req = requirements[index];
     if (req.category !== 'skill') return;
@@ -333,23 +322,23 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
       <div className="mt-4 border-2 border-dashed border-[#ff5c35] bg-[#fffaf5] p-4">
         <p className="font-mono-ui text-[10px] font-black uppercase text-[#ff5c35]">Review Required</p>
         <p className="mt-1 text-sm text-black/80">
-          The system found potential skill matches for: <span className="font-bold">"{req.canonicalResolution.literalText}"</span>
+          Potential canonical matches were suggested for: <span className="font-bold">"{req.canonicalResolution.literalText}"</span>
         </p>
-        <p className="mt-1 font-mono-ui text-[10px] text-black/50">Controlled prototype — not live AI</p>
+        <p className="mt-1 font-mono-ui text-[10px] text-black/50">Suggestion only — never treated as resolved until you explicitly review it.</p>
 
         <div className="mt-3 grid gap-2">
           {req.canonicalResolution.suggestions.map((suggestion, sIdx) => (
             <div key={sIdx} className="flex items-center justify-between border border-black/10 bg-white p-2">
               <div>
                 <p className="text-sm font-bold">{suggestion.label}</p>
-                <p className="font-mono-ui text-[10px] text-black/50">Score: {suggestion.score.toFixed(2)} — Suggestion only</p>
+                <p className="font-mono-ui text-[10px] text-black/50">Review score: {suggestion.score.toFixed(2)} — non-authoritative</p>
               </div>
               <button
                 type="button"
                 onClick={() => handleAcceptSuggestion(index, suggestion)}
                 className="border-2 border-black bg-[#e7ff57] px-3 py-1 font-mono-ui text-[10px] font-black uppercase tracking-wide transition-colors hover:bg-black hover:text-[#e7ff57]"
               >
-                Accept
+                Accept after review
               </button>
             </div>
           ))}
@@ -406,7 +395,7 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
             </div>
           </div>
         ) : (
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => openManualResolve(index)}
@@ -444,15 +433,17 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
         <p className="font-mono-ui text-sm text-black/60">No requirements added yet.</p>
       ) : (
         <div className="grid gap-4">
-          {requirements.map((req, i) => (
+          {requirements.map((req, i) => {
+            const reviewRequired = req.category === 'skill' && req.canonicalResolution.state === 'review_required';
+            return (
             <div key={req.id} className="border-2 border-black bg-[#f7f4ed] p-4">
               <div className="mb-3 flex items-start justify-between">
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <span className="bg-black px-2 py-1 font-mono-ui text-[10px] font-black uppercase text-white">
                     {req.category.replace('_', ' ')}
                   </span>
-                  {req.category === 'skill' && (req as SkillOpportunityRequirement).canonicalResolution && (
-                    <SkillResolutionBadge resolution={(req as SkillOpportunityRequirement).canonicalResolution} />
+                  {req.category === 'skill' && req.canonicalResolution && (
+                    <SkillResolutionBadge resolution={req.canonicalResolution} />
                   )}
                   {req.humanConfirmed ? (
                     <span className="bg-[#16a34a] px-2 py-1 font-mono-ui text-[10px] font-black uppercase text-white">
@@ -558,15 +549,15 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
                       Hard readiness / eligibility gate
                     </label>
                   </div>
-                  <p className="text-xs text-black/60 pl-6">
+                  <p className="pl-6 text-xs text-black/60">
                     A hard gate can affect deterministic opportunity eligibility/readiness. It does not automatically reject an application or make a recruitment decision.
                   </p>
                 </div>
               </div>
 
-              {req.category === 'skill' && renderSkillReview(req as SkillOpportunityRequirement, i)}
+              {req.category === 'skill' && renderSkillReview(req, i)}
 
-              {!req.humanConfirmed && (
+              {!req.humanConfirmed && !reviewRequired && (
                 <div className="mt-4 flex justify-end">
                   <button
                     type="button"
@@ -577,8 +568,13 @@ export default function OpportunityRequirementsSection({ requirements, onChange,
                   </button>
                 </div>
               )}
+              {reviewRequired && (
+                <p className="mt-4 border-l-4 border-[#ff5c35] pl-3 text-xs text-black/65">
+                  General confirmation is intentionally blocked while this skill is review-required. Resolve it or explicitly keep the literal wording unresolved first.
+                </p>
+              )}
             </div>
-          ))}
+          );})}
         </div>
       )}
     </section>

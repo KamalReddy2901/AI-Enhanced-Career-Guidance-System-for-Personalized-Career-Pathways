@@ -61,10 +61,14 @@ function mapRequirement(row: Row): OpportunityRequirement {
         suggestions,
       };
     } else if (row.canonical_resolution === 'exact' || row.canonical_resolution === 'alias') {
+      if (!row.canonical_skill_id || !row.canonical_skill_label) {
+        throw new Error('Resolved opportunity skill is missing its canonical id or label.');
+      }
       canonicalResolution = {
         state: 'resolved',
         skillId: row.canonical_skill_id,
         matchKind: row.canonical_resolution,
+        label: row.canonical_skill_label,
       };
     } else {
       canonicalResolution = {
