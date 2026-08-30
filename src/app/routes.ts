@@ -54,6 +54,8 @@ const IndustryNewOpportunityPage = lazy(() => import("./sih/SihIndustryProductio
 const IndustryEditOpportunityPage = lazy(() => import("./sih/SihIndustryProductionPages").then((m) => ({ default: m.IndustryEditOpportunityPage })));
 const ApplicantsPage = lazy(() => import("./sih/SihRecruiterProductionPage").then((m) => ({ default: m.ApplicantsPage })));
 const IndustrySkillsIntelligencePage = lazy(() => import("./sih/SihIndustrySkillsIntelligencePage").then((m) => ({ default: m.IndustrySkillsIntelligencePage })));
+const CollaborationHubPage = lazy(() => import("./sih/SihCollaborationProductionPages").then((m) => ({ default: m.CollaborationHubPage })));
+const CollaborationProposalPage = lazy(() => import("./sih/SihCollaborationProductionPages").then((m) => ({ default: m.CollaborationProposalPage })));
 const FacultyPage = lazy(() => import("./sih/SihFacultyProductionPages").then((m) => ({ default: m.FacultyPage })));
 const FacultyCollaborationDetailPage = lazy(() => import("./sih/SihFacultyProductionPages").then((m) => ({ default: m.FacultyCollaborationDetailPage })));
 const InstitutionSkillsIntelligencePage = lazy(() => import("./sih/SihInstitutionProductionPage").then((m) => ({ default: m.InstitutionSkillsIntelligencePage })));
@@ -134,6 +136,9 @@ export const router = createBrowserRouter([
           { path: "industry/applicants", Component: ApplicantsPage },
           { path: "industry/applicants/:applicationId", Component: ApplicantsPage },
           { path: "industry/analytics", Component: IndustrySkillsIntelligencePage },
+          { path: "collaborations", Component: CollaborationHubPage },
+          { path: "collaborations/new", Component: CollaborationProposalPage },
+          { path: "collaborations/:collaborationId", Component: FacultyCollaborationDetailPage },
           { path: "faculty", Component: FacultyPage },
           { path: "faculty/collaborations", Component: FacultyPage },
           { path: "faculty/collaborations/:collaborationId", Component: FacultyCollaborationDetailPage },

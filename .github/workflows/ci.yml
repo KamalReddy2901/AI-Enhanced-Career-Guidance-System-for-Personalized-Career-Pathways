@@ -91,6 +91,9 @@ jobs:
       - name: Run faculty engagement lifecycle convergence QA
         run: npx tsx scripts/faculty-engagement-lifecycle-qa.ts
 
+      - name: Run collaboration proposal authoring convergence QA
+        run: npm run qa:collaboration-proposal-authoring
+
       - name: Run hosted validation readiness QA
         run: npm run qa:hosted-validation
 
@@ -161,6 +164,9 @@ jobs:
 
       - name: Run faculty engagement lifecycle gate
         run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_faculty_engagement_lifecycle.sql
+
+      - name: Run collaboration proposal authoring gate
+        run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_collaboration_proposals.sql
 
       - name: Run institution aggregate privacy gate
         run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_institution_analytics.sql
