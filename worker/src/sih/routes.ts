@@ -92,6 +92,15 @@ export async function handleSihRequest(
   const url = new URL(request.url);
 
   try {
+    const declaredLength = Number(request.headers.get('Content-Length') ?? 0);
+    if (declaredLength > 65_536) {
+      throw new SihRouteError('INVALID_REQUEST', 413, 'Request body exceeds the 64 KiB limit.');
+    }
+    if (env.SIH_RATE_LIMITER) {
+      const callerKey = request.headers.get('Authorization') ?? 'unauthenticated';
+      const { success } = await env.SIH_RATE_LIMITER.limit({ key: `${callerKey}:${url.pathname}` });
+      if (!success) throw new SihRouteError('RATE_LIMITED', 429, 'Too many requests. Retry shortly.');
+    }
     // 1. Recompute readiness
     if (url.pathname === '/sih/readiness/recompute' && request.method === 'POST') {
       const record = await parseJsonBody(request);

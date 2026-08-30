@@ -277,21 +277,21 @@ assert.doesNotMatch(recruiterApplicationIndexMethod, /listApplicationsForApplica
   'Recruiter discovery must not reuse applicant discovery or introduce candidate scoring');
 const publishMethod = browserDalSource.match(/async publishOpportunityVersion[\s\S]*?\n  }\n}/)?.[0] ?? '';
 assert.ok(publishMethod, 'Explicit opportunity publication method must remain present');
-assert.match(publishMethod, /\.rpc\(['"]publish_opportunity_version['"]/,
+assert.match(publishMethod, /\.rpc\(\s*['"]publish_opportunity_version['"]/,
   'Publication must use the guarded database contract rather than draft table mutation');
 assert.doesNotMatch(publishMethod, /\.from\(['"](?:opportunities|opportunity_versions)['"]\).*?\.update/s,
   'Publication must not bypass the guarded database contract');
 const completionMethod = browserDalSource.match(/async completeVerificationRequestDecision[\s\S]*?\n  }\n\n  async createApplication/)?.[0] ?? '';
 assert.ok(completionMethod, 'Atomic terminal verification completion method must remain present');
-assert.match(completionMethod, /\.rpc\(['"]complete_verification_request_decision['"]/,
+assert.match(completionMethod, /\.rpc\(\s*['"]complete_verification_request_decision['"]/,
   'Terminal verification completion must use the canonical atomic RPC');
 assert.doesNotMatch(completionMethod, /\.from\(['"]verification_(?:requests|events)['"]\)|\.update\s*\(/,
   'Terminal verification completion must not split event append and request closure into browser writes');
-assert.match(browserDalSource, /type NonTerminalVerificationAction = Exclude<[\s\S]*?'verified_by_human'[\s\S]*?'verified_by_issuer'[\s\S]*?'disputed'/,
+assert.match(browserDalSource, /type NonTerminalVerificationAction = Exclude<[\s\S]*?["']verified_by_human["'][\s\S]*?["']verified_by_issuer["'][\s\S]*?["']disputed["']/,
   'Generic append input must exclude terminal verifier actions');
 
 const serviceTypesSource = await readFile(fileURLToPath(new URL('../src/app/services/sih/types.ts', import.meta.url)), 'utf8');
-assert.match(serviceTypesSource, /type TerminalVerificationDecisionAction\s*=\s*\| 'verified_by_human'\s*\| 'verified_by_issuer'\s*\| 'disputed'/,
+assert.match(serviceTypesSource, /type TerminalVerificationDecisionAction\s*=\s*\|?\s*['"]verified_by_human['"]\s*\| ['"]verified_by_issuer['"]\s*\| ['"]disputed['"]/,
   'Terminal verification action type must remain exactly bounded');
 
 console.log('SIH browser read contract QA passed.');

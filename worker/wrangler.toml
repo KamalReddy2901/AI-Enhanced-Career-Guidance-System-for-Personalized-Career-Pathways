@@ -2,6 +2,14 @@ name = "careercaseai"
 main = "src/index.ts"
 compatibility_date = "2024-11-01"
 
+[[ratelimits]]
+name = "SIH_RATE_LIMITER"
+namespace_id = "2604401"
+
+[ratelimits.simple]
+limit = 60
+period = 60
+
 [vars]
 ENVIRONMENT = "production"
 

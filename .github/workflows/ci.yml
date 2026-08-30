@@ -76,6 +76,9 @@ jobs:
       - name: Run SIH26044 foundation freeze hardening QA
         run: npm run qa:foundation-freeze-hardening
 
+      - name: Run production convergence boundary QA
+        run: npm run qa:production-convergence
+
       - name: Build production client
         run: npm run build
 

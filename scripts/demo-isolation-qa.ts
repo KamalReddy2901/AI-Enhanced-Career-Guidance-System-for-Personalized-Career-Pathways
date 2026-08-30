@@ -52,7 +52,8 @@ assert.doesNotMatch(appSource, /AuthProvider|GuidanceProvider|AppProvider/,
 const routeSource = await readFile(join(appRoot, 'routes.ts'), 'utf8');
 assert.match(routeSource, /Component:\s*LegacyCareerCaseRuntime/);
 assert.match(routeSource, /path:\s*['"]\/demo['"][\s\S]*Component:\s*DemoSihRuntime/);
-assert.equal(routeSource.indexOf("path: '/demo'") > routeSource.indexOf('Component: LegacyCareerCaseRuntime'), true,
+const demoRouteIndex = Math.max(routeSource.indexOf("path: '/demo'"), routeSource.indexOf('path: "/demo"'));
+assert.equal(demoRouteIndex > routeSource.indexOf('Component: LegacyCareerCaseRuntime'), true,
   'controlled demo must be a top-level sibling runtime');
 const rootLayoutSource = await readFile(join(appRoot, 'pages', 'RootLayout.tsx'), 'utf8');
 assert.doesNotMatch(rootLayoutSource, /['"]\/demo(?:\/|['"])/,

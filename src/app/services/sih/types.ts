@@ -1,4 +1,7 @@
-import type { OpportunityReadinessResult, ReadinessSubjectInput } from '../../domain/readiness';
+import type {
+  OpportunityReadinessResult,
+  ReadinessSubjectInput,
+} from "../../domain/readiness";
 import type {
   ActorId,
   ActorRole,
@@ -13,14 +16,22 @@ import type {
   OrganizationId,
   VerificationAction,
   VerificationState,
-} from '../../domain';
-import type { ProductionRecruiterProjection } from './productionRecruiterProjection';
+} from "../../domain";
+import type { ProductionRecruiterProjection } from "./productionRecruiterProjection";
 
 export type EvidenceScopeReadModel =
-  | { readonly kind: 'global_skill'; readonly skillId?: string; readonly literalSkillLabel: string }
-  | { readonly kind: 'opportunity'; readonly opportunityId: string; readonly requirementId?: string }
-  | { readonly kind: 'organization'; readonly organizationId: string }
-  | { readonly kind: 'outcome'; readonly outcomeEventId: string };
+  | {
+      readonly kind: "global_skill";
+      readonly skillId?: string;
+      readonly literalSkillLabel: string;
+    }
+  | {
+      readonly kind: "opportunity";
+      readonly opportunityId: string;
+      readonly requirementId?: string;
+    }
+  | { readonly kind: "organization"; readonly organizationId: string }
+  | { readonly kind: "outcome"; readonly outcomeEventId: string };
 
 /** Browser-facing evidence row. This is deliberately not the canonical
  * EvidenceRecord because artifacts and consent links are separately RLS-bound. */
@@ -50,12 +61,14 @@ export interface EvidenceArtifactReadModel {
   readonly storageBucketId: string;
   readonly storageObjectPath: string;
   readonly integrityFingerprint?: string;
-  readonly scanStatus: 'pending' | 'clean' | 'quarantined' | 'rejected' | 'not_scanned';
+  readonly scanStatus:
+    "pending" | "clean" | "quarantined" | "rejected" | "not_scanned";
   readonly linkedAt: string;
   readonly createdAt: string;
 }
 
-export type VerificationRequestStatus = 'requested' | 'accepted' | 'closed' | 'cancelled';
+export type VerificationRequestStatus =
+  "requested" | "accepted" | "closed" | "cancelled";
 
 export interface VerificationRequestReadModel {
   readonly id: string;
@@ -84,9 +97,7 @@ export interface VerificationEventReadModel {
 }
 
 export type TerminalVerificationDecisionAction =
-  | 'verified_by_human'
-  | 'verified_by_issuer'
-  | 'disputed';
+  "verified_by_human" | "verified_by_issuer" | "disputed";
 
 export interface CompleteVerificationRequestDecisionInput {
   readonly verificationRequestId: string;
@@ -104,7 +115,7 @@ export interface CompleteVerificationRequestDecisionResult {
 export interface VerifierActingContextReadModel {
   readonly actorId: ActorId;
   readonly organizationId: OrganizationId;
-  readonly roles: readonly Extract<ActorRole, 'faculty' | 'issuer_verifier'>[];
+  readonly roles: readonly Extract<ActorRole, "faculty" | "issuer_verifier">[];
 }
 
 export interface ApplicationReadModel {
@@ -113,7 +124,7 @@ export interface ApplicationReadModel {
   readonly opportunityId: string;
   readonly opportunityVersionId: string;
   readonly ownerOrganizationId: string;
-  readonly initialStage: 'saved' | 'preparing';
+  readonly initialStage: "saved" | "preparing";
   readonly currentStage: ApplicationStage;
   readonly createdAt: string;
 }
@@ -123,7 +134,8 @@ export interface ApplicationEventReadModel {
   readonly applicationId: ApplicationId;
   readonly fromStage: ApplicationStage;
   readonly toStage: ApplicationStage;
-  readonly eventKind: 'stage_transition' | 'human_rejection';
+  readonly eventKind: "stage_transition" | "human_rejection";
+  readonly applicationSnapshotId?: string;
   readonly actorId: string;
   readonly reason?: string;
   readonly note?: string;
@@ -134,28 +146,29 @@ export interface ConsentGrantReadModel {
   readonly id: ConsentRecordId;
   readonly subjectActorId: string;
   readonly granteeOrganizationId: string;
-  readonly purpose: Extract<ConsentPurpose, 'application_review'>;
+  readonly purpose: Extract<ConsentPurpose, "application_review">;
   readonly evidenceRecordIds: readonly EvidenceRecordId[];
-  readonly status: 'granted' | 'withdrawn' | 'expired';
+  readonly status: "granted" | "withdrawn" | "expired";
   readonly grantedAt: string;
   readonly expiresAt?: string;
   readonly withdrawnAt?: string;
 }
 
 export type SihTrustedApiErrorCode =
-  | 'UNAUTHENTICATED'
-  | 'NO_ACTIVE_SIH_ACTOR'
-  | 'FORBIDDEN'
-  | 'NOT_FOUND'
-  | 'INVALID_REQUEST'
-  | 'UNCONFIRMED_OPPORTUNITY'
-  | 'INVALID_EVIDENCE_PROJECTION'
-  | 'ARTIFACT_NOT_FOUND'
-  | 'ARTIFACT_PATH_MISMATCH'
-  | 'ARTIFACT_NOT_USABLE'
-  | 'CONSENT_REQUIRED'
-  | 'SNAPSHOT_CONFLICT'
-  | 'TRUSTED_PERSISTENCE_FAILURE';
+  | "UNAUTHENTICATED"
+  | "NO_ACTIVE_SIH_ACTOR"
+  | "FORBIDDEN"
+  | "NOT_FOUND"
+  | "INVALID_REQUEST"
+  | "RATE_LIMITED"
+  | "UNCONFIRMED_OPPORTUNITY"
+  | "INVALID_EVIDENCE_PROJECTION"
+  | "ARTIFACT_NOT_FOUND"
+  | "ARTIFACT_PATH_MISMATCH"
+  | "ARTIFACT_NOT_USABLE"
+  | "CONSENT_REQUIRED"
+  | "SNAPSHOT_CONFLICT"
+  | "TRUSTED_PERSISTENCE_FAILURE";
 
 export interface RecomputeReadinessRequest {
   opportunityVersionId: string;
@@ -167,14 +180,20 @@ export interface RecomputeReadinessResponse {
 }
 
 export interface MaterializeSubjectFactsRequest {
-  educationLevel?: 'below_10' | 'class_10' | 'class_12' | 'iti_diploma' | 'undergraduate' | 'postgraduate';
+  educationLevel?:
+    | "below_10"
+    | "class_10"
+    | "class_12"
+    | "iti_diploma"
+    | "undergraduate"
+    | "postgraduate";
   educationLevelConfirmed?: boolean;
   graduationYear?: number;
   graduationYearConfirmed?: boolean;
   physicalPresenceLocations?: Array<{ value: string; confirmed: boolean }>;
   physicalPresenceLocationsComplete?: boolean;
   eligibilityFacts?: Array<{
-    kind: 'availability' | 'licence_registration' | 'explicit_prerequisite';
+    kind: "availability" | "licence_registration" | "explicit_prerequisite";
     key: string;
     value: string | boolean;
     confirmed: boolean;
@@ -201,10 +220,15 @@ export interface SaveEvidenceProjectionRequest {
   literalRequirementWording?: string;
   proficiency?: number;
   experienceYears?: number;
-  capabilityAssertion?: 'supports' | 'partial' | 'does_not_meet' | 'not_applicable';
-  directness: 'direct' | 'explicit_claim' | 'indirect';
+  capabilityAssertion?:
+    "supports" | "partial" | "does_not_meet" | "not_applicable";
+  directness: "direct" | "explicit_claim" | "indirect";
   observedAt: string;
-  confirmationMethod: 'structured_human_entry' | 'ai_assisted_review' | 'direct_confirmation' | 'self_assessment_review';
+  confirmationMethod:
+    | "structured_human_entry"
+    | "ai_assisted_review"
+    | "direct_confirmation"
+    | "self_assessment_review";
 }
 
 export interface SaveEvidenceProjectionResponse {
@@ -257,7 +281,11 @@ export interface DeriveArtifactBackedEvidenceRequest {
   artifactId: string;
   literalClaim?: string;
   derivationKind: string;
-  confirmationMethod: 'structured_human_entry' | 'ai_assisted_review' | 'direct_confirmation' | 'self_assessment_review';
+  confirmationMethod:
+    | "structured_human_entry"
+    | "ai_assisted_review"
+    | "direct_confirmation"
+    | "self_assessment_review";
 }
 
 export interface DeriveArtifactBackedEvidenceResponse {
@@ -266,8 +294,12 @@ export interface DeriveArtifactBackedEvidenceResponse {
 }
 
 export class SihTrustedApiError extends Error {
-  constructor(readonly code: SihTrustedApiErrorCode, readonly status: number, message: string) {
+  constructor(
+    readonly code: SihTrustedApiErrorCode,
+    readonly status: number,
+    message: string,
+  ) {
     super(message);
-    this.name = 'SihTrustedApiError';
+    this.name = "SihTrustedApiError";
   }
 }
