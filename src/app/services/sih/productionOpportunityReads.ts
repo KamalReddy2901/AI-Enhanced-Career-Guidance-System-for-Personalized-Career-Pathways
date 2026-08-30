@@ -11,12 +11,22 @@ import type {
   OpportunityRequirementId,
   OpportunityVersion,
   OpportunityVersionId,
+  OrganizationId,
 } from '../../domain';
 
 type Row = Record<string, any>;
 
 export interface ProductionOpportunityBundle {
   readonly opportunity: Opportunity;
+  readonly version: OpportunityVersion;
+}
+
+export interface ManagedOpportunityVersionBundle {
+  readonly opportunityId: OpportunityId;
+  readonly ownerOrganizationId: OrganizationId;
+  readonly opportunityStatus: 'draft' | 'published' | 'paused' | 'closed' | 'archived';
+  readonly currentVersionId?: OpportunityVersionId;
+  readonly versionStatus: 'draft' | 'published';
   readonly version: OpportunityVersion;
 }
 
@@ -239,6 +249,59 @@ export class ProductionOpportunityReads {
 
     const [bundle] = await this.composeBundles([opportunityRow as Row], [versionRow as Row]);
     return bundle ?? null;
+  }
+
+  /**
+   * Loads one exact version for an authenticated authoring workspace. RLS is
+   * authoritative for draft visibility. Published versions may be readable more
+   * broadly, but every subsequent write still re-checks organization authority
+   * inside save_opportunity_draft / publish_opportunity_version.
+   */
+  async getManageableVersion(opportunityVersionId: OpportunityVersionId | string): Promise<ManagedOpportunityVersionBundle | null> {
+    const { data: versionRow, error: versionError } = await this.db()
+      .from('opportunity_versions')
+      .select('id,opportunity_id,version_number,status,title,description,opportunity_type,audiences,source_system,source_record_id,source_url,source_captured_at,closes_at,created_by_actor_id,created_at,published_at')
+      .eq('id', opportunityVersionId)
+      .maybeSingle();
+    if (versionError) throw new Error(`Unable to load managed opportunity version: ${versionError.message}`);
+    if (!versionRow) return null;
+    if (versionRow.status !== 'draft' && versionRow.status !== 'published') {
+      throw new Error('Managed opportunity version has an unsupported lifecycle status.');
+    }
+
+    const { data: opportunityRow, error: opportunityError } = await this.db()
+      .from('opportunities')
+      .select('id,owner_organization_id,current_version_id,status')
+      .eq('id', versionRow.opportunity_id)
+      .maybeSingle();
+    if (opportunityError) throw new Error(`Unable to load managed opportunity: ${opportunityError.message}`);
+    if (!opportunityRow) return null;
+
+    const [requirementRows, ruleRows] = await Promise.all([
+      dataOrThrow<Row[]>(
+        this.db().from('opportunity_requirements').select('*').eq('opportunity_version_id', versionRow.id).order('ordinal'),
+        'Unable to load managed opportunity requirements',
+      ),
+      dataOrThrow<Row[]>(
+        this.db().from('eligibility_rules').select('*').eq('opportunity_version_id', versionRow.id).order('ordinal'),
+        'Unable to load managed opportunity eligibility rules',
+      ),
+    ]);
+
+    return {
+      opportunityId: opportunityRow.id as OpportunityId,
+      ownerOrganizationId: opportunityRow.owner_organization_id as OrganizationId,
+      opportunityStatus: opportunityRow.status,
+      ...(opportunityRow.current_version_id
+        ? { currentVersionId: opportunityRow.current_version_id as OpportunityVersionId }
+        : {}),
+      versionStatus: versionRow.status,
+      version: mapVersion(
+        versionRow as Row,
+        requirementRows.map(mapRequirement),
+        ruleRows.map(mapEligibilityRule),
+      ),
+    };
   }
 
   async getLatestReadinessResult(
