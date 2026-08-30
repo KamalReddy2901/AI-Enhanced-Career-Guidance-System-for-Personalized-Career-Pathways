@@ -17,6 +17,9 @@ export type AuditEventId = DomainId<'AuditEvent'>;
 export type CollaborationEngagementId = DomainId<'CollaborationEngagement'>;
 export type OutcomeEventId = DomainId<'OutcomeEvent'>;
 export type OpportunityReadinessResultId = DomainId<'OpportunityReadinessResult'>;
+export type InstitutionInterventionId = DomainId<'InstitutionIntervention'>;
+export type InstitutionInterventionEventId = DomainId<'InstitutionInterventionEvent'>;
+export type InstitutionInterventionFollowupId = DomainId<'InstitutionInterventionFollowup'>;
 
 export type IsoDate = string & { readonly __isoDate: true };
 export type IsoTimestamp = string & { readonly __isoTimestamp: true };
