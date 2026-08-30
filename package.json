@@ -90,7 +90,7 @@
     "pdfjs-dist": "^5.4.530",
     "react-day-picker": "8.10.1",
     "react-dnd": "16.0.1",
-    "react-dnd-html5-backend": "1.0.1",
+    "react-dnd-html5-backend": "16.0.1",
     "react-fast-marquee": "^1.6.5",
     "react-hook-form": "7.55.0",
     "react-popper": "2.3.0",
