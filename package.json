@@ -29,6 +29,8 @@
     "qa:d2-readiness-integration": "tsx scripts/d2-readiness-integration.ts",
     "qa:foundation-freeze-hardening": "tsx scripts/foundation-freeze-hardening-qa.ts",
     "qa:production-convergence": "tsx scripts/production-convergence-qa.ts",
+    "qa:hosted-sih-preflight": "tsx scripts/hosted-sih-preflight.ts",
+    "qa:hosted-validation": "tsx scripts/hosted-validation-qa.ts",
     "qa:sih-premerge": "npm run typecheck && npm run qa:sih-boundary && npm run qa:demo-isolation && npm run qa:demo-flow && npm run qa:opportunity-readiness && npm run qa:evidence-integrity && npm run qa:sih-persistence-schema && npm run qa:foundation-freeze-hardening && npm run build"
   },
   "dependencies": {

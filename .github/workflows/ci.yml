@@ -91,6 +91,9 @@ jobs:
       - name: Run faculty engagement lifecycle convergence QA
         run: npx tsx scripts/faculty-engagement-lifecycle-qa.ts
 
+      - name: Run hosted validation readiness QA
+        run: npm run qa:hosted-validation
+
       - name: Build production client
         run: npm run build
 

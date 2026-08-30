@@ -20,6 +20,7 @@ The locked loop is:
 `Career Passport → Career Direction → Opportunity → Opportunity Readiness → Explainable Gap → Prove / Practice / Learn / Experience → Verification → Consented Application → Human Recruitment / Collaboration → Outcome → Updated Evidence → Institution / Industry Skills Intelligence → Intervention`
 
 Implementation truth and remaining limitations are tracked in [`docs/sih26044-integration-status.md`](./docs/sih26044-integration-status.md).
+The credential-gated hosted validation and deployment procedure is in [`docs/sih26044-hosted-validation-runbook.md`](./docs/sih26044-hosted-validation-runbook.md).
 
 ## Engine A — Career Guidance
 
