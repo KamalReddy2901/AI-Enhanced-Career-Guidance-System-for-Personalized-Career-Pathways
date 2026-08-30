@@ -39,6 +39,7 @@ const CounselorPage = lazy(() => import('./pages/CounselorPage').then(m => ({ de
 const HelpCenterPage = lazy(() => import('./pages/HelpCenterPage').then(m => ({ default: m.HelpCenterPage })));
 const AboutPage = lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
 const IntegrationPage = lazy(() => import('./pages/IntegrationPage').then(m => ({ default: m.IntegrationPage })));
+const VerificationPage = lazy(() => import('./pages/VerificationPage').then(m => ({ default: m.VerificationPage })));
 const DemoOverviewPage = lazy(() => import('./demo/DemoPages').then(m => ({ default: m.DemoOverviewPage })));
 const DemoStudentPage = lazy(() => import('./demo/DemoPages').then(m => ({ default: m.DemoStudentPage })));
 const DemoMentorPage = lazy(() => import('./demo/DemoPages').then(m => ({ default: m.DemoMentorPage })));
@@ -80,6 +81,7 @@ export const router = createBrowserRouter([
       { path: 'pathways', Component: PathwaysPage },
       { path: 'how-it-works', Component: HowItWorksPage },
       { path: 'counselor', Component: CounselorPage },
+      { path: 'verification', Component: VerificationPage },
       { path: 'help', Component: HelpCenterPage },
       { path: 'about', Component: AboutPage },
       { path: 'integration', Component: IntegrationPage },
