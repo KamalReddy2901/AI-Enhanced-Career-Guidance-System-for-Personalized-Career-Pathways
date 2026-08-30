@@ -232,7 +232,11 @@ reset role;
 select pg_temp.assert_true(
   (select count(*) = 2
    from sih26044.opportunity_versions v
-   join pg_temp.versioning_ids x on x.opportunity_id = v.opportunity_id),
+   where v.opportunity_id = (
+     select opportunity_id
+     from pg_temp.versioning_ids
+     where version_number = 1
+   )),
   'blocked cross-tenant writes leave no extra versions'
 );
 

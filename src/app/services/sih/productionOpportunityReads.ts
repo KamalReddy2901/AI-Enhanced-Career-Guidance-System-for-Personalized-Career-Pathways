@@ -16,6 +16,9 @@ import type {
 
 type Row = Record<string, any>;
 
+const requirementSelect = 'id,opportunity_version_id,ordinal,category,priority,literal_source_wording,importance,evidence_expectation,hard_gate,canonical_resolution,canonical_skill_id,canonical_skill_label,minimum_proficiency,minimum_years,category_payload,human_confirmed,confirmed_by_actor_id,confirmed_at,confirmation_method,resolution_status,resolution_suggestions';
+const eligibilityRuleSelect = 'id,opportunity_version_id,ordinal,rule_kind,literal_source_wording,typed_rule_definition,human_confirmed,confirmed_by_actor_id,confirmed_at,confirmation_method';
+
 export interface ProductionOpportunityBundle {
   readonly opportunity: Opportunity;
   readonly version: OpportunityVersion;
@@ -279,11 +282,11 @@ export class ProductionOpportunityReads {
 
     const [requirementRows, ruleRows] = await Promise.all([
       dataOrThrow<Row[]>(
-        this.db().from('opportunity_requirements').select('*').eq('opportunity_version_id', versionRow.id).order('ordinal'),
+        this.db().from('opportunity_requirements').select(requirementSelect).eq('opportunity_version_id', versionRow.id).order('ordinal'),
         'Unable to load managed opportunity requirements',
       ),
       dataOrThrow<Row[]>(
-        this.db().from('eligibility_rules').select('*').eq('opportunity_version_id', versionRow.id).order('ordinal'),
+        this.db().from('eligibility_rules').select(eligibilityRuleSelect).eq('opportunity_version_id', versionRow.id).order('ordinal'),
         'Unable to load managed opportunity eligibility rules',
       ),
     ]);
@@ -330,11 +333,11 @@ export class ProductionOpportunityReads {
     const versionIds = versionRows.map(row => row.id as string);
     const [requirementRows, ruleRows] = await Promise.all([
       dataOrThrow<Row[]>(
-        this.db().from('opportunity_requirements').select('*').in('opportunity_version_id', versionIds).order('ordinal'),
+        this.db().from('opportunity_requirements').select(requirementSelect).in('opportunity_version_id', versionIds).order('ordinal'),
         'Unable to load opportunity requirements',
       ),
       dataOrThrow<Row[]>(
-        this.db().from('eligibility_rules').select('*').in('opportunity_version_id', versionIds).order('ordinal'),
+        this.db().from('eligibility_rules').select(eligibilityRuleSelect).in('opportunity_version_id', versionIds).order('ordinal'),
         'Unable to load opportunity eligibility rules',
       ),
     ]);
