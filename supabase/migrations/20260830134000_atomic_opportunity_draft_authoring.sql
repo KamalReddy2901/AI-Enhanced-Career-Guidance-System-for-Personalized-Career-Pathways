@@ -200,10 +200,10 @@ begin
           closes_at = nullif(requested_payload->>'closesAt', '')::timestamptz
       where id = target_version_id;
 
-      delete from sih26044.opportunity_requirements
-      where opportunity_version_id = target_version_id;
-      delete from sih26044.eligibility_rules
-      where opportunity_version_id = target_version_id;
+      delete from sih26044.opportunity_requirements r
+      where r.opportunity_version_id = target_version_id;
+      delete from sih26044.eligibility_rules e
+      where e.opportunity_version_id = target_version_id;
     end if;
   end if;
 
