@@ -174,7 +174,7 @@ const IndustryPage = lazy(() =>
   import("./sih/SihProductionPages").then((m) => ({ default: m.IndustryPage })),
 );
 const ApplicantsPage = lazy(() =>
-  import("./sih/SihProductionPages").then((m) => ({
+  import("./sih/SihRecruiterProductionPage").then((m) => ({
     default: m.ApplicantsPage,
   })),
 );
