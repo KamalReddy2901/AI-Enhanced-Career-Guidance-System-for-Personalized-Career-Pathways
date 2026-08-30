@@ -197,6 +197,32 @@ jobs:
           test "$industry_assertion_count" -ge 15
           echo "EXECUTED industry-analytics SQL assertions: $industry_assertion_count"
 
+      - name: Execute SIH26044 questionnaire schema constraint tests
+        env:
+          PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          case "$PGDATABASE_URL" in
+            postgresql://postgres:postgres@127.0.0.1:54322/postgres) ;;
+            *) echo "Refusing to execute against a non-local database URL" >&2; exit 1 ;;
+          esac
+          psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
+            -f supabase/tests/sih26044_questionnaires.sql
+          echo "EXECUTED questionnaire schema constraint tests: PASSED"
+
+      - name: Execute SIH26044 questionnaire authenticated authority tests
+        env:
+          PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          case "$PGDATABASE_URL" in
+            postgresql://postgres:postgres@127.0.0.1:54322/postgres) ;;
+            *) echo "Refusing to execute against a non-local database URL" >&2; exit 1 ;;
+          esac
+          psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
+            -f supabase/tests/sih26044_questionnaires_authority.sql
+          echo "EXECUTED questionnaire authenticated authority tests: 11 tests PASSED"
+
       - name: Execute SIH26044 D2 readiness and trust assertions
         env:
           PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
