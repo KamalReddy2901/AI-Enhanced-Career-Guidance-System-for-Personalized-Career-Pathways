@@ -121,7 +121,7 @@ exception when others then
   if sqlerrm like '%INSUFFICIENT_AUTHORITY%' then
     raise notice 'TEST 2 PASSED: Recruiter B blocked from org A';
   else
-    raise exception 'TEST 2 FAILED: Wrong error: %', sqlerrm;
+    raise exception using message = 'TEST 2 FAILED: Wrong error: ' || sqlerrm;
   end if;
 end;
 $$;
@@ -218,7 +218,7 @@ exception when others then
   if sqlerrm like '%PUBLISHED_VERSION_IMMUTABLE%' then
     raise notice 'TEST 5 PASSED: Published version is immutable';
   else
-    raise exception 'TEST 5 FAILED: Wrong error: %', sqlerrm;
+    raise exception using message = 'TEST 5 FAILED: Wrong error: ' || sqlerrm;
   end if;
 end;
 $$;
