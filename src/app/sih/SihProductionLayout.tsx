@@ -20,7 +20,7 @@ export function SihProductionLayout() {
       ["Applicants", "/industry/applicants"],
     );
   if (roles.has("faculty") || roles.has("issuer_verifier"))
-    links.push(["Faculty", "/faculty"], ["Verification", "/verification"]);
+    links.push(["Faculty", "/faculty/collaborations"], ["Verification", "/verification"]);
   if (roles.has("institution_admin") || roles.has("policy_program_analyst"))
     links.push(["Institution", "/institution"]);
   return (
