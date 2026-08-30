@@ -7,12 +7,18 @@ interface FacultyExplorerProps {
   readonly collaborations: readonly CollaborationEngagement[];
   readonly organizations: readonly Organization[];
   readonly personas: readonly Actor[];
+  readonly detailBasePath?: string;
 }
 
 const groupOptions = ['all', 'training_fdp', 'consultancy_research', 'mentoring_workshop_guest_lecture', 'other'] as const;
 const statusOptions = ['all', 'proposed', 'approved', 'active', 'completed', 'cancelled'] as const;
 
-export function FacultyExplorer({ collaborations, organizations, personas }: FacultyExplorerProps) {
+export function FacultyExplorer({
+  collaborations,
+  organizations,
+  personas,
+  detailBasePath,
+}: FacultyExplorerProps) {
   const [selectedGroup, setSelectedGroup] = useState<(typeof groupOptions)[number]>('all');
   const [selectedStatus, setSelectedStatus] = useState<(typeof statusOptions)[number]>('all');
   const visibleCollaborations = collaborations.filter(engagement => (
@@ -53,8 +59,8 @@ export function FacultyExplorer({ collaborations, organizations, personas }: Fac
       </div>
       {visibleCollaborations.length === 0 ? (
         <div className="mt-6 border-2 border-dashed border-black bg-white p-8 text-center">
-          <h3 className="text-xl font-black">No controlled collaborations match these filters</h3>
-          <p className="mt-2 text-sm text-black/60">Change the type or status to inspect the available synthetic records.</p>
+          <h3 className="text-xl font-black">No collaborations match these filters</h3>
+          <p className="mt-2 text-sm text-black/60">Change the type or status to inspect other authorized collaboration records.</p>
         </div>
       ) : (
         <div className="mt-8 grid gap-8">
@@ -62,7 +68,15 @@ export function FacultyExplorer({ collaborations, organizations, personas }: Fac
             <section key={group} aria-labelledby={`faculty-group-${group}`}>
               <div className="mb-3 border-t-2 border-black pt-3"><h3 id={`faculty-group-${group}`} className="font-mono-ui text-xs font-black uppercase tracking-wide">{collaborationGroupLabel(group)}</h3></div>
               <div className="grid gap-4 lg:grid-cols-3">
-                {items.map(engagement => <FacultyCollaborationCard key={engagement.id} engagement={engagement} organizations={organizations} personas={personas} />)}
+                {items.map(engagement => (
+                  <FacultyCollaborationCard
+                    key={engagement.id}
+                    engagement={engagement}
+                    organizations={organizations}
+                    personas={personas}
+                    detailBasePath={detailBasePath}
+                  />
+                ))}
               </div>
             </section>
           ))}
