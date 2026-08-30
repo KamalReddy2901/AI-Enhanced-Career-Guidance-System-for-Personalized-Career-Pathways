@@ -20,8 +20,10 @@ export function SihProductionLayout() {
       ["Applicants", "/industry/applicants"],
       ["Industry Analytics", "/industry/analytics"],
     );
-  if (roles.has("faculty") || roles.has("issuer_verifier"))
-    links.push(["Faculty", "/faculty/collaborations"], ["Verification", "/verification"]);
+  if (roles.has("faculty")) links.push(["Faculty", "/faculty/collaborations"]);
+  if (roles.has("faculty") || roles.has("issuer_verifier")) links.push(["Verification", "/verification"]);
+  if (roles.has("faculty") || roles.has("industry_partner") || roles.has("institution_admin"))
+    links.push(["Collaboration", "/collaborations"]);
   if (roles.has("institution_admin"))
     links.push(
       ["Skills Intelligence", "/institution/skills-intelligence"],
@@ -42,7 +44,7 @@ export function SihProductionLayout() {
           >
             {links.map(([label, to]) => (
               <NavLink
-                key={to}
+                key={`${label}-${to}`}
                 to={to}
                 className={({ isActive }) =>
                   `min-h-11 px-3 py-3 font-mono-ui text-[11px] font-black uppercase ${isActive ? "bg-black text-white" : "hover:bg-black/5"}`
