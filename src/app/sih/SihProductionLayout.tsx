@@ -6,6 +6,7 @@ import { useSihProduction } from "./SihProductionContext";
 const student = [
   ["Career", "/career"],
   ["Opportunities", "/opportunities"],
+  ["Development", "/development"],
   ["Evidence", "/evidence"],
   ["Applications", "/applications"],
 ];
@@ -23,7 +24,10 @@ export function SihProductionLayout() {
   if (roles.has("faculty")) links.push(["Faculty", "/faculty/collaborations"]);
   if (roles.has("faculty") || roles.has("issuer_verifier")) links.push(["Verification", "/verification"]);
   if (roles.has("faculty") || roles.has("industry_partner") || roles.has("institution_admin"))
-    links.push(["Collaboration", "/collaborations"]);
+    links.push(
+      ["Collaboration", "/collaborations"],
+      ["Manage Programs", "/development/manage"],
+    );
   if (roles.has("institution_admin"))
     links.push(
       ["Skills Intelligence", "/institution/skills-intelligence"],

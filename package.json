@@ -30,6 +30,7 @@
     "qa:foundation-freeze-hardening": "tsx scripts/foundation-freeze-hardening-qa.ts",
     "qa:production-convergence": "tsx scripts/production-convergence-qa.ts",
     "qa:collaboration-proposal-authoring": "tsx scripts/collaboration-proposal-authoring-qa.ts",
+    "qa:development-program-linkage": "tsx scripts/development-program-linkage-qa.ts",
     "qa:hosted-sih-preflight": "tsx scripts/hosted-sih-preflight.ts",
     "qa:hosted-validation": "tsx scripts/hosted-validation-qa.ts",
     "qa:hosted-smoke": "tsx scripts/hosted-sih-smoke.ts",

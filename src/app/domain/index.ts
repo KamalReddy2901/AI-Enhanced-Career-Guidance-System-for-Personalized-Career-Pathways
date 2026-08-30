@@ -3,6 +3,7 @@ export * from './application';
 export * from './collaboration';
 export * from './connectors';
 export * from './consent';
+export * from './developmentProgram';
 export * from './evidence';
 export * from './identity';
 export * from './institutionIntervention';

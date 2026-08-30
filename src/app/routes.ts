@@ -56,6 +56,9 @@ const ApplicantsPage = lazy(() => import("./sih/SihRecruiterProductionPage").the
 const IndustrySkillsIntelligencePage = lazy(() => import("./sih/SihIndustrySkillsIntelligencePage").then((m) => ({ default: m.IndustrySkillsIntelligencePage })));
 const CollaborationHubPage = lazy(() => import("./sih/SihCollaborationProductionPages").then((m) => ({ default: m.CollaborationHubPage })));
 const CollaborationProposalPage = lazy(() => import("./sih/SihCollaborationProductionPages").then((m) => ({ default: m.CollaborationProposalPage })));
+const DevelopmentProgramsPage = lazy(() => import("./sih/SihDevelopmentProgramPages").then((m) => ({ default: m.DevelopmentProgramsPage })));
+const DevelopmentProgramManagePage = lazy(() => import("./sih/SihDevelopmentProgramPages").then((m) => ({ default: m.DevelopmentProgramManagePage })));
+const DevelopmentProgramAuthoringPage = lazy(() => import("./sih/SihDevelopmentProgramPages").then((m) => ({ default: m.DevelopmentProgramAuthoringPage })));
 const FacultyPage = lazy(() => import("./sih/SihFacultyProductionPages").then((m) => ({ default: m.FacultyPage })));
 const FacultyCollaborationDetailPage = lazy(() => import("./sih/SihFacultyProductionPages").then((m) => ({ default: m.FacultyCollaborationDetailPage })));
 const InstitutionSkillsIntelligencePage = lazy(() => import("./sih/SihInstitutionProductionPage").then((m) => ({ default: m.InstitutionSkillsIntelligencePage })));
@@ -126,6 +129,10 @@ export const router = createBrowserRouter([
           { path: "opportunities/:opportunityVersionId/readiness", Component: ReadinessPage },
           { path: "opportunities/:opportunityVersionId/apply", Component: ApplicationPreparationPage },
           { path: "gap-closure", Component: GapClosurePage },
+          { path: "development", Component: DevelopmentProgramsPage },
+          { path: "development/manage", Component: DevelopmentProgramManagePage },
+          { path: "development/new", Component: DevelopmentProgramAuthoringPage },
+          { path: "development/manage/:developmentProgramVersionId", Component: DevelopmentProgramAuthoringPage },
           { path: "evidence", Component: EvidencePage },
           { path: "verification", Component: VerificationPage },
           { path: "applications", Component: ApplicationsPage },

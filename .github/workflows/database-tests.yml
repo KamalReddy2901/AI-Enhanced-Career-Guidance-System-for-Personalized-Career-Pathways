@@ -137,6 +137,21 @@ jobs:
           test "$collaboration_proposal_assertion_count" -ge 18
           echo "EXECUTED collaboration-proposal SQL assertions: $collaboration_proposal_assertion_count"
 
+      - name: Execute SIH26044 development program lifecycle assertions
+        env:
+          PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          case "$PGDATABASE_URL" in
+            postgresql://postgres:postgres@127.0.0.1:54322/postgres) ;;
+            *) echo "Refusing to execute against a non-local database URL" >&2; exit 1 ;;
+          esac
+          psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
+            -f supabase/tests/sih26044_development_programs.sql
+          development_program_assertion_count="$(grep -Ec '^select pg_temp\.assert_(true|blocked)\(' supabase/tests/sih26044_development_programs.sql)"
+          test "$development_program_assertion_count" -ge 18
+          echo "EXECUTED development-program SQL assertions: $development_program_assertion_count"
+
       - name: Execute SIH26044 institution aggregate privacy assertions
         env:
           PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres

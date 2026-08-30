@@ -1,4 +1,4 @@
-import type { OpportunityVersion, OpportunityReadinessResult, RequirementReadinessResult } from '../../../../domain';
+import type { OpportunityRequirement, OpportunityVersion, OpportunityReadinessResult, RequirementReadinessResult } from '../../../../domain';
 
 export type GapPlanGroupKind = 'evidence' | 'capability' | 'eligibility' | 'logistics' | 'unknown';
 export type GapActionKind = 'PROVE_EXISTING' | 'PRACTICE' | 'LEARN' | 'EXPERIENCE' | 'RESOLVE_ELIGIBILITY' | 'RESOLVE_LOGISTICS';
@@ -8,12 +8,20 @@ export interface GapClosureAction {
   readonly group: GapPlanGroupKind;
   readonly kind: GapActionKind;
   readonly requirementId?: string;
+  readonly canonicalSkillId?: string;
   readonly title: string;
   readonly reason: string;
   readonly expectedEvidence: string;
 }
 
-function actionForRequirement(requirement: RequirementReadinessResult): GapClosureAction[] {
+function canonicalSkillFor(authoredRequirement?: OpportunityRequirement): string | undefined {
+  if (authoredRequirement?.category !== 'skill') return undefined;
+  return authoredRequirement.canonicalResolution.state === 'resolved'
+    ? authoredRequirement.canonicalResolution.skillId
+    : undefined;
+}
+
+function actionForRequirement(requirement: RequirementReadinessResult, authoredRequirement?: OpportunityRequirement): GapClosureAction[] {
   const base = {
     requirementId: requirement.requirementId,
     title: requirement.literalSourceWording,
@@ -36,9 +44,11 @@ function actionForRequirement(requirement: RequirementReadinessResult): GapClosu
   if (requirement.category === 'experience') {
     return [{ ...base, id: `${requirement.requirementId}:experience`, group: 'capability', kind: 'EXPERIENCE', reason: 'The requirement calls for scoped experience. No provider or outcome is promised.', expectedEvidence: requirement.evidenceExpectation }];
   }
+
+  const canonicalSkillId = canonicalSkillFor(authoredRequirement);
   const capabilityActions: GapClosureAction[] = [
     { ...base, id: `${requirement.requirementId}:practice`, group: 'capability', kind: 'PRACTICE', reason: 'Relevant capability is only partially established or currently not met.', expectedEvidence: 'A scoped practice record that addresses the requirement.' },
-    { ...base, id: `${requirement.requirementId}:learn`, group: 'capability', kind: 'LEARN', reason: 'Learning may help develop the stated capability. This interface does not prescribe a provider or course.', expectedEvidence: 'Evidence appropriate to the requirement after learning.' },
+    { ...base, ...(canonicalSkillId ? { canonicalSkillId } : {}), id: `${requirement.requirementId}:learn`, group: 'capability', kind: 'LEARN', reason: canonicalSkillId ? 'Learning may help develop the stated capability. Published program discovery can be filtered by this exact human-confirmed canonical skill; CareerCase does not rank providers or promise outcomes.' : 'Learning may help develop the stated capability. Because this requirement has no authoritative canonical skill resolution, CareerCase will not guess a program filter.', expectedEvidence: 'Evidence appropriate to the requirement after learning.' },
   ];
   return requirement.state === 'PARTIAL' && requirement.supportingEvidenceIds.length > 0
     ? [{ ...base, id: `${requirement.requirementId}:prove`, group: 'evidence', kind: 'PROVE_EXISTING', reason: 'Relevant evidence exists but does not yet establish the full requirement. Strengthen or clarify that evidence first where appropriate.', expectedEvidence: requirement.evidenceExpectation }, ...capabilityActions]
@@ -47,8 +57,9 @@ function actionForRequirement(requirement: RequirementReadinessResult): GapClosu
 
 export function buildGapClosureActions(result: OpportunityReadinessResult, opportunityVersion: OpportunityVersion): GapClosureAction[] {
   if (result.opportunityId !== opportunityVersion.opportunityId || result.opportunityVersionId !== opportunityVersion.id) return [];
+  const authoredById = new Map(opportunityVersion.requirements.map((requirement) => [String(requirement.id), requirement]));
   const requirementActions = [...result.requiredRequirementResults, ...result.preferredRequirementResults]
-    .flatMap(actionForRequirement);
+    .flatMap((requirement) => actionForRequirement(requirement, authoredById.get(String(requirement.requirementId))));
   const eligibilityActions = result.eligibilityRuleResults.flatMap(rule => rule.state === 'SATISFIED'
     ? []
     : [{ id: `eligibility:${rule.ruleIndex}`, group: 'eligibility' as const, kind: 'RESOLVE_ELIGIBILITY' as const, title: rule.reason, reason: 'Eligibility requires resolution or review; it is not a skill-training recommendation.', expectedEvidence: 'Confirmed information relevant to this eligibility rule.' }]);
