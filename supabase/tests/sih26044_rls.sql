@@ -386,10 +386,16 @@ select pg_temp.assert_true(
   'finalized snapshot must receive a reproducible SHA-256 integrity fingerprint'
 );
 insert into sih26044.application_events (
-  id, application_id, from_stage, to_stage, event_kind, actor_id, note
+  id, application_id, from_stage, to_stage, event_kind, actor_id, application_snapshot_id, note
 ) values (
   '72000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000001',
-  'saved', 'applied', 'stage_transition', '20000000-0000-0000-0000-000000000001', 'Explicit applicant submission'
+  'saved', 'applied', 'stage_transition', '20000000-0000-0000-0000-000000000001',
+  '71000000-0000-0000-0000-000000000001', 'Explicit applicant submission'
+);
+select pg_temp.assert_true(
+  (select application_snapshot_id = '71000000-0000-0000-0000-000000000001'::uuid
+   from sih26044.application_events where id = '72000000-0000-0000-0000-000000000001'),
+  'submitted event binds the exact finalized immutable snapshot'
 );
 
 select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records where subject_actor_id = '20000000-0000-0000-0000-000000000002'), 'learner A cannot read learner B evidence');
