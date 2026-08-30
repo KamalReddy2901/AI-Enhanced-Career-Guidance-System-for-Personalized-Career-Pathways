@@ -21,6 +21,7 @@ The locked loop is:
 
 Implementation truth and remaining limitations are tracked in [`docs/sih26044-integration-status.md`](./docs/sih26044-integration-status.md).
 The credential-gated hosted validation and deployment procedure is in [`docs/sih26044-hosted-validation-runbook.md`](./docs/sih26044-hosted-validation-runbook.md).
+The current v1.2 implementation-gap ranking is in [`docs/sih26044-v1.2-gap-audit.md`](./docs/sih26044-v1.2-gap-audit.md).
 
 ## Engine A — Career Guidance
 

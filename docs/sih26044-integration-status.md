@@ -19,7 +19,7 @@ Last updated: 2026-08-30
 - Hosted Supabase schema migrations through `submission_trigger_lock_authority`.
 - Trigger-only database functions removed from direct `PUBLIC`, `anon`, and `authenticated` execution.
 - Trusted Cloudflare Worker authentication, bounded public errors, 64 KiB request limit and per-caller/path rate limiting configuration.
-- Credential-gated hosted migration preflight and controlled synthetic-identity bootstrap tooling, with no browser access to privileged credentials.
+- Credential-gated semantic migration audit, controlled two-tenant authority fixture, reversible suspension, authenticated authority smoke matrix, and preview/production deployment drivers, with no browser access to privileged credentials.
 
 ## Controlled prototype
 
