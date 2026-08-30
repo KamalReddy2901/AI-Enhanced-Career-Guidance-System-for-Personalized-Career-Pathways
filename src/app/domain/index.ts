@@ -5,6 +5,7 @@ export * from './connectors';
 export * from './consent';
 export * from './evidence';
 export * from './identity';
+export * from './institutionIntervention';
 export * from './opportunity';
 export * from './readiness';
 export * from './skillResolution';
