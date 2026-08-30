@@ -22,7 +22,10 @@ export function SihProductionLayout() {
   if (roles.has("faculty") || roles.has("issuer_verifier"))
     links.push(["Faculty", "/faculty/collaborations"], ["Verification", "/verification"]);
   if (roles.has("institution_admin"))
-    links.push(["Skills Intelligence", "/institution/skills-intelligence"]);
+    links.push(
+      ["Skills Intelligence", "/institution/skills-intelligence"],
+      ["Interventions", "/institution/interventions"],
+    );
   else if (roles.has("policy_program_analyst"))
     links.push(["Program Analytics", "/institution/skills-intelligence"]);
   return (
