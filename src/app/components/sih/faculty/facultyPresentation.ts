@@ -28,22 +28,22 @@ export function collaborationStatusLabel(status: CollaborationEngagement['status
 }
 
 export function organizationName(organizationId: Organization['id'], organizations: readonly Organization[]): string {
-  return organizations.find(organization => organization.id === organizationId)?.displayName ?? 'Organization not represented in fixture';
+  return organizations.find(organization => organization.id === organizationId)?.displayName ?? 'Organization identity not exposed to this viewer';
 }
 
 export function participantNames(participantIds: readonly Actor['id'][], personas: readonly Actor[]): string[] {
-  return participantIds.map(id => personas.find(persona => persona.id === id)?.displayName ?? 'Persona not represented in fixture');
+  return participantIds.map(id => personas.find(persona => persona.id === id)?.displayName ?? 'Participant identity not exposed to this viewer');
 }
 
 export function formatDate(timestamp?: CollaborationEngagement['startsAt']): string {
-  if (!timestamp) return 'Not specified by the current fixture';
+  if (!timestamp) return 'Not specified';
   return new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(timestamp));
 }
 
 export function collaborationDuration(engagement: CollaborationEngagement): string {
-  if (!engagement.startsAt || !engagement.endsAt) return 'Not represented by the current contract or fixture';
+  if (!engagement.startsAt || !engagement.endsAt) return 'Not specified';
   const days = Math.max(1, Math.ceil((new Date(engagement.endsAt).getTime() - new Date(engagement.startsAt).getTime()) / 86_400_000));
   return `${days} day${days === 1 ? '' : 's'}`;
 }
 
-export const unsupportedFacultyField = 'Not represented by the current collaboration contract or fixture';
+export const unsupportedFacultyField = 'Not represented by the current collaboration record';
