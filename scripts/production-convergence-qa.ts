@@ -64,7 +64,7 @@ assert.doesNotMatch(demo, /GuidanceProvider|SihProductionRuntime|supabase/i, 'Co
 assert.doesNotMatch(runtime, /GuidanceProvider|GuidanceContext|riasec|aspiration|work.?values/i, 'Engine B provider must not import private Engine A context');
 assert.match(runtime, /organizations\(display_name\)/, 'Production membership context must read the canonical organization display_name column');
 assert.doesNotMatch(runtime, /organizations\(name\)/, 'Production membership context must not query a non-existent organization name column');
-for (const surface of [pages, studentPages, recruiterPage, recruiterReads, facultyPages, facultyReads, industryPages, opportunityAuthoring, institutionPage, institutionReads]) {
+for (const surface of [pages, studentPages, recruiterPage, recruiterReads, facultyPages, facultyReads, industryPages, opportunityAuthoring, institutionPage]) {
   assert.doesNotMatch(surface, /hiring_probability|candidate_rank|automatic_rejection|riasec|work.?values|private.?aspiration/i);
 }
 
@@ -132,6 +132,9 @@ assert.match(institutionReads, /Suppressed institution analytics cells must with
 assert.match(institutionReads, /subjectactorid/);
 assert.match(institutionReads, /evidencerecordid/);
 assert.match(institutionReads, /applicationid/);
+assert.match(institutionReads, /riasec/);
+assert.match(institutionReads, /hiringprobability/);
+assert.match(institutionReads, /candidaterank/);
 assert.doesNotMatch(institutionReads, /\.from\s*\(/,
   'Institution browser service must use aggregate RPCs only, never individual-row table reads');
 assert.match(institutionAnalyticsMigration, /minimum_cell_size constant integer := 5/);
@@ -166,6 +169,7 @@ console.log(JSON.stringify({
   facultySyntheticActionsExcluded: true,
   industryAuthoring: 'atomic-authenticated-draft-save-plus-explicit-publish',
   institutionSkillsIntelligence: 'aggregate-rpc-only-with-cell-suppression',
+  institutionResponseGuard: 'rejects-private-and-individual-identifiers',
   policyAnalystAccess: 'aggregate-only',
   aggregateMinimumCellSize: 5,
   aggregateCausalClaims: false,
