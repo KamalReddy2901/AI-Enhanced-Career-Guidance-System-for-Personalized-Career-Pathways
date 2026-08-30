@@ -54,7 +54,7 @@ const IndustryNewOpportunityPage = lazy(() => import("./sih/SihIndustryProductio
 const ApplicantsPage = lazy(() => import("./sih/SihRecruiterProductionPage").then((m) => ({ default: m.ApplicantsPage })));
 const FacultyPage = lazy(() => import("./sih/SihFacultyProductionPages").then((m) => ({ default: m.FacultyPage })));
 const FacultyCollaborationDetailPage = lazy(() => import("./sih/SihFacultyProductionPages").then((m) => ({ default: m.FacultyCollaborationDetailPage })));
-const InstitutionPage = lazy(() => import("./sih/SihProductionPages").then((m) => ({ default: m.InstitutionPage })));
+const InstitutionSkillsIntelligencePage = lazy(() => import("./sih/SihInstitutionProductionPage").then((m) => ({ default: m.InstitutionSkillsIntelligencePage })));
 const DemoOverviewPage = lazy(() => import("./demo/DemoPages").then((m) => ({ default: m.DemoOverviewPage })));
 const DemoStudentPage = lazy(() => import("./demo/DemoPages").then((m) => ({ default: m.DemoStudentPage })));
 const DemoMentorPage = lazy(() => import("./demo/DemoPages").then((m) => ({ default: m.DemoMentorPage })));
@@ -135,11 +135,8 @@ export const router = createBrowserRouter([
           { path: "faculty/opportunities", Component: FacultyPage },
           { path: "faculty/engagements", Component: FacultyPage },
           { path: "faculty/collaboration", Component: FacultyPage },
-          { path: "institution", Component: InstitutionPage },
-          { path: "institution/skills-intelligence", Component: InstitutionPage },
-          { path: "institution/interventions", Component: InstitutionPage },
-          { path: "institution/collaboration", Component: InstitutionPage },
-          { path: "institution/opportunities", Component: InstitutionPage },
+          { path: "institution", Component: InstitutionSkillsIntelligencePage },
+          { path: "institution/skills-intelligence", Component: InstitutionSkillsIntelligencePage },
         ],
       },
     ],
