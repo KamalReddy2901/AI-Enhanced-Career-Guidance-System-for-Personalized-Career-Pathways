@@ -19,6 +19,8 @@ for (const route of ['career','opportunities','evidence','verification','applica
 assert.match(routes, /path:\s*["']\/demo["'][\s\S]*Component:\s*DemoSihRuntime/);
 assert.doesNotMatch(demo, /GuidanceProvider|SihProductionRuntime|supabase/i, 'Controlled demo runtime must stay isolated');
 assert.doesNotMatch(runtime, /GuidanceProvider|GuidanceContext|riasec|aspiration|work.?values/i, 'Engine B provider must not import private Engine A context');
+assert.match(runtime, /organizations\(display_name\)/, 'Production membership context must read the canonical organization display_name column');
+assert.doesNotMatch(runtime, /organizations\(name\)/, 'Production membership context must not query a non-existent organization name column');
 assert.doesNotMatch(pages, /hiring_probability|candidate_rank|automatic_rejection|riasec|work.?values|private.?aspiration/i);
 assert.match(pages, /UNKNOWN ≠ UNSKILLED/);
 assert.match(migration, /application_snapshot_id[\s\S]*?to_stage\s*=\s*'applied'/i);
