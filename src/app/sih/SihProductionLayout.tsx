@@ -21,8 +21,10 @@ export function SihProductionLayout() {
     );
   if (roles.has("faculty") || roles.has("issuer_verifier"))
     links.push(["Faculty", "/faculty/collaborations"], ["Verification", "/verification"]);
-  if (roles.has("institution_admin") || roles.has("policy_program_analyst"))
-    links.push(["Institution", "/institution"]);
+  if (roles.has("institution_admin"))
+    links.push(["Skills Intelligence", "/institution/skills-intelligence"]);
+  else if (roles.has("policy_program_analyst"))
+    links.push(["Program Analytics", "/institution/skills-intelligence"]);
   return (
     <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)]">
       <header className="sticky top-0 z-40 border-b-2 border-black bg-[var(--paper)]/95 backdrop-blur">
