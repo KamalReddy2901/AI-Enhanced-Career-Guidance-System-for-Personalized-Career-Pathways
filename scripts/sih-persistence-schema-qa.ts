@@ -38,6 +38,7 @@ assert.deepEqual(migrationFiles, [
   '20260830001130_verification_decision_completion.sql',
   '20260830090000_submission_authority_and_resolution_state.sql',
   '20260830091000_restrict_all_trigger_rpc_execute.sql',
+  '20260830092000_resolution_status_compatibility.sql',
 ]);
 
 const migrationSources = await Promise.all(migrationFiles.map(async file => ({
