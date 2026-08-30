@@ -31,9 +31,9 @@ insert into sih26044.actors (id, auth_user_id, display_name) values
   ('96100000-0000-0000-0000-000000000003', '96000000-0000-0000-0000-000000000003', 'Unrelated Faculty');
 
 insert into sih26044.organizations (id, legal_name, display_name, kind) values
-  ('96200000-0000-0000-0000-000000000001', 'Host Institution', 'Host Institution', 'institution'),
+  ('96200000-0000-0000-0000-000000000001', 'Host Institution', 'Host Institution', 'educational_institution'),
   ('96200000-0000-0000-0000-000000000002', 'Partner Employer', 'Partner Employer', 'employer'),
-  ('96200000-0000-0000-0000-000000000003', 'Unrelated Institution', 'Unrelated Institution', 'institution');
+  ('96200000-0000-0000-0000-000000000003', 'Unrelated Institution', 'Unrelated Institution', 'educational_institution');
 
 insert into sih26044.organization_memberships (id, actor_id, organization_id, status) values
   ('96300000-0000-0000-0000-000000000001', '96100000-0000-0000-0000-000000000001', '96200000-0000-0000-0000-000000000001', 'active'),
