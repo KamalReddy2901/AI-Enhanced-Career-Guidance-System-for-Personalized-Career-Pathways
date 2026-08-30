@@ -70,7 +70,7 @@ function Boundary({ children }: { readonly children: ReactNode }) {
       const db = supabase.schema("sih26044");
       const { data: membershipRows, error: membershipError } = await db
         .from("organization_memberships")
-        .select("id,organization_id,organizations(name)")
+        .select("id,organization_id,organizations(display_name)")
         .eq("actor_id", currentActorId)
         .eq("status", "active");
       if (membershipError) throw membershipError;
@@ -91,7 +91,7 @@ function Boundary({ children }: { readonly children: ReactNode }) {
       const contexts = (membershipRows ?? []).map((row) => ({
         organizationId: row.organization_id as OrganizationId,
         organizationName:
-          (row.organizations as unknown as { name?: string } | null)?.name ??
+          (row.organizations as unknown as { display_name?: string } | null)?.display_name ??
           "Organization",
         roles: byMembership.get(row.id as string) ?? [],
       }));
