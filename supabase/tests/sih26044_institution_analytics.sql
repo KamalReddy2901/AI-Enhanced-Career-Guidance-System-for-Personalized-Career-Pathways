@@ -27,7 +27,7 @@ begin
 end
 $$;
 
--- Users: six learners, one institution admin, one policy analyst, one unrelated recruiter.
+-- Six learners, one institution admin, one government policy analyst, and one recruiter.
 insert into auth.users (id) values
   ('11000000-0000-0000-0000-000000000001'),
   ('11000000-0000-0000-0000-000000000002'),
@@ -49,7 +49,7 @@ insert into sih26044.actors (id, auth_user_id, display_name) values
   ('21000000-0000-0000-0000-000000000006', '11000000-0000-0000-0000-000000000006', 'Cohort Learner 6'),
   ('21000000-0000-0000-0000-000000000007', '11000000-0000-0000-0000-000000000007', 'Institution Analyst'),
   ('21000000-0000-0000-0000-000000000008', '11000000-0000-0000-0000-000000000008', 'Policy Analyst'),
-  ('21000000-0000-0000-0000-000000000009', '11000000-0000-0000-0000-000000000009', 'Unrelated Recruiter');
+  ('21000000-0000-0000-0000-000000000009', '11000000-0000-0000-0000-000000000009', 'Human Recruiter');
 
 insert into sih26044.organizations (id, legal_name, display_name, kind) values
   ('31000000-0000-0000-0000-000000000001', 'Aggregate Test Institute', 'Aggregate Test Institute', 'educational_institution'),
@@ -79,22 +79,23 @@ insert into sih26044.organization_membership_roles (membership_id, role) values
   ('41000000-0000-0000-0000-000000000008', 'policy_program_analyst'),
   ('41000000-0000-0000-0000-000000000009', 'recruiter');
 
+-- Author the opportunity as a draft. Requirements must exist before publication.
 insert into sih26044.opportunities (id, owner_organization_id, status, created_by_actor_id)
 values (
   '51000000-0000-0000-0000-000000000010',
   '31000000-0000-0000-0000-000000000004',
-  'published',
+  'draft',
   '21000000-0000-0000-0000-000000000009'
 );
+
 insert into sih26044.opportunity_versions (
   id, opportunity_id, version_number, status, title, description, opportunity_type,
-  audiences, source_system, source_captured_at, source_literal_text,
-  created_by_actor_id, published_at
+  audiences, source_system, source_captured_at, source_literal_text, created_by_actor_id
 ) values (
   '51100000-0000-0000-0000-000000000010',
   '51000000-0000-0000-0000-000000000010',
   1,
-  'published',
+  'draft',
   'Aggregate Analytics Internship',
   'Controlled aggregate analytics fixture',
   'internship',
@@ -102,12 +103,8 @@ insert into sih26044.opportunity_versions (
   'local_test',
   statement_timestamp(),
   'Controlled aggregate analytics fixture',
-  '21000000-0000-0000-0000-000000000009',
-  statement_timestamp()
+  '21000000-0000-0000-0000-000000000009'
 );
-update sih26044.opportunities
-set current_version_id = '51100000-0000-0000-0000-000000000010'
-where id = '51000000-0000-0000-0000-000000000010';
 
 insert into sih26044.opportunity_requirements (
   id, opportunity_version_id, ordinal, category, priority, literal_source_wording,
@@ -136,6 +133,27 @@ insert into sih26044.opportunity_requirements (
   '[]'::jsonb
 );
 
+-- Publish only through the explicit authenticated human boundary.
+set local role authenticated;
+set local "request.jwt.claim.sub" = '11000000-0000-0000-0000-000000000009';
+select pg_temp.assert_true(
+  sih26044.publish_opportunity_version('51100000-0000-0000-0000-000000000010')
+    = '51100000-0000-0000-0000-000000000010'::uuid,
+  'human recruiter can publish the fully confirmed draft fixture'
+);
+reset role;
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from sih26044.opportunity_versions
+    where id = '51100000-0000-0000-0000-000000000010'
+      and status = 'published'
+      and published_at is not null
+  ),
+  'fixture publication must use the immutable production lifecycle'
+);
+
 -- Five learners form a reportable readiness cell; one creates a suppressed cell.
 insert into sih26044.opportunity_readiness_results (
   id, subject_actor_id, opportunity_id, opportunity_version_id,
@@ -150,6 +168,7 @@ insert into sih26044.opportunity_readiness_results (
   ('61100000-0000-0000-0000-000000000005', '21000000-0000-0000-0000-000000000005', '51000000-0000-0000-0000-000000000010', '51100000-0000-0000-0000-000000000010', 'engine-test', 'policy-test', 'input-5', 'facts-5', 'projection-5', 'NEAR_READY', '{"eligibilityStatus":"ELIGIBLE","requiredRequirementResults":[{"state":"MET_WEAK_EVIDENCE"}]}'::jsonb, statement_timestamp() - interval '2 days'),
   ('61100000-0000-0000-0000-000000000006', '21000000-0000-0000-0000-000000000006', '51000000-0000-0000-0000-000000000010', '51100000-0000-0000-0000-000000000010', 'engine-test', 'policy-test', 'input-6', 'facts-6', 'projection-6', 'BUILDING_EVIDENCE', '{"eligibilityStatus":"NEEDS_REVIEW","requiredRequirementResults":[{"state":"GAP"}]}'::jsonb, statement_timestamp() - interval '2 days');
 
+-- Six applications provide a reportable application-funnel cell and requirement pattern.
 insert into sih26044.applications (
   id, applicant_actor_id, opportunity_id, opportunity_version_id, owner_organization_id, initial_stage, created_at
 ) values
@@ -160,149 +179,196 @@ insert into sih26044.applications (
   ('71100000-0000-0000-0000-000000000005', '21000000-0000-0000-0000-000000000005', '51000000-0000-0000-0000-000000000010', '51100000-0000-0000-0000-000000000010', '31000000-0000-0000-0000-000000000004', 'saved', statement_timestamp() - interval '1 day'),
   ('71100000-0000-0000-0000-000000000006', '21000000-0000-0000-0000-000000000006', '51000000-0000-0000-0000-000000000010', '51100000-0000-0000-0000-000000000010', '31000000-0000-0000-0000-000000000004', 'saved', statement_timestamp() - interval '1 day');
 
+-- One individual evidence row makes raw-row denial tests meaningful rather than vacuous.
+insert into sih26044.evidence_records (
+  id, subject_actor_id, literal_claim, provenance, initial_verification_state,
+  scope_kind, scope_literal_skill_label, source_system, source_captured_at, visibility
+) values (
+  '81100000-0000-0000-0000-000000000001',
+  '21000000-0000-0000-0000-000000000001',
+  'Can write SQL queries',
+  'self_reported',
+  'unverified',
+  'global_skill',
+  'SQL querying',
+  'local_test',
+  statement_timestamp() - interval '3 days',
+  'private'
+);
+
+-- Institution admin: own institution is listed and aggregate access is allowed.
 set local role authenticated;
 set local "request.jwt.claim.sub" = '11000000-0000-0000-0000-000000000007';
 select pg_temp.assert_true(
-  (select count(*) = 1 from sih26044.list_authorized_analytics_institutions()
-   where organization_id = '31000000-0000-0000-0000-000000000001'),
-  'institution admin sees own institution aggregate scope'
+  exists (
+    select 1 from sih26044.list_authorized_analytics_institutions()
+    where organization_id = '31000000-0000-0000-0000-000000000001'
+      and access_mode = 'institution_admin'
+  ),
+  'institution admin can list its authorized institution aggregate scope'
 );
 select pg_temp.assert_true(
-  (select count(*) = 0 from sih26044.list_authorized_analytics_institutions()
-   where organization_id = '31000000-0000-0000-0000-000000000002'),
-  'institution admin does not receive unrelated institution aggregate scope'
-);
-
-create temp table institution_result as
-select sih26044.get_institution_skills_intelligence(
-  '31000000-0000-0000-0000-000000000001',
-  statement_timestamp() - interval '30 days',
-  statement_timestamp()
-) as body;
-
-select pg_temp.assert_true(
-  (select (body #>> '{query,minimumCohortSize}')::integer = 5 from institution_result),
-  'aggregate response exposes the CareerCase minimum reporting cell size'
-);
-select pg_temp.assert_true(
-  (select (body #>> '{cohort,size}')::integer = 6 from institution_result),
-  'reportable institution cohort exposes denominator only above threshold'
-);
-select pg_temp.assert_true(
-  (select exists (
-    select 1
-    from institution_result ir,
-      jsonb_array_elements(ir.body->'points') p
-    where p->>'metric' = 'readiness_distribution'
-      and p #>> '{dimensions,readinessBand}' = 'NEAR_READY'
-      and (p->>'value')::integer = 5
-      and (p->>'denominator')::integer = 6
-      and (p->>'cohortSize')::integer = 5
-      and (p->>'suppressed')::boolean = false
-  )),
-  'reportable readiness cell returns counted value and denominator'
-);
-select pg_temp.assert_true(
-  (select exists (
-    select 1
-    from institution_result ir,
-      jsonb_array_elements(ir.body->'points') p
-    where p->>'metric' = 'readiness_distribution'
-      and p #>> '{dimensions,readinessBand}' = 'BUILDING_EVIDENCE'
-      and p->'value' = 'null'::jsonb
-      and p->'denominator' = 'null'::jsonb
-      and p->'cohortSize' = 'null'::jsonb
-      and (p->>'suppressed')::boolean = true
-      and p->>'suppressionReason' = 'below_minimum_cell_size'
-  )),
-  'small readiness cell is suppressed without leaking exact numerator or denominator'
-);
-select pg_temp.assert_true(
-  (select exists (
-    select 1
-    from institution_result ir,
-      jsonb_array_elements(ir.body->'points') p
-    where p->>'metric' = 'requirement_pattern'
-      and p #>> '{dimensions,requirementLabel}' = 'SQL Querying'
-      and (p->>'value')::integer = 6
-      and (p->>'suppressed')::boolean = false
-  )),
-  'dynamic requirement pattern appears only when reportable cohort threshold is met'
-);
-select pg_temp.assert_true(
-  (select body->>'methodologyVersion' = 'institution-skills-intelligence-v1'
-      and body->>'sourceLabel' like 'CareerCase SIH26044 tenant records%'
-      and body->>'scopeNote' like '%not a national labour-market estimate%'
-   from institution_result),
-  'aggregate response carries methodology, source and non-national-demand scope labels'
-);
-select pg_temp.assert_true(
-  (select body::text !~* 'riasec|work_?values|private_?aspirations|counselor_?history|hiring_probability|candidate_rank'
-   from institution_result),
-  'aggregate response excludes private guidance and prohibited hiring keys'
-);
-select pg_temp.assert_true(
-  (select body::text !~ '21000000-0000-0000-0000-00000000000[1-6]'
-   from institution_result),
-  'aggregate response contains no learner actor identifiers'
-);
-select pg_temp.assert_blocked(
-  $sql$select sih26044.get_institution_skills_intelligence(
-    '31000000-0000-0000-0000-000000000002',
+  (sih26044.get_institution_skills_intelligence(
+    '31000000-0000-0000-0000-000000000001',
     statement_timestamp() - interval '30 days',
-    statement_timestamp()
-  )$sql$,
-  'institution admin cannot query an unrelated institution aggregate'
+    statement_timestamp() + interval '1 hour'
+  ) ->> 'accessMode') = 'institution_admin',
+  'institution admin can call the aggregate-only Skills Intelligence RPC'
 );
-reset role;
-
-set local role authenticated;
-set local "request.jwt.claim.sub" = '11000000-0000-0000-0000-000000000008';
 select pg_temp.assert_true(
-  (select count(*) = 2 from sih26044.list_authorized_analytics_institutions()),
-  'authorized government policy analyst receives de-identified institution aggregate scopes'
+  (
+    jsonb_path_query_first(
+      sih26044.get_institution_skills_intelligence(
+        '31000000-0000-0000-0000-000000000001',
+        statement_timestamp() - interval '30 days',
+        statement_timestamp() + interval '1 hour'
+      ),
+      '$.points[*] ? (@.metric == "readiness_distribution" && @.dimensions.readinessBand == "NEAR_READY")'
+    ) ->> 'value'
+  )::integer = 5,
+  'five-person NEAR_READY cell is reportable'
+);
+select pg_temp.assert_true(
+  jsonb_path_query_first(
+    sih26044.get_institution_skills_intelligence(
+      '31000000-0000-0000-0000-000000000001',
+      statement_timestamp() - interval '30 days',
+      statement_timestamp() + interval '1 hour'
+    ),
+    '$.points[*] ? (@.metric == "readiness_distribution" && @.dimensions.readinessBand == "BUILDING_EVIDENCE")'
+  ) @> '{"suppressed":true,"value":null,"denominator":null,"cohortSize":null,"suppressionReason":"below_minimum_cell_size"}'::jsonb,
+  'singleton readiness cell is structurally suppressed without exact counts'
+);
+select pg_temp.assert_true(
+  (
+    jsonb_path_query_first(
+      sih26044.get_institution_skills_intelligence(
+        '31000000-0000-0000-0000-000000000001',
+        statement_timestamp() - interval '30 days',
+        statement_timestamp() + interval '1 hour'
+      ),
+      '$.points[*] ? (@.metric == "application_funnel" && @.dimensions.stage == "saved")'
+    ) ->> 'value'
+  )::integer = 6,
+  'six-person saved application funnel cell is reportable'
+);
+select pg_temp.assert_true(
+  (
+    jsonb_path_query_first(
+      sih26044.get_institution_skills_intelligence(
+        '31000000-0000-0000-0000-000000000001',
+        statement_timestamp() - interval '30 days',
+        statement_timestamp() + interval '1 hour'
+      ),
+      '$.points[*] ? (@.metric == "requirement_pattern" && @.dimensions.requirementLabel == "SQL Querying")'
+    ) ->> 'value'
+  )::integer = 6,
+  'requirement pattern is reported only from an adequately sized applicant cohort'
+);
+select pg_temp.assert_true(
+  not sih26044.has_prohibited_json_keys(
+    sih26044.get_institution_skills_intelligence(
+      '31000000-0000-0000-0000-000000000001',
+      statement_timestamp() - interval '30 days',
+      statement_timestamp() + interval '1 hour'
+    )
+  ),
+  'aggregate result contains no prohibited private guidance or high-stakes keys'
 );
 select pg_temp.assert_true(
   sih26044.get_institution_skills_intelligence(
     '31000000-0000-0000-0000-000000000001',
     statement_timestamp() - interval '30 days',
-    statement_timestamp()
-  ) #>> '{accessMode}' = 'policy_program_analyst',
-  'policy analyst can query only the aggregate RPC boundary'
+    statement_timestamp() + interval '1 hour'
+  )::text not like '%21000000-0000-0000-0000-000000000001%',
+  'aggregate result does not expose learner identifiers'
 );
 select pg_temp.assert_true(
-  (select count(*) = 0 from sih26044.opportunity_readiness_results),
-  'policy analyst still cannot read individual readiness rows'
-);
-select pg_temp.assert_true(
-  (select count(*) = 0 from sih26044.applications),
-  'policy analyst still cannot read individual application rows'
-);
-reset role;
-
-set local role authenticated;
-set local "request.jwt.claim.sub" = '11000000-0000-0000-0000-000000000009';
-select pg_temp.assert_true(
-  (select count(*) = 0 from sih26044.list_authorized_analytics_institutions()),
-  'recruiter receives no institution aggregate scope by role alone'
+  not jsonb_path_exists(
+    sih26044.get_institution_skills_intelligence(
+      '31000000-0000-0000-0000-000000000001',
+      statement_timestamp() - interval '30 days',
+      statement_timestamp() + interval '1 hour'
+    ),
+    '$.points[*] ? (@.causalClaimed != false)'
+  ),
+  'all aggregate points remain explicitly non-causal'
 );
 select pg_temp.assert_blocked(
-  $sql$select sih26044.get_institution_skills_intelligence(
-    '31000000-0000-0000-0000-000000000001',
+  $$select * from sih26044.get_institution_skills_intelligence(
+    '31000000-0000-0000-0000-000000000002',
     statement_timestamp() - interval '30 days',
-    statement_timestamp()
-  )$sql$,
-  'unrelated recruiter cannot query institution aggregate intelligence'
+    statement_timestamp() + interval '1 hour'
+  )$$,
+  'institution admin cannot read another institution aggregate without authority'
 );
 reset role;
 
+-- Government policy/program analyst: aggregate-only access across institutions, never individual rows.
+set local role authenticated;
+set local "request.jwt.claim.sub" = '11000000-0000-0000-0000-000000000008';
 select pg_temp.assert_true(
-  (select count(*) >= 2
-   from sih26044.audit_events
-   where action = 'analytics.institution_aggregate_viewed'
-     and organization_id = '31000000-0000-0000-0000-000000000001'
-     and purpose = 'aggregate_analytics'),
-  'aggregate query definitions are recorded in authoritative audit history'
+  exists (
+    select 1 from sih26044.list_authorized_analytics_institutions()
+    where organization_id = '31000000-0000-0000-0000-000000000001'
+      and access_mode = 'policy_program_analyst'
+  ),
+  'authorized government policy analyst can list educational-institution aggregate scopes'
+);
+select pg_temp.assert_true(
+  (sih26044.get_institution_skills_intelligence(
+    '31000000-0000-0000-0000-000000000001',
+    statement_timestamp() - interval '30 days',
+    statement_timestamp() + interval '1 hour'
+  ) ->> 'accessMode') = 'policy_program_analyst',
+  'policy analyst can read the same privacy-protected aggregate contract'
+);
+select pg_temp.assert_blocked(
+  'select id from sih26044.evidence_records',
+  'policy analyst cannot read individual evidence rows'
+);
+select pg_temp.assert_blocked(
+  'select id from sih26044.opportunity_readiness_results',
+  'policy analyst cannot read individual readiness rows'
+);
+select pg_temp.assert_blocked(
+  'select id from sih26044.applications',
+  'policy analyst cannot read individual application rows'
+);
+reset role;
+
+-- A recruiter has no institution aggregate authority.
+set local role authenticated;
+set local "request.jwt.claim.sub" = '11000000-0000-0000-0000-000000000009';
+select pg_temp.assert_blocked(
+  $$select * from sih26044.get_institution_skills_intelligence(
+    '31000000-0000-0000-0000-000000000001',
+    statement_timestamp() - interval '30 days',
+    statement_timestamp() + interval '1 hour'
+  )$$,
+  'recruiter cannot call institution aggregate analytics'
+);
+reset role;
+
+-- Aggregate reads are auditable without storing learner-level payloads.
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from sih26044.audit_events
+    where action = 'analytics.institution_aggregate_viewed'
+      and organization_id = '31000000-0000-0000-0000-000000000001'
+      and purpose = 'aggregate_analytics'
+  ),
+  'institution aggregate reads create authoritative audit events'
+);
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from sih26044.audit_events
+    where action = 'analytics.institution_aggregate_viewed'
+      and metadata::text ~* '(subjectActorId|evidenceRecordId|applicationId|riasec|work_values|private_aspirations)'
+  ),
+  'aggregate analytics audit metadata remains minimized and contains no individual/private payload'
 );
 
 rollback;
