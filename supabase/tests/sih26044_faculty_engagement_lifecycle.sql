@@ -51,8 +51,8 @@ create temporary table pg_temp.faculty_lifecycle_ids (
 ) on commit drop;
 grant select, insert on pg_temp.faculty_lifecycle_ids to authenticated;
 
-set local role authenticated;
-set local "request.jwt.claim.sub" = '96000000-0000-0000-0000-000000000001';
+-- Seed the canonical engagement as test setup. This slice changes lifecycle
+-- authority, not collaboration creation RLS.
 with created as (
   insert into sih26044.collaboration_engagements (
     kind, host_organization_id, status, created_by_actor_id
@@ -68,7 +68,6 @@ select id, '96100000-0000-0000-0000-000000000002', (select count(*) from sih2604
 
 insert into sih26044.collaboration_participants (collaboration_engagement_id, actor_id)
 select collaboration_id, participant_actor_id from pg_temp.faculty_lifecycle_ids;
-reset role;
 
 select pg_temp.assert_true(
   (select count(*) = 1
