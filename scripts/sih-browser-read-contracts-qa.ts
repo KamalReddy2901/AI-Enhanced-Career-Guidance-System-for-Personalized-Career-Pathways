@@ -248,7 +248,8 @@ const evidenceReadModel = {
   assert.ok(queries[0]?.filters.some(([, column, value]) => column === 'purpose' && value === 'application_review'));
 }
 
-const browserDalSource = await readFile(fileURLToPath(new URL('../src/app/services/sih/browserDal.ts', import.meta.url)), 'utf8');
+let browserDalSource = await readFile(fileURLToPath(new URL('../src/app/services/sih/browserDal.ts', import.meta.url)), 'utf8');
+browserDalSource = browserDalSource.replace(/\r\n/g, '\n');
 assert.doesNotMatch(browserDalSource, /\.select\(\s*['"]\*['"]\s*\)/, 'SIH browser DAL reads must not use select(*)');
 assert.doesNotMatch(browserDalSource, /readiness_percentage|hiring_probability|candidate_rank/i);
 const evidenceLedgerMethod = browserDalSource.match(/async listEvidenceForSubject[\s\S]*?\n  }\n\n  async listArtifactsForEvidence/)?.[0] ?? '';

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { StickFigure } from '../components/StickFigure';
 import { useGuidance } from '../context/GuidanceContext';
@@ -14,6 +14,7 @@ import { addSkillEvidence, calculateCompleteness } from '../engine/skillProfile'
 import type { SkillClaim, SkillClaimProposal, Proficiency } from '../engine/types';
 import { logProgress } from '../services/guidanceDb';
 import { WhyPanel, type ScoreEvidence } from '../components/guidance/WhyPanel';
+
 import { motion } from 'motion/react';
 import { TextReveal } from '../motion/TextReveal';
 import { useT } from '../i18n';
@@ -23,6 +24,13 @@ import { Undo2, Redo2, RotateCcw, Plus, Trash2, Edit2, Sparkles } from 'lucide-r
 import { toast } from 'sonner';
 import { LocationAutocomplete } from '../components/form/LocationAutocomplete';
 import { SkillDiscoveryChat } from '../components/guidance/SkillDiscoveryChat';
+import { supabase } from '../services/supabase';
+import { SihBrowserDal, type RequestVerificationInput } from '../services/sih/browserDal';
+import type { EvidenceRecordReadModel } from '../services/sih/types';
+import type { ActorId, EvidenceRecordId, OrganizationId, OpportunityId, OpportunityRequirementId, OutcomeEventId } from '../domain/shared';
+import { VerificationRequestForm, type VerificationRequestFormData } from '../components/sih/verification/VerificationRequestForm';
+import { ShieldCheck } from 'lucide-react';
+
 
 interface PendingResumeReview {
   skills: Array<{ proposal: SkillClaimProposal; included: boolean }>;
@@ -47,7 +55,7 @@ export function PassportPage() {
     explorer: t('passportExplorer'),
     assessed: t('passportAssessed'),
   };
-  
+
   const [resumeText, setResumeText] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractProgress, setExtractProgress] = useState<{step: string; current: number; total: number} | null>(null);
@@ -59,10 +67,102 @@ export function PassportPage() {
   const [validating, setValidating] = useState<SkillClaim | null>(null);
   const [editingConstraints, setEditingConstraints] = useState(false);
   const [editingSkillProficiency, setEditingSkillProficiency] = useState<string | null>(null);
-  const [scoreEvidence, setScoreEvidence] = useState<ScoreEvidence | null>(null);
   const [addingManualSkill, setAddingManualSkill] = useState(false);
   const [manualSkillName, setManualSkillName] = useState('');
   const [manualSkillProficiency, setManualSkillProficiency] = useState<Proficiency>(2);
+  const [scoreEvidence, setScoreEvidence] = useState<ScoreEvidence | null>(null);
+
+  // --- SIH Verification Flow State ---
+  const [sihEvidence, setSihEvidence] = useState<EvidenceRecordReadModel[]>([]);
+  const [sihActorId, setSihActorId] = useState<ActorId | null>(null);
+  const [requestingVerificationFor, setRequestingVerificationFor] = useState<EvidenceRecordReadModel | null>(null);
+  const [isSubmittingVerification, setIsSubmittingVerification] = useState(false);
+  const [verificationError, setVerificationError] = useState<Error | null>(null);
+  const [verificationSuccess, setVerificationSuccess] = useState(false);
+
+  useEffect(() => {
+    if (user && supabase) {
+      const dal = new SihBrowserDal(supabase);
+      dal.getCurrentActorId()
+        .then(async actorId => {
+          setSihActorId(actorId);
+          setSihEvidence(actorId ? await dal.listEvidenceForSubject(actorId) : []);
+        })
+        .catch(error => {
+          setSihActorId(null);
+          setSihEvidence([]);
+          console.error(error);
+        });
+    }
+  }, [user]);
+
+  const handleVerificationRequestSubmit = async (data: VerificationRequestFormData) => {
+    if (!user || !sihActorId || !requestingVerificationFor) return;
+    if (!supabase) {
+      setVerificationError(new Error('Database client not configured'));
+      return;
+    }
+    setIsSubmittingVerification(true);
+    setVerificationError(null);
+    try {
+      const dal = new SihBrowserDal(supabase);
+
+      // 1. Grant consent first
+      const grant = await dal.grantConsent(sihActorId, {
+        purpose: 'evidence_verification',
+        evidenceRecordIds: [requestingVerificationFor.id as EvidenceRecordId],
+        granteeOrganizationId: (data.requestedVerifierOrganizationId?.trim() || undefined) as OrganizationId | undefined,
+      });
+
+      // 2. Map scope correctly
+      const scope = requestingVerificationFor.scope;
+      let scopeFields: Partial<RequestVerificationInput> = {};
+
+      switch (scope.kind) {
+        case 'global_skill':
+          scopeFields = {
+            scopeSkillId: scope.skillId,
+            scopeLiteralSkillLabel: scope.literalSkillLabel,
+          };
+          break;
+        case 'opportunity':
+          scopeFields = {
+            scopeOpportunityId: scope.opportunityId as OpportunityId,
+            scopeRequirementId: scope.requirementId as OpportunityRequirementId | undefined,
+          };
+          break;
+        case 'organization':
+          scopeFields = {
+            scopeOrganizationId: scope.organizationId as OrganizationId,
+          };
+          break;
+        case 'outcome':
+          scopeFields = {
+            scopeOutcomeEventId: scope.outcomeEventId as OutcomeEventId,
+          };
+          break;
+      }
+
+      const input: RequestVerificationInput = {
+        evidenceRecordId: requestingVerificationFor.id as EvidenceRecordId,
+        consentGrantId: grant.id,
+        scopeKind: scope.kind,
+        ...scopeFields,
+        requestedVerifierActorId: (data.requestedVerifierActorId?.trim() || undefined) as ActorId | undefined,
+        requestedVerifierOrganizationId: (data.requestedVerifierOrganizationId?.trim() || undefined) as OrganizationId | undefined,
+      };
+
+      await dal.requestVerification(sihActorId, input);
+      setVerificationSuccess(true);
+    } catch (err) {
+      setVerificationError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setIsSubmittingVerification(false);
+    }
+  };
+
+
+
   const [editingAspiration, setEditingAspiration] = useState(false);
   const [aspirationText, setAspirationText] = useState('');
   const [showSkillDiscovery, setShowSkillDiscovery] = useState(false);
@@ -106,7 +206,7 @@ export function PassportPage() {
 
   const handleRetakeAssessment = (type: 'riasec' | 'aptitude' | 'values') => {
     if (!window.confirm(`Retake ${type} assessment? Your current results will be cleared.`)) return;
-    
+
     updatePassport(prev => {
       if (!prev) throw new Error('Passport unavailable');
       undoStack.pushState(prev);
@@ -159,7 +259,7 @@ export function PassportPage() {
     updatePassport(prev => {
       if (!prev) throw new Error('Passport unavailable');
       undoStack.pushState(prev);
-      
+
       const manualClaims = matched.map(claim => ({
         ...claim,
         evidence: claim.evidence.map(evidence => ({
@@ -244,7 +344,7 @@ export function PassportPage() {
         .map(t => t.trim().toLowerCase())
         .filter(t => t.length > 0)
         .slice(0, 5);
-      
+
       const next = {
         ...prev,
         aspiration: {
@@ -284,18 +384,18 @@ export function PassportPage() {
 
   const handleResumeExtract = async () => {
     if (!resumeText.trim()) return;
-    
+
     setIsExtracting(true);
     setExtractError('');
     setExtractNotice('');
     setUnmatchedSkills([]);
     setPendingResumeReview(null);
     setExtractProgress({step: 'Starting extraction...', current: 1, total: 5});
-    
+
     try {
       setExtractProgress({step: 'Reading resume text...', current: 2, total: 5});
       const extracted: ResumeExtraction = await extractProfileFromResume(resumeText);
-      
+
       setExtractProgress({step: 'Matching skills to knowledge base...', current: 3, total: 5});
       // Match skills to KB
       const { matched, unmatched } = matchSkillsToKB(
@@ -305,7 +405,7 @@ export function PassportPage() {
           evidence: s.evidence,
         }))
       );
-      
+
       setUnmatchedSkills(unmatched);
       setPendingResumeReview({
         skills: createSkillClaimProposals(matched, 'ai_resume_extraction')
@@ -483,7 +583,7 @@ export function PassportPage() {
                 <span className="font-mono-ui text-xs">{extractProgress.current}/{extractProgress.total}</span>
               </div>
               <div className="h-2 bg-[var(--ink-faint)] rounded-full overflow-hidden">
-                <div 
+                <div
                   className="h-full bg-[var(--ink)] transition-all duration-300"
                   style={{width: `${(extractProgress.current / extractProgress.total) * 100}%`}}
                 />
@@ -634,9 +734,9 @@ export function PassportPage() {
                   <div className="grid gap-3 sm:grid-cols-2">
                     {claims.map(claim => {
                       const skillName = skillClaimName(claim);
-                      
+
                       return (
-                        <motion.div 
+                        <motion.div
                           key={claim.skillId}
                           className="rounded border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-4 transition-colors hover:border-[var(--ink)] hover:shadow-md"
                           whileHover={{ y: -2 }}
@@ -653,8 +753,8 @@ export function PassportPage() {
                                         key={level}
                                         onClick={() => handleSkillProficiencyChange(claim.skillId, level as Proficiency)}
                                         className={`w-7 h-7 rounded-full border-2 text-xs font-bold transition-all ${
-                                          level <= claim.proficiency 
-                                            ? 'bg-[var(--ink)] border-[var(--ink)] text-[var(--paper)] scale-110' 
+                                          level <= claim.proficiency
+                                            ? 'bg-[var(--ink)] border-[var(--ink)] text-[var(--paper)] scale-110'
                                             : 'border-[var(--ink-faint)] hover:border-[var(--ink)]'
                                         }`}
                                       >
@@ -698,22 +798,22 @@ export function PassportPage() {
                               </div>
                             </div>
                             <div className="flex flex-col gap-2">
-                              <button 
+                              <button
                                 onClick={() => {
                                   sounds.click();
                                   hapticLight();
                                   setExpandedEvidence(expandedEvidence===claim.skillId?null:claim.skillId);
-                                }} 
+                                }}
                                 className="text-[10px] font-mono-ui text-[var(--ink-soft)] underline hover:text-[var(--ink)] whitespace-nowrap"
                               >
                                 {claim.evidence.length} {t('passportEvidence')}
                               </button>
-                              <button 
+                              <button
                                 onClick={()=>{
                                   sounds.modalOpen();
                                   hapticLight();
                                   setValidating(claim);
-                                }} 
+                                }}
                                 className="border border-[var(--ink-faint)] px-2 py-1 text-[10px] font-mono-ui hover:border-[var(--ink)] whitespace-nowrap"
                               >
                                 {t('passportValidate')}
@@ -721,7 +821,7 @@ export function PassportPage() {
                             </div>
                           </div>
                           {expandedEvidence === claim.skillId && (
-                            <motion.div 
+                            <motion.div
                               initial={{height: 0, opacity: 0}}
                               animate={{height: 'auto', opacity: 1}}
                               exit={{height: 0, opacity: 0}}
@@ -756,12 +856,12 @@ export function PassportPage() {
             <div className="relative pl-8 space-y-6">
               {/* Timeline line */}
               <div className="absolute left-2 top-3 bottom-3 w-0.5 bg-[var(--ink-faint)]" />
-              
+
               {passport.experiences
                 .sort((a, b) => b.years - a.years)
                 .map((exp, idx) => (
-                  <motion.div 
-                    key={idx} 
+                  <motion.div
+                    key={idx}
                     className="relative"
                     initial={{opacity: 0, x: -20}}
                     animate={{opacity: 1, x: 0}}
@@ -769,7 +869,7 @@ export function PassportPage() {
                   >
                     {/* Timeline dot */}
                     <div className="absolute -left-[26px] top-2 w-3 h-3 rounded-full border-2 border-[var(--ink)] bg-[var(--paper-raised)]" />
-                    
+
                     <div className="rounded border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-4 hover:border-[var(--ink)] hover:shadow-md transition-all">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
@@ -815,8 +915,8 @@ export function PassportPage() {
                   {Object.entries(passport.riasec)
                     .sort(([, a], [, b]) => b - a)
                     .map(([key, val]) => (
-                      <button 
-                        key={key} 
+                      <button
+                        key={key}
                         className="flex items-center justify-between p-3 border-2 border-[var(--ink-faint)] bg-[var(--paper-raised)] hover:border-[var(--ink)] hover:shadow-md transition-all rounded group"
                         onClick={()=>setScoreEvidence({
                           title:`${t('passportWhyScore')} ${key} — ${val}`,
@@ -862,8 +962,8 @@ export function PassportPage() {
                   {Object.entries(passport.aptitude)
                     .sort(([, a], [, b]) => b - a)
                     .map(([key, val]) => (
-                      <button 
-                        key={key} 
+                      <button
+                        key={key}
                         className="flex flex-col items-center p-3 border-2 border-[var(--ink-faint)] bg-[var(--paper-raised)] hover:border-[var(--ink)] hover:shadow-md transition-all rounded group"
                         onClick={()=>setScoreEvidence({
                           title:`${t('passportWhyScore')} ${key} — ${val}`,
@@ -909,8 +1009,8 @@ export function PassportPage() {
                   {Object.entries(passport.values)
                     .sort(([, a], [, b]) => b - a)
                     .map(([key, val], idx) => (
-                      <button 
-                        key={key} 
+                      <button
+                        key={key}
                         className="flex items-center justify-between w-full p-3 border-2 border-[var(--ink-faint)] bg-[var(--paper-raised)] hover:border-[var(--ink)] hover:shadow-md transition-all rounded group"
                         onClick={()=>setScoreEvidence({
                           title:`${t('passportWhyScore')} ${key} — ${val}`,
@@ -976,8 +1076,8 @@ export function PassportPage() {
         <div className="card-sketch bg-[var(--paper-raised)] p-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display text-2xl">{t('passportConstraints')}</h2>
-            <button 
-              onClick={()=>setEditingConstraints(value=>!value)} 
+            <button
+              onClick={()=>setEditingConstraints(value=>!value)}
               className="min-h-11 border-2 border-[var(--ink)] px-4 py-2 text-xs font-mono-ui uppercase hover:bg-[var(--ink)] hover:text-[var(--paper)] transition-colors"
             >
               {editingConstraints?t('passportDone'):t('passportEdit')}
@@ -994,20 +1094,20 @@ export function PassportPage() {
               </label>
               <label className="block">
                 <span className="text-sm font-semibold mb-2 block">{t('passportLearningHours')}</span>
-                <input 
-                  type="number" 
-                  min="1" 
-                  max="40" 
-                  value={passport.constraints.weeklyLearningHours} 
-                  onChange={event=>updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');return {...previous,constraints:{...previous.constraints,weeklyLearningHours:Number(event.target.value)}}})} 
+                <input
+                  type="number"
+                  min="1"
+                  max="40"
+                  value={passport.constraints.weeklyLearningHours}
+                  onChange={event=>updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');return {...previous,constraints:{...previous.constraints,weeklyLearningHours:Number(event.target.value)}}})}
                   className="mt-1 min-h-11 w-full border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-2 focus:border-[var(--ink)] focus:outline-none"
                 />
               </label>
               <label className="block">
                 <span className="text-sm font-semibold mb-2 block">{t('passportBudget')}</span>
-                <select 
-                  value={passport.constraints.budgetLevel} 
-                  onChange={event=>updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');return {...previous,constraints:{...previous.constraints,budgetLevel:event.target.value as 'low'|'medium'|'high'}}})} 
+                <select
+                  value={passport.constraints.budgetLevel}
+                  onChange={event=>updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');return {...previous,constraints:{...previous.constraints,budgetLevel:event.target.value as 'low'|'medium'|'high'}}})}
                   className="mt-1 min-h-11 w-full border-2 border-[var(--ink-faint)] bg-[var(--paper)] p-2 focus:border-[var(--ink)] focus:outline-none"
                 >
                   <option value="low">{t('passportBudgetLow')}</option>
@@ -1016,9 +1116,9 @@ export function PassportPage() {
                 </select>
               </label>
               <label className="flex min-h-11 items-center gap-2 p-2 border-2 border-[var(--ink-faint)] bg-[var(--paper)] rounded cursor-pointer hover:border-[var(--ink)]">
-                <input 
-                  type="checkbox" 
-                  checked={passport.constraints.canRelocate} 
+                <input
+                  type="checkbox"
+                  checked={passport.constraints.canRelocate}
                   onChange={event=>updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');return {...previous,constraints:{...previous.constraints,canRelocate:event.target.checked}}})}
                   className="w-4 h-4"
                 />
@@ -1051,14 +1151,14 @@ export function PassportPage() {
       </GuidanceEntrance>
       {validating && <SkillValidationDialog claim={validating} onClose={()=>{sounds.modalClose();setValidating(null)}} onValidate={evidence=>{updatePassport(previous=>{if(!previous)throw new Error('Passport unavailable');const skills=previous.skills.map(claim=>claim.skillId===validating.skillId?addSkillEvidence(claim,evidence):claim);const next={...previous,skills};next.completeness=calculateCompleteness(next);return next});void logProgress(user?.id ?? null,'skill_validated',{skillId:validating.skillId,evidence});sounds.success();hapticSuccess();setValidating(null)}}/>}
       {scoreEvidence && <WhyPanel evidence={scoreEvidence} onClose={()=>setScoreEvidence(null)}/>}
-      
+
       {/* Aspiration Update Dialog */}
       {editingAspiration && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="max-w-lg w-full bg-[var(--paper-raised)] border-2 border-[var(--ink)] p-6 shadow-[var(--shadow-hard)]">
             <h3 className="font-display text-2xl mb-4">Update Your Aspiration</h3>
             <p className="text-sm text-[var(--ink-soft)] mb-4">
-              Describe your career goals, what you want to achieve, and the themes that matter to you. 
+              Describe your career goals, what you want to achieve, and the themes that matter to you.
               Separate themes with commas.
             </p>
             <div className="space-y-4">
@@ -1096,7 +1196,66 @@ export function PassportPage() {
           </div>
         </div>
       )}
-      
+
+
+      {/* SIH Evidence Records for Verification */}
+      <div className="card-sketch mb-6 bg-[var(--paper-raised)] p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-2xl font-bold">SIH Evidence Records</h2>
+        </div>
+        <div className="space-y-4">
+          {sihEvidence.map(record => (
+            <div key={record.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-[var(--ink-faint)] rounded-md bg-white">
+              <div>
+                <p className="font-semibold text-sm">{record.literalClaim}</p>
+                <div className="flex gap-2 text-xs text-muted-foreground mt-1">
+                  <span className="capitalize">{record.provenance.replace('_', ' ')}</span>
+                  <span>•</span>
+                  <span>Scope: {record.scope.kind.replace('_', ' ')}</span>
+                  <span>•</span>
+                  <span>{new Date(record.createdAt).toLocaleDateString()}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setRequestingVerificationFor(record);
+                  setVerificationSuccess(false);
+                  setVerificationError(null);
+                }}
+                className="shrink-0 font-mono-ui text-xs bg-[var(--ink)] text-[var(--paper)] px-4 py-2 rounded-full hover:bg-[var(--ink-soft)] transition-colors inline-flex items-center gap-1.5"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Request Verification
+              </button>
+            </div>
+          ))}
+          {sihEvidence.length === 0 && (
+            <p className="text-sm text-muted-foreground">No SIH evidence records found for this account.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Verification Request Modal */}
+      {requestingVerificationFor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-w-xl w-full bg-[var(--paper)] shadow-[var(--shadow-hard)] max-h-[90vh] overflow-y-auto rounded-lg">
+            <VerificationRequestForm
+              evidence={requestingVerificationFor}
+              isSubmitting={isSubmittingVerification}
+              error={verificationError}
+              isSuccess={verificationSuccess}
+              onSubmit={handleVerificationRequestSubmit}
+              onCancel={() => {
+                setRequestingVerificationFor(null);
+                setVerificationSuccess(false);
+                setVerificationError(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+
       {/* Manual Skill Addition Dialog */}
       {addingManualSkill && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
