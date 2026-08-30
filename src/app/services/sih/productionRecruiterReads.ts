@@ -18,10 +18,7 @@ export class ProductionRecruiterReads {
     return this.supabase.schema('sih26044');
   }
 
-  /**
-   * Resolve the exact immutable snapshot attached to the one applied transition.
-   * This deliberately does not select the newest/finalized snapshot.
-   */
+  /** Resolve the exact immutable snapshot attached to the one applied transition. */
   async getExactSubmittedProjection(
     applicationId: ApplicationId,
   ): Promise<ExactRecruiterProjectionRead | null> {
