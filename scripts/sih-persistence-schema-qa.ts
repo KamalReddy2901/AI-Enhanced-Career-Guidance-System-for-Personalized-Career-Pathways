@@ -35,6 +35,7 @@ assert.deepEqual(migrationFiles, [
   '20260827202029_restrict_trigger_function_execute.sql',
   '20260829120148_opportunity_publish_audit_hardening.sql',
   '20260829172859_verification_request_returning_rls_fix.sql',
+  '20260830001130_verification_decision_completion.sql',
 ]);
 
 const migrationSources = await Promise.all(migrationFiles.map(async file => ({
@@ -53,6 +54,7 @@ const finalProjectionRuntimeSql = migrationSources.find(item => item.file.endsWi
 const triggerPrivilegeSql = migrationSources.find(item => item.file.endsWith('restrict_trigger_function_execute.sql'))?.source ?? '';
 const publishAuditSql = migrationSources.find(item => item.file.endsWith('opportunity_publish_audit_hardening.sql'))?.source ?? '';
 const verificationRequestReturningRlsSql = migrationSources.find(item => item.file.endsWith('verification_request_returning_rls_fix.sql'))?.source ?? '';
+const verificationDecisionCompletionSql = migrationSources.find(item => item.file.endsWith('verification_decision_completion.sql'))?.source ?? '';
 const localConfig = await readFile(configPath, 'utf8');
 
 const createdTables = [...normalizedSql.matchAll(/create\s+table(?:\s+if\s+not\s+exists)?\s+sih26044\.([a-z0-9_]+)/gi)]
@@ -112,6 +114,26 @@ assert.doesNotMatch(
   /create\s+or\s+replace\s+function\s+sih26044\.(?:can_access_verification_request|can_create_verification_request|can_verify_evidence|is_consent_active)/i,
   'Returning repair must not alter existing subject creation, verifier, or consent helper semantics',
 );
+
+assert.match(verificationDecisionCompletionSql,
+  /create\s+or\s+replace\s+function\s+sih26044\.complete_verification_request_decision\s*\(/i,
+  'Atomic verification decision RPC migration must exist');
+assert.match(verificationDecisionCompletionSql, /security\s+definer[\s\S]*?set\s+search_path\s*=\s*pg_catalog\s*,\s*sih26044/i,
+  'Atomic verification decision RPC must use an explicit safe search path');
+assert.match(verificationDecisionCompletionSql, /select\s+vr\.\*\s+into\s+locked_request[\s\S]*?for\s+update/i,
+  'Atomic verification decision RPC must lock the exact request row');
+assert.match(verificationDecisionCompletionSql, /decision_at\s+timestamptz\s*:=\s*statement_timestamp\(\)/i);
+assert.match(verificationDecisionCompletionSql, /occurred_at[\s\S]*?decision_at[\s\S]*?closed_at\s*=\s*decision_at/i,
+  'Terminal event and request closure must share one authoritative timestamp');
+assert.match(verificationDecisionCompletionSql, /requested_action\s+not\s+in\s*\(\s*'verified_by_human'\s*,\s*'verified_by_issuer'\s*,\s*'disputed'\s*\)/i,
+  'RPC must reject every non-terminal action');
+assert.match(verificationDecisionCompletionSql, /can_access_verification_request\s*\([\s\S]*?can_append_verification_event\s*\(/i,
+  'RPC must reuse canonical bounded verifier authorization');
+assert.match(verificationDecisionCompletionSql, /revoke\s+all\s+on\s+function\s+sih26044\.complete_verification_request_decision\([\s\S]*?from\s+public/i);
+assert.match(verificationDecisionCompletionSql, /revoke\s+all\s+on\s+function\s+sih26044\.complete_verification_request_decision\([\s\S]*?from\s+anon/i);
+assert.match(verificationDecisionCompletionSql, /grant\s+execute\s+on\s+function\s+sih26044\.complete_verification_request_decision\([\s\S]*?to\s+authenticated/i);
+assert.doesNotMatch(verificationDecisionCompletionSql, /grant\s+update\s+on\s+sih26044\.verification_requests|service_role/i,
+  'Atomic completion must not broaden direct request mutation or browser authority');
 
 const appendOnlyTables = [
   'evidence_records',

@@ -1,7 +1,11 @@
+import { useState } from 'react';
 import { Link } from 'react-router';
+import { useParams } from 'react-router';
 import { EvidenceTimeline } from '../components/demo/EvidenceTimeline';
 import { EvidenceProvenanceBadge, RequirementEvidenceMatrix } from '../components/demo/RequirementEvidenceMatrix';
 import { ReadinessVector } from '../components/demo/ReadinessVector';
+import { FacultyCollaborationDetail } from '../components/sih/faculty/FacultyCollaborationDetail';
+import { FacultyExplorer } from '../components/sih/faculty/FacultyExplorer';
 import { useDemoSih } from '../context/DemoSihContext';
 import { DEMO_IDS } from './demoFixtures';
 import { applicationStageLabel } from './demoScenario';
@@ -272,7 +276,28 @@ export function DemoRecruiterPage() {
 
 export function DemoInstitutionPage() {
   const { state, institutionAnalytics } = useDemoSih();
+  const [selectedMetric, setSelectedMetric] = useState<'readiness_distribution' | 'evidence_gap_distribution' | 'application_funnel' | 'outcome_count'>('readiness_distribution');
+  const [interventionStatus, setInterventionStatus] = useState<'approved' | 'in_progress' | 'completed'>('approved');
+  const [outcomeUpdated, setOutcomeUpdated] = useState(false);
   const points = institutionAnalytics.points;
+  const metrics = [
+    { key: 'readiness_distribution', label: 'Readiness distribution' },
+    { key: 'evidence_gap_distribution', label: 'Evidence gaps' },
+    { key: 'application_funnel', label: 'Application funnel' },
+    { key: 'outcome_count', label: 'Recorded outcomes' },
+  ] as const;
+  const visibleMetricData = points.filter(point => point.metric === selectedMetric);
+  const readinessCount = points.find(point => point.metric === 'readiness_distribution' && point.dimensions.readiness_band === 'READY_FOR_REVIEW')?.value ?? 0;
+  const evidenceGapMetric = points.find(point => point.metric === 'evidence_gap_distribution' && point.dimensions.category === 'inspectable_work_sample');
+  const evidenceGapTargetValue = evidenceGapMetric?.suppressed ? 'Suppressed' : evidenceGapMetric?.value ?? 0;
+  const evidenceGapTargetSize = evidenceGapMetric?.cohortSize ?? 0;
+  const actionOwner = 'Dev — synthetic T&P analyst';
+  const nextInterventionLabel = interventionStatus === 'approved'
+    ? 'Start intervention'
+    : interventionStatus === 'in_progress'
+      ? 'Complete intervention'
+      : 'Intervention completed';
+
   return (
     <div>
       <PageIntro
@@ -283,7 +308,22 @@ export function DemoInstitutionPage() {
       <section className="border-2 border-black bg-white p-5 shadow-[5px_5px_0_#111]">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="font-mono-ui text-[10px] font-bold uppercase">Methodology</p><h2 className="text-2xl font-black">Privacy-protected aggregate snapshot</h2></div>
-          <p className="font-mono-ui text-xs">Minimum cohort: {institutionAnalytics.query.minimumCohortSize} · synthetic cohort: 13</p>
+          <p className="font-mono-ui text-xs">Minimum cohort: {institutionAnalytics.query.minimumCohortSize} · synthetic cohort: 13 · generated {new Date(institutionAnalytics.generatedAt).toLocaleDateString('en-IN', { dateStyle: 'medium', timeZone: 'UTC' })}</p>
+        </div>
+        <div className="mt-5 flex flex-wrap gap-2">
+          {metrics.map(metric => (
+            <button
+              key={metric.key}
+              type="button"
+              onClick={() => setSelectedMetric(metric.key)}
+              className={[
+                'min-h-10 border-2 px-3 py-2 font-mono-ui text-[10px] font-black uppercase',
+                selectedMetric === metric.key ? 'border-black bg-[#111] text-white' : 'border-black bg-white text-black',
+              ].join(' ')}
+            >
+              {metric.label}
+            </button>
+          ))}
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {points.filter(point => point.metric !== 'readiness_distribution').map((point, index) => (
@@ -294,6 +334,17 @@ export function DemoInstitutionPage() {
             </article>
           ))}
         </div>
+        <div className="mt-7">
+          <h3 className="text-xl font-black">Selected metric: {metrics.find(metric => metric.key === selectedMetric)?.label}</h3>
+          <div className="mt-3 grid gap-px border border-black bg-black sm:grid-cols-5">
+            {visibleMetricData.map(point => (
+              <div key={`${point.metric}-${point.dimensions[Object.keys(point.dimensions)[0] ?? 'value']}`} className="bg-white p-3">
+                <p className="font-mono-ui text-[9px] uppercase">{Object.values(point.dimensions).join(' ').replaceAll('_', ' ') || 'summary'}</p>
+                <p className="mt-2 text-2xl font-black">{point.suppressed ? '—' : point.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
         <h3 className="mt-7 text-xl font-black">Readiness distribution</h3>
         <div className="mt-3 grid gap-px border border-black bg-black sm:grid-cols-5">
           {points.filter(point => point.metric === 'readiness_distribution').map(point => (
@@ -302,9 +353,60 @@ export function DemoInstitutionPage() {
         </div>
         <p className="mt-5 border-l-4 border-[#ff5c35] pl-3 text-sm leading-relaxed">The recorded selected-outcome count is descriptive. This view does not claim mentor verification or readiness caused selection.</p>
       </section>
-      <section className="mt-8 border-2 border-black bg-[#111] p-5 text-white">
-        <h2 className="text-xl font-black">Current controlled trace contribution</h2>
-        <p className="mt-2 text-sm text-white/70">Readiness: {state.readinessHistory.at(-1)?.readinessBand.replaceAll('_', ' ')} · Application: {state.application?.currentStage.replaceAll('_', ' ') ?? 'not submitted'} · Selected outcomes recorded: {state.outcomeEvents.length}</p>
+
+      <section className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="border-2 border-black bg-[#fff4c7] p-5">
+          <h2 className="text-xl font-black">Institution action board</h2>
+          <p className="mt-2 text-sm leading-relaxed text-black/70">A single evidence-gap signal can be translated into a human-owned intervention without claiming causal proof. All controls remain local to the controlled demo runtime.</p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <div className="border border-black bg-white p-3"><p className="font-mono-ui text-[10px] uppercase text-black/55">Ready for review</p><p className="mt-3 text-3xl font-black">{readinessCount}</p></div>
+            <div className="border border-black bg-white p-3"><p className="font-mono-ui text-[10px] uppercase text-black/55">Evidence-gap target</p><p className="mt-3 text-3xl font-black">{evidenceGapTargetValue}</p></div>
+            <div className="border border-black bg-white p-3"><p className="font-mono-ui text-[10px] uppercase text-black/55">Follow-up owner</p><p className="mt-3 text-sm font-black">{actionOwner}</p></div>
+          </div>
+          <div className="mt-5 border-2 border-black bg-white p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-mono-ui text-[10px] font-black uppercase tracking-wide text-[#d63c1d]">Intervention loop</p>
+                <h3 className="mt-2 text-2xl font-black">Evidence-gap follow-up review</h3>
+              </div>
+              <span className="border border-black bg-[#e7ff57] px-2 py-1 font-mono-ui text-[9px] font-black uppercase">{interventionStatus}</span>
+            </div>
+            <p className="mt-4 text-sm leading-relaxed text-black/70">Target cohort: synthetic learners in the inspectable-work-sample evidence-gap group. Rationale: missing inspectable work sample and context is limiting readiness updates. Owner: {actionOwner}. Cohort size: {evidenceGapTargetSize}.</p>
+            <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+              <div><dt className="font-mono-ui text-[10px] uppercase text-black/55">Target</dt><dd className="mt-1">{evidenceGapTargetValue === 'Suppressed' ? 'Suppressed' : `${evidenceGapTargetValue} records in evidence-gap cohort`}</dd></div>
+              <div><dt className="font-mono-ui text-[10px] uppercase text-black/55">Review window</dt><dd className="mt-1">Due in 7 days</dd></div>
+              <div><dt className="font-mono-ui text-[10px] uppercase text-black/55">Status</dt><dd className="mt-1">{interventionStatus.replaceAll('_', ' ')}</dd></div>
+              <div><dt className="font-mono-ui text-[10px] uppercase text-black/55">Outcome</dt><dd className="mt-1">{outcomeUpdated ? 'Training workshop logged' : 'Awaiting outcome update'}</dd></div>
+            </dl>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {interventionStatus === 'approved' && (
+                <button type="button" onClick={() => setInterventionStatus('in_progress')} className="min-h-11 border-2 border-black bg-[#111] px-4 py-3 font-mono-ui text-[10px] font-black uppercase text-white">Start intervention</button>
+              )}
+              {interventionStatus === 'in_progress' && (
+                <button type="button" onClick={() => setInterventionStatus('completed')} className="min-h-11 border-2 border-black bg-[#111] px-4 py-3 font-mono-ui text-[10px] font-black uppercase text-white">Complete intervention</button>
+              )}
+              {interventionStatus === 'completed' && (
+                <span className="min-h-11 border-2 border-black bg-[#e7ff57] px-4 py-3 font-mono-ui text-[10px] font-black uppercase">Intervention completed</span>
+              )}
+              <button type="button" onClick={() => setOutcomeUpdated(value => !value)} className="min-h-11 border-2 border-black bg-[#e7ff57] px-4 py-3 font-mono-ui text-[10px] font-black uppercase">{outcomeUpdated ? 'Unmark outcome' : 'Record outcome update'}</button>
+            </div>
+          </div>
+        </div>
+
+        <aside className="grid content-start gap-4">
+          <section className="border-2 border-black bg-[#111] p-5 text-white">
+            <h2 className="text-xl font-black">Current controlled trace contribution</h2>
+            <p className="mt-2 text-sm text-white/70">Readiness: {state.readinessHistory.at(-1)?.readinessBand.replaceAll('_', ' ')} · Application: {state.application?.currentStage.replaceAll('_', ' ') ?? 'not submitted'} · Selected outcomes recorded: {state.outcomeEvents.length}</p>
+          </section>
+          <section className="border-2 border-black bg-white p-5">
+            <h2 className="text-xl font-black">Monitoring caveats</h2>
+            <ul className="mt-3 grid gap-2 text-sm leading-relaxed text-black/70">
+              <li>• Denominator is explicit and not hidden behind a single percentage.</li>
+              <li>• Minimum cohort suppression is visible when the sample falls below the configured threshold.</li>
+              <li>• Intervention status is a local review action, not an automatic decision or production workflow.</li>
+            </ul>
+          </section>
+        </aside>
       </section>
     </div>
   );
@@ -319,26 +421,17 @@ export function DemoFacultyPage() {
         title="Collaboration is a first-class product surface."
         description="These synthetic engagements use the shared CollaborationEngagement contract. Faculty participation includes research, development and workshops—not only student verification."
       />
-      <div className="grid gap-4 lg:grid-cols-3">
-        {state.fixture.collaborations.map(engagement => (
-          <article key={engagement.id} className="flex min-h-72 flex-col border-2 border-black bg-white p-5 shadow-[4px_4px_0_#111]">
-            <div className="flex items-start justify-between gap-3">
-              <span className="font-mono-ui text-[10px] font-black uppercase tracking-wide text-[#d63c1d]">{engagement.kind.replaceAll('_', ' ')}</span>
-              <span className="border border-black bg-[#e7ff57] px-2 py-1 font-mono-ui text-[9px] font-bold uppercase">{engagement.status}</span>
-            </div>
-            <h2 className="mt-6 text-2xl font-black">{engagement.objectives[0]}</h2>
-            <ul className="mt-4 grid gap-2 text-sm text-black/65">{engagement.objectives.slice(1).map(objective => <li key={objective}>→ {objective}</li>)}</ul>
-            <dl className="mt-auto grid gap-2 border-t border-black/20 pt-4 font-mono-ui text-[10px]">
-              <div><dt className="uppercase text-black/45">Partners</dt><dd>{engagement.partnerOrganizationIds.length}</dd></div>
-              <div><dt className="uppercase text-black/45">Participants</dt><dd>{engagement.participantActorIds.length} controlled persona(s)</dd></div>
-            </dl>
-          </article>
-        ))}
-      </div>
+      <FacultyExplorer collaborations={state.fixture.collaborations} organizations={state.fixture.organizations} personas={state.fixture.personas} />
       <section className="mt-8 border-2 border-black bg-[#fff4c7] p-5">
         <h2 className="text-xl font-black">Shared-domain proof</h2>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed">Collaborative research, a faculty development program and a workshop are represented as canonical engagements between the controlled educational institution and controlled industry partner. No live institution integration is claimed.</p>
       </section>
     </div>
   );
+}
+
+export function DemoFacultyCollaborationDetailPage() {
+  const { state } = useDemoSih();
+  const { collaborationId } = useParams();
+  return <FacultyCollaborationDetail engagement={state.fixture.collaborations.find(item => item.id === collaborationId)} organizations={state.fixture.organizations} personas={state.fixture.personas} />;
 }
