@@ -411,7 +411,7 @@ begin
 end;
 $$;
 
-revoke execute on function sih26044.block_published_questionnaire_mutation() from authenticated;
+revoke execute on function sih26044.block_published_questionnaire_mutation() from public;
 
 create trigger block_published_questionnaire_version_mutation
   before update on sih26044.questionnaire_versions
@@ -440,7 +440,7 @@ begin
 end;
 $$;
 
-revoke execute on function sih26044.block_published_question_mutation() from authenticated;
+revoke execute on function sih26044.block_published_question_mutation() from public;
 
 create trigger block_published_question_mutation
   before update or delete on sih26044.questionnaire_questions
@@ -462,7 +462,7 @@ begin
 end;
 $$;
 
-revoke execute on function sih26044.block_submitted_submission_mutation() from authenticated;
+revoke execute on function sih26044.block_submitted_submission_mutation() from public;
 
 create trigger block_submitted_submission_mutation
   before update on sih26044.questionnaire_submissions
