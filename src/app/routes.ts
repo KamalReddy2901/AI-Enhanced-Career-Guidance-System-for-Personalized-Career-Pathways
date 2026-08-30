@@ -14,9 +14,7 @@ const HomePage = lazy(() =>
   import("./pages/HomePage").then((m) => ({ default: m.HomePage })),
 );
 const JobOverviewPage = lazy(() =>
-  import("./pages/JobOverviewPage").then((m) => ({
-    default: m.JobOverviewPage,
-  })),
+  import("./pages/JobOverviewPage").then((m) => ({ default: m.JobOverviewPage })),
 );
 const JobDetailPage = lazy(() =>
   import("./pages/JobDetailPage").then((m) => ({ default: m.JobDetailPage })),
@@ -37,9 +35,7 @@ const FavoritesPage = lazy(() =>
   import("./pages/FavoritesPage").then((m) => ({ default: m.FavoritesPage })),
 );
 const InterviewPrepPage = lazy(() =>
-  import("./pages/InterviewPrepPage").then((m) => ({
-    default: m.InterviewPrepPage,
-  })),
+  import("./pages/InterviewPrepPage").then((m) => ({ default: m.InterviewPrepPage })),
 );
 const SettingsPage = lazy(() =>
   import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
@@ -51,20 +47,15 @@ const NotFoundPage = lazy(() =>
   import("./pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })),
 );
 const CareerTransitionPage = lazy(() =>
-  import("./pages/CareerTransitionPage").then((m) => ({
-    default: m.CareerTransitionPage,
-  })),
+  import("./pages/CareerTransitionPage").then((m) => ({ default: m.CareerTransitionPage })),
 );
 const CareerRoadmapPage = lazy(() =>
-  import("./pages/CareerRoadmapPage").then((m) => ({
-    default: m.CareerRoadmapPage,
-  })),
+  import("./pages/CareerRoadmapPage").then((m) => ({ default: m.CareerRoadmapPage })),
 );
 const PricingPage = lazy(() =>
   import("./pages/PricingPage").then((m) => ({ default: m.PricingPage })),
 );
 
-// ── Phase 1: Guidance system pages ───────────────────────────────────────
 const DashboardPage = lazy(() =>
   import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })),
 );
@@ -72,37 +63,25 @@ const OnboardingPage = lazy(() =>
   import("./pages/OnboardingPage").then((m) => ({ default: m.OnboardingPage })),
 );
 const AssessmentHubPage = lazy(() =>
-  import("./pages/AssessmentHubPage").then((m) => ({
-    default: m.AssessmentHubPage,
-  })),
+  import("./pages/AssessmentHubPage").then((m) => ({ default: m.AssessmentHubPage })),
 );
 const AssessRiasecPage = lazy(() =>
-  import("./pages/AssessRiasecPage").then((m) => ({
-    default: m.AssessRiasecPage,
-  })),
+  import("./pages/AssessRiasecPage").then((m) => ({ default: m.AssessRiasecPage })),
 );
 const AssessAptitudePage = lazy(() =>
-  import("./pages/AssessAptitudePage").then((m) => ({
-    default: m.AssessAptitudePage,
-  })),
+  import("./pages/AssessAptitudePage").then((m) => ({ default: m.AssessAptitudePage })),
 );
 const AssessValuesPage = lazy(() =>
-  import("./pages/AssessValuesPage").then((m) => ({
-    default: m.AssessValuesPage,
-  })),
+  import("./pages/AssessValuesPage").then((m) => ({ default: m.AssessValuesPage })),
 );
 const AssessAspirationsPage = lazy(() =>
-  import("./pages/AssessAspirationsPage").then((m) => ({
-    default: m.AssessAspirationsPage,
-  })),
+  import("./pages/AssessAspirationsPage").then((m) => ({ default: m.AssessAspirationsPage })),
 );
 const PassportPage = lazy(() =>
   import("./pages/PassportPage").then((m) => ({ default: m.PassportPage })),
 );
 const RecommendationsPage = lazy(() =>
-  import("./pages/RecommendationsPage").then((m) => ({
-    default: m.RecommendationsPage,
-  })),
+  import("./pages/RecommendationsPage").then((m) => ({ default: m.RecommendationsPage })),
 );
 const PathwayPage = lazy(() =>
   import("./pages/PathwayPage").then((m) => ({ default: m.PathwayPage })),
@@ -123,68 +102,49 @@ const AboutPage = lazy(() =>
   import("./pages/AboutPage").then((m) => ({ default: m.AboutPage })),
 );
 const IntegrationPage = lazy(() =>
-  import("./pages/IntegrationPage").then((m) => ({
-    default: m.IntegrationPage,
-  })),
+  import("./pages/IntegrationPage").then((m) => ({ default: m.IntegrationPage })),
 );
 const VerificationPage = lazy(() =>
-  import("./pages/VerificationPage").then((m) => ({
-    default: m.VerificationPage,
-  })),
+  import("./pages/VerificationPage").then((m) => ({ default: m.VerificationPage })),
 );
 const CareerWorkspacePage = lazy(() =>
-  import("./sih/SihProductionPages").then((m) => ({
-    default: m.CareerWorkspacePage,
-  })),
+  import("./sih/SihProductionPages").then((m) => ({ default: m.CareerWorkspacePage })),
 );
 const OpportunitiesPage = lazy(() =>
-  import("./sih/SihStudentProductionPages").then((m) => ({
-    default: m.OpportunitiesPage,
-  })),
+  import("./sih/SihStudentProductionPages").then((m) => ({ default: m.OpportunitiesPage })),
 );
 const OpportunityDetailPage = lazy(() =>
-  import("./sih/SihStudentProductionPages").then((m) => ({
-    default: m.OpportunityDetailPage,
-  })),
+  import("./sih/SihStudentProductionPages").then((m) => ({ default: m.OpportunityDetailPage })),
 );
 const ReadinessPage = lazy(() =>
-  import("./sih/SihStudentProductionPages").then((m) => ({
-    default: m.ReadinessPage,
-  })),
+  import("./sih/SihStudentProductionPages").then((m) => ({ default: m.ReadinessPage })),
 );
 const GapClosurePage = lazy(() =>
-  import("./sih/SihStudentProductionPages").then((m) => ({
-    default: m.GapClosurePage,
-  })),
+  import("./sih/SihStudentProductionPages").then((m) => ({ default: m.GapClosurePage })),
 );
 const EvidencePage = lazy(() =>
   import("./sih/SihStudentProductionPages").then((m) => ({ default: m.EvidencePage })),
 );
 const ApplicationsPage = lazy(() =>
-  import("./sih/SihStudentProductionPages").then((m) => ({
-    default: m.ApplicationsPage,
-  })),
+  import("./sih/SihStudentProductionPages").then((m) => ({ default: m.ApplicationsPage })),
 );
 const ApplicationPreparationPage = lazy(() =>
-  import("./sih/SihStudentProductionPages").then((m) => ({
-    default: m.ApplicationPreparationPage,
-  })),
+  import("./sih/SihStudentProductionPages").then((m) => ({ default: m.ApplicationPreparationPage })),
 );
 const IndustryPage = lazy(() =>
   import("./sih/SihProductionPages").then((m) => ({ default: m.IndustryPage })),
 );
 const ApplicantsPage = lazy(() =>
-  import("./sih/SihRecruiterProductionPage").then((m) => ({
-    default: m.ApplicantsPage,
-  })),
+  import("./sih/SihRecruiterProductionPage").then((m) => ({ default: m.ApplicantsPage })),
 );
 const FacultyPage = lazy(() =>
-  import("./sih/SihProductionPages").then((m) => ({ default: m.FacultyPage })),
+  import("./sih/SihFacultyProductionPages").then((m) => ({ default: m.FacultyPage })),
+);
+const FacultyCollaborationDetailPage = lazy(() =>
+  import("./sih/SihFacultyProductionPages").then((m) => ({ default: m.FacultyCollaborationDetailPage })),
 );
 const InstitutionPage = lazy(() =>
-  import("./sih/SihProductionPages").then((m) => ({
-    default: m.InstitutionPage,
-  })),
+  import("./sih/SihProductionPages").then((m) => ({ default: m.InstitutionPage })),
 );
 const DemoOverviewPage = lazy(() =>
   import("./demo/DemoPages").then((m) => ({ default: m.DemoOverviewPage })),
@@ -205,9 +165,7 @@ const DemoFacultyPage = lazy(() =>
   import("./demo/DemoPages").then((m) => ({ default: m.DemoFacultyPage })),
 );
 const DemoFacultyCollaborationDetailPage = lazy(() =>
-  import("./demo/DemoPages").then((m) => ({
-    default: m.DemoFacultyCollaborationDetailPage,
-  })),
+  import("./demo/DemoPages").then((m) => ({ default: m.DemoFacultyCollaborationDetailPage })),
 );
 
 export const router = createBrowserRouter([
@@ -234,7 +192,6 @@ export const router = createBrowserRouter([
           { path: "career-transition", Component: CareerTransitionPage },
           { path: "roadmap", Component: CareerRoadmapPage },
           { path: "pricing", Component: PricingPage },
-          // ── Phase 1: Guidance system routes ─────────────────────────────────
           { path: "dashboard", Component: DashboardPage },
           { path: "onboarding", Component: OnboardingPage },
           { path: "assess", Component: AssessmentHubPage },
@@ -265,18 +222,9 @@ export const router = createBrowserRouter([
         children: [
           { path: "career", Component: CareerWorkspacePage },
           { path: "opportunities", Component: OpportunitiesPage },
-          {
-            path: "opportunities/:opportunityVersionId",
-            Component: OpportunityDetailPage,
-          },
-          {
-            path: "opportunities/:opportunityVersionId/readiness",
-            Component: ReadinessPage,
-          },
-          {
-            path: "opportunities/:opportunityVersionId/apply",
-            Component: ApplicationPreparationPage,
-          },
+          { path: "opportunities/:opportunityVersionId", Component: OpportunityDetailPage },
+          { path: "opportunities/:opportunityVersionId/readiness", Component: ReadinessPage },
+          { path: "opportunities/:opportunityVersionId/apply", Component: ApplicationPreparationPage },
           { path: "gap-closure", Component: GapClosurePage },
           { path: "evidence", Component: EvidencePage },
           { path: "verification", Component: VerificationPage },
@@ -285,19 +233,15 @@ export const router = createBrowserRouter([
           { path: "industry/opportunities", Component: IndustryPage },
           { path: "industry/opportunities/new", Component: IndustryPage },
           { path: "industry/applicants", Component: ApplicantsPage },
-          {
-            path: "industry/applicants/:applicationId",
-            Component: ApplicantsPage,
-          },
+          { path: "industry/applicants/:applicationId", Component: ApplicantsPage },
           { path: "faculty", Component: FacultyPage },
+          { path: "faculty/collaborations", Component: FacultyPage },
+          { path: "faculty/collaborations/:collaborationId", Component: FacultyCollaborationDetailPage },
           { path: "faculty/opportunities", Component: FacultyPage },
           { path: "faculty/engagements", Component: FacultyPage },
           { path: "faculty/collaboration", Component: FacultyPage },
           { path: "institution", Component: InstitutionPage },
-          {
-            path: "institution/skills-intelligence",
-            Component: InstitutionPage,
-          },
+          { path: "institution/skills-intelligence", Component: InstitutionPage },
           { path: "institution/interventions", Component: InstitutionPage },
           { path: "institution/collaboration", Component: InstitutionPage },
           { path: "institution/opportunities", Component: InstitutionPage },
@@ -316,10 +260,7 @@ export const router = createBrowserRouter([
       { path: "recruiter", Component: DemoRecruiterPage },
       { path: "institution", Component: DemoInstitutionPage },
       { path: "faculty", Component: DemoFacultyPage },
-      {
-        path: "faculty/:collaborationId",
-        Component: DemoFacultyCollaborationDetailPage,
-      },
+      { path: "faculty/:collaborationId", Component: DemoFacultyCollaborationDetailPage },
       { path: "*", Component: DemoOverviewPage },
     ],
   },
