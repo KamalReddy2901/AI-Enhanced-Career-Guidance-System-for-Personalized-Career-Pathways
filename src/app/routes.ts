@@ -138,31 +138,36 @@ const CareerWorkspacePage = lazy(() =>
   })),
 );
 const OpportunitiesPage = lazy(() =>
-  import("./sih/SihProductionPages").then((m) => ({
+  import("./sih/SihStudentProductionPages").then((m) => ({
     default: m.OpportunitiesPage,
   })),
 );
 const OpportunityDetailPage = lazy(() =>
-  import("./sih/SihProductionPages").then((m) => ({
+  import("./sih/SihStudentProductionPages").then((m) => ({
     default: m.OpportunityDetailPage,
   })),
 );
 const ReadinessPage = lazy(() =>
-  import("./sih/SihProductionPages").then((m) => ({
+  import("./sih/SihStudentProductionPages").then((m) => ({
     default: m.ReadinessPage,
   })),
 );
 const GapClosurePage = lazy(() =>
-  import("./sih/SihProductionPages").then((m) => ({
+  import("./sih/SihStudentProductionPages").then((m) => ({
     default: m.GapClosurePage,
   })),
 );
 const EvidencePage = lazy(() =>
-  import("./sih/SihProductionPages").then((m) => ({ default: m.EvidencePage })),
+  import("./sih/SihStudentProductionPages").then((m) => ({ default: m.EvidencePage })),
 );
 const ApplicationsPage = lazy(() =>
-  import("./sih/SihProductionPages").then((m) => ({
+  import("./sih/SihStudentProductionPages").then((m) => ({
     default: m.ApplicationsPage,
+  })),
+);
+const ApplicationPreparationPage = lazy(() =>
+  import("./sih/SihStudentProductionPages").then((m) => ({
+    default: m.ApplicationPreparationPage,
   })),
 );
 const IndustryPage = lazy(() =>
@@ -267,6 +272,10 @@ export const router = createBrowserRouter([
           {
             path: "opportunities/:opportunityVersionId/readiness",
             Component: ReadinessPage,
+          },
+          {
+            path: "opportunities/:opportunityVersionId/apply",
+            Component: ApplicationPreparationPage,
           },
           { path: "gap-closure", Component: GapClosurePage },
           { path: "evidence", Component: EvidencePage },
