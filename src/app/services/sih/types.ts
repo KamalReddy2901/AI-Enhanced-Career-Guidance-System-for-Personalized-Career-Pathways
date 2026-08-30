@@ -1,5 +1,7 @@
 import type { OpportunityReadinessResult, ReadinessSubjectInput } from '../../domain/readiness';
 import type {
+  ActorId,
+  ActorRole,
   ApplicationStage,
   ConsentPurpose,
   EvidenceProvenance,
@@ -95,6 +97,12 @@ export interface CompleteVerificationRequestDecisionInput {
 export interface CompleteVerificationRequestDecisionResult {
   readonly verificationRequest: VerificationRequestReadModel;
   readonly verificationEvent: VerificationEventReadModel;
+}
+
+export interface VerifierActingContextReadModel {
+  readonly actorId: ActorId;
+  readonly organizationId: OrganizationId;
+  readonly roles: readonly Extract<ActorRole, 'faculty' | 'issuer_verifier'>[];
 }
 
 export interface ApplicationReadModel {

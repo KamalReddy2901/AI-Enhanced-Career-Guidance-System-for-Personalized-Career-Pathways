@@ -10,6 +10,7 @@ import type {
   OpportunityRequirementId,
   OpportunityVersionId,
   OrganizationId,
+  OutcomeEventId,
   VerificationAction,
 } from '../../domain';
 import type {
@@ -24,6 +25,7 @@ import type {
   VerificationEventReadModel,
   VerificationRequestReadModel,
   VerificationRequestStatus,
+  VerifierActingContextReadModel,
 } from './types';
 
 type NonTerminalVerificationAction = Exclude<
@@ -69,6 +71,7 @@ export interface RequestVerificationInput {
   readonly scopeOpportunityId?: OpportunityId;
   readonly scopeRequirementId?: OpportunityRequirementId;
   readonly scopeOrganizationId?: OrganizationId;
+  readonly scopeOutcomeEventId?: OutcomeEventId;
   readonly expiresAt?: string;
 }
 
@@ -314,6 +317,50 @@ export class SihBrowserDal {
     return this.supabase.schema('sih26044');
   }
 
+  async getCurrentActorId(): Promise<ActorId | null> {
+    const { data, error } = await this.db().rpc('current_actor_id');
+    if (error) throw error;
+    return (data as ActorId | null) ?? null;
+  }
+
+  async getCurrentVerifierActingContexts(): Promise<VerifierActingContextReadModel[]> {
+    const actorId = await this.getCurrentActorId();
+    if (!actorId) return [];
+
+    const { data: membershipData, error: membershipError } = await this.db()
+      .from('organization_memberships')
+      .select('id,organization_id,status,valid_from,valid_until')
+      .eq('actor_id', actorId)
+      .eq('status', 'active');
+    if (membershipError) throw membershipError;
+    const now = Date.now();
+    const memberships = ((membershipData ?? []) as Array<{
+      id: string;
+      organization_id: OrganizationId;
+      status: string;
+      valid_from: string;
+      valid_until: string | null;
+    }>).filter(membership => Date.parse(membership.valid_from) <= now
+      && (membership.valid_until === null || Date.parse(membership.valid_until) > now));
+    if (memberships.length === 0) return [];
+
+    const { data: roleData, error: roleError } = await this.db()
+      .from('organization_membership_roles')
+      .select('membership_id,role')
+      .in('membership_id', memberships.map(membership => membership.id));
+    if (roleError) throw roleError;
+    const rolesByMembership = new Map<string, Array<'faculty' | 'issuer_verifier'>>();
+    for (const row of (roleData ?? []) as Array<{ membership_id: string; role: string }>) {
+      if (row.role !== 'faculty' && row.role !== 'issuer_verifier') continue;
+      rolesByMembership.set(row.membership_id, [...(rolesByMembership.get(row.membership_id) ?? []), row.role]);
+    }
+
+    return memberships.flatMap(membership => {
+      const roles = rolesByMembership.get(membership.id) ?? [];
+      return roles.length > 0 ? [{ actorId, organizationId: membership.organization_id, roles }] : [];
+    });
+  }
+
   async listEvidenceForSubject(subjectActorId: ActorId): Promise<EvidenceRecordReadModel[]> {
     const { data, error } = await this.db().from('evidence_records')
       .select(evidenceSelect).eq('subject_actor_id', subjectActorId).order('created_at', { ascending: false });
@@ -522,6 +569,7 @@ export class SihBrowserDal {
       scope_opportunity_id: input.scopeOpportunityId ?? null,
       scope_requirement_id: input.scopeRequirementId ?? null,
       scope_organization_id: input.scopeOrganizationId ?? null,
+      scope_outcome_event_id: input.scopeOutcomeEventId ?? null,
       expires_at: input.expiresAt ?? null,
     }).select().single();
     if (error) throw error;
