@@ -123,6 +123,8 @@ insert into sih26044.opportunity_readiness_results (
 
 create temporary table created_intervention(id uuid) on commit drop;
 create temporary table created_followup(id uuid) on commit drop;
+grant select, insert on created_intervention to authenticated;
+grant select, insert on created_followup to authenticated;
 
 -- Institution admin can create only from a reportable aggregate point.
 set local role authenticated;
