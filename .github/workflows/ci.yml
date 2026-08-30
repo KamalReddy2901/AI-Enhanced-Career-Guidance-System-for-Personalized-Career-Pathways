@@ -97,6 +97,9 @@ jobs:
       - name: Build production client
         run: npm run build
 
+      - name: Verify deployment preflight
+        run: npm run qa:deployment-preflight
+
   worker:
     name: Cloudflare Worker
     runs-on: ubuntu-latest
