@@ -7,6 +7,7 @@ export interface SihEnv {
   SUPABASE_ELEVATED_KEY?: string;
   /** Explicit server-only compatibility alias for local/legacy deployments. */
   SUPABASE_SERVICE_ROLE_KEY?: string;
+  SIH_RATE_LIMITER?: { limit(input: { key: string }): Promise<{ success: boolean }> };
 }
 
 export type SihErrorCode =
@@ -15,6 +16,7 @@ export type SihErrorCode =
   | 'FORBIDDEN'
   | 'NOT_FOUND'
   | 'INVALID_REQUEST'
+  | 'RATE_LIMITED'
   | 'UNCONFIRMED_OPPORTUNITY'
   | 'INVALID_EVIDENCE_PROJECTION'
   | 'ARTIFACT_NOT_FOUND'

@@ -36,6 +36,8 @@ assert.deepEqual(migrationFiles, [
   '20260829120148_opportunity_publish_audit_hardening.sql',
   '20260829172859_verification_request_returning_rls_fix.sql',
   '20260830001130_verification_decision_completion.sql',
+  '20260830090000_submission_authority_and_resolution_state.sql',
+  '20260830091000_restrict_all_trigger_rpc_execute.sql',
 ]);
 
 const migrationSources = await Promise.all(migrationFiles.map(async file => ({
@@ -55,6 +57,7 @@ const triggerPrivilegeSql = migrationSources.find(item => item.file.endsWith('re
 const publishAuditSql = migrationSources.find(item => item.file.endsWith('opportunity_publish_audit_hardening.sql'))?.source ?? '';
 const verificationRequestReturningRlsSql = migrationSources.find(item => item.file.endsWith('verification_request_returning_rls_fix.sql'))?.source ?? '';
 const verificationDecisionCompletionSql = migrationSources.find(item => item.file.endsWith('verification_decision_completion.sql'))?.source ?? '';
+const convergenceAuthoritySql = migrationSources.find(item => item.file.endsWith('submission_authority_and_resolution_state.sql'))?.source ?? '';
 const localConfig = await readFile(configPath, 'utf8');
 
 const createdTables = [...normalizedSql.matchAll(/create\s+table(?:\s+if\s+not\s+exists)?\s+sih26044\.([a-z0-9_]+)/gi)]
@@ -134,6 +137,17 @@ assert.match(verificationDecisionCompletionSql, /revoke\s+all\s+on\s+function\s+
 assert.match(verificationDecisionCompletionSql, /grant\s+execute\s+on\s+function\s+sih26044\.complete_verification_request_decision\([\s\S]*?to\s+authenticated/i);
 assert.doesNotMatch(verificationDecisionCompletionSql, /grant\s+update\s+on\s+sih26044\.verification_requests|service_role/i,
   'Atomic completion must not broaden direct request mutation or browser authority');
+
+assert.match(convergenceAuthoritySql, /application_snapshot_id\s+uuid[\s\S]*?references\s+sih26044\.application_snapshots/i,
+  'Submission event must reference one exact immutable snapshot');
+assert.match(convergenceAuthoritySql, /to_stage\s*=\s*'applied'\s+and\s+application_snapshot_id\s+is\s+not\s+null/i);
+assert.match(convergenceAuthoritySql, /s\.id\s*=\s+new\.application_snapshot_id[\s\S]*?s\.application_id\s*=\s+new\.application_id[\s\S]*?s\.finalized_at\s+is\s+not\s+null/i,
+  'Submission validation must bind the named finalized snapshot to the same application');
+assert.doesNotMatch(convergenceAuthoritySql, /order\s+by[\s\S]{0,100}(captured_at|finalized_at)|latest|newest/i,
+  'Submission authority must never be inferred from recency');
+assert.match(convergenceAuthoritySql, /requirement_resolution_status[\s\S]*?'resolved'[\s\S]*?'review_required'[\s\S]*?'unresolved'/i);
+assert.match(convergenceAuthoritySql, /resolution_status\s*=\s*'review_required'[\s\S]*?human_confirmed\s*=\s*false/i,
+  'Review-only suggestions must remain non-authoritative');
 
 const appendOnlyTables = [
   'evidence_records',

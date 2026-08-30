@@ -26,6 +26,25 @@ const request = (body, authorization, path = '/sih/readiness/recompute', method 
   body: JSON.stringify(body),
 });
 
+test('consequential SIH routes enforce body limits and configured abuse controls', async () => {
+  const oversized = new Request('https://worker.test/sih/readiness/recompute', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Content-Length': '65537' },
+    body: '{}',
+  });
+  const oversizedResponse = await handleSihRequest(oversized, env, respond);
+  assert.equal(oversizedResponse.status, 413);
+  assert.equal((await oversizedResponse.json()).error.code, 'INVALID_REQUEST');
+
+  const limitedResponse = await handleSihRequest(
+    request({ opportunityVersionId: '51000000-0000-4000-8000-000000000001' }, 'Bearer valid-token'),
+    { ...env, SIH_RATE_LIMITER: { limit: async () => ({ success: false }) } },
+    respond,
+  );
+  assert.equal(limitedResponse.status, 429);
+  assert.equal((await limitedResponse.json()).error.code, 'RATE_LIMITED');
+});
+
 test('canonical Engine B is directly importable by the Worker test bundle', () => {
   assert.equal(typeof computeOpportunityReadiness, 'function');
   assert.equal(OPPORTUNITY_READINESS_ENGINE_VERSION, 'opportunity-readiness-engine-v1.1');
