@@ -53,14 +53,9 @@ values
   ('40000000-0000-0000-0000-000000000002'::uuid, 'recruiter'),
   ('40000000-0000-0000-0000-000000000003'::uuid, 'learner');
 
--- Mock auth.uid() for testing
-create or replace function auth.uid()
-returns uuid
-language sql
-stable
-as $$
-  select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid;
-$$;
+-- Note: Supabase's auth.uid() function already reads from request.jwt.claim.sub,
+-- so we just need to SET LOCAL that variable when switching to authenticated role.
+-- No need to override auth.uid() itself (which requires auth schema permissions).
 
 -- ============================================================================
 -- TEST 1: Recruiter A can create questionnaire for organization A
