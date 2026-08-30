@@ -19,15 +19,12 @@ begin;
 -- SETUP: Create test auth users, actors, organizations, memberships
 -- ============================================================================
 
--- Simulate auth.users (real table lives in auth schema)
-create temp table test_auth_users (
-  id uuid primary key
-);
-
-insert into test_auth_users (id) values
-  ('10000000-0000-0000-0000-000000000001'::uuid), -- Recruiter A auth
-  ('10000000-0000-0000-0000-000000000002'::uuid), -- Recruiter B auth
-  ('10000000-0000-0000-0000-000000000003'::uuid); -- Student auth
+-- Create auth.users records (required for foreign key)
+insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
+values
+  ('10000000-0000-0000-0000-000000000001'::uuid, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'recruiter_a@example.com', 'unused', now(), now(), now()),
+  ('10000000-0000-0000-0000-000000000002'::uuid, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'recruiter_b@example.com', 'unused', now(), now(), now()),
+  ('10000000-0000-0000-0000-000000000003'::uuid, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'student@example.com', 'unused', now(), now(), now());
 
 -- Organizations
 insert into sih26044.organizations (id, legal_name, display_name, kind, status)

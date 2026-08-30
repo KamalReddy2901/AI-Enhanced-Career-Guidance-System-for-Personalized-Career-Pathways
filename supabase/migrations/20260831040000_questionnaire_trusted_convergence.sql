@@ -529,3 +529,13 @@ comment on column sih26044.questionnaire_submissions.computed_score is
 grant execute on function sih26044.create_questionnaire_atomic to service_role;
 grant execute on function sih26044.publish_questionnaire_atomic to service_role;
 grant execute on function sih26044.submit_questionnaire_atomic to service_role;
+
+-- ============================================================================
+-- REVOKE EXECUTE from authenticated for trigger-only functions
+-- ============================================================================
+--
+-- Trigger functions must not be directly callable by browser roles
+
+revoke execute on function sih26044.block_published_questionnaire_mutation() from authenticated;
+revoke execute on function sih26044.block_published_question_mutation() from authenticated;
+revoke execute on function sih26044.block_submitted_submission_mutation() from authenticated;
