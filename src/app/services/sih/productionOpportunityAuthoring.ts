@@ -1,19 +1,28 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   EligibilityRule,
+  OpportunityAudience,
   OpportunityId,
   OpportunityRequirement,
+  OpportunityType,
   OpportunityVersionId,
   OrganizationId,
 } from '../../domain';
 import { SKILLS } from '../../data/knowledge/skills';
-import type { OpportunityBasicsDraft } from '../../components/sih/industry/OpportunityBasicsSection';
+
+export interface ProductionOpportunityDraftBasics {
+  readonly title: string;
+  readonly description: string;
+  readonly type: OpportunityType | '';
+  readonly audiences: readonly OpportunityAudience[];
+  readonly closesAt?: string;
+}
 
 export interface ProductionOpportunityDraftInput {
   readonly ownerOrganizationId: OrganizationId;
   readonly opportunityId?: OpportunityId;
   readonly opportunityVersionId?: OpportunityVersionId;
-  readonly basics: OpportunityBasicsDraft;
+  readonly basics: ProductionOpportunityDraftBasics;
   readonly requirements: readonly OpportunityRequirement[];
   readonly eligibilityRules: readonly EligibilityRule[];
 }
@@ -141,7 +150,7 @@ function serializeEligibilityRule(rule: EligibilityRule): JsonObject {
   };
 }
 
-function validateBasics(basics: OpportunityBasicsDraft): void {
+function validateBasics(basics: ProductionOpportunityDraftBasics): void {
   if (!basics.title.trim()) throw new Error('Opportunity title is required.');
   if (!basics.description.trim()) throw new Error('Opportunity description is required.');
   if (!basics.type) throw new Error('Opportunity type is required.');
