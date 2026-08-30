@@ -42,7 +42,7 @@ create or replace function sih26044.create_questionnaire_atomic(
 returns jsonb
 language plpgsql
 security definer
-set search_path = sih26044, public
+set search_path = pg_catalog, sih26044, public
 as $$
 declare
   v_actor_id uuid;
@@ -161,7 +161,7 @@ create or replace function sih26044.publish_questionnaire_atomic(
 returns jsonb
 language plpgsql
 security definer
-set search_path = sih26044, public
+set search_path = pg_catalog, sih26044, public
 as $$
 declare
   v_actor_id uuid;
@@ -246,7 +246,7 @@ create or replace function sih26044.submit_questionnaire_atomic(
 returns jsonb
 language plpgsql
 security definer
-set search_path = sih26044, public
+set search_path = pg_catalog, sih26044, public
 as $$
 declare
   v_actor_id uuid;
