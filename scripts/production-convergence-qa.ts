@@ -11,15 +11,18 @@ const [
   recruiterPage,
   facultyPages,
   industryPages,
+  institutionPage,
   opportunityReads,
   recruiterReads,
   facultyReads,
+  institutionReads,
   opportunityAuthoring,
   authoringShell,
   facultyDetail,
   demo,
   migration,
   draftAuthoringMigration,
+  institutionAnalyticsMigration,
   worker,
   config,
 ] = await Promise.all([
@@ -30,20 +33,23 @@ const [
   readFile(join(root, 'src/app/sih/SihRecruiterProductionPage.tsx'), 'utf8'),
   readFile(join(root, 'src/app/sih/SihFacultyProductionPages.tsx'), 'utf8'),
   readFile(join(root, 'src/app/sih/SihIndustryProductionPages.tsx'), 'utf8'),
+  readFile(join(root, 'src/app/sih/SihInstitutionProductionPage.tsx'), 'utf8'),
   readFile(join(root, 'src/app/services/sih/productionOpportunityReads.ts'), 'utf8'),
   readFile(join(root, 'src/app/services/sih/productionRecruiterReads.ts'), 'utf8'),
   readFile(join(root, 'src/app/services/sih/productionFacultyReads.ts'), 'utf8'),
+  readFile(join(root, 'src/app/services/sih/productionInstitutionReads.ts'), 'utf8'),
   readFile(join(root, 'src/app/services/sih/productionOpportunityAuthoring.ts'), 'utf8'),
   readFile(join(root, 'src/app/components/sih/industry/OpportunityAuthoringShell.tsx'), 'utf8'),
   readFile(join(root, 'src/app/components/sih/faculty/FacultyCollaborationDetail.tsx'), 'utf8'),
   readFile(join(root, 'src/app/demo/DemoSihRuntime.tsx'), 'utf8'),
   readFile(join(root, 'supabase/migrations/20260830090000_submission_authority_and_resolution_state.sql'), 'utf8'),
   readFile(join(root, 'supabase/migrations/20260830134000_atomic_opportunity_draft_authoring.sql'), 'utf8'),
+  readFile(join(root, 'supabase/migrations/20260830140000_institution_policy_aggregate_intelligence.sql'), 'utf8'),
   readFile(join(root, 'worker/src/sih/routes.ts'), 'utf8'),
   readFile(join(root, 'worker/wrangler.toml'), 'utf8'),
 ]);
 
-for (const route of ['career','opportunities','evidence','verification','applications','industry/opportunities','industry/opportunities/new','industry/applicants','faculty','faculty/collaborations','institution']) {
+for (const route of ['career','opportunities','evidence','verification','applications','industry/opportunities','industry/opportunities/new','industry/applicants','faculty','faculty/collaborations','institution','institution/skills-intelligence']) {
   assert.match(routes, new RegExp(`path:\\s*["']${route.replace('/', '\\/')}`), `Missing production route ${route}`);
 }
 assert.match(routes, /path:\s*["']opportunities\/:opportunityVersionId\/apply["']/);
@@ -52,12 +58,13 @@ assert.match(routes, /SihStudentProductionPages/);
 assert.match(routes, /SihRecruiterProductionPage/);
 assert.match(routes, /SihFacultyProductionPages/);
 assert.match(routes, /SihIndustryProductionPages/);
+assert.match(routes, /SihInstitutionProductionPage/);
 assert.match(routes, /path:\s*["']\/demo["'][\s\S]*Component:\s*DemoSihRuntime/);
 assert.doesNotMatch(demo, /GuidanceProvider|SihProductionRuntime|supabase/i, 'Controlled demo runtime must stay isolated');
 assert.doesNotMatch(runtime, /GuidanceProvider|GuidanceContext|riasec|aspiration|work.?values/i, 'Engine B provider must not import private Engine A context');
 assert.match(runtime, /organizations\(display_name\)/, 'Production membership context must read the canonical organization display_name column');
 assert.doesNotMatch(runtime, /organizations\(name\)/, 'Production membership context must not query a non-existent organization name column');
-for (const surface of [pages, studentPages, recruiterPage, recruiterReads, facultyPages, facultyReads, industryPages, opportunityAuthoring]) {
+for (const surface of [pages, studentPages, recruiterPage, recruiterReads, facultyPages, facultyReads, industryPages, opportunityAuthoring, institutionPage, institutionReads]) {
   assert.doesNotMatch(surface, /hiring_probability|candidate_rank|automatic_rejection|riasec|work.?values|private.?aspiration/i);
 }
 
@@ -112,6 +119,35 @@ assert.match(draftAuthoringMigration, /review_required/);
 assert.match(draftAuthoringMigration, /Production authoring requires an explicit non-fixture human confirmation method/);
 assert.doesNotMatch(draftAuthoringMigration, /publish_opportunity_version\s*\(/i, 'Draft save must never publish implicitly');
 
+assert.match(institutionPage, /ProductionInstitutionReads/);
+assert.match(institutionPage, /getSkillsIntelligence/);
+assert.match(institutionPage, /Below reporting threshold|suppressed/i);
+assert.match(institutionPage, /descriptive|causal/i);
+assert.doesNotMatch(institutionPage, /useRows\s*\(|supabase\s*\.\s*schema|\.from\s*\(/i,
+  'Institution production page must not read individual SIH rows into the browser');
+assert.match(institutionReads, /list_authorized_analytics_institutions/);
+assert.match(institutionReads, /get_institution_skills_intelligence/);
+assert.match(institutionReads, /minimumSupportedCohortSize\s*=\s*5/);
+assert.match(institutionReads, /Suppressed institution analytics cells must withhold numerator, denominator, and cohort size/);
+assert.match(institutionReads, /subjectactorid/);
+assert.match(institutionReads, /evidencerecordid/);
+assert.match(institutionReads, /applicationid/);
+assert.doesNotMatch(institutionReads, /\.from\s*\(/,
+  'Institution browser service must use aggregate RPCs only, never individual-row table reads');
+assert.match(institutionAnalyticsMigration, /minimum_cell_size constant integer := 5/);
+assert.match(institutionAnalyticsMigration, /policy_program_analyst/);
+assert.match(institutionAnalyticsMigration, /o\.kind = 'government'/);
+assert.match(institutionAnalyticsMigration, /create or replace function sih26044\.get_institution_skills_intelligence/);
+assert.match(institutionAnalyticsMigration, /security definer[\s\S]*?set search_path = pg_catalog, sih26044/i);
+assert.match(institutionAnalyticsMigration, /'causalClaimed', false/);
+assert.match(institutionAnalyticsMigration, /'individualDrilldown', false/);
+assert.match(institutionAnalyticsMigration, /'aggregate_analytics'/);
+assert.match(institutionAnalyticsMigration, /record_authoritative_audit/);
+assert.match(institutionAnalyticsMigration, /revoke all on function sih26044\.get_institution_skills_intelligence[\s\S]*?from public, anon/i);
+assert.match(institutionAnalyticsMigration, /grant execute on function sih26044\.get_institution_skills_intelligence[\s\S]*?to authenticated/i);
+assert.doesNotMatch(institutionAnalyticsMigration, /create\s+policy[\s\S]*policy_program_analyst/i,
+  'Policy/program analysts must not receive individual-row RLS access');
+
 assert.match(migration, /application_snapshot_id[\s\S]*?to_stage\s*=\s*'applied'/i);
 assert.doesNotMatch(migration, /latest|newest|order\s+by[\s\S]{0,80}(captured_at|finalized_at)/i);
 assert.match(migration, /'resolved',\s*'review_required',\s*'unresolved'/i);
@@ -120,7 +156,7 @@ assert.match(worker, /SIH_RATE_LIMITER\.limit/);
 assert.match(config, /\[\[ratelimits\]\][\s\S]*name\s*=\s*"SIH_RATE_LIMITER"/);
 
 console.log(JSON.stringify({
-  productionRoutes: 13,
+  productionRoutes: 14,
   engineBoundary: 'isolated',
   studentClosedLoop: 'rich-production-components',
   unknownHandoff: 'prove-or-clarify-via-gap-closure',
@@ -129,6 +165,10 @@ console.log(JSON.stringify({
   facultyCollaboration: 'rls-bound-read-only-production-surface',
   facultySyntheticActionsExcluded: true,
   industryAuthoring: 'atomic-authenticated-draft-save-plus-explicit-publish',
+  institutionSkillsIntelligence: 'aggregate-rpc-only-with-cell-suppression',
+  policyAnalystAccess: 'aggregate-only',
+  aggregateMinimumCellSize: 5,
+  aggregateCausalClaims: false,
   losslessRequirementResolution: true,
   exactSubmissionBinding: true,
   workerAbuseControls: true,
