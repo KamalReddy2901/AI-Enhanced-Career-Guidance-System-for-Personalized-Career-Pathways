@@ -10,6 +10,7 @@ import ReadinessCasefile from '../components/sih/student/readiness/ReadinessCase
 import GapClosurePlan from '../components/sih/student/gap-closure/GapClosurePlan';
 import ApplicationPreparationWorkspace from '../components/sih/student/application/ApplicationPreparationWorkspace';
 import ApplicationFinalizationPanel from '../components/sih/student/application/ApplicationFinalizationPanel';
+import { EvidenceUploadModal } from '../components/sih/student/evidence/EvidenceUploadModal';
 import type { ApplicationReadModel, EvidenceRecordReadModel } from '../services/sih/types';
 import {
   ProductionOpportunityReads,
@@ -342,12 +343,15 @@ export function GapClosurePage() {
 }
 
 export function EvidencePage() {
-  const { actorId, dal } = useSihProduction();
+  const { actorId, dal, trustedApi } = useSihProduction();
   const [searchParams] = useSearchParams();
   const [evidence, setEvidence] = useState<readonly EvidenceRecordReadModel[]>([]);
   const [error, setError] = useState<string>();
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [selectedEvidenceForUpload, setSelectedEvidenceForUpload] = useState<EvidenceRecordId | undefined>();
   const opportunityVersionId = searchParams.get('opportunityVersionId');
   const requirementId = searchParams.get('requirementId');
+  const source = searchParams.get('source');
 
   useEffect(() => {
     if (!actorId || !dal) return;
@@ -364,6 +368,18 @@ export function EvidencePage() {
     };
   }, [actorId, dal]);
 
+  function refreshEvidence() {
+    if (!actorId || !dal) return;
+    void dal.listEvidenceForSubject(actorId)
+      .then((next) => setEvidence(next))
+      .catch((reason) => setError(reason instanceof Error ? reason.message : 'Unable to reload evidence.'));
+  }
+
+  function handleProveEvidence(evidenceId: EvidenceRecordId) {
+    setSelectedEvidenceForUpload(evidenceId);
+    setShowUploadModal(true);
+  }
+
   return (
     <ProductionFrame
       eyebrow="Career Passport evidence"
@@ -373,15 +389,38 @@ export function EvidencePage() {
       {opportunityVersionId && (
         <div className="mb-5 border-2 border-black bg-[#fff4c7] p-4 text-sm">
           <p className="font-black">Opportunity-specific evidence handoff</p>
-          <p className="mt-1 text-black/70">{requirementId ? `Requirement ${requirementId} needs evidence or clarification.` : 'Review evidence relevant to this opportunity.'}</p>
+          <p className="mt-1 text-black/70">
+            {requirementId 
+              ? `Requirement ${requirementId} needs evidence or clarification.` 
+              : 'Review evidence relevant to this opportunity.'}
+          </p>
+          {source === 'readiness' && (
+            <p className="mt-2 text-sm">
+              To strengthen weak evidence, upload a work sample artifact and optionally request verification from a mentor or issuer.
+            </p>
+          )}
           <div className="mt-3 flex flex-wrap gap-3">
             <Link className="underline" to={`/opportunities/${opportunityVersionId}/readiness`}>Back to readiness</Link>
             <Link className="underline" to="/verification">Verification workspace</Link>
           </div>
         </div>
       )}
+
+      <div className="mb-5 flex gap-3">
+        <button
+          type="button"
+          onClick={() => setShowUploadModal(true)}
+          disabled={!trustedApi || !actorId}
+          className="border-2 border-black bg-[#e7ff57] px-4 py-2 font-mono-ui text-xs font-black uppercase disabled:opacity-40"
+        >
+          Upload new artifact
+        </button>
+      </div>
+
       {error && <Notice>{error}</Notice>}
-      {evidence.length === 0 ? <Notice>No production evidence records are currently visible to this subject.</Notice> : (
+      {evidence.length === 0 ? (
+        <Notice>No production evidence records are currently visible to this subject.</Notice>
+      ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {evidence.map((record) => (
             <article key={record.id} className="border-2 border-black bg-white p-5 shadow-[4px_4px_0_#111]">
@@ -392,9 +431,43 @@ export function EvidencePage() {
                 <div><dt className="font-mono-ui uppercase text-black/45">Visibility</dt><dd className="mt-1 font-bold">{record.visibility.replaceAll('_', ' ')}</dd></div>
                 <div><dt className="font-mono-ui uppercase text-black/45">Source</dt><dd className="mt-1 font-bold">{record.source.system}</dd></div>
               </dl>
+              {(record.provenance === 'self_declared' || record.provenance === 'self_reported') && 
+               record.initialVerificationState === 'unverified' && (
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={() => handleProveEvidence(record.id)}
+                    className="border-2 border-black bg-white px-3 py-1 font-mono-ui text-[10px] font-bold uppercase"
+                  >
+                    Upload artifact & request verification
+                  </button>
+                </div>
+              )}
             </article>
           ))}
         </div>
+      )}
+
+      {showUploadModal && trustedApi && actorId && (
+        <EvidenceUploadModal
+          actorId={actorId}
+          trustedApi={trustedApi}
+          evidenceRecordId={selectedEvidenceForUpload}
+          requirementContext={requirementId ? {
+            opportunityVersionId: opportunityVersionId!,
+            requirementId,
+            skillLabel: 'Selected requirement',
+          } : undefined}
+          onClose={() => {
+            setShowUploadModal(false);
+            setSelectedEvidenceForUpload(undefined);
+          }}
+          onSuccess={() => {
+            setShowUploadModal(false);
+            setSelectedEvidenceForUpload(undefined);
+            refreshEvidence();
+          }}
+        />
       )}
     </ProductionFrame>
   );
