@@ -579,6 +579,18 @@ export class SihBrowserDal {
     );
   }
 
+  async listVerificationRequestsForSubject(
+    subjectActorId: ActorId,
+  ): Promise<VerificationRequestReadModel[]> {
+    const { data, error } = await this.db()
+      .from("verification_requests")
+      .select(verificationRequestSelect)
+      .eq("subject_actor_id", subjectActorId)
+      .order("requested_at", { ascending: false });
+    if (error) throw error;
+    return ((data ?? []) as VerificationRequestRow[]).map(mapVerificationRequest);
+  }
+
   async getVerificationRequest(
     verificationRequestId: string,
   ): Promise<VerificationRequestReadModel | null> {
