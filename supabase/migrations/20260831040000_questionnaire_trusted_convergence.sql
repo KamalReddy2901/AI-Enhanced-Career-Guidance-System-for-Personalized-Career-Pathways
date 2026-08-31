@@ -1,7 +1,7 @@
 -- CareerCase × SIH26044: Questionnaire trusted convergence
--- 
+--
 -- DEFECT REPAIR for PR #44:
--- 
+--
 -- 1. Browser-supplied actor/organization authority → database-derived from auth.uid()
 -- 2. Non-atomic authoring → single trusted RPC
 -- 3. Direct browser publication → explicit trusted human publication
