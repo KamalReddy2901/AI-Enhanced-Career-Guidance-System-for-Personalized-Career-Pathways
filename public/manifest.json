@@ -1,10 +1,10 @@
 {
-  "name": "CareerCase — AI Career Pathways",
-  "short_name": "CareerCase Pathways",
-  "description": "AI-enhanced, explainable career pathways for the MSDE/NCVET SIH problem statement",
+  "name": "CareerCase — From Evidence to Opportunity",
+  "short_name": "CareerCase",
+  "description": "Evidence-backed opportunity readiness and skills intelligence for the academia–industry ecosystem. Career Guidance × Opportunity Readiness. SIH26044.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#f9f8f6",
   "theme_color": "#000000",
   "orientation": "portrait-primary",
   "icons": [
@@ -24,24 +24,24 @@
   "categories": ["education", "productivity"],
   "shortcuts": [
     {
-      "name": "Explore Careers",
-      "short_name": "Explore",
-      "description": "Search for careers",
-      "url": "/",
+      "name": "Career Passport",
+      "short_name": "Passport",
+      "description": "Your evidence-backed career profile",
+      "url": "/passport",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Career Quiz",
-      "short_name": "Quiz",
-      "description": "Find matching careers",
-      "url": "/quiz",
+      "name": "Opportunities",
+      "short_name": "Opportunities",
+      "description": "Discover and assess opportunities",
+      "url": "/opportunities",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
-      "name": "History",
-      "short_name": "History",
-      "description": "View past searches",
-      "url": "/history",
+      "name": "Evidence",
+      "short_name": "Evidence",
+      "description": "Manage your evidence ledger",
+      "url": "/evidence",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
