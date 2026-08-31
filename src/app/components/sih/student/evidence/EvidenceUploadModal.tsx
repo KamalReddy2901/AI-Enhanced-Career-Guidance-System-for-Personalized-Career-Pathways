@@ -1,7 +1,8 @@
-import { useState, useRef, type FormEvent } from 'react';
+import { useState, useRef, type FormEvent, useEffect } from 'react';
 import type { ActorId, EvidenceRecordId, OrganizationId } from '../../../../domain/shared';
 import type { SihTrustedApiClient } from '../../../../services/sih/SihTrustedApiClient';
 import { supabase } from '../../../../services/supabase';
+import { isEscape, trapFocus } from '../../../../utils/keyboardUtils';
 
 interface EvidenceUploadModalProps {
   readonly actorId: ActorId;
@@ -32,6 +33,21 @@ export function EvidenceUploadModal({
   const [selectedFile, setSelectedFile] = useState<File>();
   const [requestVerification, setRequestVerification] = useState(false);
   const [verifierOrganizationId, setVerifierOrganizationId] = useState('');
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Focus management: trap focus in modal and handle ESC key
+  useEffect(() => {
+    const firstFocusable = modalRef.current?.querySelector('input, button') as HTMLElement;
+    firstFocusable?.focus();
+  }, []);
+
+  function handleKeyDown(event: React.KeyboardEvent) {
+    if (isEscape(event)) {
+      onClose();
+    } else if (modalRef.current) {
+      trapFocus(event, modalRef.current);
+    }
+  }
 
   function handleFileSelect(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -150,18 +166,33 @@ export function EvidenceUploadModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto border-2 border-black bg-white shadow-[8px_8px_0_#111]">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="upload-modal-title"
+      onKeyDown={handleKeyDown}
+    >
+      <div ref={modalRef} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto border-2 border-black bg-white shadow-[8px_8px_0_#111]">
         <header className="border-b-2 border-black bg-[#f7f4ed] p-5">
           <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[#d63c1d]">
             Upload artifact evidence
           </p>
-          <h2 className="mt-2 text-2xl font-black">Register work sample</h2>
+          <h2 id="upload-modal-title" className="mt-2 text-2xl font-black">Register work sample</h2>
           {requirementContext && (
             <p className="mt-2 text-sm text-black/70">
               For requirement: <strong>{requirementContext.skillLabel}</strong>
             </p>
           )}
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={uploading || registering}
+            className="absolute right-5 top-5 border-2 border-black bg-white p-2 hover:bg-black hover:text-white disabled:opacity-40"
+            aria-label="Close dialog"
+          >
+            ✕
+          </button>
         </header>
 
         <form onSubmit={handleSubmit} className="p-5">
