@@ -18,6 +18,7 @@ export function SihProductionLayout() {
   if (roles.has("recruiter") || roles.has("industry_partner"))
     links.push(
       ["Industry", "/industry/opportunities"],
+      ["Questionnaires", "/industry/questionnaires"],
       ["Applicants", "/industry/applicants"],
       ["Industry Analytics", "/industry/analytics"],
     );

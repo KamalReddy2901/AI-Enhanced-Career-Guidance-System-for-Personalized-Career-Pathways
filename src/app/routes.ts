@@ -54,6 +54,10 @@ const IndustryNewOpportunityPage = lazy(() => import("./sih/SihIndustryProductio
 const IndustryEditOpportunityPage = lazy(() => import("./sih/SihIndustryProductionPages").then((m) => ({ default: m.IndustryEditOpportunityPage })));
 const ApplicantsPage = lazy(() => import("./sih/SihRecruiterProductionPage").then((m) => ({ default: m.ApplicantsPage })));
 const IndustrySkillsIntelligencePage = lazy(() => import("./sih/SihIndustrySkillsIntelligencePage").then((m) => ({ default: m.IndustrySkillsIntelligencePage })));
+const IndustryQuestionnairesPage = lazy(() => import("./sih/SihQuestionnaireProductionPages").then((m) => ({ default: m.IndustryQuestionnairesPage })));
+const IndustryNewQuestionnairePage = lazy(() => import("./sih/SihQuestionnaireProductionPages").then((m) => ({ default: m.IndustryNewQuestionnairePage })));
+const IndustryQuestionnaireReviewPage = lazy(() => import("./sih/SihQuestionnaireProductionPages").then((m) => ({ default: m.IndustryQuestionnaireReviewPage })));
+const StudentQuestionnairePage = lazy(() => import("./sih/SihQuestionnaireProductionPages").then((m) => ({ default: m.StudentQuestionnairePage })));
 const CollaborationHubPage = lazy(() => import("./sih/SihCollaborationProductionPages").then((m) => ({ default: m.CollaborationHubPage })));
 const CollaborationProposalPage = lazy(() => import("./sih/SihCollaborationProductionPages").then((m) => ({ default: m.CollaborationProposalPage })));
 const DevelopmentProgramsPage = lazy(() => import("./sih/SihDevelopmentProgramPages").then((m) => ({ default: m.DevelopmentProgramsPage })));
@@ -143,6 +147,10 @@ export const router = createBrowserRouter([
           { path: "industry/applicants", Component: ApplicantsPage },
           { path: "industry/applicants/:applicationId", Component: ApplicantsPage },
           { path: "industry/analytics", Component: IndustrySkillsIntelligencePage },
+          { path: "industry/questionnaires", Component: IndustryQuestionnairesPage },
+          { path: "industry/questionnaires/new", Component: IndustryNewQuestionnairePage },
+          { path: "industry/questionnaires/:questionnaireVersionId", Component: IndustryQuestionnaireReviewPage },
+          { path: "questionnaires/:questionnaireVersionId", Component: StudentQuestionnairePage },
           { path: "collaborations", Component: CollaborationHubPage },
           { path: "collaborations/new", Component: CollaborationProposalPage },
           { path: "collaborations/:collaborationId", Component: FacultyCollaborationDetailPage },
