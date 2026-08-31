@@ -1024,18 +1024,32 @@ select pg_temp.assert_true(
   sih26044.reconcile_notification_outbox(10) = 2,
   'trusted worker reconciles expired notification leases'
 );
+reset role;
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000001';
+set local "request.jwt.claim.role" = 'authenticated';
 select pg_temp.assert_true(
   (select status = 'dead' and last_error_code = 'MAX_ATTEMPTS_EXCEEDED' from sih26044.notification_outbox where id = '83000000-0000-0000-0000-000000000003'),
   'notification attempts at the bound become dead'
 );
+reset role;
+set local role service_role;
+set local "request.jwt.claim.role" = 'service_role';
 select pg_temp.assert_true(
   sih26044.schedule_notification_outbox('83000000-0000-0000-0000-000000000004', statement_timestamp() + interval '1 hour'),
   'trusted scheduler can place a notification in scheduled state'
 );
+reset role;
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000001';
+set local "request.jwt.claim.role" = 'authenticated';
 select pg_temp.assert_true(
   (select status = 'scheduled' from sih26044.notification_outbox where id = '83000000-0000-0000-0000-000000000004'),
   'scheduled notification remains unavailable until its due time'
 );
+reset role;
+set local role service_role;
+set local "request.jwt.claim.role" = 'service_role';
 select pg_temp.assert_true(
   (select count(*) = 1 from sih26044.claim_notification_outbox(10, 60) where id = '83000000-0000-0000-0000-000000000001'),
   'trusted worker claims due notification work with a lease'
