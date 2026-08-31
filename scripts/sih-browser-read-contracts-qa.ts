@@ -21,6 +21,7 @@ class FakeQuery implements PromiseLike<FakeResponse> {
   eq(column: string, value: unknown) { this.recorded.filters.push(['eq', column, value]); return this; }
   in(column: string, value: unknown) { this.recorded.filters.push(['in', column, value]); return this; }
   order() { return this; }
+  limit() { return this; }
   insert() { return this; }
   single() { return Promise.resolve(this.response); }
   maybeSingle() { return Promise.resolve(this.response); }
@@ -220,6 +221,49 @@ const evidenceReadModel = {
   assert.equal((await dal.getApplication(applicationId))?.currentStage, 'preparing');
   assert.equal(await dal.getApplication('missing' as ApplicationId), null);
   assert.equal((await dal.listApplicationEvents(applicationId))[0]?.eventKind, 'stage_transition');
+}
+
+{
+  const record = {
+    id: 'recruitment-record-1', sequence_number: 1, application_id: applicationId,
+    application_event_id: 'app-event-1', outcome_event_id: null, kind: 'interview_scheduled',
+    actor_id: 'recruiter-1', actor_organization_id: 'org-1', visibility: 'applicant_and_recruiter',
+    message: 'Interview details', scheduled_at: '2026-09-01T10:00:00.000Z', schedule_timezone: 'Asia/Kolkata',
+    interaction_mode: 'video', location_reference: 'meeting-reference', expires_at: null, outcome_kind: null,
+    occurred_at: '2026-08-31T10:00:00.000Z',
+  } as const;
+  const { dal, queries } = fakeDal([ok([record])]);
+  const records = await dal.listApplicationRecruitmentRecords(applicationId);
+  assert.equal(records[0]?.kind, 'interview_scheduled');
+  assert.equal(records[0]?.scheduleTimezone, 'Asia/Kolkata');
+  assert.deepEqual(queries[0]?.filters, [['eq', 'application_id', applicationId]]);
+  assert.ok(queries[0]?.select && queries[0].select !== '*');
+}
+
+{
+  const snapshotId = 'snapshot-1';
+  const { dal, queries } = fakeDal([
+    ok([{ application_snapshot_id: snapshotId, to_stage: 'applied', event_kind: 'stage_transition', sequence_number: 1 }]),
+    ok({ id: snapshotId, application_id: applicationId, opportunity_version_id: 'version-1', readiness_result_id: 'readiness-1', engine_version: 'engine-v1', evidence_policy_version: 'policy-v1', recruiter_projection_version: 'projection-v2', captured_at: '2026-08-31T08:00:00.000Z', integrity_fingerprint: 'a'.repeat(64), finalized_at: '2026-08-31T08:01:00.000Z' }),
+    ok([{ evidence_record_id: evidenceId }]),
+  ]);
+  const snapshot = await dal.getExactSubmittedApplicationSnapshot(applicationId);
+  assert.equal(snapshot?.id, snapshotId);
+  assert.deepEqual(snapshot?.selectedEvidenceRecordIds, [evidenceId]);
+  assert.deepEqual(queries.map(query => query.table), ['application_events', 'application_snapshots', 'application_snapshot_evidence']);
+  assert.ok(queries.every(query => query.select && query.select !== '*'));
+}
+
+{
+  const { dal, queries, rpcs } = fakeDal([], [ok([{ application_event_id: 'event-2', recruitment_record_id: 'record-2', resulting_stage: 'interview' }])]);
+  await dal.transitionApplicationStage(actorId, {
+    applicationId, fromStage: 'under_review', toStage: 'interview',
+    scheduledAt: '2026-09-01T10:00:00.000Z', scheduleTimezone: 'Asia/Kolkata', interactionMode: 'video',
+  });
+  assert.deepEqual(queries, [], 'Non-submission recruitment transitions must use the atomic RPC');
+  assert.equal(rpcs[0]?.name, 'record_application_recruitment_action');
+  assert.equal(rpcs[0]?.args.requested_kind, 'interview_scheduled');
+  assert.equal(rpcs[0]?.args.requested_schedule_timezone, 'Asia/Kolkata');
 }
 
 {

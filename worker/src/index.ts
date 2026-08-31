@@ -8,6 +8,7 @@ const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 export interface Env extends SihEnv {
   GROQ_API_KEYS: string;
+  ENVIRONMENT?: string;
 }
 
 const ALLOWED_ORIGINS = new Set([
@@ -54,7 +55,14 @@ export function jsonResponse(
 ) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json', ...cors(origin), ...extraHeaders },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'no-referrer',
+      'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+      ...cors(origin), ...extraHeaders,
+    },
   });
 }
 
@@ -159,19 +167,29 @@ async function proxyToGroq(
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const origin = request.headers.get('Origin');
+    const requestId = request.headers.get('X-Request-ID')?.slice(0, 120) || crypto.randomUUID();
+    const correlationId = request.headers.get('X-Correlation-ID')?.slice(0, 120) || requestId;
 
     if (origin && !ALLOWED_ORIGINS.has(origin)) {
       return jsonResponse({ error: 'Origin not allowed' }, 403, origin);
     }
 
     if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: cors(origin) });
+      return new Response(null, { status: 204, headers: { ...cors(origin), 'X-Request-ID': requestId, 'X-Correlation-ID': correlationId } });
     }
 
     const url = new URL(request.url);
 
+    if (url.pathname === '/healthz' && request.method === 'GET') {
+      return jsonResponse({ ok: true, service: 'careercase-worker', environment: env.ENVIRONMENT ?? 'unknown' }, 200, origin, {
+        'X-Request-ID': requestId, 'X-Correlation-ID': correlationId,
+      });
+    }
+
     if (url.pathname === '/sih' || url.pathname.startsWith('/sih/')) {
-      return handleSihRequest(request, env, (data, status = 200) => jsonResponse(data, status, origin));
+      return handleSihRequest(request, env, (data, status = 200) => jsonResponse(data, status, origin, {
+        'X-Request-ID': requestId, 'X-Correlation-ID': correlationId,
+      }));
     }
 
     if (url.pathname !== '/ai' || request.method !== 'POST') {
@@ -183,10 +201,12 @@ export default {
     }
 
     let body: unknown;
+    const declaredLength = Number(request.headers.get('Content-Length') ?? 0);
+    if (declaredLength > 65_536) return jsonResponse({ error: 'Request body exceeds the 64 KiB limit.' }, 413, origin, { 'X-Request-ID': requestId, 'X-Correlation-ID': correlationId });
     try {
       body = await request.json();
     } catch {
-      return jsonResponse({ error: 'Invalid JSON body' }, 400, origin);
+      return jsonResponse({ error: 'Invalid JSON body' }, 400, origin, { 'X-Request-ID': requestId, 'X-Correlation-ID': correlationId });
     }
 
     const usageType = request.headers.get('X-Usage-Type') ?? 'unknown';
@@ -195,7 +215,7 @@ export default {
 
     const keys = [...new Set(env.GROQ_API_KEYS.split(',').map(k => k.trim()).filter(k => k.startsWith('gsk_')))];
     if (!keys.length) {
-      return jsonResponse({ error: 'Server misconfigured — no API keys' }, 500, origin);
+      return jsonResponse({ error: 'Server misconfigured — no API keys' }, 500, origin, { 'X-Request-ID': requestId, 'X-Correlation-ID': correlationId });
     }
 
     return proxyToGroq(body, modelTier, keys, isStream, origin);

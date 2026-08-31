@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import { createDefaultConnectorRegistry, listConnectorCatalog } from '../src/app/services/sih/connectorFramework';
+import { connectorRetryDelayMs, dedupeConnectorRecords, reconcileConnectorRecords } from '../src/app/domain/connectors';
+
+const catalog = listConnectorCatalog();
+assert.ok(catalog.length >= 10);
+assert.ok(catalog.every(entry => entry.capabilityState !== 'implemented'));
+assert.ok(catalog.some(entry => entry.key === 'ncs'));
+assert.ok(catalog.some(entry => entry.key === 'digilocker'));
+const registry = createDefaultConnectorRegistry();
+assert.equal(registry.list().length, catalog.length);
+const noop = registry.get('ncs');
+assert.ok(noop);
+assert.equal(noop?.descriptor.operationalState, 'not_configured');
+assert.equal((await noop?.list?.({ organizationId: 'org' as never, idempotencyKey: 'qa-1' }))?.hasMore, false);
+await assert.rejects(() => noop?.export?.({ organizationId: 'org' as never, idempotencyKey: 'qa-2' }, []), /INTEGRATION-READY/);
+assert.equal(connectorRetryDelayMs(3), 8000);
+const base = { kind: 'opportunity' as const, externalId: '1', sourceSystem: 'ncs', sourceCapturedAt: '2026-08-31T00:00:00Z' as never, freshnessAt: '2026-08-31T00:00:00Z' as never, payload: { title: 'old' } };
+const fresh = { ...base, freshnessAt: '2026-08-31T01:00:00Z' as never, payload: { title: 'new' } };
+assert.equal(dedupeConnectorRecords([base, fresh]).length, 1);
+assert.equal(reconcileConnectorRecords([base], [fresh]).changed.length, 1);
+console.log('Connector framework QA passed.');

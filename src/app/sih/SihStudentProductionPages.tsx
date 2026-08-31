@@ -18,6 +18,8 @@ import type {
   ApplicationEventReadModel,
   VerificationEventReadModel,
   VerificationRequestReadModel,
+  ApplicationRecruitmentRecordReadModel,
+  ApplicationSnapshotReadModel,
 } from '../services/sih/types';
 import {
   ProductionOpportunityReads,
@@ -587,7 +589,10 @@ export function ApplicationsPage() {
   const { actorId, dal } = useSihProduction();
   const [rows, setRows] = useState<readonly ApplicationReadModel[]>([]);
   const [events, setEvents] = useState<readonly ApplicationEventReadModel[]>([]);
+  const [recruitmentRecords, setRecruitmentRecords] = useState<readonly ApplicationRecruitmentRecordReadModel[]>([]);
+  const [submittedSnapshot, setSubmittedSnapshot] = useState<ApplicationSnapshotReadModel>();
   const [error, setError] = useState<string>();
+  const [processingAction, setProcessingAction] = useState(false);
 
   useEffect(() => {
     if (!actorId || !dal) return;
@@ -609,12 +614,22 @@ export function ApplicationsPage() {
   useEffect(() => {
     if (!selectedApplication || !dal) {
       setEvents([]);
+      setRecruitmentRecords([]);
+      setSubmittedSnapshot(undefined);
       return;
     }
     let active = true;
-    void dal.listApplicationEvents(selectedApplication.id)
-      .then((next) => {
-        if (active) setEvents(next);
+    void Promise.all([
+      dal.listApplicationEvents(selectedApplication.id),
+      dal.listApplicationRecruitmentRecords(selectedApplication.id),
+      dal.getExactSubmittedApplicationSnapshot(selectedApplication.id),
+    ])
+      .then(([nextEvents, nextRecords, nextSnapshot]) => {
+        if (active) {
+          setEvents(nextEvents);
+          setRecruitmentRecords(nextRecords);
+          setSubmittedSnapshot(nextSnapshot ?? undefined);
+        }
       })
       .catch((reason) => {
         if (active) setError(reason instanceof Error ? reason.message : 'Unable to load application events.');
@@ -624,6 +639,43 @@ export function ApplicationsPage() {
     };
   }, [selectedApplication, dal]);
 
+  async function refreshApplications() {
+    if (!actorId || !dal) return;
+    setRows(await dal.listApplicationsForApplicant(actorId));
+  }
+
+  async function transitionApplication(toStage: import('../domain').ApplicationStage, sharedMessage?: string) {
+    if (!actorId || !dal || !selectedApplication) return;
+    setProcessingAction(true);
+    try {
+      await dal.transitionApplicationStage(actorId, {
+        applicationId: selectedApplication.id,
+        fromStage: selectedApplication.currentStage,
+        toStage,
+        sharedMessage,
+      });
+      await refreshApplications();
+    } finally {
+      setProcessingAction(false);
+    }
+  }
+
+  async function recordApplicationAction(kind: 'evidence_response' | 'feedback', sharedMessage: string) {
+    if (!dal || !selectedApplication) return;
+    setProcessingAction(true);
+    try {
+      await dal.recordApplicationRecruitmentAction({
+        applicationId: selectedApplication.id,
+        currentStage: selectedApplication.currentStage,
+        kind,
+        sharedMessage,
+      });
+      setRecruitmentRecords(await dal.listApplicationRecruitmentRecords(selectedApplication.id));
+    } finally {
+      setProcessingAction(false);
+    }
+  }
+
   if (selectedApplication) {
     return (
       <ProductionFrame
@@ -632,7 +684,15 @@ export function ApplicationsPage() {
         description="Track the human recruitment lifecycle for applications submitted through explicit consent and an exact immutable snapshot."
       >
         {error && <Notice>{error}</Notice>}
-        <StudentApplicationDetail application={selectedApplication} events={events} />
+        <StudentApplicationDetail
+          application={selectedApplication}
+          events={events}
+          recruitmentRecords={recruitmentRecords}
+          submittedSnapshot={submittedSnapshot}
+          onTransition={transitionApplication}
+          onRecordAction={recordApplicationAction}
+          isProcessing={processingAction}
+        />
       </ProductionFrame>
     );
   }

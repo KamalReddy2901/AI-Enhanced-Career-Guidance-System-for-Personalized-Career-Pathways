@@ -16,6 +16,7 @@ import {
   computeOpportunityReadiness,
   OPPORTUNITY_READINESS_ENGINE_VERSION,
 } from '../../src/app/engine/opportunityReadiness.ts';
+import { noopNotificationProvider, boundedRetryAt } from '../src/sih/notifications.ts';
 
 const env = {
   GROQ_API_KEYS: 'gsk_test-one',
@@ -28,6 +29,20 @@ const request = (body, authorization, path = '/sih/readiness/recompute', method 
   method,
   headers: { 'Content-Type': 'application/json', ...(authorization ? { Authorization: authorization } : {}) },
   body: JSON.stringify(body),
+});
+
+test('health endpoint exposes request correlation and hardened response headers', async () => {
+  const response = await worker.fetch(new Request('https://worker.test/healthz', { headers: { 'X-Correlation-ID': 'qa-correlation' } }), env);
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('X-Correlation-ID'), 'qa-correlation');
+  assert.equal(response.headers.get('X-Content-Type-Options'), 'nosniff');
+  assert.equal(response.headers.get('X-Frame-Options'), 'DENY');
+});
+
+test('notification provider is explicit NOOP and retry schedule is bounded', async () => {
+  assert.equal(noopNotificationProvider.mode, 'DEVELOPMENT');
+  assert.equal((await noopNotificationProvider.send({ id: '1', eventKey: 'qa', purpose: 'qa', channel: 'in_app', templateKey: 'qa', templateVersion: 1, idempotencyKey: 'qa', attemptCount: 0 })).status, 'suppressed');
+  assert.equal(new Date(boundedRetryAt(20, 0)).getTime(), 256000);
 });
 
 test('consequential SIH routes enforce body limits and configured abuse controls', async () => {

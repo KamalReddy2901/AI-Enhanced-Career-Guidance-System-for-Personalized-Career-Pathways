@@ -176,7 +176,9 @@ const appendOnlyTables = [
   'consent_lifecycle_events',
   'application_snapshots',
   'application_events',
+  'application_recruitment_records',
   'outcome_events',
+  'notification_events',
   'collaboration_engagement_events',
   'audit_events',
 ];
@@ -218,6 +220,9 @@ for (const trustedWriteTable of [
   assert.deepEqual(activeInsertPolicies(trustedWriteTable), [], `${trustedWriteTable} must be a trusted-write boundary`);
   assert.match(hardeningSql, new RegExp(`revoke\\s+insert\\s+on\\s+sih26044\\.${trustedWriteTable}\\s+from\\s+authenticated`, 'i'));
 }
+assert.deepEqual(activeInsertPolicies('application_recruitment_records'), [],
+  'Application/recruitment records must be written only through the atomic RPC');
+assert.match(normalizedSql, /revoke\s+insert\s*,\s*update\s*,\s*delete\s+on\s+sih26044\.application_recruitment_records\s+from\s+public\s*,\s*anon\s*,\s*authenticated/i);
 for (const trustedWriteTable of ['artifacts', 'evidence_artifact_links']) {
   assert.deepEqual(activeInsertPolicies(trustedWriteTable), [], `${trustedWriteTable} must be a trusted-write boundary`);
   assert.match(finalHardeningSql, new RegExp(`revoke\\s+insert\\s+on\\s+sih26044\\.${trustedWriteTable}\\s+from\\s+authenticated`, 'i'));
@@ -274,6 +279,8 @@ const requiredTables = [
   'evidence_derivations', 'consent_grants', 'consent_lifecycle_events', 'applications',
   'application_snapshots', 'application_snapshot_evidence', 'application_snapshot_consents',
   'application_events', 'outcome_events', 'collaboration_engagements', 'audit_events',
+  'application_recruitment_records',
+  'notification_preferences', 'notification_events', 'notification_outbox',
 ];
 for (const table of requiredTables) {
   assert.ok(createdTables.includes(table), `Required production table missing: ${table}`);
@@ -296,6 +303,9 @@ const requiredHelpers = [
   'update_artifact_scan_status',
   'derive_artifact_backed_evidence',
   'create_application_snapshot',
+  'record_application_recruitment_action',
+  'enqueue_notification',
+  'claim_notification_outbox',
   'record_authoritative_audit',
 ];
 for (const helper of requiredHelpers) {

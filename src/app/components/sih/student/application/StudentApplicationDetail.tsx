@@ -1,11 +1,23 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
-import type { ApplicationReadModel, ApplicationEventReadModel } from '../../../../services/sih/types';
+import type {
+  ApplicationReadModel,
+  ApplicationEventReadModel,
+  ApplicationRecruitmentRecordKind,
+  ApplicationRecruitmentRecordReadModel,
+  ApplicationSnapshotReadModel,
+} from '../../../../services/sih/types';
 import type { ApplicationStage } from '../../../../domain';
+import { ApplicationRecruitmentTimeline } from '../../application/ApplicationRecruitmentTimeline';
 
 interface Props {
   readonly application: ApplicationReadModel;
   readonly events: readonly ApplicationEventReadModel[];
+  readonly recruitmentRecords: readonly ApplicationRecruitmentRecordReadModel[];
+  readonly submittedSnapshot?: ApplicationSnapshotReadModel;
+  readonly onTransition: (toStage: ApplicationStage, sharedMessage?: string) => Promise<void>;
+  readonly onRecordAction: (kind: Extract<ApplicationRecruitmentRecordKind, 'evidence_response' | 'feedback'>, sharedMessage: string) => Promise<void>;
+  readonly isProcessing: boolean;
 }
 
 function stageLabel(stage: ApplicationStage): string {
@@ -16,7 +28,18 @@ function eventActionLabel(action: string): string {
   return action.replaceAll('_', ' ');
 }
 
-export function StudentApplicationDetail({ application, events }: Props) {
+export function StudentApplicationDetail({ application, events, recruitmentRecords, submittedSnapshot, onTransition, onRecordAction, isProcessing }: Props) {
+  const [response, setResponse] = useState('');
+  const [feedback, setFeedback] = useState('');
+  const [actionError, setActionError] = useState<string>();
+
+  async function run(action: () => Promise<void>, clear: () => void) {
+    setActionError(undefined);
+    try { await action(); clear(); }
+    catch (reason) { setActionError(reason instanceof Error ? reason.message : 'Unable to record application action.'); }
+  }
+
+  const canWithdraw = ['saved', 'preparing', 'applied', 'evidence_requested', 'offered'].includes(application.currentStage);
   return (
     <div className="space-y-6">
       <div className="border-2 border-black bg-white p-6 shadow-[4px_4px_0_#111]">
@@ -57,7 +80,7 @@ export function StudentApplicationDetail({ application, events }: Props) {
           </div>
           <div>
             <dt className="font-mono-ui text-[10px] font-bold uppercase text-black/50">
-              Submitted At
+              Application created
             </dt>
             <dd className="mt-1">{new Date(application.createdAt).toLocaleString()}</dd>
           </div>
@@ -78,6 +101,21 @@ export function StudentApplicationDetail({ application, events }: Props) {
           </Link>
         </div>
       </div>
+
+      {submittedSnapshot && (
+        <section className="border-2 border-black bg-[#fff4c7] p-6" aria-labelledby="submitted-snapshot-title">
+          <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.16em]">Exact immutable submission</p>
+          <h3 id="submitted-snapshot-title" className="mt-2 text-xl font-black">Snapshot {submittedSnapshot.id}</h3>
+          <dl className="mt-4 grid gap-3 text-xs sm:grid-cols-2">
+            <div><dt className="font-mono-ui uppercase text-black/50">Finalized</dt><dd>{new Date(submittedSnapshot.finalizedAt).toLocaleString()}</dd></div>
+            <div><dt className="font-mono-ui uppercase text-black/50">Readiness result</dt><dd className="break-all font-mono-ui">{submittedSnapshot.readinessResultId}</dd></div>
+            <div><dt className="font-mono-ui uppercase text-black/50">Engine / policy</dt><dd>{submittedSnapshot.engineVersion} · {submittedSnapshot.evidencePolicyVersion}</dd></div>
+            <div><dt className="font-mono-ui uppercase text-black/50">Integrity fingerprint</dt><dd className="break-all font-mono-ui">{submittedSnapshot.integrityFingerprint}</dd></div>
+            <div><dt className="font-mono-ui uppercase text-black/50">Selected evidence records</dt><dd>{submittedSnapshot.selectedEvidenceRecordIds.length}</dd></div>
+          </dl>
+          <p className="mt-3 text-xs text-black/60">Later profile or evidence changes do not rewrite this submitted record.</p>
+        </section>
+      )}
 
       <div className="border-2 border-black bg-white p-6 shadow-[4px_4px_0_#111]">
         <p className="font-mono-ui text-[10px] font-black uppercase tracking-[0.18em] text-[#d63c1d]">
@@ -166,6 +204,10 @@ export function StudentApplicationDetail({ application, events }: Props) {
         )}
       </div>
 
+      <ApplicationRecruitmentTimeline records={recruitmentRecords} title="Requests, interviews, offers, outcomes and feedback" />
+
+      {actionError && <p role="alert" className="border-l-4 border-[#d63c1d] bg-[#fff1ec] p-3 text-sm">{actionError}</p>}
+
       {application.currentStage === 'evidence_requested' && (
         <div className="border-2 border-[#d63c1d] bg-[#fff1ec] p-5">
           <p className="font-mono-ui text-[10px] font-black uppercase tracking-[0.18em] text-[#d63c1d]">
@@ -191,6 +233,12 @@ export function StudentApplicationDetail({ application, events }: Props) {
               Request Verification
             </Link>
           </div>
+          <form className="mt-5 grid gap-3" onSubmit={event => { event.preventDefault(); void run(() => onRecordAction('evidence_response', response), () => setResponse('')); }}>
+            <label className="grid gap-2 text-sm font-bold">Response or clarification
+              <textarea value={response} onChange={event => setResponse(event.target.value)} required className="min-h-24 border-2 border-black bg-white p-3 font-normal" placeholder="Describe the evidence shared or the clarification provided." />
+            </label>
+            <button disabled={isProcessing || !response.trim()} className="min-h-11 border-2 border-black bg-black px-4 text-xs font-black uppercase text-white disabled:opacity-40">Record response</button>
+          </form>
         </div>
       )}
 
@@ -222,7 +270,30 @@ export function StudentApplicationDetail({ application, events }: Props) {
               ? 'Your application has progressed to the shortlist stage. Expect further communication from the recruiter regarding next steps.'
               : 'An offer has been extended. Please review any communication from the recruiter regarding acceptance procedures.'}
           </p>
+          {application.currentStage === 'offered' && (
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button disabled={isProcessing} onClick={() => void run(() => onTransition('accepted', 'Applicant accepted the recorded offer.'), () => {})} className="min-h-11 border-2 border-black bg-black px-4 text-xs font-black uppercase text-white">Accept offer</button>
+              <button disabled={isProcessing} onClick={() => void run(() => onTransition('declined', 'Applicant declined the recorded offer.'), () => {})} className="min-h-11 border-2 border-black bg-white px-4 text-xs font-black uppercase">Decline offer</button>
+            </div>
+          )}
         </div>
+      )}
+
+      {canWithdraw && (
+        <section className="border-2 border-black bg-white p-5">
+          <h3 className="text-lg font-black">Withdraw application</h3>
+          <p className="mt-2 text-sm text-black/65">Withdrawal appends a new attributable event. It does not delete the submitted snapshot or prior history.</p>
+          <button disabled={isProcessing} onClick={() => void run(() => onTransition('withdrawn', 'Applicant withdrew the application.'), () => {})} className="mt-4 min-h-11 border-2 border-black bg-white px-4 text-xs font-black uppercase disabled:opacity-40">Withdraw</button>
+        </section>
+      )}
+
+      {['rejected_by_human', 'withdrawn', 'declined', 'completed', 'outcome_recorded'].includes(application.currentStage) && (
+        <form className="border-2 border-black bg-white p-5" onSubmit={event => { event.preventDefault(); void run(() => onRecordAction('feedback', feedback), () => setFeedback('')); }}>
+          <h3 className="text-lg font-black">Add applicant feedback or reflection</h3>
+          <p className="mt-2 text-sm text-black/65">This append-only note is shared with the authorized recruiter and retained in application history.</p>
+          <textarea value={feedback} onChange={event => setFeedback(event.target.value)} required className="mt-3 min-h-24 w-full border-2 border-black p-3" />
+          <button disabled={isProcessing || !feedback.trim()} className="mt-3 min-h-11 bg-black px-4 text-xs font-black uppercase text-white disabled:opacity-40">Record feedback</button>
+        </form>
       )}
     </div>
   );

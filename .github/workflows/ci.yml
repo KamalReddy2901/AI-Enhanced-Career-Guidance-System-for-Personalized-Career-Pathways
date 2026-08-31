@@ -58,6 +58,15 @@ jobs:
       - name: Run SIH browser read contract QA
         run: npm run qa:sih-browser-reads
 
+      - name: Run connector framework QA
+        run: npm run qa:connector-framework
+
+      - name: Run runtime operations QA
+        run: npm run qa:runtime-operations
+
+      - name: Run accessibility static QA
+        run: npx tsx scripts/accessibility-static-qa.ts
+
       - name: Run opportunity readiness QA
         run: npm run qa:opportunity-readiness
 

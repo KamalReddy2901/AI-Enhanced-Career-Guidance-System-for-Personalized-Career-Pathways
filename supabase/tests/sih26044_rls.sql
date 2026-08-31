@@ -499,6 +499,109 @@ select pg_temp.assert_true((select count(*) = 1 from sih26044.applications where
 select pg_temp.assert_true((select count(*) = 0 from sih26044.applications where id = '70000000-0000-0000-0000-000000000002'), 'recruiter cannot read saved/unsubmitted application');
 select pg_temp.assert_true((select count(*) = 0 from sih26044.opportunity_readiness_results), 'recruiter cannot browse live readiness history');
 
+select * from sih26044.record_application_recruitment_action(
+  requested_application_id => '70000000-0000-0000-0000-000000000001',
+  requested_expected_from_stage => 'applied', requested_to_stage => 'evidence_requested',
+  requested_kind => 'evidence_request', requested_message => 'Share the project contribution statement.',
+  requested_internal_note => 'Internal review owner: recruiter A'
+);
+select pg_temp.assert_true(
+  (select count(*) = 2 from sih26044.application_recruitment_records
+   where application_id = '70000000-0000-0000-0000-000000000001'),
+  'atomic evidence request records one shared request and one recruiter-internal note'
+);
+select pg_temp.assert_blocked(
+  $sql$update sih26044.application_recruitment_records set message = 'rewritten'$sql$,
+  'recruitment detail history cannot be updated'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000001';
+select pg_temp.assert_true(
+  (select count(*) = 1 from sih26044.application_recruitment_records
+   where application_id = '70000000-0000-0000-0000-000000000001'),
+  'applicant sees shared evidence request but not recruiter-internal note'
+);
+select * from sih26044.record_application_recruitment_action(
+  requested_application_id => '70000000-0000-0000-0000-000000000001',
+  requested_expected_from_stage => 'evidence_requested', requested_to_stage => null,
+  requested_kind => 'evidence_response', requested_message => 'Contribution statement shared through consented evidence.'
+);
+select pg_temp.assert_blocked(
+  $sql$select * from sih26044.record_application_recruitment_action(
+    requested_application_id => '70000000-0000-0000-0000-000000000001',
+    requested_expected_from_stage => 'evidence_requested', requested_to_stage => null,
+    requested_kind => 'feedback', requested_message => 'Shared feedback', requested_internal_note => 'Forged internal note'
+  )$sql$,
+  'applicant cannot create recruiter-internal notes'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000003';
+select * from sih26044.record_application_recruitment_action(
+  requested_application_id => '70000000-0000-0000-0000-000000000001',
+  requested_expected_from_stage => 'evidence_requested', requested_to_stage => 'under_review',
+  requested_kind => 'stage_transition', requested_message => 'Evidence response received.'
+);
+select * from sih26044.record_application_recruitment_action(
+  requested_application_id => '70000000-0000-0000-0000-000000000001',
+  requested_expected_from_stage => 'under_review', requested_to_stage => 'interview',
+  requested_kind => 'interview_scheduled', requested_message => 'Technical discussion scheduled.',
+  requested_scheduled_at => now() + interval '2 days', requested_schedule_timezone => 'Asia/Kolkata',
+  requested_interaction_mode => 'video', requested_location_reference => 'controlled-meeting-reference'
+);
+select * from sih26044.record_application_recruitment_action(
+  requested_application_id => '70000000-0000-0000-0000-000000000001',
+  requested_expected_from_stage => 'interview', requested_to_stage => null,
+  requested_kind => 'interview_completed', requested_message => 'Interview completed by the human panel.'
+);
+select * from sih26044.record_application_recruitment_action(
+  requested_application_id => '70000000-0000-0000-0000-000000000001',
+  requested_expected_from_stage => 'interview', requested_to_stage => 'offered',
+  requested_kind => 'offer', requested_message => 'Controlled internship offer.',
+  requested_expires_at => now() + interval '7 days'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000001';
+select * from sih26044.record_application_recruitment_action(
+  requested_application_id => '70000000-0000-0000-0000-000000000001',
+  requested_expected_from_stage => 'offered', requested_to_stage => 'accepted',
+  requested_kind => 'stage_transition', requested_message => 'Applicant accepted the offer.'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000003';
+select * from sih26044.record_application_recruitment_action(
+  requested_application_id => '70000000-0000-0000-0000-000000000001',
+  requested_expected_from_stage => 'accepted', requested_to_stage => 'active',
+  requested_kind => 'stage_transition', requested_message => 'Engagement started.'
+);
+select * from sih26044.record_application_recruitment_action(
+  requested_application_id => '70000000-0000-0000-0000-000000000001',
+  requested_expected_from_stage => 'active', requested_to_stage => 'completed',
+  requested_kind => 'stage_transition', requested_message => 'Engagement completed.'
+);
+select * from sih26044.record_application_recruitment_action(
+  requested_application_id => '70000000-0000-0000-0000-000000000001',
+  requested_expected_from_stage => 'completed', requested_to_stage => 'outcome_recorded',
+  requested_kind => 'outcome', requested_message => 'Completion outcome recorded by recruiter.',
+  requested_outcome_kind => 'completed'
+);
+select pg_temp.assert_true(
+  (select sih26044.current_application_stage('70000000-0000-0000-0000-000000000001') = 'outcome_recorded'),
+  'full human recruitment lifecycle reaches outcome_recorded through append-only actions'
+);
+select pg_temp.assert_true(
+  (select count(*) = 1 from sih26044.application_recruitment_records
+   where application_id = '70000000-0000-0000-0000-000000000001' and kind = 'outcome' and outcome_event_id is not null),
+  'outcome action atomically creates linked canonical outcome and recruitment history'
+);
+
 select pg_temp.assert_blocked(
   $sql$insert into sih26044.outcome_events (
     id, kind, subject_actor_id, organization_id, opportunity_id,

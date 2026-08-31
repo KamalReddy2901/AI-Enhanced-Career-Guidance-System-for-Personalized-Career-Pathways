@@ -26,6 +26,8 @@
     "qa:recruiter-projection": "tsx scripts/recruiter-projection-qa.ts",
     "qa:sih-persistence-schema": "tsx scripts/sih-persistence-schema-qa.ts",
     "qa:sih-browser-reads": "tsx scripts/sih-browser-read-contracts-qa.ts",
+    "qa:connector-framework": "tsx scripts/connector-framework-qa.ts",
+    "qa:runtime-operations": "tsx scripts/runtime-operations-qa.ts",
     "qa:d2-readiness-integration": "tsx scripts/d2-readiness-integration.ts",
     "qa:foundation-freeze-hardening": "tsx scripts/foundation-freeze-hardening-qa.ts",
     "qa:production-convergence": "tsx scripts/production-convergence-qa.ts",
@@ -39,7 +41,7 @@
     "qa:deployment-smoke": "tsx scripts/deployment-smoke.ts",
     "deploy:sih:preview": "tsx scripts/cloudflare-deploy.ts preview",
     "deploy:sih:production": "tsx scripts/cloudflare-deploy.ts production",
-    "qa:sih-premerge": "npm run typecheck && npm run qa:sih-boundary && npm run qa:demo-isolation && npm run qa:demo-flow && npm run qa:opportunity-readiness && npm run qa:evidence-integrity && npm run qa:recruiter-projection && npm run qa:sih-persistence-schema && npm run qa:foundation-freeze-hardening && npm run build"
+    "qa:sih-premerge": "npm run typecheck && npm run qa:sih-boundary && npm run qa:demo-isolation && npm run qa:demo-flow && npm run qa:opportunity-readiness && npm run qa:evidence-integrity && npm run qa:recruiter-projection && npm run qa:sih-persistence-schema && npm run qa:sih-browser-reads && npm run qa:connector-framework && npm run qa:runtime-operations && npm run qa:production-convergence && npm run qa:foundation-freeze-hardening && npm run build"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

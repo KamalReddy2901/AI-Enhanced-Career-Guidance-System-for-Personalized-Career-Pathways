@@ -220,6 +220,20 @@
   outline-offset: 2px;
 }
 
+/* Narrow-phone and low-bandwidth resilience: content reflows without hidden
+   horizontal scroll, while data tables remain readable through an explicit
+   scroll affordance supplied by their component wrapper. */
+@media (max-width: 320px) {
+  html { font-size: 15px; }
+  .min-w-\[320px\] { min-width: 0 !important; }
+  [class*='grid-cols-2'], [class*='grid-cols-3'], [class*='grid-cols-4'] { grid-template-columns: minmax(0, 1fr) !important; }
+  button, a, input, select, textarea { max-width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.001ms !important; }
+}
+
 /* ─── Minimum 44×44 px touch targets ───────────────────────────────── */
 button, a, [role="button"], [role="link"] {
   min-height: 44px;

@@ -25,6 +25,11 @@ const [
   institutionAnalyticsMigration,
   worker,
   config,
+  applicationDal,
+  applicationStudentDetail,
+  applicationRecruiterPanel,
+  applicationTimeline,
+  applicationLifecycleMigration,
 ] = await Promise.all([
   readFile(join(root, 'src/app/routes.ts'), 'utf8'),
   readFile(join(root, 'src/app/sih/SihProductionContext.tsx'), 'utf8'),
@@ -47,6 +52,11 @@ const [
   readFile(join(root, 'supabase/migrations/20260830140000_institution_policy_aggregate_intelligence.sql'), 'utf8'),
   readFile(join(root, 'worker/src/sih/routes.ts'), 'utf8'),
   readFile(join(root, 'worker/wrangler.toml'), 'utf8'),
+  readFile(join(root, 'src/app/services/sih/browserDal.ts'), 'utf8'),
+  readFile(join(root, 'src/app/components/sih/student/application/StudentApplicationDetail.tsx'), 'utf8'),
+  readFile(join(root, 'src/app/components/sih/recruiter/HumanStageActionPanel.tsx'), 'utf8'),
+  readFile(join(root, 'src/app/components/sih/application/ApplicationRecruitmentTimeline.tsx'), 'utf8'),
+  readFile(join(root, 'supabase/migrations/20260831100000_application_recruitment_lifecycle.sql'), 'utf8'),
 ]);
 
 for (const route of ['career','opportunities','evidence','verification','applications','industry/opportunities','industry/opportunities/new','industry/applicants','faculty','faculty/collaborations','institution','institution/skills-intelligence']) {
@@ -160,6 +170,28 @@ assert.match(worker, /65_536/);
 assert.match(worker, /SIH_RATE_LIMITER\.limit/);
 assert.match(config, /\[\[ratelimits\]\][\s\S]*name\s*=\s*"SIH_RATE_LIMITER"/);
 
+assert.match(studentPages, /getExactSubmittedApplicationSnapshot/);
+assert.match(studentPages, /listApplicationRecruitmentRecords/);
+assert.match(applicationStudentDetail, /Exact immutable submission/);
+assert.match(applicationStudentDetail, /Withdraw application/);
+assert.match(applicationStudentDetail, /Accept offer|Decline offer/);
+assert.match(applicationStudentDetail, /evidence response|Feedback|reflection/i);
+assert.match(recruiterPage, /listApplicationRecruitmentRecords/);
+assert.match(applicationRecruiterPanel, /Applicant-visible message/);
+assert.match(applicationRecruiterPanel, /Recruiter-internal note/);
+assert.match(applicationRecruiterPanel, /Evidence request|Interview|Offer|Outcome/);
+assert.match(applicationTimeline, /Recruiter internal/);
+assert.match(applicationDal, /record_application_recruitment_action/);
+assert.match(applicationDal, /application_snapshot_id/);
+assert.doesNotMatch(applicationDal, /select\s*\(\s*['"]\*['"]\s*\)/i);
+assert.match(applicationLifecycleMigration, /application_recruitment_records/);
+assert.match(applicationLifecycleMigration, /applicant_and_recruiter/);
+assert.match(applicationLifecycleMigration, /recruiter_internal/);
+assert.match(applicationLifecycleMigration, /record_application_recruitment_action/);
+assert.match(applicationLifecycleMigration, /statement_timestamp\(\)/);
+assert.match(applicationLifecycleMigration, /for update/i);
+assert.doesNotMatch(applicationLifecycleMigration, /candidate_rank|hiring_probability|automatic_rejection|auto.?shortlist/i);
+
 console.log(JSON.stringify({
   productionRoutes: 14,
   engineBoundary: 'isolated',
@@ -178,5 +210,6 @@ console.log(JSON.stringify({
   losslessRequirementResolution: true,
   exactSubmissionBinding: true,
   workerAbuseControls: true,
+  applicationRecruitmentLifecycle: 'append-only structured records with exact snapshot binding',
   failures: [],
 }, null, 2));
