@@ -120,7 +120,7 @@ console.log('Running questionnaire domain logic QA...\n');
   console.log('✓ Questions without scoring_weight are not scored');
 }
 
-// Test 4: Single-choice scoring (placeholder logic)
+// Test 4: Choice order is not scoring authority
 {
   const question = createMockQuestion({
     id: 'q_single',
@@ -138,8 +138,8 @@ console.log('Running questionnaire domain logic QA...\n');
   });
 
   const score = scoreResponse(question, correctResponse);
-  assert.strictEqual(score, 10, 'First option should score full weight');
-  console.log('✓ Single-choice scoring works (placeholder logic)');
+  assert.strictEqual(score, null, 'Choice response must remain unscored without a private answer key');
+  console.log('✓ Choice order is never used as scoring authority');
 }
 
 // Test 5: Numeric scoring with range normalization
@@ -169,7 +169,7 @@ console.log('Running questionnaire domain logic QA...\n');
     version: 'v1',
     rules: {
       method: 'weighted_sum',
-      max_score: 20,
+      max_score: 10,
     },
   };
 
@@ -212,15 +212,15 @@ console.log('Running questionnaire domain logic QA...\n');
   assert.ok(result, 'Score result should exist');
   assert.strictEqual(
     result.computed_score,
-    20,
-    'Total score should be 10 (q1) + 10 (q2)',
+    10,
+    'Only the numeric question should be scored',
   );
-  assert.strictEqual(result.max_score, 20);
+  assert.strictEqual(result.max_score, 10);
   assert.strictEqual(result.scoring_policy_version, 'v1');
   assert.strictEqual(
     result.question_scores.length,
-    2,
-    'Only scoreable questions included',
+    1,
+    'Only questions with an authoritative scoring contract are included',
   );
   console.log('✓ Total score computation with scoring policy works');
 }
@@ -243,14 +243,16 @@ console.log('Running questionnaire domain logic QA...\n');
   const questions = [
     createMockQuestion({
       id: 'q1',
-      question_type: 'single_choice',
-      choice_options: [{ value: 'a', label: 'A' }],
-      scoring_weight: 80,
+      question_type: 'numeric',
+      numeric_min: 0,
+      numeric_max: 100,
+      choice_options: undefined,
+      scoring_weight: 100,
     }),
   ];
 
   const responses = [
-    createMockResponse({ question_id: 'q1', response_value: 'a' }),
+    createMockResponse({ question_id: 'q1', response_value: 80 }),
   ];
 
   const result = computeQuestionnaireScore(

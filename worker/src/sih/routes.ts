@@ -7,6 +7,14 @@ import {
 } from './readiness';
 import { deriveArtifactBackedEvidence, registerArtifact } from './artifacts';
 import { createAndFinalizeApplicationSnapshot } from './applications';
+import {
+  createQuestionnaireAtomic,
+  publishQuestionnaireAtomic,
+  submitQuestionnaireAtomic,
+  type CreateQuestionnaireRequest,
+  type PublishQuestionnaireRequest,
+  type SubmitQuestionnaireRequest,
+} from './questionnaires';
 import type {
   CreateApplicationSnapshotRequest,
   CreateApplicationSnapshotResponse,
@@ -33,6 +41,9 @@ export interface SihRouteDependencies {
   registerArtifact?(request: Request, env: SihEnv, artifact: RegisterArtifactRequest): Promise<RegisterArtifactResponse['artifact']>;
   deriveArtifactBackedEvidence?(request: Request, env: SihEnv, derivation: DeriveArtifactBackedEvidenceRequest): Promise<DeriveArtifactBackedEvidenceResponse['derivedEvidenceRecord']>;
   createApplicationSnapshot?(request: Request, env: SihEnv, snapshotRequest: CreateApplicationSnapshotRequest): Promise<CreateApplicationSnapshotResponse>;
+  createQuestionnaire?(request: Request, env: SihEnv, questionnaireRequest: CreateQuestionnaireRequest): Promise<{ questionnaireId: string; versionId: string }>;
+  publishQuestionnaire?(request: Request, env: SihEnv, publishRequest: PublishQuestionnaireRequest): Promise<{ questionnaireId: string; versionId: string; publishedAt: string }>;
+  submitQuestionnaire?(request: Request, env: SihEnv, submitRequest: SubmitQuestionnaireRequest): Promise<{ submissionId: string; submittedAt: string; computedScore: number | null; maxScore: number | null }>;
 }
 
 const productionDependencies: SihRouteDependencies = {
@@ -61,6 +72,18 @@ const productionDependencies: SihRouteDependencies = {
   async createApplicationSnapshot(request, env, snapshotRequest) {
     const { identity, client } = await authenticateAndResolveActor(request, env);
     return createAndFinalizeApplicationSnapshot(client, createElevatedClient(env), identity.actorId, snapshotRequest);
+  },
+  async createQuestionnaire(request, env, questionnaireRequest) {
+    const { client } = await authenticateAndResolveActor(request, env);
+    return createQuestionnaireAtomic(client, questionnaireRequest);
+  },
+  async publishQuestionnaire(request, env, publishRequest) {
+    const { client } = await authenticateAndResolveActor(request, env);
+    return publishQuestionnaireAtomic(client, publishRequest);
+  },
+  async submitQuestionnaire(request, env, submitRequest) {
+    const { client } = await authenticateAndResolveActor(request, env);
+    return submitQuestionnaireAtomic(client, submitRequest);
   },
 };
 
@@ -172,6 +195,45 @@ export async function handleSihRequest(
         request, env, record as unknown as CreateApplicationSnapshotRequest,
       );
       return respond(snapshot, 200);
+    }
+
+    // 7. Create questionnaire
+    if (url.pathname === '/sih/questionnaires/create' && request.method === 'POST') {
+      const record = await parseJsonBody(request);
+      if (!uuid.test(String(record.organizationId ?? '')) ||
+          typeof record.title !== 'string' ||
+          typeof record.description !== 'string' ||
+          !Array.isArray(record.questions)) {
+        throw new SihRouteError('INVALID_REQUEST', 400, 'Valid organizationId, title, description, and questions array are required.');
+      }
+      const result = await (dependencies.createQuestionnaire ?? productionDependencies.createQuestionnaire!)(
+        request, env, record as unknown as CreateQuestionnaireRequest,
+      );
+      return respond({ ok: true, ...result }, 200);
+    }
+
+    // 8. Publish questionnaire
+    if (url.pathname === '/sih/questionnaires/publish' && request.method === 'POST') {
+      const record = await parseJsonBody(request);
+      if (!uuid.test(String(record.versionId ?? ''))) {
+        throw new SihRouteError('INVALID_REQUEST', 400, 'Valid versionId is required.');
+      }
+      const result = await (dependencies.publishQuestionnaire ?? productionDependencies.publishQuestionnaire!)(
+        request, env, record as unknown as PublishQuestionnaireRequest,
+      );
+      return respond({ ok: true, ...result }, 200);
+    }
+
+    // 9. Submit questionnaire
+    if (url.pathname === '/sih/questionnaires/submit' && request.method === 'POST') {
+      const record = await parseJsonBody(request);
+      if (!uuid.test(String(record.submissionId ?? ''))) {
+        throw new SihRouteError('INVALID_REQUEST', 400, 'Valid submissionId is required.');
+      }
+      const result = await (dependencies.submitQuestionnaire ?? productionDependencies.submitQuestionnaire!)(
+        request, env, record as unknown as SubmitQuestionnaireRequest,
+      );
+      return respond({ ok: true, ...result }, 200);
     }
 
     return respond(errorBody(new SihRouteError('NOT_FOUND', 404, 'SIH route was not found.')), 404);

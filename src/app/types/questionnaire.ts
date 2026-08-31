@@ -76,7 +76,7 @@ export interface QuestionnaireQuestion {
   ordinal: number;
   question_type: QuestionnaireQuestionType;
   question_text: string;
-  choice_options?: Array<{ value: string; label: string }>; // For single/multiple choice
+  choice_options?: Array<{ value: string; label: string }>;
   numeric_min?: number; // For numeric type
   numeric_max?: number;
   skill_refs: SkillRef[]; // Conservative skill linkage
