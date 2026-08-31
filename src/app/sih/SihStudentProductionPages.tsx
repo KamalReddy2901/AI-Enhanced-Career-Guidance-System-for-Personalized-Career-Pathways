@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import type {
+  EvidenceArtifactId,
   EvidenceRecordId,
   OpportunityReadinessResult,
 } from '../domain';
@@ -15,6 +16,7 @@ import { EvidenceRecordComposer } from '../components/sih/student/evidence/Evide
 import { StudentApplicationDetail } from '../components/sih/student/application/StudentApplicationDetail';
 import type {
   ApplicationReadModel,
+  EvidenceArtifactReadModel,
   EvidenceRecordReadModel,
   ApplicationEventReadModel,
   VerificationEventReadModel,
@@ -30,6 +32,7 @@ import { supabase } from '../services/supabase';
 import { getOpportunityQuestionnaireAssignment } from '../services/questionnaireDb';
 import type { OpportunityQuestionnaireAssignment, QuestionnaireVersion } from '../types/questionnaire';
 import { useSihProduction } from './SihProductionContext';
+import type { ProspectiveRecruiterDisclosure } from '../components/sih/student/application/RecruiterDisclosurePreview';
 
 function ProductionFrame({
   eyebrow,
@@ -557,10 +560,18 @@ export function EvidencePage() {
 export function ApplicationPreparationPage() {
   const { opportunityVersionId } = useParams();
   const { actorId, dal, trustedApi } = useSihProduction();
-  const { bundle, loading, error: bundleError } = usePublishedBundle(opportunityVersionId);
+  const { reads, bundle, loading, error: bundleError } = usePublishedBundle(opportunityVersionId);
   const [evidence, setEvidence] = useState<readonly EvidenceRecordReadModel[]>([]);
   const [selectedEvidenceRecordIds, setSelectedEvidenceRecordIds] = useState<readonly EvidenceRecordId[]>([]);
   const [error, setError] = useState<string>();
+  const [disclosureProfile, setDisclosureProfile] = useState<{
+    readonly displayName: string;
+    readonly educationSummary: string;
+  }>();
+  const [readinessResult, setReadinessResult] = useState<OpportunityReadinessResult>();
+  const [artifactsByEvidence, setArtifactsByEvidence] = useState<ReadonlyMap<string, readonly EvidenceArtifactReadModel[]>>(new Map());
+  const [disclosureLoading, setDisclosureLoading] = useState(false);
+  const [disclosureError, setDisclosureError] = useState<string>();
 
   useEffect(() => {
     if (!actorId || !dal) return;
@@ -576,6 +587,102 @@ export function ApplicationPreparationPage() {
       active = false;
     };
   }, [actorId, dal]);
+
+  useEffect(() => {
+    if (!actorId || !dal || !reads || !bundle) {
+      setDisclosureProfile(undefined);
+      setReadinessResult(undefined);
+      setDisclosureLoading(false);
+      return;
+    }
+    let active = true;
+    setDisclosureLoading(true);
+    setDisclosureError(undefined);
+    void Promise.all([
+      dal.getSubjectDisclosureProfile(actorId),
+      reads.getLatestReadinessResult(actorId, bundle.version.id),
+    ])
+      .then(([profile, result]) => {
+        if (!active) return;
+        setDisclosureProfile(profile);
+        setReadinessResult(result ?? undefined);
+        if (!result) setDisclosureError('Compute canonical readiness before reviewing the recruiter disclosure preview.');
+      })
+      .catch((reason) => {
+        if (active) setDisclosureError(reason instanceof Error ? reason.message : 'Unable to prepare the recruiter disclosure preview.');
+      })
+      .finally(() => {
+        if (active) setDisclosureLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [actorId, dal, reads, bundle?.version.id]);
+
+  useEffect(() => {
+    if (!dal || selectedEvidenceRecordIds.length === 0) {
+      setArtifactsByEvidence(new Map());
+      return;
+    }
+    let active = true;
+    void Promise.all(selectedEvidenceRecordIds.map(async (evidenceRecordId) => [
+      evidenceRecordId,
+      await dal.listArtifactsForEvidence(evidenceRecordId),
+    ] as const))
+      .then((entries) => {
+        if (active) setArtifactsByEvidence(new Map(entries));
+      })
+      .catch((reason) => {
+        if (active) setDisclosureError(reason instanceof Error ? reason.message : 'Unable to load artifact disclosure details.');
+      });
+    return () => {
+      active = false;
+    };
+  }, [dal, selectedEvidenceRecordIds]);
+
+  const disclosure = useMemo<ProspectiveRecruiterDisclosure | undefined>(() => {
+    if (!bundle || !disclosureProfile || !readinessResult) return undefined;
+    const selected = new Set(selectedEvidenceRecordIds);
+    const selectedEvidence = evidence
+      .filter((record) => selected.has(record.id))
+      .map((record) => {
+        const cleanArtifacts = (artifactsByEvidence.get(record.id) ?? [])
+          .filter((artifact) => artifact.scanStatus === 'clean');
+        return {
+          evidenceRecordId: record.id,
+          literalClaim: record.literalClaim,
+          provenance: record.provenance,
+          verificationState: record.initialVerificationState,
+          verificationAssertions: [],
+          artifactIds: cleanArtifacts.map((artifact) => artifact.id as EvidenceArtifactId),
+          artifactDisplayNames: cleanArtifacts.map((artifact) => artifact.displayName),
+        };
+      });
+    const requirements = [
+      ...readinessResult.requiredRequirementResults,
+      ...readinessResult.preferredRequirementResults,
+    ].map((requirement) => ({
+      requirementId: requirement.requirementId,
+      literalSourceWording: requirement.literalSourceWording,
+      priority: requirement.priority,
+      state: requirement.state,
+      supportingEvidenceIds: requirement.supportingEvidenceIds.filter((id) => selected.has(id)),
+    }));
+    return {
+      applicant: { displayName: disclosureProfile.displayName },
+      educationSummary: disclosureProfile.educationSummary,
+      evidence: selectedEvidence,
+      opportunityId: bundle.opportunity.id,
+      opportunityVersionId: bundle.version.id,
+      readinessBand: readinessResult.readinessBand,
+      readinessResultId: readinessResult.resultId,
+      requirements,
+      sharedWorkSamples: selectedEvidence.flatMap((item) => item.artifactIds.map((artifactId, index) => ({
+        artifactId,
+        displayName: item.artifactDisplayNames[index] ?? 'Clean work sample',
+      }))),
+    };
+  }, [artifactsByEvidence, bundle, disclosureProfile, evidence, readinessResult, selectedEvidenceRecordIds]);
 
   const questionnaireReference = bundle?.version.requirements.find(
     (requirement) => requirement.category === 'questionnaire' && requirement.questionnaireReference,
@@ -594,10 +701,13 @@ export function ApplicationPreparationPage() {
         <Notice>This opportunity version is no longer current. New application preparation is blocked for historical versions.</Notice>
       ) : (
         <div className="grid gap-6">
+          {disclosureLoading && <Notice>Loading disclosure preview context…</Notice>}
+          {disclosureError && <Notice>{disclosureError}</Notice>}
           <ApplicationPreparationWorkspace
             evidence={evidence}
             selectedEvidenceRecordIds={selectedEvidenceRecordIds}
             onSelectedEvidenceRecordIdsChange={setSelectedEvidenceRecordIds}
+            disclosure={disclosure}
             questionnaireReference={questionnaireReference?.category === 'questionnaire' ? questionnaireReference.questionnaireReference : undefined}
           />
           {trustedApi ? (

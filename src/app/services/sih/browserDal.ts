@@ -454,6 +454,46 @@ export class SihBrowserDal {
     return (data as ActorId | null) ?? null;
   }
 
+  /**
+   * Read the subject-owned fields needed for the student disclosure preview.
+   * RLS remains the authority for both rows; the browser only requests the
+   * purpose-limited display name and education summary that the trusted
+   * submission path will place in its recruiter allowlist.
+   */
+  async getSubjectDisclosureProfile(subjectActorId: ActorId): Promise<{
+    readonly displayName: string;
+    readonly educationSummary: string;
+  }> {
+    const [actorResult, factsResult] = await Promise.all([
+      this.db()
+        .from("actors")
+        .select("display_name")
+        .eq("id", subjectActorId)
+        .maybeSingle(),
+      this.db()
+        .from("readiness_subject_facts")
+        .select("education_level,graduation_year")
+        .eq("subject_actor_id", subjectActorId)
+        .maybeSingle(),
+    ]);
+    if (actorResult.error) throw actorResult.error;
+    if (factsResult.error) throw factsResult.error;
+    if (!actorResult.data) throw new Error("Subject actor profile is unavailable.");
+
+    const actor = actorResult.data as { display_name?: string };
+    const facts = factsResult.data as {
+      education_level?: string | null;
+      graduation_year?: number | null;
+    } | null;
+    const educationSummary = facts?.education_level
+      ? `${facts.education_level}${facts.graduation_year ? ` (Class of ${facts.graduation_year})` : ""}`
+      : "Not provided";
+    return {
+      displayName: actor.display_name ?? "Applicant",
+      educationSummary,
+    };
+  }
+
   async getCurrentVerifierActingContexts(): Promise<
     VerifierActingContextReadModel[]
   > {
