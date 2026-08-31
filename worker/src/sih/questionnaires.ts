@@ -102,7 +102,7 @@ export async function createQuestionnaireAtomic(
   client: SupabaseClient,
   request: CreateQuestionnaireRequest,
 ): Promise<CreateQuestionnaireResponse> {
-  const { data, error } = await client.rpc('create_questionnaire_atomic', {
+  const { data, error } = await client.schema('sih26044').rpc('create_questionnaire_atomic', {
     p_organization_id: request.organizationId,
     p_title: request.title,
     p_description: request.description,
@@ -138,7 +138,7 @@ export async function publishQuestionnaireAtomic(
   client: SupabaseClient,
   request: PublishQuestionnaireRequest,
 ): Promise<PublishQuestionnaireResponse> {
-  const { data, error } = await client.rpc('publish_questionnaire_atomic', {
+  const { data, error } = await client.schema('sih26044').rpc('publish_questionnaire_atomic', {
     p_version_id: request.versionId,
   });
 
@@ -174,7 +174,7 @@ export async function submitQuestionnaireAtomic(
   client: SupabaseClient,
   request: SubmitQuestionnaireRequest,
 ): Promise<SubmitQuestionnaireResponse> {
-  const { data, error } = await client.rpc('submit_questionnaire_atomic', {
+  const { data, error } = await client.schema('sih26044').rpc('submit_questionnaire_atomic', {
     p_submission_id: request.submissionId,
   });
 

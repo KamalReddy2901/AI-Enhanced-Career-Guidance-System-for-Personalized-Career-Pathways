@@ -109,7 +109,7 @@ export async function getQuestionnaireVersion(
   questions: QuestionnaireQuestion[];
 }> {
   const { data: version, error: vError } = await supabase
-    .from('sih26044.questionnaire_versions')
+    .schema('sih26044').from('questionnaire_versions')
     .select('id, questionnaire_id, version_number, status, title, description, scope_declaration, scoring_policy, created_by_actor_id, created_at, published_at')
     .eq('id', versionId)
     .single();
@@ -119,7 +119,7 @@ export async function getQuestionnaireVersion(
   }
 
   const { data: questions, error: qError } = await supabase
-    .from('sih26044.questionnaire_questions')
+    .schema('sih26044').from('questionnaire_questions')
     .select('id, questionnaire_version_id, ordinal, question_type, question_text, choice_options, numeric_min, numeric_max, skill_refs, scoring_weight, created_at')
     .eq('questionnaire_version_id', versionId)
     .order('ordinal');
@@ -141,7 +141,7 @@ export async function assignQuestionnaireToOpportunity(
   ordinal: number,
 ): Promise<OpportunityQuestionnaireAssignment> {
   const { data, error } = await supabase
-    .from('sih26044.opportunity_questionnaire_assignments')
+    .schema('sih26044').from('opportunity_questionnaire_assignments')
     .insert({
       opportunity_version_id: opportunityVersionId,
       questionnaire_id: questionnaireId,
@@ -168,7 +168,7 @@ export async function startSubmission(
   opportunityVersionId?: string,
 ): Promise<QuestionnaireSubmission> {
   const { data, error } = await supabase
-    .from('sih26044.questionnaire_submissions')
+    .schema('sih26044').from('questionnaire_submissions')
     .insert({
       questionnaire_version_id: versionId,
       respondent_actor_id: actorId,
@@ -194,7 +194,7 @@ export async function saveResponse(
   responseValue: QuestionnaireResponse['response_value'],
 ): Promise<QuestionnaireResponse> {
   const { data, error } = await supabase
-    .from('sih26044.questionnaire_responses')
+    .schema('sih26044').from('questionnaire_responses')
     .upsert(
       {
         submission_id: submissionId,
@@ -242,7 +242,7 @@ export async function submitQuestionnaire(
 
   // Fetch full submission after finalization
   const { data: submission, error: fetchError } = await supabase
-    .from('sih26044.questionnaire_submissions')
+    .schema('sih26044').from('questionnaire_submissions')
     .select('id, questionnaire_version_id, respondent_actor_id, opportunity_id, opportunity_version_id, started_at, submitted_at, computed_score, score_computed_at, scoring_policy_version, created_at, updated_at')
     .eq('id', submissionId)
     .single();
@@ -266,7 +266,7 @@ export async function getStudentSubmission(
   responses: QuestionnaireResponse[];
 }> {
   let query = supabase
-    .from('sih26044.questionnaire_submissions')
+    .schema('sih26044').from('questionnaire_submissions')
     .select('id, questionnaire_version_id, respondent_actor_id, opportunity_id, opportunity_version_id, started_at, submitted_at, computed_score, score_computed_at, scoring_policy_version, created_at, updated_at')
     .eq('questionnaire_version_id', versionId)
     .eq('respondent_actor_id', actorId);
@@ -284,7 +284,7 @@ export async function getStudentSubmission(
   }
 
   const { data: responses } = await supabase
-    .from('sih26044.questionnaire_responses')
+    .schema('sih26044').from('questionnaire_responses')
     .select('id, submission_id, question_id, response_value, response_score, answered_at')
     .eq('submission_id', submission.id);
 
@@ -301,7 +301,7 @@ export async function listOrganizationQuestionnaires(
   organizationId: string,
 ): Promise<Array<Questionnaire & { current_version?: QuestionnaireVersion }>> {
   const { data: questionnaires, error } = await supabase
-    .from('sih26044.questionnaires')
+    .schema('sih26044').from('questionnaires')
     .select('id, owner_organization_id, current_version_id, status, created_by_actor_id, created_at, updated_at')
     .eq('owner_organization_id', organizationId)
     .order('created_at', { ascending: false });
@@ -318,7 +318,7 @@ export async function listOrganizationQuestionnaires(
       if (!q.current_version_id) return q as Questionnaire;
 
       const { data: version } = await supabase
-        .from('sih26044.questionnaire_versions')
+        .schema('sih26044').from('questionnaire_versions')
         .select('id, questionnaire_id, version_number, status, title, description, scope_declaration, scoring_policy, created_by_actor_id, created_at, published_at')
         .eq('id', q.current_version_id)
         .single();
@@ -343,7 +343,7 @@ export async function listQuestionnaireSubmissions(
   >
 > {
   const { data: submissions, error } = await supabase
-    .from('sih26044.questionnaire_submissions')
+    .schema('sih26044').from('questionnaire_submissions')
     .select('id, questionnaire_version_id, respondent_actor_id, opportunity_id, opportunity_version_id, started_at, submitted_at, computed_score, score_computed_at, scoring_policy_version, created_at, updated_at')
     .eq('questionnaire_version_id', questionnaireVersionId)
     .order('submitted_at', { ascending: false });
@@ -358,7 +358,7 @@ export async function listQuestionnaireSubmissions(
   const result = await Promise.all(
     submissions.map(async (sub) => {
       const { data: actor } = await supabase
-        .from('sih26044.actors')
+        .schema('sih26044').from('actors')
         .select('id, display_name')
         .eq('id', sub.respondent_actor_id)
         .single();
