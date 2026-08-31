@@ -5,7 +5,7 @@
  * the Career Passport / Engine A guidance and the SIH26044 opportunity
  * readiness workspace.
  *
- * Private guidance data (RIASEC, values, aspirations) displayed here is
+ * Private guidance data (Engine A personal assessment data) displayed here is
  * explicitly NOT shared with recruiters or used in Engine B scoring.
  */
 
@@ -90,7 +90,7 @@ export function CareerWorkspacePage() {
           Engine A — Private
         </span>
         <span className="font-[Inter] text-[11px] text-black/40">
-          RIASEC, work values, aspirations, and counselor history remain private to your Career Guidance workspace.
+          Personal assessments (interests, aptitude, values) and counselor history remain private to your Career Guidance workspace.
           They do not appear in recruiter projections.
         </span>
       </div>
@@ -117,7 +117,7 @@ export function CareerWorkspacePage() {
           to="/assess"
           icon={<Layers size={16} />}
           title="Assessments"
-          body="RIASEC interests, aptitude baseline, work values, and aspirations. Private guidance only."
+          body="Interests, aptitude, values, and aspirations screeners. Private guidance only — not recruiter scores."
         />
         <ActionCard
           to="/pathways"
