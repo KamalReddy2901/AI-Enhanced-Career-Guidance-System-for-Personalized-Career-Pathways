@@ -15,8 +15,14 @@
  *
  * roles.has('policy_program_analyst') → exposes only aggregate Program
  *   Analytics view at /institution/skills-intelligence; the operational
- *   intervention workspace is NOT available to the policy_program_analyst
- *   role (aggregate-only access, no individual or operational authority).
+ *   intervention workspace is NOT available to this role.
+ *   Aggregate-only access: no individual, operational, or employer-level
+ *   authority. See: buildNavItems() in UnifiedShell.tsx for the routing
+ *   logic that enforces this boundary at navigation construction time.
+ *
+ * roles.has('recruiter') || roles.has('industry_partner') → exposes
+ *   Industry Analytics workspace — employer-scoped aggregate intelligence.
+ *   Employer analytics route: /industry/analytics (recruiter/partner only).
  */
 
 import { Navigate, Outlet } from 'react-router';
