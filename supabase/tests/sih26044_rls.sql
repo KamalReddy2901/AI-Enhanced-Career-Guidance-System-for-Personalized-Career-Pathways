@@ -593,7 +593,9 @@ select * from sih26044.record_application_recruitment_action(
   requested_outcome_kind => 'completed'
 );
 select pg_temp.assert_true(
-  (select sih26044.current_application_stage('70000000-0000-0000-0000-000000000001') = 'outcome_recorded'),
+  (select ae.to_stage = 'outcome_recorded' from sih26044.application_events ae
+    where ae.application_id = '70000000-0000-0000-0000-000000000001'
+    order by ae.sequence_number desc limit 1),
   'full human recruitment lifecycle reaches outcome_recorded through append-only actions'
 );
 select pg_temp.assert_true(
