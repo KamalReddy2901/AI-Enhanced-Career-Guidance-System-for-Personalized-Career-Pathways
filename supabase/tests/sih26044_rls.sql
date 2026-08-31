@@ -287,6 +287,24 @@ select pg_temp.assert_true(
   not has_function_privilege('anon', 'sih26044.create_verification_request_with_consent(uuid,uuid,timestamptz)', 'EXECUTE'),
   'anonymous clients cannot execute atomic verification-request creation'
 );
+select pg_temp.assert_true(
+  not has_function_privilege('anon', 'sih26044.can_read_clean_verification_artifact(text,text)', 'EXECUTE')
+  and has_function_privilege('authenticated', 'sih26044.can_read_clean_verification_artifact(text,text)', 'EXECUTE'),
+  'clean verifier artifact authorization helper is available only to authenticated policy evaluation'
+);
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname = 'sih_private_evidence_select_clean_verifier'
+      and cmd = 'SELECT'
+      and roles = array['authenticated']::name[]
+      and qual like '%can_read_clean_verification_artifact%'
+  ),
+  'Storage SELECT policy delegates verifier artifact access to the clean request-scoped helper'
+);
 with created as (
   select * from sih26044.create_verification_request_with_consent(
     '60000000-0000-0000-0000-000000000005',

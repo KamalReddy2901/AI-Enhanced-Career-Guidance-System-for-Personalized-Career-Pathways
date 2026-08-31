@@ -25,13 +25,14 @@ export function ArtifactPreview({ artifact, onFetchPreviewUrl }: ArtifactPreview
   const [error, setError] = useState<string | null>(null);
 
   const status = artifact.scanStatus || 'not_scanned';
-  const isSafeToPreview = status === 'clean' || status === 'not_scanned' || status === 'pending';
+  const isSafeToPreview = status === 'clean';
 
   useEffect(() => {
     let active = true;
+    setPreviewUrl(null);
+    setError(null);
     if (onFetchPreviewUrl && isSafeToPreview) {
       setIsLoading(true);
-      setError(null);
       onFetchPreviewUrl(artifact.storageReference)
         .then(url => {
           if (active) setPreviewUrl(url);
@@ -43,6 +44,7 @@ export function ArtifactPreview({ artifact, onFetchPreviewUrl }: ArtifactPreview
           if (active) setIsLoading(false);
         });
     }
+    if (!isSafeToPreview) setIsLoading(false);
     return () => { active = false; };
   }, [artifact.storageReference, onFetchPreviewUrl, isSafeToPreview]);
 
@@ -63,12 +65,17 @@ export function ArtifactPreview({ artifact, onFetchPreviewUrl }: ArtifactPreview
 
   const renderPreview = () => {
     if (!isSafeToPreview) {
+      const isQuarantined = status === 'quarantined' || status === 'rejected';
       return (
-        <div className="flex flex-col items-center justify-center h-48 bg-destructive/10 rounded-md">
-          <ShieldAlert className="w-10 h-10 text-destructive mb-2 opacity-80" />
-          <span className="text-sm font-semibold text-destructive">Artifact Quarantined</span>
-          <span className="text-xs text-destructive/80 mt-1 text-center max-w-[80%]">
-            This file was flagged by security scanners. Preview and download are disabled.
+        <div className={`flex h-48 flex-col items-center justify-center rounded-md ${isQuarantined ? 'bg-destructive/10' : 'bg-muted/20'}`}>
+          <ShieldAlert className={`mb-2 h-10 w-10 opacity-80 ${isQuarantined ? 'text-destructive' : 'text-muted-foreground'}`} />
+          <span className={`text-sm font-semibold ${isQuarantined ? 'text-destructive' : 'text-muted-foreground'}`}>
+            {isQuarantined ? 'Artifact Quarantined' : 'Security scan required'}
+          </span>
+          <span className={`mt-1 max-w-[80%] text-center text-xs ${isQuarantined ? 'text-destructive/80' : 'text-muted-foreground'}`}>
+            {isQuarantined
+              ? 'This file was flagged by security scanners. Preview and download are disabled.'
+              : 'Preview and download stay disabled until the artifact has a clean scan result.'}
           </span>
         </div>
       );

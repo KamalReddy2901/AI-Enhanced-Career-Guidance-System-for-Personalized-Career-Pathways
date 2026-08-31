@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { SihBrowserDal } from '../services/sih/browserDal';
 import { VerificationRequestInbox } from '../components/sih/verification/VerificationRequestInbox';
@@ -39,6 +39,25 @@ export function VerificationPage() {
   const dal = useMemo(() => {
     if (!supabase) throw new Error("Supabase client not initialized");
     return new SihBrowserDal(supabase);
+  }, []);
+
+  const fetchArtifactUrl = useCallback(async (storageReference: string) => {
+    if (!supabase) throw new Error('Supabase client not initialized');
+    const separator = storageReference.indexOf('/');
+    const bucket = storageReference.slice(0, separator);
+    const path = storageReference.slice(separator + 1);
+    if (
+      separator < 1
+      || bucket !== 'career-evidence-private'
+      || !path
+    ) {
+      throw new Error('Artifact storage reference is invalid.');
+    }
+    const { data, error: signedUrlError } = await supabase.storage
+      .from(bucket)
+      .createSignedUrl(path, 60);
+    if (signedUrlError) throw signedUrlError;
+    return data.signedUrl;
   }, []);
 
   useEffect(() => {
@@ -213,6 +232,7 @@ export function VerificationPage() {
                 }}
                 onSubmit={handleActionSubmit}
                 canVerifyAsIssuer={selectedActingContext?.roles.includes('issuer_verifier') ?? false}
+                onFetchArtifactUrl={fetchArtifactUrl}
               />
             )}
           </div>
