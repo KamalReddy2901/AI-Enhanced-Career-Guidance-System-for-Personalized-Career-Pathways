@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { QuestionnaireAuthoringForm } from "../components/questionnaire/QuestionnaireAuthoringForm";
 import {
   createQuestionnaire,
+  createQuestionnaireSuccessor,
   getQuestionnaireVersion,
   getStudentSubmission,
   listOrganizationQuestionnaires,
@@ -10,6 +11,7 @@ import {
   saveResponse,
   startSubmission,
   submitQuestionnaire,
+  updateQuestionnaireDraft,
 } from "../services/questionnaireDb";
 import type {
   QuestionnaireFormData,
@@ -213,11 +215,13 @@ export function IndustryNewQuestionnairePage() {
 }
 
 export function IndustryQuestionnaireReviewPage() {
+  const navigate = useNavigate();
   const { questionnaireVersionId } = useParams();
   const [data, setData] =
     useState<Awaited<ReturnType<typeof getQuestionnaireVersion>>>();
   const [error, setError] = useState<string>();
   const [publishing, setPublishing] = useState(false);
+  const [revising, setRevising] = useState(false);
   useEffect(() => {
     if (questionnaireVersionId)
       void getQuestionnaireVersion(questionnaireVersionId)
@@ -241,6 +245,32 @@ export function IndustryQuestionnaireReviewPage() {
         <Notice>Loading questionnaire…</Notice>
       ) : (
         <div className="grid gap-5">
+          {data.version.status === "draft" ? (
+            <QuestionnaireAuthoringForm
+              heading={`Edit draft version ${data.version.version_number}`}
+              submitLabel="Save exact draft"
+              initialData={{
+                title: data.version.title,
+                description: data.version.description,
+                scope_declaration: data.version.scope_declaration,
+                scoring_policy: data.version.scoring_policy ?? undefined,
+                questions: data.questions.map((question) => ({
+                  question_type: question.question_type,
+                  question_text: question.question_text,
+                  choice_options: question.choice_options,
+                  numeric_min: question.numeric_min,
+                  numeric_max: question.numeric_max,
+                  skill_refs: question.skill_refs,
+                  scoring_weight: question.scoring_weight,
+                })),
+              }}
+              onCancel={() => navigate("/industry/questionnaires")}
+              onSubmit={async (formData) => {
+                await updateQuestionnaireDraft(data.version.id, formData);
+                setData(await getQuestionnaireVersion(data.version.id));
+              }}
+            />
+          ) : null}
           <Notice>{data.version.description}</Notice>
           <ol className="grid gap-3">
             {data.questions.map((question) => (
@@ -278,10 +308,30 @@ export function IndustryQuestionnaireReviewPage() {
               {publishing ? "Publishing…" : "Publish this exact version"}
             </button>
           ) : (
-            <Notice>
-              Published content is immutable. A revision must use a successor
-              version.
-            </Notice>
+            <>
+              <Notice>
+                Published content is immutable. A revision uses a successor
+                draft while this version stays live.
+              </Notice>
+              <button
+                disabled={revising}
+                className="min-h-11 border-2 border-black bg-black px-5 py-3 font-mono-ui text-xs font-black uppercase text-white disabled:opacity-50"
+                onClick={async () => {
+                  setRevising(true);
+                  setError(undefined);
+                  try {
+                    const successor = await createQuestionnaireSuccessor(data.version.id);
+                    navigate(`/industry/questionnaires/${successor.successorVersionId}`);
+                  } catch (reason) {
+                    setError(reason instanceof Error ? reason.message : "Unable to create successor draft.");
+                  } finally {
+                    setRevising(false);
+                  }
+                }}
+              >
+                {revising ? "Creating successor…" : "Create successor revision"}
+              </button>
+            </>
           )}
         </div>
       )}

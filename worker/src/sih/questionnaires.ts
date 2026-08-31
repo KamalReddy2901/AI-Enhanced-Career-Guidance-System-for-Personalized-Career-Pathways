@@ -74,6 +74,21 @@ export interface PublishQuestionnaireResponse {
   publishedAt: string;
 }
 
+export interface CreateQuestionnaireSuccessorRequest {
+  sourceVersionId: string;
+}
+
+export interface CreateQuestionnaireSuccessorResponse {
+  questionnaireId: string;
+  sourceVersionId: string;
+  successorVersionId: string;
+  versionNumber: number;
+}
+
+export interface UpdateQuestionnaireDraftRequest extends Omit<CreateQuestionnaireRequest, 'organizationId'> {
+  versionId: string;
+}
+
 /**
  * Submit questionnaire request
  */
@@ -161,6 +176,51 @@ export async function publishQuestionnaireAtomic(
     versionId: result.version_id,
     publishedAt: result.published_at,
   };
+}
+
+export async function createQuestionnaireSuccessorDraft(
+  client: SupabaseClient,
+  request: CreateQuestionnaireSuccessorRequest,
+): Promise<CreateQuestionnaireSuccessorResponse> {
+  const { data, error } = await client.schema('sih26044').rpc(
+    'create_questionnaire_successor_draft',
+    { p_source_version_id: request.sourceVersionId },
+  );
+  if (error) throw new Error(`Failed to create successor draft: ${error.message} (${error.code})`);
+  if (!data || typeof data !== 'object') throw new Error('Invalid successor draft response');
+  const result = data as {
+    questionnaire_id: string;
+    source_version_id: string;
+    successor_version_id: string;
+    version_number: number;
+  };
+  return {
+    questionnaireId: result.questionnaire_id,
+    sourceVersionId: result.source_version_id,
+    successorVersionId: result.successor_version_id,
+    versionNumber: result.version_number,
+  };
+}
+
+export async function updateQuestionnaireDraftAtomic(
+  client: SupabaseClient,
+  request: UpdateQuestionnaireDraftRequest,
+): Promise<{ questionnaireId: string; versionId: string }> {
+  const { data, error } = await client.schema('sih26044').rpc(
+    'update_questionnaire_draft_atomic',
+    {
+      p_version_id: request.versionId,
+      p_title: request.title,
+      p_description: request.description,
+      p_scope_declaration: request.scopeDeclaration,
+      p_questions: request.questions,
+      p_scoring_policy: request.scoringPolicy || null,
+    },
+  );
+  if (error) throw new Error(`Failed to update questionnaire draft: ${error.message} (${error.code})`);
+  if (!data || typeof data !== 'object') throw new Error('Invalid questionnaire draft response');
+  const result = data as { questionnaire_id: string; version_id: string };
+  return { questionnaireId: result.questionnaire_id, versionId: result.version_id };
 }
 
 /**

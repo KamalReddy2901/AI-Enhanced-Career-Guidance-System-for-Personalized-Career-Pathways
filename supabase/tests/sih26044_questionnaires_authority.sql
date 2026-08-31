@@ -262,6 +262,140 @@ $$;
 reset role;
 
 -- ============================================================================
+-- TEST 5A: Successor draft preserves the currently published live version
+-- ============================================================================
+
+set local role authenticated;
+set local request.jwt.claim.sub = '10000000-0000-0000-0000-000000000001';
+
+do $$
+declare
+  v_source_id uuid;
+  v_questionnaire_id uuid;
+  v_result jsonb;
+  v_live_version_id uuid;
+  v_source_count integer;
+  v_successor_count integer;
+begin
+  select version.id, version.questionnaire_id into v_source_id, v_questionnaire_id
+  from sih26044.questionnaire_versions version
+  where version.status = 'published' limit 1;
+
+  select sih26044.create_questionnaire_successor_draft(v_source_id) into v_result;
+  select current_version_id into v_live_version_id
+  from sih26044.questionnaires where id = v_questionnaire_id;
+  select count(*) into v_source_count from sih26044.questionnaire_questions where questionnaire_version_id = v_source_id;
+  select count(*) into v_successor_count from sih26044.questionnaire_questions where questionnaire_version_id = (v_result->>'successor_version_id')::uuid;
+
+  if v_live_version_id <> v_source_id
+    or (v_result->>'version_number')::integer <> 2
+    or v_source_count <> v_successor_count then
+    raise exception 'FAIL: Successor draft changed live authority or failed to clone exact questions';
+  end if;
+  raise notice 'TEST 5A PASSED: Successor draft leaves published version live';
+end;
+$$;
+
+reset role;
+
+-- ============================================================================
+-- TEST 5B: Exact successor draft can be edited atomically without source mutation
+-- ============================================================================
+
+set local role authenticated;
+set local request.jwt.claim.sub = '10000000-0000-0000-0000-000000000001';
+
+do $$
+declare
+  v_draft_id uuid;
+begin
+  select id into v_draft_id from sih26044.questionnaire_versions
+  where version_number = 2 and status = 'draft' limit 1;
+
+  perform sih26044.update_questionnaire_draft_atomic(
+    v_draft_id, 'Technical Screening v2', 'Revised contextual assessment',
+    'opportunity_specific',
+    '[
+      {"question_type":"single_choice","question_text":"Preferred programming language?","choice_options":[{"value":"python","label":"Python"}],"scoring_weight":10},
+      {"question_type":"numeric","question_text":"Years of applied experience?","numeric_min":0,"numeric_max":10,"scoring_weight":5},
+      {"question_type":"text","question_text":"Describe a recent project."}
+    ]'::jsonb,
+    '{"version":"2.0","rules":{"method":"weighted_sum","max_score":15}}'::jsonb
+  );
+
+  if (select title from sih26044.questionnaire_versions where version_number = 1 limit 1) <> 'Technical Screening v1'
+    or (select title from sih26044.questionnaire_versions where id = v_draft_id) <> 'Technical Screening v2'
+    or (select count(*) from sih26044.questionnaire_questions where questionnaire_version_id = v_draft_id) <> 3 then
+    raise exception 'FAIL: Draft edit mutated source or was not atomic';
+  end if;
+  raise notice 'TEST 5B PASSED: Exact successor draft edited without source mutation';
+end;
+$$;
+
+reset role;
+
+-- ============================================================================
+-- TEST 5C: Unrelated recruiter cannot revise another organization's questionnaire
+-- ============================================================================
+
+select set_config(
+  'test.questionnaire_source_version_id',
+  (select id::text from sih26044.questionnaire_versions where version_number = 1 and status = 'published' limit 1),
+  true
+);
+
+set local role authenticated;
+set local request.jwt.claim.sub = '10000000-0000-0000-0000-000000000002';
+
+do $$
+declare
+  v_source_id uuid;
+begin
+  v_source_id := current_setting('test.questionnaire_source_version_id')::uuid;
+  perform sih26044.create_questionnaire_successor_draft(v_source_id);
+  raise exception 'FAIL: Unrelated recruiter created successor draft';
+exception when others then
+  if sqlerrm like '%INSUFFICIENT_AUTHORITY%' then
+    raise notice 'TEST 5C PASSED: Unrelated recruiter cannot create successor';
+  else
+    raise;
+  end if;
+end;
+$$;
+
+reset role;
+
+-- ============================================================================
+-- TEST 5D: Explicit publication atomically promotes successor as current
+-- ============================================================================
+
+set local role authenticated;
+set local request.jwt.claim.sub = '10000000-0000-0000-0000-000000000001';
+
+do $$
+declare
+  v_source_id uuid;
+  v_successor_id uuid;
+  v_questionnaire_id uuid;
+begin
+  select id, questionnaire_id into v_successor_id, v_questionnaire_id
+  from sih26044.questionnaire_versions where version_number = 2 and status = 'draft' limit 1;
+  select id into v_source_id from sih26044.questionnaire_versions
+  where questionnaire_id = v_questionnaire_id and version_number = 1;
+
+  perform sih26044.publish_questionnaire_atomic(v_successor_id);
+  if (select current_version_id from sih26044.questionnaires where id = v_questionnaire_id) <> v_successor_id
+    or (select status from sih26044.questionnaire_versions where id = v_source_id) <> 'published'
+    or (select status from sih26044.questionnaire_versions where id = v_successor_id) <> 'published' then
+    raise exception 'FAIL: Successor publication did not switch stable current authority correctly';
+  end if;
+  raise notice 'TEST 5D PASSED: Explicit publication promoted successor and preserved source';
+end;
+$$;
+
+reset role;
+
+-- ============================================================================
 -- TEST 6: Student can start submission for published questionnaire
 -- ============================================================================
 

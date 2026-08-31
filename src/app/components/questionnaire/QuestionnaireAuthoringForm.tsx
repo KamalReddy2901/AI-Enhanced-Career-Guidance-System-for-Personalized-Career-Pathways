@@ -25,12 +25,16 @@ interface QuestionFormData {
 
 interface QuestionnaireAuthoringFormProps {
   initialData?: Partial<QuestionnaireFormData>;
+  heading?: string;
+  submitLabel?: string;
   onSubmit: (data: QuestionnaireFormData) => Promise<void>;
   onCancel: () => void;
 }
 
 export function QuestionnaireAuthoringForm({
   initialData,
+  heading = 'Create Questionnaire',
+  submitLabel = 'Create questionnaire',
   onSubmit,
   onCancel,
 }: QuestionnaireAuthoringFormProps) {
@@ -140,7 +144,7 @@ export function QuestionnaireAuthoringForm({
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl space-y-6" noValidate>
       <div className="border-2 border-black bg-white p-6 shadow-[5px_5px_0_#111]">
-        <h2 className="text-2xl font-bold mb-4">Create Questionnaire</h2>
+        <h2 className="text-2xl font-bold mb-4">{heading}</h2>
 
         {error && (
           <div role="alert" aria-live="assertive" className="mb-4 border-2 border-[#d63c1d] bg-[#fff4c7] p-4 text-black">
@@ -248,7 +252,7 @@ export function QuestionnaireAuthoringForm({
             className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
             disabled={submitting}
           >
-            {submitting ? 'Saving...' : 'Save Draft'}
+            {submitting ? 'Saving...' : submitLabel}
           </button>
         </div>
       </div>

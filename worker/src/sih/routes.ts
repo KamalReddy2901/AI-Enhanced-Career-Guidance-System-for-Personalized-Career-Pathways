@@ -9,11 +9,15 @@ import { deriveArtifactBackedEvidence, registerArtifact } from './artifacts';
 import { createAndFinalizeApplicationSnapshot } from './applications';
 import {
   createQuestionnaireAtomic,
+  createQuestionnaireSuccessorDraft,
   publishQuestionnaireAtomic,
   submitQuestionnaireAtomic,
+  updateQuestionnaireDraftAtomic,
   type CreateQuestionnaireRequest,
+  type CreateQuestionnaireSuccessorRequest,
   type PublishQuestionnaireRequest,
   type SubmitQuestionnaireRequest,
+  type UpdateQuestionnaireDraftRequest,
 } from './questionnaires';
 import type {
   CreateApplicationSnapshotRequest,
@@ -42,6 +46,8 @@ export interface SihRouteDependencies {
   deriveArtifactBackedEvidence?(request: Request, env: SihEnv, derivation: DeriveArtifactBackedEvidenceRequest): Promise<DeriveArtifactBackedEvidenceResponse['derivedEvidenceRecord']>;
   createApplicationSnapshot?(request: Request, env: SihEnv, snapshotRequest: CreateApplicationSnapshotRequest): Promise<CreateApplicationSnapshotResponse>;
   createQuestionnaire?(request: Request, env: SihEnv, questionnaireRequest: CreateQuestionnaireRequest): Promise<{ questionnaireId: string; versionId: string }>;
+  createQuestionnaireSuccessor?(request: Request, env: SihEnv, successorRequest: CreateQuestionnaireSuccessorRequest): Promise<{ questionnaireId: string; sourceVersionId: string; successorVersionId: string; versionNumber: number }>;
+  updateQuestionnaireDraft?(request: Request, env: SihEnv, draftRequest: UpdateQuestionnaireDraftRequest): Promise<{ questionnaireId: string; versionId: string }>;
   publishQuestionnaire?(request: Request, env: SihEnv, publishRequest: PublishQuestionnaireRequest): Promise<{ questionnaireId: string; versionId: string; publishedAt: string }>;
   submitQuestionnaire?(request: Request, env: SihEnv, submitRequest: SubmitQuestionnaireRequest): Promise<{ submissionId: string; submittedAt: string; computedScore: number | null; maxScore: number | null }>;
 }
@@ -76,6 +82,14 @@ const productionDependencies: SihRouteDependencies = {
   async createQuestionnaire(request, env, questionnaireRequest) {
     const { client } = await authenticateAndResolveActor(request, env);
     return createQuestionnaireAtomic(client, questionnaireRequest);
+  },
+  async createQuestionnaireSuccessor(request, env, successorRequest) {
+    const { client } = await authenticateAndResolveActor(request, env);
+    return createQuestionnaireSuccessorDraft(client, successorRequest);
+  },
+  async updateQuestionnaireDraft(request, env, draftRequest) {
+    const { client } = await authenticateAndResolveActor(request, env);
+    return updateQuestionnaireDraftAtomic(client, draftRequest);
   },
   async publishQuestionnaire(request, env, publishRequest) {
     const { client } = await authenticateAndResolveActor(request, env);
@@ -213,6 +227,31 @@ export async function handleSihRequest(
     }
 
     // 8. Publish questionnaire
+    if (url.pathname === '/sih/questionnaires/successor' && request.method === 'POST') {
+      const record = await parseJsonBody(request);
+      if (!uuid.test(String(record.sourceVersionId ?? ''))) {
+        throw new SihRouteError('INVALID_REQUEST', 400, 'Valid sourceVersionId is required.');
+      }
+      const result = await (dependencies.createQuestionnaireSuccessor ?? productionDependencies.createQuestionnaireSuccessor!)(
+        request, env, record as unknown as CreateQuestionnaireSuccessorRequest,
+      );
+      return respond({ ok: true, ...result }, 200);
+    }
+
+    if (url.pathname === '/sih/questionnaires/draft' && request.method === 'PUT') {
+      const record = await parseJsonBody(request);
+      if (!uuid.test(String(record.versionId ?? '')) ||
+          typeof record.title !== 'string' || typeof record.description !== 'string' ||
+          !Array.isArray(record.questions)) {
+        throw new SihRouteError('INVALID_REQUEST', 400, 'Valid versionId, title, description, and questions are required.');
+      }
+      const result = await (dependencies.updateQuestionnaireDraft ?? productionDependencies.updateQuestionnaireDraft!)(
+        request, env, record as unknown as UpdateQuestionnaireDraftRequest,
+      );
+      return respond({ ok: true, ...result }, 200);
+    }
+
+    // 10. Publish questionnaire
     if (url.pathname === '/sih/questionnaires/publish' && request.method === 'POST') {
       const record = await parseJsonBody(request);
       if (!uuid.test(String(record.versionId ?? ''))) {
