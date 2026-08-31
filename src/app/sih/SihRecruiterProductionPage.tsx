@@ -6,6 +6,7 @@ import type { AccessState } from '../components/sih/recruiter/RecruiterAccessSta
 import type {
   ApplicationEventReadModel,
   ApplicationReadModel,
+  ApplicationRecruitmentRecordReadModel,
 } from '../services/sih/types';
 import type { ProductionRecruiterProjection } from '../services/sih/productionRecruiterProjection';
 import { ProductionRecruiterReads } from '../services/sih/productionRecruiterReads';
@@ -22,6 +23,11 @@ const RECRUITER_TRANSITIONS: Partial<Record<ApplicationStage, readonly Applicati
   offered: ['cancelled'],
   accepted: ['active', 'cancelled'],
   active: ['completed', 'cancelled'],
+  completed: ['outcome_recorded'],
+  declined: ['outcome_recorded'],
+  rejected_by_human: ['outcome_recorded'],
+  withdrawn: ['outcome_recorded'],
+  cancelled: ['outcome_recorded'],
 };
 
 export function ApplicantsPage() {
@@ -36,6 +42,7 @@ export function ApplicantsPage() {
   const [organizationId, setOrganizationId] = useState<OrganizationId>();
   const [applications, setApplications] = useState<readonly ApplicationReadModel[]>([]);
   const [events, setEvents] = useState<readonly ApplicationEventReadModel[]>([]);
+  const [recruitmentRecords, setRecruitmentRecords] = useState<readonly ApplicationRecruitmentRecordReadModel[]>([]);
   const [projection, setProjection] = useState<ProductionRecruiterProjection>();
   const [accessState, setAccessState] = useState<AccessState>('unavailable');
   const [loadError, setLoadError] = useState<string>();
@@ -79,6 +86,7 @@ export function ApplicantsPage() {
   const refreshSelected = useCallback(async () => {
     if (!dal || !recruiterReads || !selectedApplication) {
       setEvents([]);
+      setRecruitmentRecords([]);
       setProjection(undefined);
       setAccessState(applicationId ? 'unavailable' : 'unavailable');
       return;
@@ -86,11 +94,13 @@ export function ApplicantsPage() {
     setAccessState('loading');
     setLoadError(undefined);
     try {
-      const [nextEvents, exact] = await Promise.all([
+      const [nextEvents, nextRecords, exact] = await Promise.all([
         dal.listApplicationEvents(selectedApplication.id),
+        dal.listApplicationRecruitmentRecords(selectedApplication.id),
         recruiterReads.getExactSubmittedProjection(selectedApplication.id),
       ]);
       setEvents(nextEvents);
+      setRecruitmentRecords(nextRecords);
       if (!exact) {
         setProjection(undefined);
         setAccessState('unavailable');
@@ -115,6 +125,14 @@ export function ApplicantsPage() {
     readonly reason?: string;
     readonly note?: string;
     readonly applicationSnapshotId?: string;
+    readonly sharedMessage?: string;
+    readonly internalNote?: string;
+    readonly scheduledAt?: string;
+    readonly scheduleTimezone?: string;
+    readonly interactionMode?: string;
+    readonly locationReference?: string;
+    readonly expiresAt?: string;
+    readonly outcomeKind?: import('../services/sih/types').ApplicationOutcomeKind;
   }) {
     if (!actorId || !dal || !selectedApplication) return;
     setTransitioning(true);
@@ -125,12 +143,43 @@ export function ApplicantsPage() {
         fromStage: input.fromStage,
         toStage: input.toStage,
         reason: input.reason,
-        note: input.note,
+        sharedMessage: input.sharedMessage ?? input.note,
+        internalNote: input.internalNote,
+        scheduledAt: input.scheduledAt,
+        scheduleTimezone: input.scheduleTimezone,
+        interactionMode: input.interactionMode,
+        locationReference: input.locationReference,
+        expiresAt: input.expiresAt,
+        outcomeKind: input.outcomeKind,
       });
       await refreshApplications();
       await refreshSelected();
     } catch (reason) {
       const message = reason instanceof Error ? reason.message : 'Human stage transition failed.';
+      setLoadError(message);
+      throw new Error(message);
+    } finally {
+      setTransitioning(false);
+    }
+  }
+
+  async function recordAction(input: {
+    readonly kind: 'evidence_response' | 'interview_completed' | 'feedback';
+    readonly sharedMessage?: string;
+    readonly internalNote?: string;
+  }) {
+    if (!dal || !selectedApplication) return;
+    setTransitioning(true);
+    setLoadError(undefined);
+    try {
+      await dal.recordApplicationRecruitmentAction({
+        applicationId: selectedApplication.id,
+        currentStage: selectedApplication.currentStage,
+        ...input,
+      });
+      await refreshSelected();
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : 'Recruitment detail could not be recorded.';
       setLoadError(message);
       throw new Error(message);
     } finally {
@@ -183,11 +232,13 @@ export function ApplicantsPage() {
           projection={projection}
           projectionAccessState={selectedApplication ? accessState : 'unavailable'}
           events={events}
+          recruitmentRecords={recruitmentRecords}
           recruiterOrganizationId={organizationId}
           onSelectApplication={(id) => navigate(`/industry/applicants/${id}`)}
           onTransitionApplicationStage={transition}
           isProcessingTransition={transitioning}
           allowedNextStages={selectedApplication ? (RECRUITER_TRANSITIONS[selectedApplication.currentStage] ?? []) : []}
+          onRecordApplicationAction={recordAction}
         />
       )}
     </div>

@@ -15,7 +15,11 @@ import type {
 } from "../../domain";
 import type {
   ApplicationEventReadModel,
+  ApplicationOutcomeKind,
   ApplicationReadModel,
+  ApplicationRecruitmentRecordKind,
+  ApplicationRecruitmentRecordReadModel,
+  ApplicationSnapshotReadModel,
   ConsentGrantReadModel,
   CompleteVerificationRequestDecisionInput,
   CompleteVerificationRequestDecisionResult,
@@ -112,6 +116,26 @@ export interface TransitionApplicationStageInput {
   /** Required for submission. This is the exact finalized immutable snapshot;
    * callers must never infer it from the newest/finalized snapshot. */
   readonly applicationSnapshotId?: string;
+  /** Applicant-visible lifecycle detail. This is never an internal note. */
+  readonly sharedMessage?: string;
+  readonly internalNote?: string;
+  readonly scheduledAt?: string;
+  readonly scheduleTimezone?: string;
+  readonly interactionMode?: string;
+  readonly locationReference?: string;
+  readonly expiresAt?: string;
+  readonly outcomeKind?: ApplicationOutcomeKind;
+}
+
+export interface RecordApplicationRecruitmentActionInput {
+  readonly applicationId: ApplicationId;
+  readonly currentStage: ApplicationStage;
+  readonly kind: Extract<
+    ApplicationRecruitmentRecordKind,
+    "evidence_response" | "interview_completed" | "feedback"
+  >;
+  readonly sharedMessage?: string;
+  readonly internalNote?: string;
 }
 
 interface ListVerificationRequestsFilterBase {
@@ -258,6 +282,25 @@ interface ApplicationEventRow {
   occurred_at: string;
 }
 
+interface ApplicationRecruitmentRecordRow {
+  id: string;
+  application_id: string;
+  application_event_id: string | null;
+  outcome_event_id: string | null;
+  kind: ApplicationRecruitmentRecordKind;
+  actor_id: string;
+  actor_organization_id: string | null;
+  visibility: "applicant_and_recruiter" | "recruiter_internal";
+  message: string | null;
+  scheduled_at: string | null;
+  schedule_timezone: string | null;
+  interaction_mode: string | null;
+  location_reference: string | null;
+  expires_at: string | null;
+  outcome_kind: ApplicationOutcomeKind | null;
+  occurred_at: string;
+}
+
 interface ConsentGrantRow {
   id: string;
   subject_actor_id: string;
@@ -284,6 +327,8 @@ const applicationSelect =
   "id,applicant_actor_id,opportunity_id,opportunity_version_id,owner_organization_id,initial_stage,created_at";
 const applicationEventSelect =
   "id,sequence_number,application_id,from_stage,to_stage,event_kind,application_snapshot_id,actor_id,reason,note,occurred_at";
+const applicationRecruitmentRecordSelect =
+  "id,sequence_number,application_id,application_event_id,outcome_event_id,kind,actor_id,actor_organization_id,visibility,message,scheduled_at,schedule_timezone,interaction_mode,location_reference,expires_at,outcome_kind,occurred_at";
 
 function required(value: string | null, field: string): string {
   if (value === null)
@@ -741,6 +786,83 @@ export class SihBrowserDal {
     }));
   }
 
+  async getExactSubmittedApplicationSnapshot(
+    applicationId: ApplicationId,
+  ): Promise<ApplicationSnapshotReadModel | null> {
+    const { data: events, error: eventError } = await this.db()
+      .from("application_events")
+      .select("application_snapshot_id,to_stage,event_kind,sequence_number")
+      .eq("application_id", applicationId)
+      .eq("to_stage", "applied")
+      .eq("event_kind", "stage_transition")
+      .order("sequence_number", { ascending: true })
+      .limit(2);
+    if (eventError) throw eventError;
+    if (!events || events.length === 0) return null;
+    if (events.length !== 1 || !events[0].application_snapshot_id) {
+      throw new Error("Application history does not identify one exact submitted snapshot.");
+    }
+    const snapshotId = events[0].application_snapshot_id as string;
+    const [snapshotResult, evidenceResult] = await Promise.all([
+      this.db()
+        .from("application_snapshots")
+        .select("id,application_id,opportunity_version_id,readiness_result_id,engine_version,evidence_policy_version,recruiter_projection_version,captured_at,integrity_fingerprint,finalized_at")
+        .eq("id", snapshotId)
+        .eq("application_id", applicationId)
+        .maybeSingle(),
+      this.db()
+        .from("application_snapshot_evidence")
+        .select("evidence_record_id")
+        .eq("application_snapshot_id", snapshotId),
+    ]);
+    if (snapshotResult.error) throw snapshotResult.error;
+    if (evidenceResult.error) throw evidenceResult.error;
+    const row = snapshotResult.data;
+    if (!row || !row.finalized_at || !row.integrity_fingerprint) return null;
+    return {
+      id: row.id,
+      applicationId: row.application_id as ApplicationId,
+      opportunityVersionId: row.opportunity_version_id,
+      readinessResultId: row.readiness_result_id,
+      engineVersion: row.engine_version,
+      evidencePolicyVersion: row.evidence_policy_version,
+      recruiterProjectionVersion: row.recruiter_projection_version,
+      capturedAt: row.captured_at,
+      integrityFingerprint: row.integrity_fingerprint,
+      finalizedAt: row.finalized_at,
+      selectedEvidenceRecordIds: (evidenceResult.data ?? []).map(link => link.evidence_record_id as EvidenceRecordId).sort(),
+    };
+  }
+
+  async listApplicationRecruitmentRecords(
+    applicationId: ApplicationId,
+  ): Promise<ApplicationRecruitmentRecordReadModel[]> {
+    const { data, error } = await this.db()
+      .from("application_recruitment_records")
+      .select(applicationRecruitmentRecordSelect)
+      .eq("application_id", applicationId)
+      .order("sequence_number", { ascending: true });
+    if (error) throw error;
+    return ((data ?? []) as ApplicationRecruitmentRecordRow[]).map((row) => ({
+      id: row.id,
+      applicationId: row.application_id as ApplicationId,
+      applicationEventId: row.application_event_id ?? undefined,
+      outcomeEventId: row.outcome_event_id ?? undefined,
+      kind: row.kind,
+      actorId: row.actor_id,
+      actorOrganizationId: row.actor_organization_id ?? undefined,
+      visibility: row.visibility,
+      message: row.message ?? undefined,
+      scheduledAt: row.scheduled_at ?? undefined,
+      scheduleTimezone: row.schedule_timezone ?? undefined,
+      interactionMode: row.interaction_mode ?? undefined,
+      locationReference: row.location_reference ?? undefined,
+      expiresAt: row.expires_at ?? undefined,
+      outcomeKind: row.outcome_kind ?? undefined,
+      occurredAt: row.occurred_at,
+    }));
+  }
+
   async listApplicationReviewConsentsForSubject(
     subjectActorId: ActorId,
     granteeOrganizationId?: OrganizationId,
@@ -1044,17 +1166,45 @@ export class SihBrowserDal {
     actorId: string,
     input: TransitionApplicationStageInput,
   ) {
-    const eventKind =
-      input.toStage === "rejected_by_human"
-        ? "human_rejection"
-        : "stage_transition";
+    if (input.toStage !== "applied") {
+      const kind: ApplicationRecruitmentRecordKind =
+        input.toStage === "evidence_requested"
+          ? "evidence_request"
+          : input.toStage === "interview"
+            ? "interview_scheduled"
+            : input.toStage === "offered"
+              ? "offer"
+              : input.toStage === "outcome_recorded"
+                ? "outcome"
+                : "stage_transition";
+      const { data, error } = await this.db().rpc(
+        "record_application_recruitment_action",
+        {
+          requested_application_id: input.applicationId,
+          requested_expected_from_stage: input.fromStage,
+          requested_to_stage: input.toStage,
+          requested_kind: kind,
+          requested_message: input.sharedMessage ?? input.note ?? null,
+          requested_reason: input.reason ?? null,
+          requested_internal_note: input.internalNote ?? null,
+          requested_scheduled_at: input.scheduledAt ?? null,
+          requested_schedule_timezone: input.scheduleTimezone ?? null,
+          requested_interaction_mode: input.interactionMode ?? null,
+          requested_location_reference: input.locationReference ?? null,
+          requested_expires_at: input.expiresAt ?? null,
+          requested_outcome_kind: input.outcomeKind ?? null,
+        },
+      );
+      if (error) throw error;
+      return Array.isArray(data) ? data[0] : data;
+    }
     const { data, error } = await this.db()
       .from("application_events")
       .insert({
         application_id: input.applicationId,
         from_stage: input.fromStage,
         to_stage: input.toStage,
-        event_kind: eventKind,
+        event_kind: "stage_transition",
         application_snapshot_id: input.applicationSnapshotId ?? null,
         actor_id: actorId,
         reason: input.reason ?? null,
@@ -1064,6 +1214,31 @@ export class SihBrowserDal {
       .single();
     if (error) throw error;
     return data;
+  }
+
+  async recordApplicationRecruitmentAction(
+    input: RecordApplicationRecruitmentActionInput,
+  ) {
+    const { data, error } = await this.db().rpc(
+      "record_application_recruitment_action",
+      {
+        requested_application_id: input.applicationId,
+        requested_expected_from_stage: input.currentStage,
+        requested_to_stage: null,
+        requested_kind: input.kind,
+        requested_message: input.sharedMessage ?? null,
+        requested_reason: null,
+        requested_internal_note: input.internalNote ?? null,
+        requested_scheduled_at: null,
+        requested_schedule_timezone: null,
+        requested_interaction_mode: null,
+        requested_location_reference: null,
+        requested_expires_at: null,
+        requested_outcome_kind: null,
+      },
+    );
+    if (error) throw error;
+    return Array.isArray(data) ? data[0] : data;
   }
 
   /** Explicit high-impact publication action. The database function derives

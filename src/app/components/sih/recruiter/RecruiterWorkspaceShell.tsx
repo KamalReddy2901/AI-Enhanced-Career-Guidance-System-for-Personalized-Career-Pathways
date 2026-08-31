@@ -1,7 +1,7 @@
-import type { ApplicationReadModel, ApplicationEventReadModel } from '../../../services/sih/types';
+import type { ApplicationReadModel, ApplicationEventReadModel, ApplicationRecruitmentRecordReadModel } from '../../../services/sih/types';
 import type { ProductionRecruiterProjection } from '../../../services/sih/productionRecruiterProjection';
 import type { OrganizationId } from '../../../domain';
-import type { TransitionApplicationStageInput } from '../../../services/sih/browserDal';
+import type { RecordApplicationRecruitmentActionInput, TransitionApplicationStageInput } from '../../../services/sih/browserDal';
 import type { ApplicationStage } from '../../../domain/application';
 
 import ApplicationListTable from './ApplicationListTable';
@@ -9,6 +9,7 @@ import ApplicationDetailView from './ApplicationDetailView';
 import RecruiterAccessState, { type AccessState } from './RecruiterAccessState';
 import HumanStageActionPanel from './HumanStageActionPanel';
 import ApplicationEventTimeline from './ApplicationEventTimeline';
+import { ApplicationRecruitmentTimeline } from '../application/ApplicationRecruitmentTimeline';
 
 interface Props {
   readonly applications: readonly ApplicationReadModel[];
@@ -16,6 +17,7 @@ interface Props {
   readonly projection?: ProductionRecruiterProjection;
   readonly projectionAccessState: AccessState;
   readonly events: readonly ApplicationEventReadModel[];
+  readonly recruitmentRecords: readonly ApplicationRecruitmentRecordReadModel[];
   
   readonly recruiterOrganizationId: OrganizationId;
   
@@ -23,6 +25,7 @@ interface Props {
   readonly onTransitionApplicationStage: (input: Omit<TransitionApplicationStageInput, 'applicationId'>) => Promise<void>;
   readonly isProcessingTransition: boolean;
   readonly allowedNextStages: readonly ApplicationStage[];
+  readonly onRecordApplicationAction: (input: Omit<RecordApplicationRecruitmentActionInput, 'applicationId' | 'currentStage'>) => Promise<void>;
 }
 
 export default function RecruiterWorkspaceShell({
@@ -31,11 +34,13 @@ export default function RecruiterWorkspaceShell({
   projection,
   projectionAccessState,
   events,
+  recruitmentRecords,
   recruiterOrganizationId,
   onSelectApplication,
   onTransitionApplicationStage,
   isProcessingTransition,
-  allowedNextStages
+  allowedNextStages,
+  onRecordApplicationAction,
 }: Props) {
   return (
     <div className="mx-auto max-w-6xl space-y-8 p-4 sm:p-8">
@@ -71,9 +76,11 @@ export default function RecruiterWorkspaceShell({
                     allowedNextStages={allowedNextStages}
                     onTransition={onTransitionApplicationStage}
                     isProcessing={isProcessingTransition}
+                    onRecordAction={onRecordApplicationAction}
                   />
 
                   <ApplicationEventTimeline events={events} />
+                  <ApplicationRecruitmentTimeline records={recruitmentRecords} />
                 </>
               )}
             </RecruiterAccessState>

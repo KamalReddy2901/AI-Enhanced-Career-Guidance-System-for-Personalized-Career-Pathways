@@ -134,6 +134,20 @@ export interface ApplicationReadModel {
   readonly createdAt: string;
 }
 
+export interface ApplicationSnapshotReadModel {
+  readonly id: string;
+  readonly applicationId: ApplicationId;
+  readonly opportunityVersionId: string;
+  readonly readinessResultId: string;
+  readonly engineVersion: string;
+  readonly evidencePolicyVersion: string;
+  readonly recruiterProjectionVersion: string;
+  readonly capturedAt: string;
+  readonly integrityFingerprint: string;
+  readonly finalizedAt: string;
+  readonly selectedEvidenceRecordIds: readonly EvidenceRecordId[];
+}
+
 export interface ApplicationEventReadModel {
   readonly id: string;
   readonly applicationId: ApplicationId;
@@ -144,6 +158,45 @@ export interface ApplicationEventReadModel {
   readonly actorId: string;
   readonly reason?: string;
   readonly note?: string;
+  readonly occurredAt: string;
+}
+
+export type ApplicationRecruitmentRecordKind =
+  | "stage_transition"
+  | "evidence_request"
+  | "evidence_response"
+  | "interview_scheduled"
+  | "interview_completed"
+  | "offer"
+  | "outcome"
+  | "feedback"
+  | "recruiter_note";
+
+export type ApplicationOutcomeKind =
+  | "selected"
+  | "joined"
+  | "completed"
+  | "credential_awarded"
+  | "project_delivered"
+  | "placement_confirmed"
+  | "engagement_completed";
+
+export interface ApplicationRecruitmentRecordReadModel {
+  readonly id: string;
+  readonly applicationId: ApplicationId;
+  readonly applicationEventId?: string;
+  readonly outcomeEventId?: string;
+  readonly kind: ApplicationRecruitmentRecordKind;
+  readonly actorId: string;
+  readonly actorOrganizationId?: string;
+  readonly visibility: "applicant_and_recruiter" | "recruiter_internal";
+  readonly message?: string;
+  readonly scheduledAt?: string;
+  readonly scheduleTimezone?: string;
+  readonly interactionMode?: string;
+  readonly locationReference?: string;
+  readonly expiresAt?: string;
+  readonly outcomeKind?: ApplicationOutcomeKind;
   readonly occurredAt: string;
 }
 
