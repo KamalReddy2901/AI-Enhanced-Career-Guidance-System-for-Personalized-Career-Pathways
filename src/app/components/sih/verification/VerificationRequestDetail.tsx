@@ -20,6 +20,7 @@ export interface VerificationRequestDetailProps {
   isSuccess?: boolean;
   onBack?: () => void;
   onSubmit: (data: VerificationActionFormData) => Promise<void> | void;
+  onFetchArtifactUrl?: (storageReference: string) => Promise<string>;
 }
 
 export function VerificationRequestDetail({
@@ -33,6 +34,7 @@ export function VerificationRequestDetail({
   onBack,
   onSubmit,
   canVerifyAsIssuer,
+  onFetchArtifactUrl,
 }: VerificationRequestDetailProps) {
   const renderScope = () => {
     const scope = request.scope;
@@ -172,7 +174,11 @@ export function VerificationRequestDetail({
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {artifacts.map(artifact => (
-                    <ArtifactPreview key={artifact.id} artifact={artifact} />
+                    <ArtifactPreview
+                      key={artifact.id}
+                      artifact={artifact}
+                      onFetchPreviewUrl={onFetchArtifactUrl}
+                    />
                   ))}
                 </div>
               )}
