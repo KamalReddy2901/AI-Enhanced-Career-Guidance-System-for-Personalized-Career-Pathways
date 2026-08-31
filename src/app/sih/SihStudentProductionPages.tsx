@@ -12,7 +12,13 @@ import ApplicationPreparationWorkspace from '../components/sih/student/applicati
 import ApplicationFinalizationPanel from '../components/sih/student/application/ApplicationFinalizationPanel';
 import { EvidenceUploadModal } from '../components/sih/student/evidence/EvidenceUploadModal';
 import { StudentApplicationDetail } from '../components/sih/student/application/StudentApplicationDetail';
-import type { ApplicationReadModel, EvidenceRecordReadModel, ApplicationEventReadModel } from '../services/sih/types';
+import type {
+  ApplicationReadModel,
+  EvidenceRecordReadModel,
+  ApplicationEventReadModel,
+  VerificationEventReadModel,
+  VerificationRequestReadModel,
+} from '../services/sih/types';
 import {
   ProductionOpportunityReads,
   type ProductionOpportunityBundle,
@@ -347,9 +353,14 @@ export function EvidencePage() {
   const { actorId, dal, trustedApi } = useSihProduction();
   const [searchParams] = useSearchParams();
   const [evidence, setEvidence] = useState<readonly EvidenceRecordReadModel[]>([]);
+  const [verificationContexts, setVerificationContexts] = useState<ReadonlyMap<string, readonly {
+    request: VerificationRequestReadModel;
+    latestEvent?: VerificationEventReadModel;
+  }[]>>(new Map());
   const [error, setError] = useState<string>();
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedEvidenceForUpload, setSelectedEvidenceForUpload] = useState<EvidenceRecordId | undefined>();
+  const [evidenceRefreshVersion, setEvidenceRefreshVersion] = useState(0);
   const opportunityVersionId = searchParams.get('opportunityVersionId');
   const requirementId = searchParams.get('requirementId');
   const source = searchParams.get('source');
@@ -357,9 +368,28 @@ export function EvidencePage() {
   useEffect(() => {
     if (!actorId || !dal) return;
     let active = true;
-    void dal.listEvidenceForSubject(actorId)
-      .then((next) => {
-        if (active) setEvidence(next);
+    void Promise.all([
+      dal.listEvidenceForSubject(actorId),
+      dal.listVerificationRequestsForSubject(actorId),
+    ])
+      .then(async ([nextEvidence, requests]) => {
+        const histories = await Promise.all(requests.map(async request => ({
+          request,
+          events: await dal.listVerificationEvents({ verificationRequestId: request.id }),
+        })));
+        if (!active) return;
+        setEvidence(nextEvidence);
+        const nextContexts = new Map<string, Array<{
+          request: VerificationRequestReadModel;
+          latestEvent?: VerificationEventReadModel;
+        }>>();
+        histories.forEach(({ request, events }) => {
+          const current = nextContexts.get(request.evidenceRecordId) ?? [];
+          const decisiveEvents = events.filter(event => event.action !== 'submitted_for_review');
+          current.push({ request, latestEvent: decisiveEvents.at(-1) });
+          nextContexts.set(request.evidenceRecordId, current);
+        });
+        setVerificationContexts(nextContexts);
       })
       .catch((reason) => {
         if (active) setError(reason instanceof Error ? reason.message : 'Unable to load evidence.');
@@ -367,13 +397,10 @@ export function EvidencePage() {
     return () => {
       active = false;
     };
-  }, [actorId, dal]);
+  }, [actorId, dal, evidenceRefreshVersion]);
 
   function refreshEvidence() {
-    if (!actorId || !dal) return;
-    void dal.listEvidenceForSubject(actorId)
-      .then((next) => setEvidence(next))
-      .catch((reason) => setError(reason instanceof Error ? reason.message : 'Unable to reload evidence.'));
+    setEvidenceRefreshVersion(version => version + 1);
   }
 
   function handleProveEvidence(evidenceId: EvidenceRecordId) {
@@ -428,10 +455,26 @@ export function EvidencePage() {
               <h2 className="font-black leading-relaxed">{record.literalClaim}</h2>
               <dl className="mt-4 grid gap-2 text-xs">
                 <div><dt className="font-mono-ui uppercase text-black/45">Provenance</dt><dd className="mt-1 font-bold">{record.provenance.replaceAll('_', ' ')}</dd></div>
-                <div><dt className="font-mono-ui uppercase text-black/45">Verification</dt><dd className="mt-1 font-bold">{record.initialVerificationState.replaceAll('_', ' ')}</dd></div>
+                <div><dt className="font-mono-ui uppercase text-black/45">Initial verification state</dt><dd className="mt-1 font-bold">{record.initialVerificationState.replaceAll('_', ' ')}</dd></div>
                 <div><dt className="font-mono-ui uppercase text-black/45">Visibility</dt><dd className="mt-1 font-bold">{record.visibility.replaceAll('_', ' ')}</dd></div>
                 <div><dt className="font-mono-ui uppercase text-black/45">Source</dt><dd className="mt-1 font-bold">{record.source.system}</dd></div>
               </dl>
+              {(verificationContexts.get(record.id)?.length ?? 0) > 0 && (
+                <div className="mt-4 border-t border-black/15 pt-3">
+                  <p className="font-mono-ui text-[10px] font-black uppercase text-black/50">Request-scoped verification</p>
+                  <ul className="mt-2 grid gap-2">
+                    {verificationContexts.get(record.id)?.map(({ request, latestEvent }) => (
+                      <li key={request.id} className="border border-black/15 bg-[#f9f8f7] p-2 text-xs">
+                        <span className="font-bold">{latestEvent
+                          ? latestEvent.action.replaceAll('_', ' ')
+                          : 'awaiting decision'}</span>
+                        <span className="ml-2 text-black/55">Request {request.status}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-[11px] text-black/55">Each assertion belongs to its own verifier request and context; it is not a universal mastery claim.</p>
+                </div>
+              )}
               {(record.provenance === 'self_declared' || record.provenance === 'self_reported') && 
                record.initialVerificationState === 'unverified' && (
                 <div className="mt-4">

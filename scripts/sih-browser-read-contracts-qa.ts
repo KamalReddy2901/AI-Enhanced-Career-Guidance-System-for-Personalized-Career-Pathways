@@ -184,6 +184,21 @@ const evidenceReadModel = {
 }
 
 {
+  const requestRow = {
+    id: 'request-subject-1', evidence_record_id: evidenceId, subject_actor_id: actorId,
+    requested_verifier_actor_id: 'verifier-1', requested_verifier_organization_id: 'org-1', consent_grant_id: 'consent-1',
+    scope_kind: 'global_skill', scope_skill_id: null, scope_literal_skill_label: 'Accessibility testing',
+    scope_opportunity_id: null, scope_requirement_id: null, scope_organization_id: null, scope_outcome_event_id: null,
+    status: 'closed', requested_at: '2026-08-28T08:00:00.000Z', expires_at: null, closed_at: '2026-08-28T09:00:00.000Z',
+  };
+  const { dal, queries } = fakeDal([ok([requestRow])]);
+  assert.equal((await dal.listVerificationRequestsForSubject(actorId))[0]?.id, requestRow.id);
+  assert.deepEqual(queries[0]?.filters, [['eq', 'subject_actor_id', actorId]],
+    'Subject verification history must be bounded to the JWT-owned actor row set');
+  assert.ok(queries[0]?.select && queries[0].select !== '*');
+}
+
+{
   const actions = ['submitted_for_review', 'self_confirmed', 'verified_by_human', 'verified_by_issuer', 'disputed', 'revoked', 'corrected'] as const;
   const { dal } = fakeDal([ok(actions.map((action, index) => ({
     id: `event-${index}`, sequence_number: index + 1, verification_request_id: 'request-1', evidence_record_id: evidenceId,
