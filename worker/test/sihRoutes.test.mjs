@@ -53,7 +53,12 @@ test('consequential SIH routes enforce body limits and configured abuse controls
     headers: { 'Content-Type': 'application/json', 'Content-Length': '65537' },
     body: '{}',
   });
-  const oversizedResponse = await handleSihRequest(oversized, env, respond);
+  const oversizedResponse = await handleSihRequest(
+    oversized,
+    env,
+    respond,
+    { recompute: async () => ({}) },
+  );
   assert.equal(oversizedResponse.status, 413);
   assert.equal((await oversizedResponse.json()).error.code, 'INVALID_REQUEST');
 
@@ -120,6 +125,16 @@ test('missing and malformed bearer sessions return 401', async () => {
     assert.equal(response.status, 401);
     assert.equal((await response.json()).error.code, 'UNAUTHENTICATED');
   }
+});
+
+test('protected production routes authenticate before parsing request bodies', async () => {
+  const response = await worker.fetch(new Request('https://worker.test/sih/readiness/recompute', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+  }), env);
+  assert.equal(response.status, 401);
+  assert.equal((await response.json()).error.code, 'UNAUTHENTICATED');
 });
 
 test('invalid or expired session and account without actor are distinct', async () => {
