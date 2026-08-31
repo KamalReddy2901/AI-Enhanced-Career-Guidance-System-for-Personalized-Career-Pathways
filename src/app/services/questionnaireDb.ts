@@ -99,6 +99,46 @@ export async function publishQuestionnaireVersion(
   }
 }
 
+export async function createQuestionnaireSuccessor(
+  sourceVersionId: string,
+): Promise<{ successorVersionId: string; versionNumber: number }> {
+  const token = await getAuthToken();
+  const response = await fetch(`${workerUrl}/sih/questionnaires/successor`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify({ sourceVersionId }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
+    throw new Error(`Failed to create successor draft: ${error.error?.message || response.statusText}`);
+  }
+  const result = await response.json();
+  return { successorVersionId: result.successorVersionId, versionNumber: result.versionNumber };
+}
+
+export async function updateQuestionnaireDraft(
+  versionId: string,
+  formData: QuestionnaireFormData,
+): Promise<void> {
+  const token = await getAuthToken();
+  const response = await fetch(`${workerUrl}/sih/questionnaires/draft`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify({
+      versionId,
+      title: formData.title,
+      description: formData.description,
+      scopeDeclaration: formData.scope_declaration,
+      questions: formData.questions,
+      scoringPolicy: formData.scoring_policy || null,
+    }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
+    throw new Error(`Failed to update questionnaire draft: ${error.error?.message || response.statusText}`);
+  }
+}
+
 /**
  * Fetch questionnaire version with questions (browser RLS read)
  */
