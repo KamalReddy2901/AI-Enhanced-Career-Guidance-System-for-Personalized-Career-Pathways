@@ -432,7 +432,20 @@ begin
     raise exception 'FAIL: Browser-supplied forged score was used';
   end if;
 
-  -- Verify submission is immutable
+  raise notice 'TEST 10A PASSED: Submission finalized with server-derived score %', v_computed_score;
+end;
+$$;
+
+do $$
+declare
+  v_submission_id uuid;
+begin
+  select id into v_submission_id
+  from sih26044.questionnaire_submissions
+  where respondent_actor_id = '30000000-0000-0000-0000-000000000003'::uuid
+    and submitted_at is not null
+  limit 1;
+
   update sih26044.questionnaire_submissions
   set computed_score = 0
   where id = v_submission_id;
@@ -440,7 +453,7 @@ begin
   raise exception 'FAIL: Submitted submission was mutated';
 exception when others then
   if sqlstate = '42501' or sqlerrm like '%SUBMITTED_SUBMISSION_IMMUTABLE%' then
-    raise notice 'TEST 10 PASSED: Submission finalized with server-derived score % and browser mutation is blocked', v_computed_score;
+    raise notice 'TEST 10B PASSED: Submitted questionnaire is immutable';
   elsif sqlerrm like '%FAIL%' then
     raise;
   else
@@ -452,7 +465,103 @@ $$;
 reset role;
 
 -- ============================================================================
--- TEST 11: Student cannot submit for another actor
+-- TEST 11: Trusted finalization materializes bounded, version-exact assessed evidence
+-- ============================================================================
+
+set local role authenticated;
+set local request.jwt.claim.sub = '10000000-0000-0000-0000-000000000003';
+
+do $$
+declare
+  v_mapping record;
+  v_evidence record;
+begin
+  select mapping.* into v_mapping
+  from sih26044.questionnaire_submission_evidence mapping
+  where mapping.respondent_actor_id = '30000000-0000-0000-0000-000000000003'::uuid;
+
+  if v_mapping.questionnaire_submission_id is null
+    or v_mapping.questionnaire_version_id is null
+    or v_mapping.owner_organization_id <> '20000000-0000-0000-0000-000000000001'::uuid
+    or v_mapping.opportunity_id <> '50000000-0000-0000-0000-000000000001'::uuid
+    or v_mapping.opportunity_version_id <> '50000000-0000-0000-0000-000000000002'::uuid
+    or v_mapping.scoring_policy_version <> '1.0'
+    or v_mapping.computed_score is null
+    or v_mapping.max_score <> 5.0 then
+    raise exception 'FAIL: Assessed evidence mapping omitted exact authoritative context: %', row_to_json(v_mapping);
+  end if;
+
+  select evidence.* into v_evidence
+  from sih26044.evidence_records evidence
+  where evidence.id = v_mapping.evidence_record_id;
+
+  if v_evidence.provenance <> 'assessed'
+    or v_evidence.initial_verification_state <> 'unverified'
+    or v_evidence.subject_actor_id <> v_mapping.respondent_actor_id
+    or v_evidence.scope_kind <> 'opportunity'
+    or v_evidence.scope_opportunity_id <> v_mapping.opportunity_id
+    or v_evidence.source_record_id <> v_mapping.questionnaire_submission_id::text
+    or v_evidence.visibility <> 'private' then
+    raise exception 'FAIL: Materialized evidence exceeded assessed/private scope: %', row_to_json(v_evidence);
+  end if;
+
+  raise notice 'TEST 11 PASSED: Finalization atomically produced bounded assessed evidence';
+end;
+$$;
+
+reset role;
+
+-- ============================================================================
+-- TEST 12: Unrelated recruiter cannot read a student's assessment mapping
+-- ============================================================================
+
+set local role authenticated;
+set local request.jwt.claim.sub = '10000000-0000-0000-0000-000000000002';
+
+do $$
+declare
+  v_count integer;
+begin
+  select count(*) into v_count from sih26044.questionnaire_submission_evidence;
+  if v_count <> 0 then
+    raise exception 'FAIL: Unrelated recruiter can read questionnaire assessment mappings';
+  end if;
+  raise notice 'TEST 12 PASSED: Unrelated recruiter cannot read assessment mappings';
+end;
+$$;
+
+reset role;
+
+-- ============================================================================
+-- TEST 13: Browser roles cannot forge questionnaire assessment mappings
+-- ============================================================================
+
+set local role authenticated;
+set local request.jwt.claim.sub = '10000000-0000-0000-0000-000000000003';
+
+do $$
+begin
+  insert into sih26044.questionnaire_submission_evidence (
+    questionnaire_submission_id, evidence_record_id, questionnaire_id,
+    questionnaire_version_id, owner_organization_id, respondent_actor_id,
+    opportunity_id, opportunity_version_id, scope_declaration,
+    scoring_policy_version, computed_score, max_score, submitted_at, materialized_at
+  ) values (
+    gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), gen_random_uuid(),
+    gen_random_uuid(), '30000000-0000-0000-0000-000000000003'::uuid,
+    null, null, 'opportunity_specific', null, null, 0,
+    statement_timestamp(), statement_timestamp()
+  );
+  raise exception 'FAIL: Browser forged questionnaire assessment mapping';
+exception when insufficient_privilege then
+  raise notice 'TEST 13 PASSED: Browser cannot forge assessment mappings';
+end;
+$$;
+
+reset role;
+
+-- ============================================================================
+-- TEST 14: Student cannot submit for another actor
 -- ============================================================================
 
 set local role authenticated;
@@ -489,11 +598,11 @@ exception when others then
     or sqlerrm like '%SUBMISSION_NOT_FOUND_OR_ALREADY_SUBMITTED%'
     or sqlerrm like '%not owned by actor%'
     or sqlerrm like '%row-level security%' then
-    raise notice 'TEST 11 PASSED: Student cannot submit for another actor';
+    raise notice 'TEST 14 PASSED: Student cannot submit for another actor';
   elsif sqlerrm like '%FAIL%' then
     raise;
   else
-    raise exception 'TEST 11: Unexpected error (may indicate RLS gap): %', sqlerrm;
+    raise exception 'TEST 14: Unexpected error (may indicate RLS gap): %', sqlerrm;
   end if;
 end;
 $$;
