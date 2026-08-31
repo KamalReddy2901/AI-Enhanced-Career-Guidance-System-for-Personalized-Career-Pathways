@@ -8,6 +8,8 @@ import { SihProductionRuntime } from "./sih/SihProductionContext";
 import { SihProductionLayout } from "./sih/SihProductionLayout";
 
 const AuthPage = lazy(() => import("./pages/AuthPage").then((m) => ({ default: m.AuthPage })));
+const UnifiedHomePage = lazy(() => import("./pages/UnifiedHomePage").then((m) => ({ default: m.UnifiedHomePage })));
+// Legacy HomePage kept for reference but no longer the root index
 const HomePage = lazy(() => import("./pages/HomePage").then((m) => ({ default: m.HomePage })));
 const JobOverviewPage = lazy(() => import("./pages/JobOverviewPage").then((m) => ({ default: m.JobOverviewPage })));
 const JobDetailPage = lazy(() => import("./pages/JobDetailPage").then((m) => ({ default: m.JobDetailPage })));
@@ -84,7 +86,8 @@ export const router = createBrowserRouter([
         path: "/",
         Component: RootLayout,
         children: [
-          { index: true, Component: HomePage },
+          { index: true, Component: UnifiedHomePage },
+          { path: "legacy-career-home", Component: HomePage },
           { path: "auth", Component: AuthPage },
           { path: "job", Component: JobOverviewPage },
           { path: "job/detail", Component: JobDetailPage },
