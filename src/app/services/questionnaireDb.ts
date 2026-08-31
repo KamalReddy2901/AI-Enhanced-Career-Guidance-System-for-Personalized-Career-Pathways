@@ -450,3 +450,77 @@ export async function listQuestionnaireSubmissions(
 
   return result;
 }
+
+/**
+ * Get detailed submission responses for recruiter review.
+ * RLS enforces organization-scoped visibility.
+ */
+export async function getSubmissionResponses(
+  submissionId: string,
+): Promise<{
+  submission: QuestionnaireSubmission & { respondent?: { id: string; display_name: string } };
+  responses: Array<
+    QuestionnaireResponse & {
+      question: Pick<
+        QuestionnaireQuestion,
+        'question_text' | 'question_type' | 'scoring_weight' | 'choice_options'
+      >;
+    }
+  >;
+}> {
+  // Fetch submission
+  const { data: submission, error: submissionError } = await supabase
+    .schema('sih26044')
+    .from('questionnaire_submissions')
+    .select('id, questionnaire_version_id, respondent_actor_id, opportunity_id, opportunity_version_id, started_at, submitted_at, computed_score, score_computed_at, scoring_policy_version, created_at, updated_at')
+    .eq('id', submissionId)
+    .single();
+
+  if (submissionError) {
+    throw new Error(`Failed to fetch submission: ${submissionError.message}`);
+  }
+
+  // Fetch respondent
+  const { data: actor } = await supabase
+    .schema('sih26044')
+    .from('actors')
+    .select('id, display_name')
+    .eq('id', submission.respondent_actor_id)
+    .single();
+
+  // Fetch responses with question context
+  const { data: responses, error: responsesError } = await supabase
+    .schema('sih26044')
+    .from('questionnaire_responses')
+    .select('id, submission_id, question_id, response_value, response_score, answered_at')
+    .eq('submission_id', submissionId)
+    .order('answered_at', { ascending: true });
+
+  if (responsesError) {
+    throw new Error(`Failed to fetch responses: ${responsesError.message}`);
+  }
+
+  // Fetch question details
+  const questionIds = responses?.map((r) => r.question_id) ?? [];
+  const { data: questions, error: questionsError } = await supabase
+    .schema('sih26044')
+    .from('questionnaire_questions')
+    .select('id, question_text, question_type, scoring_weight, choice_options')
+    .in('id', questionIds);
+
+  if (questionsError) {
+    throw new Error(`Failed to fetch questions: ${questionsError.message}`);
+  }
+
+  // Join responses with their questions
+  const questionsMap = new Map(questions?.map((q) => [q.id, q]) ?? []);
+  const enrichedResponses = (responses ?? []).map((r) => ({
+    ...r,
+    question: questionsMap.get(r.question_id)!,
+  }));
+
+  return {
+    submission: { ...submission, respondent: actor || undefined },
+    responses: enrichedResponses,
+  };
+}

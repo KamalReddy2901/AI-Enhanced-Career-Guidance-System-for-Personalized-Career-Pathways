@@ -7,8 +7,10 @@ import {
   assignQuestionnaireToOpportunity,
   getQuestionnaireVersion,
   getStudentSubmission,
+  getSubmissionResponses,
   listOrganizationQuestionnaires,
   listDraftOpportunityVersionsForQuestionnaire,
+  listQuestionnaireSubmissions,
   publishQuestionnaireVersion,
   saveResponse,
   startSubmission,
@@ -228,6 +230,7 @@ export function IndustryQuestionnaireReviewPage() {
   const [selectedOpportunityVersionId, setSelectedOpportunityVersionId] = useState("");
   const [attaching, setAttaching] = useState(false);
   const [attachmentStatus, setAttachmentStatus] = useState<string>();
+  const [submissions, setSubmissions] = useState<Awaited<ReturnType<typeof listQuestionnaireSubmissions>>>([]);
   useEffect(() => {
     if (questionnaireVersionId)
       void getQuestionnaireVersion(questionnaireVersionId)
@@ -249,6 +252,12 @@ export function IndustryQuestionnaireReviewPage() {
       })
       .catch((reason) => setError(reason instanceof Error ? reason.message : "Unable to load draft opportunities."));
   }, [data?.version.id, data?.version.status, data?.version.questionnaire_id]);
+  useEffect(() => {
+    if (!data || data.version.status !== "published") return;
+    void listQuestionnaireSubmissions(data.version.id)
+      .then((rows) => setSubmissions(rows.filter((row) => row.submitted_at !== null)))
+      .catch((reason) => setError(reason instanceof Error ? reason.message : "Unable to load authorized results."));
+  }, [data?.version.id, data?.version.status]);
   return (
     <Frame
       eyebrow="Review · explicit publication"
@@ -391,6 +400,19 @@ export function IndustryQuestionnaireReviewPage() {
                   </div>
                 )}
               </section>
+              <section className="border-2 border-black bg-white p-5" aria-labelledby="questionnaire-results-title">
+                <h2 id="questionnaire-results-title" className="text-xl font-black">Authorized submitted results</h2>
+                <p className="mt-2 text-sm text-black/65">Only submissions visible through organization-scoped RLS appear here. Scores are contextual assessment results, never applicant rankings or hiring recommendations.</p>
+                {submissions.length === 0 ? (
+                  <p className="mt-4 text-sm">No submitted results are visible for this exact version.</p>
+                ) : (
+                  <ul className="mt-4 grid gap-3">
+                    {submissions.map((submission) => (
+                      <SubmissionCard key={submission.id} submission={submission} />
+                    ))}
+                  </ul>
+                )}
+              </section>
             </>
           )}
         </div>
@@ -409,6 +431,7 @@ export function StudentQuestionnairePage() {
     Record<string, QuestionnaireResponse["response_value"]>
   >({});
   const [status, setStatus] = useState<string>();
+  const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string>();
   useEffect(() => {
     if (questionnaireVersionId)
@@ -422,6 +445,20 @@ export function StudentQuestionnairePage() {
           ),
         );
   }, [questionnaireVersionId]);
+  useEffect(() => {
+    if (!actorId || !questionnaireVersionId) return;
+    void getStudentSubmission(questionnaireVersionId, actorId, search.get("opportunityId") ?? undefined)
+      .then(({ submission, responses }) => {
+        setAnswers(Object.fromEntries(responses.map((response) => [response.question_id, response.response_value])));
+        if (submission?.submitted_at) {
+          setSubmitted(true);
+          setStatus(submission.computed_score == null
+            ? "Submitted and immutable. This questionnaire contains responses requiring authorized manual review; no automatic suitability judgment was produced."
+            : `Submitted and immutable. Deterministic contextual score: ${submission.computed_score}. This is assessed evidence, not a hiring decision.`);
+        }
+      })
+      .catch((reason) => setError(reason instanceof Error ? reason.message : "Unable to restore questionnaire progress."));
+  }, [actorId, questionnaireVersionId, search]);
   if (!actorId)
     return (
       <Frame eyebrow="Student · contextual assessment" title="Questionnaire">
@@ -470,10 +507,11 @@ export function StudentQuestionnairePage() {
                   question.id,
                   answers[question.id],
                 );
-              await submitQuestionnaire(submission.id);
-              setStatus(
-                "Submitted. The authoritative result is immutable and context-bound.",
-              );
+              const finalized = await submitQuestionnaire(submission.id);
+              setSubmitted(true);
+              setStatus(finalized.computed_score == null
+                ? "Submitted and immutable. Unscored responses require authorized manual review; no automatic suitability judgment was produced."
+                : `Submitted and immutable. Deterministic contextual score: ${finalized.computed_score}. This is assessed evidence, not a hiring decision.`);
             } catch (reason) {
               setError(
                 reason instanceof Error ? reason.message : "Submission failed.",
@@ -482,6 +520,7 @@ export function StudentQuestionnairePage() {
           }}
         >
           {status ? <Notice>{status}</Notice> : null}
+          <fieldset disabled={submitted} className="contents">
           {data.questions.map((question) => (
             <fieldset
               key={question.id}
@@ -565,16 +604,127 @@ export function StudentQuestionnairePage() {
               )}
             </fieldset>
           ))}
+          </fieldset>
           <p className="text-sm text-black/65">
             Free text and structured scenarios are not automatically scored. Any
             result is assessed evidence for its declared context—not universal
             certification or a hiring decision.
           </p>
-          <button className="min-h-11 border-2 border-black bg-black px-5 py-3 font-mono-ui text-xs font-black uppercase text-white">
-            Submit immutable response
+          <button disabled={submitted} className="min-h-11 border-2 border-black bg-black px-5 py-3 font-mono-ui text-xs font-black uppercase text-white disabled:opacity-50">
+            {submitted ? "Response submitted" : "Submit immutable response"}
           </button>
         </form>
       )}
     </Frame>
+  );
+}
+
+/**
+ * Expandable submission card with detailed response viewing for recruiters.
+ */
+function SubmissionCard({
+  submission,
+}: {
+  submission: Awaited<ReturnType<typeof listQuestionnaireSubmissions>>[0];
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [detail, setDetail] = useState<Awaited<ReturnType<typeof getSubmissionResponses>>>();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>();
+
+  const loadDetail = async () => {
+    if (detail) {
+      setExpanded(!expanded);
+      return;
+    }
+    setLoading(true);
+    setError(undefined);
+    try {
+      const data = await getSubmissionResponses(submission.id);
+      setDetail(data);
+      setExpanded(true);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Unable to load responses.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <li className="border-2 border-black bg-[#f7f4ed] p-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <p className="font-bold">{submission.respondent?.display_name ?? "Authorized respondent"}</p>
+          <p className="mt-1 text-sm">
+            {submission.computed_score == null
+              ? "Submitted · manual review required for unscored responses"
+              : `Deterministic contextual score: ${submission.computed_score}`}
+          </p>
+          <p className="mt-1 font-mono-ui text-[10px] uppercase text-black/55">
+            Submitted {submission.submitted_at ? new Date(submission.submitted_at).toLocaleString() : ""}
+          </p>
+        </div>
+        <button
+          type="button"
+          className="min-h-11 border-2 border-black bg-white px-4 font-mono-ui text-xs font-black uppercase disabled:opacity-50"
+          disabled={loading}
+          onClick={loadDetail}
+        >
+          {loading ? "Loading…" : expanded ? "Collapse" : "View responses"}
+        </button>
+      </div>
+      {error ? (
+        <p role="alert" className="mt-3 text-sm text-[#d63c1d]">
+          {error}
+        </p>
+      ) : null}
+      {expanded && detail ? (
+        <div className="mt-4 grid gap-3 border-t-2 border-black pt-4">
+          <p className="text-xs font-black uppercase text-black/65">Individual responses</p>
+          {detail.responses.length === 0 ? (
+            <p className="text-sm">No responses recorded.</p>
+          ) : (
+            detail.responses.map((response) => {
+              const isScored = response.question.scoring_weight != null;
+              const isFreeText = response.question.question_type === "text";
+              const isScenario = response.question.question_type === "structured_scenario";
+              const requiresManualReview = isFreeText || isScenario;
+
+              return (
+                <article
+                  key={response.id}
+                  className="border-2 border-black bg-white p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="flex-1 font-bold">{response.question.question_text}</p>
+                    <span className="whitespace-nowrap font-mono-ui text-[10px] font-black uppercase text-black/55">
+                      {requiresManualReview ? "Manual review" : isScored ? "Scored" : "Not scored"}
+                    </span>
+                  </div>
+                  <div className="mt-2 border-l-2 border-black pl-3">
+                    {Array.isArray(response.response_value) ? (
+                      <ul className="list-inside list-disc text-sm">
+                        {(response.response_value as string[]).map((value, idx) => (
+                          <li key={idx}>{value}</li>
+                        ))}
+                      </ul>
+                    ) : typeof response.response_value === "object" ? (
+                      <pre className="text-sm">{JSON.stringify(response.response_value, null, 2)}</pre>
+                    ) : (
+                      <p className="text-sm">{String(response.response_value)}</p>
+                    )}
+                  </div>
+                  {response.response_score != null ? (
+                    <p className="mt-2 font-mono-ui text-xs text-black/65">
+                      Response score: {response.response_score}
+                    </p>
+                  ) : null}
+                </article>
+              );
+            })
+          )}
+        </div>
+      ) : null}
+    </li>
   );
 }
