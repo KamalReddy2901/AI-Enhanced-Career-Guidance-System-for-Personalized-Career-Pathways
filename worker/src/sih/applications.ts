@@ -100,8 +100,7 @@ export async function createAndFinalizeApplicationSnapshot(
     dbUser.from('evidence_artifact_links').select('evidence_record_id, artifact_id').in('evidence_record_id', evidenceIds),
     dbUser.from('verification_requests').select('id, evidence_record_id')
       .in('evidence_record_id', evidenceIds)
-      .eq('consent_grant_id', req.consentGrantId)
-      .eq('recipient_organization_id', application.owner_organization_id),
+      .eq('requested_verifier_organization_id', application.owner_organization_id),
   ]) : [{ data: [], error: null }, { data: [], error: null }];
 
   if (linksRes.error || requestsRes.error) {
