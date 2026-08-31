@@ -9,6 +9,10 @@ import { computeSha256 } from '../src/sih/artifacts.ts';
 import { SihRouteError } from '../src/sih/types.ts';
 import { saveEvidenceProjection } from '../src/sih/readiness.ts';
 import {
+  deriveReadinessVerificationState,
+  deriveRequestScopedVerificationAssertions,
+} from '../src/sih/verificationState.ts';
+import {
   computeOpportunityReadiness,
   OPPORTUNITY_READINESS_ENGINE_VERSION,
 } from '../../src/app/engine/opportunityReadiness.ts';
@@ -48,6 +52,34 @@ test('consequential SIH routes enforce body limits and configured abuse controls
 test('canonical Engine B is directly importable by the Worker test bundle', () => {
   assert.equal(typeof computeOpportunityReadiness, 'function');
   assert.equal(OPPORTUNITY_READINESS_ENGINE_VERSION, 'opportunity-readiness-engine-v1.1');
+});
+
+test('verification state is derived within each request before conservative readiness reduction', () => {
+  const evidenceRecordId = '60000000-0000-4000-8000-000000000001';
+  const requestA = '70000000-0000-4000-8000-000000000001';
+  const requestB = '70000000-0000-4000-8000-000000000002';
+  const assertions = deriveRequestScopedVerificationAssertions(evidenceRecordId, [
+    { evidence_record_id: evidenceRecordId, verification_request_id: requestA, sequence_number: 1, action: 'submitted_for_review' },
+    { evidence_record_id: evidenceRecordId, verification_request_id: requestA, sequence_number: 2, action: 'verified_by_human' },
+    { evidence_record_id: evidenceRecordId, verification_request_id: requestB, sequence_number: 1, action: 'verified_by_issuer' },
+    { evidence_record_id: evidenceRecordId, verification_request_id: requestB, sequence_number: 2, action: 'revoked' },
+  ]);
+
+  assert.deepEqual(assertions.map(assertion => [assertion.verificationRequestId, assertion.verificationState]), [
+    [requestA, 'human_verified'],
+    [requestB, 'revoked'],
+  ]);
+  assert.equal(deriveReadinessVerificationState('unverified', assertions), 'disputed');
+});
+
+test('a low sequence in another request cannot be erased by a higher unrelated sequence', () => {
+  const evidenceRecordId = '60000000-0000-4000-8000-000000000001';
+  const assertions = deriveRequestScopedVerificationAssertions(evidenceRecordId, [
+    { evidence_record_id: evidenceRecordId, verification_request_id: 'request-a', sequence_number: 2, action: 'verified_by_issuer' },
+    { evidence_record_id: evidenceRecordId, verification_request_id: 'request-b', sequence_number: 99, action: 'self_confirmed' },
+  ]);
+  assert.equal(assertions.length, 2);
+  assert.equal(deriveReadinessVerificationState('unverified', assertions), 'issuer_verified');
 });
 
 test('canonical JSON and deterministic result identity ignore object insertion order', async () => {

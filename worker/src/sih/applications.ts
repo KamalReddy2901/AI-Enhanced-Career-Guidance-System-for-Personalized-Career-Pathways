@@ -7,6 +7,11 @@ import { SihRouteError } from './types';
 import { recomputeAndPersistReadiness } from './readiness';
 import { buildProductionRecruiterProjection } from '../../../src/app/services/sih/productionRecruiterProjection';
 import type { ProductionRecruiterEvidenceItem } from '../../../src/app/services/sih/productionRecruiterProjection';
+import {
+  deriveReadinessVerificationState,
+  deriveRequestScopedVerificationAssertions,
+  type VerificationEventRow,
+} from './verificationState';
 
 type Row = Record<string, any>;
 
@@ -91,10 +96,34 @@ export async function createAndFinalizeApplicationSnapshot(
   // 5. Query clean linked artifacts for selected evidence
   const selectedEvidenceRows = (evidenceRes.data ?? []) as Row[];
   const evidenceIds = selectedEvidenceRows.map(r => r.id);
-  const [linksRes, eventsRes] = evidenceIds.length ? await Promise.all([
+  const [linksRes, requestsRes] = evidenceIds.length ? await Promise.all([
     dbUser.from('evidence_artifact_links').select('evidence_record_id, artifact_id').in('evidence_record_id', evidenceIds),
-    dbUser.from('verification_events').select('evidence_record_id, sequence_number, action').in('evidence_record_id', evidenceIds),
-  ]) : [{ data: [] }, { data: [] }];
+    dbUser.from('verification_requests').select('id, evidence_record_id')
+      .in('evidence_record_id', evidenceIds)
+      .eq('consent_grant_id', req.consentGrantId)
+      .eq('recipient_organization_id', application.owner_organization_id),
+  ]) : [{ data: [], error: null }, { data: [], error: null }];
+
+  if (linksRes.error || requestsRes.error) {
+    throw new SihRouteError(
+      'TRUSTED_PERSISTENCE_FAILURE', 500,
+      'Unable to load consent-scoped application evidence.',
+    );
+  }
+
+  const scopedRequestIds = ((requestsRes.data ?? []) as Row[]).map(request => request.id);
+  const eventsRes = scopedRequestIds.length
+    ? await dbUser.from('verification_events')
+      .select('evidence_record_id, verification_request_id, sequence_number, action, occurred_at')
+      .in('verification_request_id', scopedRequestIds)
+    : { data: [], error: null };
+
+  if (eventsRes.error) {
+    throw new SihRouteError(
+      'TRUSTED_PERSISTENCE_FAILURE', 500,
+      'Unable to load consent-scoped verification assertions.',
+    );
+  }
 
   const links = (linksRes.data ?? []) as Row[];
   const linkedArtifactIds = [...new Set(links.map(l => l.artifact_id))];
@@ -106,16 +135,15 @@ export async function createAndFinalizeApplicationSnapshot(
     artifactRows.filter(a => a.scan_status === 'clean').map(a => [a.id, a.display_name]),
   );
 
-  const actionToState: Record<string, string> = {
-    self_confirmed: 'self_confirmed', verified_by_human: 'human_verified',
-    verified_by_issuer: 'issuer_verified', disputed: 'disputed', revoked: 'revoked', corrected: 'corrected',
-  };
-
   const selectedEvidenceItems: ProductionRecruiterEvidenceItem[] = selectedEvidenceRows.map(rec => {
-    const recEvents = ((eventsRes.data ?? []) as Row[])
-      .filter(e => e.evidence_record_id === rec.id && e.action !== 'submitted_for_review')
-      .sort((a, b) => Number(b.sequence_number) - Number(a.sequence_number));
-    const currentVerification = recEvents[0] ? actionToState[recEvents[0].action] : rec.initial_verification_state;
+    const verificationAssertions = deriveRequestScopedVerificationAssertions(
+      rec.id,
+      (eventsRes.data ?? []) as VerificationEventRow[],
+    );
+    const currentVerification = deriveReadinessVerificationState(
+      rec.initial_verification_state,
+      verificationAssertions,
+    );
 
     const cleanArtifactsForRec = links
       .filter(l => l.evidence_record_id === rec.id && cleanArtifactMap.has(l.artifact_id))
@@ -126,6 +154,7 @@ export async function createAndFinalizeApplicationSnapshot(
       literalClaim: rec.literal_claim,
       provenance: rec.provenance,
       verificationState: currentVerification as any,
+      verificationAssertions,
       artifactIds: cleanArtifactsForRec.map(a => a.id as any),
       artifactDisplayNames: cleanArtifactsForRec.map(a => a.name),
     };
@@ -147,7 +176,7 @@ export async function createAndFinalizeApplicationSnapshot(
     p_selected_evidence_ids: sortedEvidenceIds,
     p_consent_grant_ids: sortedConsentIds,
     p_requirement_responses: req.requirementResponses ?? {},
-    p_recruiter_projection_version: 'recruiter-projection-v1',
+    p_recruiter_projection_version: 'recruiter-projection-v2',
   });
 
   if (planError || !planResult) {
@@ -208,7 +237,7 @@ export async function createAndFinalizeApplicationSnapshot(
     p_input_version: readinessResult.inputVersion,
     p_subject_facts_version: readinessResult.subjectFactsVersion,
     p_evidence_projection_version: readinessResult.evidenceProjectionVersion,
-    p_recruiter_projection_version: 'recruiter-projection-v1',
+    p_recruiter_projection_version: 'recruiter-projection-v2',
     p_recruiter_allowlist_projection: recruiterProjection,
     p_requirement_responses: req.requirementResponses ?? {},
     p_selected_evidence_ids: req.selectedEvidenceRecordIds,
