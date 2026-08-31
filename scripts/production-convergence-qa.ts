@@ -70,6 +70,7 @@ for (const route of ['career','opportunities','evidence','verification','applica
 }
 assert.match(routes, /path:\s*["']opportunities\/:opportunityVersionId\/apply["']/);
 assert.match(routes, /SihApplicationPreparationPage/, 'The production apply route must resolve through its dedicated routed page');
+assert.match(routes, /path:\s*["']applications\/:applicationId["'][\s\S]*Component:\s*ApplicationsPage/, 'Submitted application cards must resolve to the production application detail page');
 assert.match(routes, /path:\s*["']faculty\/collaborations\/:collaborationId["']/);
 assert.match(routes, /SihStudentProductionPages/);
 assert.match(routes, /SihRecruiterProductionPage/);

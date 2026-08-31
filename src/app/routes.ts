@@ -143,6 +143,7 @@ export const router = createBrowserRouter([
           { path: "evidence", Component: EvidencePage },
           { path: "verification", Component: VerificationPage },
           { path: "applications", Component: ApplicationsPage },
+          { path: "applications/:applicationId", Component: ApplicationsPage },
           { path: "industry", Component: IndustryOpportunitiesPage },
           { path: "industry/opportunities", Component: IndustryOpportunitiesPage },
           { path: "industry/opportunities/new", Component: IndustryNewOpportunityPage },
