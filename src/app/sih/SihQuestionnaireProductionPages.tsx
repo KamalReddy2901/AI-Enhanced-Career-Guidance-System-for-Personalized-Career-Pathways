@@ -7,6 +7,7 @@ import {
   assignQuestionnaireToOpportunity,
   getQuestionnaireVersion,
   getStudentSubmission,
+  getSubmissionResponses,
   listOrganizationQuestionnaires,
   listDraftOpportunityVersionsForQuestionnaire,
   listQuestionnaireSubmissions,
@@ -407,15 +408,7 @@ export function IndustryQuestionnaireReviewPage() {
                 ) : (
                   <ul className="mt-4 grid gap-3">
                     {submissions.map((submission) => (
-                      <li key={submission.id} className="border-2 border-black bg-[#f7f4ed] p-4">
-                        <p className="font-bold">{submission.respondent?.display_name ?? "Authorized respondent"}</p>
-                        <p className="mt-1 text-sm">
-                          {submission.computed_score == null
-                            ? "Submitted · manual review required for unscored responses"
-                            : `Deterministic contextual score: ${submission.computed_score}`}
-                        </p>
-                        <p className="mt-1 font-mono-ui text-[10px] uppercase text-black/55">Submitted {submission.submitted_at ? new Date(submission.submitted_at).toLocaleString() : ""}</p>
-                      </li>
+                      <SubmissionCard key={submission.id} submission={submission} />
                     ))}
                   </ul>
                 )}
@@ -623,5 +616,115 @@ export function StudentQuestionnairePage() {
         </form>
       )}
     </Frame>
+  );
+}
+
+/**
+ * Expandable submission card with detailed response viewing for recruiters.
+ */
+function SubmissionCard({
+  submission,
+}: {
+  submission: Awaited<ReturnType<typeof listQuestionnaireSubmissions>>[0];
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [detail, setDetail] = useState<Awaited<ReturnType<typeof getSubmissionResponses>>>();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>();
+
+  const loadDetail = async () => {
+    if (detail) {
+      setExpanded(!expanded);
+      return;
+    }
+    setLoading(true);
+    setError(undefined);
+    try {
+      const data = await getSubmissionResponses(submission.id);
+      setDetail(data);
+      setExpanded(true);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Unable to load responses.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <li className="border-2 border-black bg-[#f7f4ed] p-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <p className="font-bold">{submission.respondent?.display_name ?? "Authorized respondent"}</p>
+          <p className="mt-1 text-sm">
+            {submission.computed_score == null
+              ? "Submitted · manual review required for unscored responses"
+              : `Deterministic contextual score: ${submission.computed_score}`}
+          </p>
+          <p className="mt-1 font-mono-ui text-[10px] uppercase text-black/55">
+            Submitted {submission.submitted_at ? new Date(submission.submitted_at).toLocaleString() : ""}
+          </p>
+        </div>
+        <button
+          type="button"
+          className="min-h-11 border-2 border-black bg-white px-4 font-mono-ui text-xs font-black uppercase disabled:opacity-50"
+          disabled={loading}
+          onClick={loadDetail}
+        >
+          {loading ? "Loading…" : expanded ? "Collapse" : "View responses"}
+        </button>
+      </div>
+      {error ? (
+        <p role="alert" className="mt-3 text-sm text-[#d63c1d]">
+          {error}
+        </p>
+      ) : null}
+      {expanded && detail ? (
+        <div className="mt-4 grid gap-3 border-t-2 border-black pt-4">
+          <p className="text-xs font-black uppercase text-black/65">Individual responses</p>
+          {detail.responses.length === 0 ? (
+            <p className="text-sm">No responses recorded.</p>
+          ) : (
+            detail.responses.map((response) => {
+              const isScored = response.question.scoring_weight != null;
+              const isFreeText = response.question.question_type === "text";
+              const isScenario = response.question.question_type === "structured_scenario";
+              const requiresManualReview = isFreeText || isScenario;
+
+              return (
+                <article
+                  key={response.id}
+                  className="border-2 border-black bg-white p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="flex-1 font-bold">{response.question.question_text}</p>
+                    <span className="whitespace-nowrap font-mono-ui text-[10px] font-black uppercase text-black/55">
+                      {requiresManualReview ? "Manual review" : isScored ? "Scored" : "Not scored"}
+                    </span>
+                  </div>
+                  <div className="mt-2 border-l-2 border-black pl-3">
+                    {Array.isArray(response.response_value) ? (
+                      <ul className="list-inside list-disc text-sm">
+                        {(response.response_value as string[]).map((value, idx) => (
+                          <li key={idx}>{value}</li>
+                        ))}
+                      </ul>
+                    ) : typeof response.response_value === "object" ? (
+                      <pre className="text-sm">{JSON.stringify(response.response_value, null, 2)}</pre>
+                    ) : (
+                      <p className="text-sm">{String(response.response_value)}</p>
+                    )}
+                  </div>
+                  {response.response_score != null ? (
+                    <p className="mt-2 font-mono-ui text-xs text-black/65">
+                      Response score: {response.response_score}
+                    </p>
+                  ) : null}
+                </article>
+              );
+            })
+          )}
+        </div>
+      ) : null}
+    </li>
   );
 }
