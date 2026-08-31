@@ -1,12 +1,14 @@
 import { useState, useRef, type FormEvent, useEffect } from 'react';
 import type { ActorId, EvidenceRecordId, OrganizationId } from '../../../../domain/shared';
 import type { SihTrustedApiClient } from '../../../../services/sih/SihTrustedApiClient';
+import type { SihBrowserDal } from '../../../../services/sih/browserDal';
 import { supabase } from '../../../../services/supabase';
 import { isEscape, trapFocus } from '../../../../utils/keyboardUtils';
 
 interface EvidenceUploadModalProps {
   readonly actorId: ActorId;
   readonly trustedApi: SihTrustedApiClient;
+  readonly browserDal: SihBrowserDal;
   readonly evidenceRecordId?: EvidenceRecordId;
   readonly requirementContext?: {
     readonly opportunityVersionId: string;
@@ -20,6 +22,7 @@ interface EvidenceUploadModalProps {
 export function EvidenceUploadModal({
   actorId,
   trustedApi,
+  browserDal,
   evidenceRecordId,
   requirementContext,
   onClose,
@@ -65,6 +68,17 @@ export function EvidenceUploadModal({
       setError('File and display name are required.');
       return;
     }
+    if (requestVerification && !evidenceRecordId) {
+      setError('Select an existing evidence record before requesting verification.');
+      return;
+    }
+    if (
+      requestVerification
+      && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(verifierOrganizationId)
+    ) {
+      setError('Enter a valid verifier organization ID.');
+      return;
+    }
 
     setUploading(true);
     setError(undefined);
@@ -103,57 +117,13 @@ export function EvidenceUploadModal({
         evidenceRecordId: evidenceRecordId ?? undefined,
       });
 
-      // If evidenceRecordId provided and requestVerification enabled, create verification request
-      if (evidenceRecordId && requestVerification && verifierOrganizationId && supabase) {
-        // First, create consent grant for evidence_verification purpose
-        const { data: consentData, error: consentError } = await supabase
-          .schema('sih26044')
-          .from('consent_grants')
-          .insert({
-            subject_actor_id: actorId,
-            recipient_organization_id: verifierOrganizationId,
-            purpose: 'evidence_verification',
-          })
-          .select('id')
-          .single();
-
-        if (consentError) {
-          throw new Error(`Consent grant failed: ${consentError.message}`);
-        }
-
-        const consentGrantId = consentData.id;
-
-        // Link evidence to consent
-        const { error: consentEvidenceError } = await supabase
-          .schema('sih26044')
-          .from('consent_evidence_records')
-          .insert({
-            consent_grant_id: consentGrantId,
-            evidence_record_id: evidenceRecordId,
-          });
-
-        if (consentEvidenceError) {
-          throw new Error(`Evidence consent link failed: ${consentEvidenceError.message}`);
-        }
-
-        // Create verification request
-        const { error: requestError } = await supabase
-          .schema('sih26044')
-          .from('verification_requests')
-          .insert({
-            evidence_record_id: evidenceRecordId,
-            subject_actor_id: actorId,
-            requested_verifier_organization_id: verifierOrganizationId,
-            consent_grant_id: consentGrantId,
-            scope_kind: requirementContext ? 'opportunity' : 'global_skill',
-            scope_opportunity_id: requirementContext?.opportunityVersionId ?? null,
-            scope_requirement_id: requirementContext?.requirementId ?? null,
-            scope_literal_skill_label: requirementContext?.skillLabel ?? null,
-          });
-
-        if (requestError) {
-          throw new Error(`Verification request failed: ${requestError.message}`);
-        }
+      // Consent, exact evidence binding, and request creation are one atomic
+      // database operation. Actor identity and scope come from database state.
+      if (evidenceRecordId && requestVerification && verifierOrganizationId) {
+        await browserDal.createVerificationRequestWithConsent({
+          evidenceRecordId,
+          requestedVerifierOrganizationId: verifierOrganizationId as OrganizationId,
+        });
       }
 
       setRegistering(false);

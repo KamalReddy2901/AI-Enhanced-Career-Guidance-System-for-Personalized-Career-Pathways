@@ -449,10 +449,11 @@ export function EvidencePage() {
         </div>
       )}
 
-      {showUploadModal && trustedApi && actorId && (
+      {showUploadModal && trustedApi && actorId && dal && (
         <EvidenceUploadModal
           actorId={actorId}
           trustedApi={trustedApi}
+          browserDal={dal}
           evidenceRecordId={selectedEvidenceForUpload}
           requirementContext={requirementId ? {
             opportunityVersionId: opportunityVersionId!,

@@ -19,6 +19,7 @@ import type {
   ConsentGrantReadModel,
   CompleteVerificationRequestDecisionInput,
   CompleteVerificationRequestDecisionResult,
+  CreateVerificationRequestWithConsentResult,
   EvidenceArtifactReadModel,
   EvidenceRecordReadModel,
   EvidenceScopeReadModel,
@@ -77,6 +78,12 @@ export interface RequestVerificationInput {
   readonly scopeRequirementId?: OpportunityRequirementId;
   readonly scopeOrganizationId?: OrganizationId;
   readonly scopeOutcomeEventId?: OutcomeEventId;
+  readonly expiresAt?: string;
+}
+
+export interface CreateVerificationRequestWithConsentInput {
+  readonly evidenceRecordId: EvidenceRecordId;
+  readonly requestedVerifierOrganizationId: OrganizationId;
   readonly expiresAt?: string;
 }
 
@@ -898,6 +905,33 @@ export class SihBrowserDal {
       .single();
     if (error) throw error;
     return data;
+  }
+
+  async createVerificationRequestWithConsent(
+    input: CreateVerificationRequestWithConsentInput,
+  ): Promise<CreateVerificationRequestWithConsentResult> {
+    const { data, error } = await this.db().rpc(
+      "create_verification_request_with_consent",
+      {
+        requested_evidence_record_id: input.evidenceRecordId,
+        requested_verifier_organization_id:
+          input.requestedVerifierOrganizationId,
+        requested_expires_at: input.expiresAt ?? null,
+      },
+    );
+    if (error) throw error;
+    const row = (Array.isArray(data) ? data[0] : data) as
+      | {
+          verification_request_id: string;
+          consent_grant_id: string;
+        }
+      | undefined;
+    if (!row)
+      throw new Error("Verification request RPC returned no result");
+    return {
+      verificationRequestId: row.verification_request_id,
+      consentGrantId: row.consent_grant_id as ConsentRecordId,
+    };
   }
 
   async appendVerificationEvent(
