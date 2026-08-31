@@ -35,9 +35,9 @@ export function FacultyCollaborationCard({
       <h2 className="mt-6 text-2xl font-black">{engagement.objectives[0] ?? 'Collaboration engagement'}</h2>
       <p className="mt-3 text-sm leading-relaxed text-black/65">Hosted by {organizationName(engagement.hostOrganizationId, organizations)}.</p>
       <dl className="mt-auto grid gap-2 border-t border-black/20 pt-4 font-mono-ui text-[10px]">
-        <div><dt className="uppercase text-black/45">Starts</dt><dd>{formatDate(engagement.startsAt)}</dd></div>
-        <div><dt className="uppercase text-black/45">Partners</dt><dd>{engagement.partnerOrganizationIds.length}</dd></div>
-        <div><dt className="uppercase text-black/45">Participants</dt><dd>{engagement.participantActorIds.length}</dd></div>
+        <div><dt className="uppercase text-black/65">Starts</dt><dd>{formatDate(engagement.startsAt)}</dd></div>
+        <div><dt className="uppercase text-black/65">Partners</dt><dd>{engagement.partnerOrganizationIds.length}</dd></div>
+        <div><dt className="uppercase text-black/65">Participants</dt><dd>{engagement.participantActorIds.length}</dd></div>
       </dl>
       <Link to={`${base}/${engagement.id}`} className="mt-5 inline-flex min-h-11 items-center justify-center border-2 border-black bg-[#111] px-4 py-3 text-center font-mono-ui text-[10px] font-black uppercase tracking-wide text-white hover:bg-[#d63c1d] focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#ff5c35]">
         Review collaboration details

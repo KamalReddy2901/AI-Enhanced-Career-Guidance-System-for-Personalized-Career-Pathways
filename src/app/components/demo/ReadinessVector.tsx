@@ -22,14 +22,14 @@ export function ReadinessVector({ result }: { readonly result: OpportunityReadin
         </div>
         <p className="font-mono-ui text-[10px] text-black/60">Result {result.resultId}</p>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-px border border-black bg-black sm:grid-cols-3 lg:grid-cols-5">
+      <dl className="mt-4 grid grid-cols-2 gap-px border border-black bg-black sm:grid-cols-3 lg:grid-cols-5">
         {cells.map(([label, value]) => (
           <div key={label} className="min-h-24 bg-[#f7f4ed] p-3">
             <dt className="font-mono-ui text-[10px] font-bold uppercase tracking-wide text-black/55">{label}</dt>
             <dd className="mt-2 break-words text-sm font-black">{value.replaceAll('_', ' ')}</dd>
           </div>
         ))}
-      </div>
+      </dl>
       <p className="mt-4 border-l-4 border-[#ff5c35] pl-3 text-sm leading-relaxed">
         READY FOR REVIEW means the submitted evidence is ready for human review. It does not predict hiring, selection or success.
       </p>
