@@ -6,6 +6,17 @@
  * 2. Not authenticated — routes to auth
  * 3. Auth exists but no actor / membership error — shows SihActorOnboarding
  * 4. Ready — renders workspace with role-aware navigation
+ *
+ * Navigation is driven by UnifiedCareerCaseShell's buildNavItems(). Relevant
+ * authority contracts enforced in the shell's navigation builder:
+ *
+ * roles.has('institution_admin') → exposes Interventions workspace
+ *   link to /institution/interventions (operational authority)
+ *
+ * roles.has('policy_program_analyst') → exposes only aggregate Program
+ *   Analytics view at /institution/skills-intelligence; the operational
+ *   intervention workspace is NOT available to the policy_program_analyst
+ *   role (aggregate-only access, no individual or operational authority).
  */
 
 import { Navigate, Outlet } from 'react-router';
