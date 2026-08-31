@@ -14,13 +14,14 @@ import { OPPORTUNITY_READINESS_POLICY_VERSION } from '../../../src/app/engine/op
 import { canonicalJson, deterministicResultId, sha256Version } from './canonicalJson';
 import type { MaterializeSubjectFactsRequest, SaveEvidenceProjectionRequest } from './types';
 import { SihRouteError } from './types';
+import {
+  deriveReadinessVerificationState,
+  deriveRequestScopedVerificationAssertions,
+  type VerificationEventRow,
+} from './verificationState';
 
 type Row = Record<string, any>;
 const confirmedStates = new Set(['self_confirmed', 'human_verified', 'issuer_verified', 'corrected']);
-const actionToState: Record<string, string> = {
-  self_confirmed: 'self_confirmed', verified_by_human: 'human_verified',
-  verified_by_issuer: 'issuer_verified', disputed: 'disputed', revoked: 'revoked', corrected: 'corrected',
-};
 
 async function select<T>(query: PromiseLike<{ data: T | null; error: unknown }>): Promise<T> {
   const { data, error } = await query;
@@ -77,9 +78,11 @@ function objects(value: unknown): Row[] {
 }
 
 function verificationState(evidence: Row, events: Row[]): ReadinessEvidenceSignal['verificationState'] {
-  const latest = events.filter(event => event.evidence_record_id === evidence.id && event.action !== 'submitted_for_review')
-    .sort((a, b) => Number(b.sequence_number) - Number(a.sequence_number))[0];
-  return (latest ? actionToState[latest.action] : evidence.initial_verification_state) as ReadinessEvidenceSignal['verificationState'];
+  const assertions = deriveRequestScopedVerificationAssertions(
+    evidence.id,
+    events as VerificationEventRow[],
+  );
+  return deriveReadinessVerificationState(evidence.initial_verification_state, assertions);
 }
 
 export async function assembleOpportunityReadinessInput(
@@ -118,7 +121,7 @@ export async function assembleOpportunityReadinessInput(
   const evidenceIds = evidence.map(row => row.id);
   const [projections, events, links] = evidenceIds.length ? await Promise.all([
     select<Row[]>(db.from('readiness_evidence_projections').select('*').in('evidence_record_id', evidenceIds)),
-    select<Row[]>(db.from('verification_events').select('evidence_record_id,sequence_number,action')
+    select<Row[]>(db.from('verification_events').select('evidence_record_id,verification_request_id,sequence_number,action')
       .in('evidence_record_id', evidenceIds)),
     select<Row[]>(db.from('evidence_artifact_links').select('evidence_record_id,artifact_id')
       .in('evidence_record_id', evidenceIds)),

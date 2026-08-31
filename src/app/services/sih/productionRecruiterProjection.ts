@@ -21,8 +21,17 @@ export interface ProductionRecruiterEvidenceItem {
   readonly literalClaim: string;
   readonly provenance: EvidenceProvenance;
   readonly verificationState: VerificationState;
+  readonly verificationAssertions: readonly ProductionRecruiterVerificationAssertion[];
   readonly artifactIds: readonly EvidenceArtifactId[];
   readonly artifactDisplayNames: readonly string[];
+}
+
+export interface ProductionRecruiterVerificationAssertion {
+  readonly verificationRequestId: string;
+  readonly verificationState: VerificationState;
+  readonly action: string;
+  readonly sequenceNumber: number;
+  readonly occurredAt?: string;
 }
 
 export interface ProductionRecruiterRequirementItem {
@@ -150,6 +159,7 @@ export function buildProductionRecruiterProjection(
       literalClaim: item.literalClaim,
       provenance: item.provenance,
       verificationState: item.verificationState,
+      verificationAssertions: item.verificationAssertions.map(assertion => ({ ...assertion })),
       artifactIds: [...item.artifactIds],
       artifactDisplayNames: [...item.artifactDisplayNames],
     })),
