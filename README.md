@@ -2,14 +2,14 @@
 
 **Evidence-backed Opportunity Readiness & Skills Intelligence for the academia–industry ecosystem.**
 
-[![Current legacy deployment](https://img.shields.io/badge/current-careercase.pages.dev-666)](https://careercase.pages.dev/)
+[![Production](https://img.shields.io/badge/careercase.pages.dev-live-000)](https://careercase.pages.dev/)
 [![CI](https://github.com/KamalReddy2901/AI-Enhanced-Career-Guidance-System-for-Personalized-Career-Pathways/actions/workflows/ci.yml/badge.svg)](https://github.com/KamalReddy2901/AI-Enhanced-Career-Guidance-System-for-Personalized-Career-Pathways/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-111111.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6)](https://www.typescriptlang.org/)
 
 > A career decision should show its work. CareerCase turns a person's interests, aptitudes, values, skills, experience, aspirations, and constraints into ranked career matches, visible evidence, and practical next steps.
 
-> `careercase.pages.dev` is the current legacy deployment. It must not be described as the integrated SIH26044 deployment until the convergence branch passes preview, authenticated smoke testing, production deployment, and post-deploy regression.
+> `careercase.pages.dev` is the canonical production deployment. The unified product (Career Guidance × Opportunity Readiness) is being converged from `integration/sih26044-product-v0.2` into `main` through the unified-product-convergence PR series. Until main convergence completes, the deployed site reflects the integration branch via preview.
 
 ![CareerCase home page](./others/presentation-assets/homepage.jpg)
 
