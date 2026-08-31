@@ -181,7 +181,8 @@ insert into sih26044.evidence_records (
   ('60000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'Learner A literal claim', 'self_reported', 'self_confirmed', 'global_skill', 'Quantum Ceramics', 'local_test', now()),
   ('60000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000002', 'Learner B literal claim', 'self_reported', 'self_confirmed', 'global_skill', 'Ceramics', 'local_test', now()),
   ('60000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000001', 'Learner A unconsented sibling claim', 'self_reported', 'self_confirmed', 'global_skill', 'Unconsented Sibling', 'local_test', now()),
-  ('60000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000001', 'Learner A withdrawal test claim', 'self_reported', 'self_confirmed', 'global_skill', 'Withdrawal Test', 'local_test', now());
+  ('60000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000001', 'Learner A withdrawal test claim', 'self_reported', 'self_confirmed', 'global_skill', 'Withdrawal Test', 'local_test', now()),
+  ('60000000-0000-0000-0000-000000000005', '20000000-0000-0000-0000-000000000001', 'Learner A atomic request claim', 'self_reported', 'self_confirmed', 'global_skill', 'Atomic Request Skill', 'local_test', now());
 
 insert into sih26044.opportunity_readiness_results (
   id, subject_actor_id, opportunity_id, opportunity_version_id, engine_version,
@@ -281,6 +282,38 @@ select pg_temp.assert_true(
 select pg_temp.assert_true(
   (select count(*) = 1 from sih26044.verification_requests where id = '63000000-0000-0000-0000-000000000002'),
   'authenticated subject can subsequently select own verification request'
+);
+select pg_temp.assert_true(
+  not has_function_privilege('anon', 'sih26044.create_verification_request_with_consent(uuid,uuid,timestamptz)', 'EXECUTE'),
+  'anonymous clients cannot execute atomic verification-request creation'
+);
+with created as (
+  select * from sih26044.create_verification_request_with_consent(
+    '60000000-0000-0000-0000-000000000005',
+    '30000000-0000-0000-0000-000000000003',
+    statement_timestamp() + interval '14 days'
+  )
+)
+select pg_temp.assert_true(
+  (select count(*) = 1 from created),
+  'subject creates consent and bounded verification request atomically'
+);
+select pg_temp.assert_true(
+  (select count(*) = 1
+   from sih26044.verification_requests request
+   join sih26044.consent_grants consent on consent.id = request.consent_grant_id
+   join sih26044.consent_evidence_records link
+     on link.consent_grant_id = consent.id
+    and link.evidence_record_id = request.evidence_record_id
+   where request.evidence_record_id = '60000000-0000-0000-0000-000000000005'
+     and request.subject_actor_id = '20000000-0000-0000-0000-000000000001'
+     and request.scope_kind = 'global_skill'
+     and request.scope_literal_skill_label = 'Atomic Request Skill'
+     and consent.subject_actor_id = request.subject_actor_id
+     and consent.created_by_actor_id = request.subject_actor_id
+     and consent.grantee_organization_id = request.requested_verifier_organization_id
+     and consent.purpose = 'evidence_verification'),
+  'atomic request derives actor and exact evidence scope while binding purpose-specific consent'
 );
 select pg_temp.assert_blocked(
   $sql$insert into sih26044.evidence_records (
@@ -645,7 +678,19 @@ reset role;
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000006';
-select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records), 'unrelated verifier cannot read requested evidence');
+select pg_temp.assert_true(
+  (select count(*) = 0
+   from sih26044.evidence_records
+   where id in (
+     '60000000-0000-0000-0000-000000000001',
+     '60000000-0000-0000-0000-000000000004'
+   ))
+  and
+  (select count(*) = 1
+   from sih26044.evidence_records
+   where id = '60000000-0000-0000-0000-000000000005'),
+  'unrelated verifier cannot read requested evidence after actor-targeted consent ends, but can read an active request targeted to their organization'
+);
 select pg_temp.assert_blocked(
   $sql$select sih26044.is_consent_active(
     '62000000-0000-0000-0000-000000000002',

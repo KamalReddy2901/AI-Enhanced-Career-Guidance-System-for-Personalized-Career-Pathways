@@ -112,6 +112,11 @@ export interface CompleteVerificationRequestDecisionResult {
   readonly verificationEvent: VerificationEventReadModel;
 }
 
+export interface CreateVerificationRequestWithConsentResult {
+  readonly verificationRequestId: string;
+  readonly consentGrantId: ConsentRecordId;
+}
+
 export interface VerifierActingContextReadModel {
   readonly actorId: ActorId;
   readonly organizationId: OrganizationId;
