@@ -16,6 +16,8 @@ import {
   type ProductionOpportunityBundle,
 } from '../services/sih/productionOpportunityReads';
 import { supabase } from '../services/supabase';
+import { getOpportunityQuestionnaireAssignment } from '../services/questionnaireDb';
+import type { OpportunityQuestionnaireAssignment, QuestionnaireVersion } from '../types/questionnaire';
 import { useSihProduction } from './SihProductionContext';
 
 function ProductionFrame({
@@ -146,6 +148,16 @@ export function OpportunityDetailPage() {
   const navigate = useNavigate();
   const { bundle, loading, error } = usePublishedBundle(opportunityVersionId);
   const isCurrent = Boolean(bundle && bundle.opportunity.currentVersionId === bundle.version.id);
+  const [questionnaire, setQuestionnaire] = useState<(OpportunityQuestionnaireAssignment & { version: QuestionnaireVersion }) | null>();
+  const [questionnaireError, setQuestionnaireError] = useState<string>();
+  useEffect(() => {
+    if (!opportunityVersionId) return;
+    let active = true;
+    void getOpportunityQuestionnaireAssignment(opportunityVersionId)
+      .then((next) => { if (active) setQuestionnaire(next); })
+      .catch((reason) => { if (active) setQuestionnaireError(reason instanceof Error ? reason.message : 'Unable to load questionnaire requirement.'); });
+    return () => { active = false; };
+  }, [opportunityVersionId]);
 
   return (
     <ProductionFrame
@@ -156,6 +168,20 @@ export function OpportunityDetailPage() {
       {loading ? <Notice>Loading canonical opportunity version…</Notice> : error || !bundle ? <Notice>{error ?? 'Opportunity unavailable.'}</Notice> : (
         <>
           <OpportunityDetail opportunity={bundle.opportunity} opportunityVersion={bundle.version} onBack={() => navigate('/opportunities')} />
+          {questionnaire ? (
+            <section className="mt-6 border-2 border-black bg-[#fff4c7] p-5" aria-labelledby="assigned-questionnaire-title">
+              <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.16em]">Contextual assessment · exact version {questionnaire.version.version_number}</p>
+              <h2 id="assigned-questionnaire-title" className="mt-2 text-2xl font-black">{questionnaire.version.title}</h2>
+              <p className="mt-2 text-sm text-black/65">{questionnaire.version.description}</p>
+              <p className="mt-2 text-xs text-black/60">This is assessed evidence for this opportunity context—not psychometric certification, hiring probability, or automatic rejection.</p>
+              <Link
+                className="mt-4 inline-flex min-h-11 items-center border-2 border-black bg-black px-5 font-mono-ui text-xs font-black uppercase text-white"
+                to={`/questionnaires/${questionnaire.questionnaire_version_id}?opportunityId=${bundle.opportunity.id}&opportunityVersionId=${bundle.version.id}`}
+              >
+                {questionnaire.required ? 'Complete required questionnaire' : 'Open questionnaire'}
+              </Link>
+            </section>
+          ) : questionnaireError ? <Notice>{questionnaireError}</Notice> : null}
           {!isCurrent && <Notice>This is a historical published version. Readiness can be inspected, but new application preparation is limited to the current version.</Notice>}
           <div className="mt-6 flex flex-wrap gap-3">
             <Link to={`/opportunities/${bundle.version.id}/readiness`} className="min-h-11 bg-black px-5 py-3 font-mono-ui text-xs font-black uppercase text-white">

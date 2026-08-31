@@ -89,6 +89,13 @@ export interface UpdateQuestionnaireDraftRequest extends Omit<CreateQuestionnair
   versionId: string;
 }
 
+export interface AttachQuestionnaireRequest {
+  opportunityVersionId: string;
+  questionnaireVersionId: string;
+  required: boolean;
+  ordinal: number;
+}
+
 /**
  * Submit questionnaire request
  */
@@ -221,6 +228,33 @@ export async function updateQuestionnaireDraftAtomic(
   if (!data || typeof data !== 'object') throw new Error('Invalid questionnaire draft response');
   const result = data as { questionnaire_id: string; version_id: string };
   return { questionnaireId: result.questionnaire_id, versionId: result.version_id };
+}
+
+export async function attachQuestionnaireToOpportunityVersion(
+  client: SupabaseClient,
+  request: AttachQuestionnaireRequest,
+): Promise<{ assignmentId: string; opportunityVersionId: string; questionnaireVersionId: string }> {
+  const { data, error } = await client.schema('sih26044').rpc(
+    'attach_questionnaire_to_opportunity_version',
+    {
+      p_opportunity_version_id: request.opportunityVersionId,
+      p_questionnaire_version_id: request.questionnaireVersionId,
+      p_required: request.required,
+      p_ordinal: request.ordinal,
+    },
+  );
+  if (error) throw new Error(`Failed to attach questionnaire: ${error.message} (${error.code})`);
+  if (!data || typeof data !== 'object') throw new Error('Invalid questionnaire attachment response');
+  const result = data as {
+    assignment_id: string;
+    opportunity_version_id: string;
+    questionnaire_version_id: string;
+  };
+  return {
+    assignmentId: result.assignment_id,
+    opportunityVersionId: result.opportunity_version_id,
+    questionnaireVersionId: result.questionnaire_version_id,
+  };
 }
 
 /**

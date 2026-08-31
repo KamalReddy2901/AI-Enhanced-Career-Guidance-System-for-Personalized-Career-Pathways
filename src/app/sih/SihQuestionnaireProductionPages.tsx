@@ -4,9 +4,11 @@ import { QuestionnaireAuthoringForm } from "../components/questionnaire/Question
 import {
   createQuestionnaire,
   createQuestionnaireSuccessor,
+  assignQuestionnaireToOpportunity,
   getQuestionnaireVersion,
   getStudentSubmission,
   listOrganizationQuestionnaires,
+  listDraftOpportunityVersionsForQuestionnaire,
   publishQuestionnaireVersion,
   saveResponse,
   startSubmission,
@@ -222,6 +224,10 @@ export function IndustryQuestionnaireReviewPage() {
   const [error, setError] = useState<string>();
   const [publishing, setPublishing] = useState(false);
   const [revising, setRevising] = useState(false);
+  const [draftOpportunities, setDraftOpportunities] = useState<Array<{ id: string; title: string; versionNumber: number }>>([]);
+  const [selectedOpportunityVersionId, setSelectedOpportunityVersionId] = useState("");
+  const [attaching, setAttaching] = useState(false);
+  const [attachmentStatus, setAttachmentStatus] = useState<string>();
   useEffect(() => {
     if (questionnaireVersionId)
       void getQuestionnaireVersion(questionnaireVersionId)
@@ -234,6 +240,15 @@ export function IndustryQuestionnaireReviewPage() {
           ),
         );
   }, [questionnaireVersionId]);
+  useEffect(() => {
+    if (!data || data.version.status !== "published") return;
+    void listDraftOpportunityVersionsForQuestionnaire(data.version.questionnaire_id)
+      .then((rows) => {
+        setDraftOpportunities(rows);
+        setSelectedOpportunityVersionId((current) => current || rows[0]?.id || "");
+      })
+      .catch((reason) => setError(reason instanceof Error ? reason.message : "Unable to load draft opportunities."));
+  }, [data?.version.id, data?.version.status, data?.version.questionnaire_id]);
   return (
     <Frame
       eyebrow="Review · explicit publication"
@@ -331,6 +346,51 @@ export function IndustryQuestionnaireReviewPage() {
               >
                 {revising ? "Creating successor…" : "Create successor revision"}
               </button>
+              <section className="border-2 border-black bg-[#fff4c7] p-5" aria-labelledby="attach-questionnaire-title">
+                <h2 id="attach-questionnaire-title" className="text-xl font-black">Attach this exact version</h2>
+                <p className="mt-2 text-sm text-black/65">
+                  Attachment is allowed only to a draft opportunity owned by the same organization. Publishing a successor will not rewrite this binding.
+                </p>
+                {attachmentStatus ? <p role="status" className="mt-3 text-sm font-bold">{attachmentStatus}</p> : null}
+                {draftOpportunities.length === 0 ? (
+                  <p className="mt-3 text-sm">No attachable draft opportunity versions are available.</p>
+                ) : (
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <label className="sr-only" htmlFor="questionnaire-opportunity-version">Draft opportunity version</label>
+                    <select
+                      id="questionnaire-opportunity-version"
+                      className="min-h-11 flex-1 border-2 border-black bg-white px-3"
+                      value={selectedOpportunityVersionId}
+                      onChange={(event) => setSelectedOpportunityVersionId(event.target.value)}
+                    >
+                      {draftOpportunities.map((opportunity) => (
+                        <option key={opportunity.id} value={opportunity.id}>
+                          {opportunity.title} · draft v{opportunity.versionNumber}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      disabled={attaching || !selectedOpportunityVersionId}
+                      className="min-h-11 border-2 border-black bg-[#e7ff57] px-5 font-mono-ui text-xs font-black uppercase disabled:opacity-50"
+                      onClick={async () => {
+                        setAttaching(true);
+                        setError(undefined);
+                        try {
+                          await assignQuestionnaireToOpportunity(selectedOpportunityVersionId, data.version.id, true, 0);
+                          setAttachmentStatus("Exact questionnaire version attached to the draft opportunity.");
+                        } catch (reason) {
+                          setError(reason instanceof Error ? reason.message : "Attachment failed.");
+                        } finally {
+                          setAttaching(false);
+                        }
+                      }}
+                    >
+                      {attaching ? "Attaching…" : "Attach exact version"}
+                    </button>
+                  </div>
+                )}
+              </section>
             </>
           )}
         </div>
