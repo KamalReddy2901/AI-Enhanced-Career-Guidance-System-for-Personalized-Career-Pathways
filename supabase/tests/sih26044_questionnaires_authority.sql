@@ -432,7 +432,20 @@ begin
     raise exception 'FAIL: Browser-supplied forged score was used';
   end if;
 
-  -- Verify submission is immutable
+  raise notice 'TEST 10A PASSED: Submission finalized with server-derived score %', v_computed_score;
+end;
+$$;
+
+do $$
+declare
+  v_submission_id uuid;
+begin
+  select id into v_submission_id
+  from sih26044.questionnaire_submissions
+  where respondent_actor_id = '30000000-0000-0000-0000-000000000003'::uuid
+    and submitted_at is not null
+  limit 1;
+
   update sih26044.questionnaire_submissions
   set computed_score = 0
   where id = v_submission_id;
@@ -440,7 +453,7 @@ begin
   raise exception 'FAIL: Submitted submission was mutated';
 exception when others then
   if sqlstate = '42501' or sqlerrm like '%SUBMITTED_SUBMISSION_IMMUTABLE%' then
-    raise notice 'TEST 10 PASSED: Submission finalized with server-derived score % and browser mutation is blocked', v_computed_score;
+    raise notice 'TEST 10B PASSED: Submitted questionnaire is immutable';
   elsif sqlerrm like '%FAIL%' then
     raise;
   else
