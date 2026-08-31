@@ -254,19 +254,19 @@ export function IntegrationPage() {
             <div className="border border-[var(--ink-faint)] p-6">
               <h3 className="font-semibold mb-2">Proposed API Authentication</h3>
               <p className="text-sm text-[var(--ink-soft)]">
-                A production integration should use partner-specific authentication, role-based access, rate limiting, and usage monitoring. Those integration controls are not implemented in the current public prototype.
+                The provider-neutral runtime enforces configuration state, capability checks, rate limiting boundaries, health/audit state and controlled failure handling. Partner-specific authentication and live credentials remain INTEGRATION-READY until an approved provider contract is supplied.
               </p>
             </div>
             <div className="border border-[var(--ink-faint)] p-6">
               <h3 className="font-semibold mb-2">Data Minimization</h3>
               <p className="text-sm text-[var(--ink-soft)]">
-                A future contract should request only the profile fields needed for matching and define retention per partner. Data-flow mapping and a privacy review must precede any external transfer.
+                ATS exports use an explicit privacy-minimized allowlist and carry source provenance, external identifiers and freshness metadata. Partner retention and field contracts still require a documented privacy review before any live transfer.
               </p>
             </div>
             <div className="border border-[var(--ink-faint)] p-6">
               <h3 className="font-semibold mb-2">Integration Audit Trails</h3>
               <p className="text-sm text-[var(--ink-soft)]">
-                Partner-call audit logs, operational monitoring, and incident procedures are production requirements; they are not part of the proposed endpoint mock-up shown above.
+                Connector sync, webhook and disconnect operations append audit state and expose health/failure metadata. Live partner-call delivery and hosted monitoring remain CREDENTIAL-GATED; the operations runbook defines the deployment and incident procedures.
               </p>
             </div>
           </div>
