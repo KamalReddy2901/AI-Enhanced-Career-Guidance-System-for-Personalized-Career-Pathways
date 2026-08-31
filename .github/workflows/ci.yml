@@ -180,6 +180,9 @@ jobs:
       - name: Run questionnaire lifecycle and tenant isolation gate
         run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_questionnaires.sql
 
+      - name: Run questionnaire authenticated authority gate
+        run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_questionnaires_authority.sql
+
       - name: Run institution aggregate privacy gate
         run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_institution_analytics.sql
 
