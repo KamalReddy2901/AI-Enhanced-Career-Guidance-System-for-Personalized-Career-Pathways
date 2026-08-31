@@ -88,6 +88,7 @@ export interface OpportunityQuestionnaireAssignment {
   id: string;
   opportunity_version_id: string;
   questionnaire_id: string;
+  questionnaire_version_id: string;
   required: boolean;
   ordinal: number;
   created_at: string;

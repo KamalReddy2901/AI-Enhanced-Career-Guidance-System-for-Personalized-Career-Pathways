@@ -59,7 +59,7 @@ insert into sih26044.opportunities (
 ) values (
   '50000000-0000-0000-0000-000000000001'::uuid,
   '20000000-0000-0000-0000-000000000001'::uuid,
-  'published',
+  'draft',
   '30000000-0000-0000-0000-000000000001'::uuid
 );
 
@@ -70,10 +70,10 @@ insert into sih26044.opportunity_versions (
 ) values (
   '50000000-0000-0000-0000-000000000002'::uuid,
   '50000000-0000-0000-0000-000000000001'::uuid,
-  1, 'published', 'Questionnaire authority fixture', 'Published fixture',
+  1, 'draft', 'Questionnaire authority fixture', 'Published fixture',
   'internship', array['student']::sih26044.opportunity_audience[],
   'controlled_test', statement_timestamp(), 'Controlled test fixture',
-  '30000000-0000-0000-0000-000000000001'::uuid, statement_timestamp()
+  '30000000-0000-0000-0000-000000000001'::uuid, null
 );
 
 update sih26044.opportunities
@@ -212,11 +212,9 @@ begin
     raise exception 'FAIL: Questionnaire not published';
   end if;
 
-  insert into sih26044.opportunity_questionnaire_assignments (
-    opportunity_version_id, questionnaire_id, required, ordinal
-  ) values (
+  perform sih26044.attach_questionnaire_to_opportunity_version(
     '50000000-0000-0000-0000-000000000002'::uuid,
-    (v_result->>'questionnaire_id')::uuid,
+    (v_result->>'version_id')::uuid,
     true,
     0
   );
@@ -226,6 +224,13 @@ end;
 $$;
 
 reset role;
+
+update sih26044.opportunity_versions
+set status = 'published', published_at = statement_timestamp()
+where id = '50000000-0000-0000-0000-000000000002'::uuid;
+update sih26044.opportunities
+set status = 'published'
+where id = '50000000-0000-0000-0000-000000000001'::uuid;
 
 -- ============================================================================
 -- TEST 5: Published questionnaire version content is immutable
@@ -386,10 +391,43 @@ begin
   perform sih26044.publish_questionnaire_atomic(v_successor_id);
   if (select current_version_id from sih26044.questionnaires where id = v_questionnaire_id) <> v_successor_id
     or (select status from sih26044.questionnaire_versions where id = v_source_id) <> 'published'
-    or (select status from sih26044.questionnaire_versions where id = v_successor_id) <> 'published' then
+    or (select status from sih26044.questionnaire_versions where id = v_successor_id) <> 'published'
+    or (select questionnaire_version_id from sih26044.opportunity_questionnaire_assignments
+        where opportunity_version_id = '50000000-0000-0000-0000-000000000002'::uuid) <> v_source_id then
     raise exception 'FAIL: Successor publication did not switch stable current authority correctly';
   end if;
   raise notice 'TEST 5D PASSED: Explicit publication promoted successor and preserved source';
+end;
+$$;
+
+reset role;
+
+-- ============================================================================
+-- TEST 5E: Published opportunity attachment cannot be silently retargeted
+-- ============================================================================
+
+set local role authenticated;
+set local request.jwt.claim.sub = '10000000-0000-0000-0000-000000000001';
+
+do $$
+declare
+  v_successor_id uuid;
+begin
+  select id into v_successor_id from sih26044.questionnaire_versions
+  where version_number = 2 and status = 'published' limit 1;
+  perform sih26044.attach_questionnaire_to_opportunity_version(
+    '50000000-0000-0000-0000-000000000002'::uuid,
+    v_successor_id, true, 0
+  );
+  raise exception 'FAIL: Published opportunity attachment was retargeted';
+exception when others then
+  if sqlerrm like '%PUBLISHED_QUESTIONNAIRE_AND_DRAFT_OPPORTUNITY_REQUIRED%' then
+    raise notice 'TEST 5E PASSED: Published opportunity retains exact questionnaire version';
+  elsif sqlerrm like '%FAIL%' then
+    raise;
+  else
+    raise exception 'TEST 5E FAILED: Unexpected error: %', sqlerrm;
+  end if;
 end;
 $$;
 

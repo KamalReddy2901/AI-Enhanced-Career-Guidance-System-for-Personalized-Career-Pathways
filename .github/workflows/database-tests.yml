@@ -221,7 +221,7 @@ jobs:
           esac
           psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
             -f supabase/tests/sih26044_questionnaires_authority.sql
-          echo "EXECUTED questionnaire authenticated authority tests: 18 tests PASSED"
+          echo "EXECUTED questionnaire authenticated authority tests: 19 tests PASSED"
 
       - name: Execute SIH26044 D2 readiness and trust assertions
         env:

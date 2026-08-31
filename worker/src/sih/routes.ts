@@ -9,11 +9,13 @@ import { deriveArtifactBackedEvidence, registerArtifact } from './artifacts';
 import { createAndFinalizeApplicationSnapshot } from './applications';
 import {
   createQuestionnaireAtomic,
+  attachQuestionnaireToOpportunityVersion,
   createQuestionnaireSuccessorDraft,
   publishQuestionnaireAtomic,
   submitQuestionnaireAtomic,
   updateQuestionnaireDraftAtomic,
   type CreateQuestionnaireRequest,
+  type AttachQuestionnaireRequest,
   type CreateQuestionnaireSuccessorRequest,
   type PublishQuestionnaireRequest,
   type SubmitQuestionnaireRequest,
@@ -48,6 +50,7 @@ export interface SihRouteDependencies {
   createQuestionnaire?(request: Request, env: SihEnv, questionnaireRequest: CreateQuestionnaireRequest): Promise<{ questionnaireId: string; versionId: string }>;
   createQuestionnaireSuccessor?(request: Request, env: SihEnv, successorRequest: CreateQuestionnaireSuccessorRequest): Promise<{ questionnaireId: string; sourceVersionId: string; successorVersionId: string; versionNumber: number }>;
   updateQuestionnaireDraft?(request: Request, env: SihEnv, draftRequest: UpdateQuestionnaireDraftRequest): Promise<{ questionnaireId: string; versionId: string }>;
+  attachQuestionnaire?(request: Request, env: SihEnv, attachmentRequest: AttachQuestionnaireRequest): Promise<{ assignmentId: string; opportunityVersionId: string; questionnaireVersionId: string }>;
   publishQuestionnaire?(request: Request, env: SihEnv, publishRequest: PublishQuestionnaireRequest): Promise<{ questionnaireId: string; versionId: string; publishedAt: string }>;
   submitQuestionnaire?(request: Request, env: SihEnv, submitRequest: SubmitQuestionnaireRequest): Promise<{ submissionId: string; submittedAt: string; computedScore: number | null; maxScore: number | null }>;
 }
@@ -90,6 +93,10 @@ const productionDependencies: SihRouteDependencies = {
   async updateQuestionnaireDraft(request, env, draftRequest) {
     const { client } = await authenticateAndResolveActor(request, env);
     return updateQuestionnaireDraftAtomic(client, draftRequest);
+  },
+  async attachQuestionnaire(request, env, attachmentRequest) {
+    const { client } = await authenticateAndResolveActor(request, env);
+    return attachQuestionnaireToOpportunityVersion(client, attachmentRequest);
   },
   async publishQuestionnaire(request, env, publishRequest) {
     const { client } = await authenticateAndResolveActor(request, env);
@@ -247,6 +254,20 @@ export async function handleSihRequest(
       }
       const result = await (dependencies.updateQuestionnaireDraft ?? productionDependencies.updateQuestionnaireDraft!)(
         request, env, record as unknown as UpdateQuestionnaireDraftRequest,
+      );
+      return respond({ ok: true, ...result }, 200);
+    }
+
+    if (url.pathname === '/sih/questionnaires/attach' && request.method === 'POST') {
+      const record = await parseJsonBody(request);
+      if (!uuid.test(String(record.opportunityVersionId ?? '')) ||
+          !uuid.test(String(record.questionnaireVersionId ?? '')) ||
+          typeof record.required !== 'boolean' ||
+          !Number.isInteger(record.ordinal) || Number(record.ordinal) < 0) {
+        throw new SihRouteError('INVALID_REQUEST', 400, 'Valid opportunityVersionId, questionnaireVersionId, required, and ordinal are required.');
+      }
+      const result = await (dependencies.attachQuestionnaire ?? productionDependencies.attachQuestionnaire!)(
+        request, env, record as unknown as AttachQuestionnaireRequest,
       );
       return respond({ ok: true, ...result }, 200);
     }

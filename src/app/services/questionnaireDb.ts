@@ -176,26 +176,67 @@ export async function getQuestionnaireVersion(
  */
 export async function assignQuestionnaireToOpportunity(
   opportunityVersionId: string,
-  questionnaireId: string,
+  questionnaireVersionId: string,
   required: boolean,
   ordinal: number,
 ): Promise<OpportunityQuestionnaireAssignment> {
-  const { data, error } = await supabase
-    .schema('sih26044').from('opportunity_questionnaire_assignments')
-    .insert({
-      opportunity_version_id: opportunityVersionId,
-      questionnaire_id: questionnaireId,
-      required,
-      ordinal,
-    })
-    .select('id, opportunity_version_id, questionnaire_id, required, ordinal, created_at')
-    .single();
-
-  if (error || !data) {
-    throw new Error(`Failed to assign questionnaire: ${error?.message}`);
+  const token = await getAuthToken();
+  const response = await fetch(`${workerUrl}/sih/questionnaires/attach`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify({ opportunityVersionId, questionnaireVersionId, required, ordinal }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
+    throw new Error(`Failed to attach questionnaire: ${error.error?.message || response.statusText}`);
   }
-
+  const result = await response.json();
+  const { data, error } = await supabase.schema('sih26044')
+    .from('opportunity_questionnaire_assignments')
+    .select('id, opportunity_version_id, questionnaire_id, questionnaire_version_id, required, ordinal, created_at')
+    .eq('id', result.assignmentId).single();
+  if (error || !data) throw new Error(`Failed to read questionnaire attachment: ${error?.message}`);
   return data as OpportunityQuestionnaireAssignment;
+}
+
+export async function listDraftOpportunityVersionsForQuestionnaire(
+  questionnaireId: string,
+): Promise<Array<{ id: string; title: string; versionNumber: number }>> {
+  const { data: questionnaire, error: questionnaireError } = await supabase
+    .schema('sih26044').from('questionnaires')
+    .select('id, owner_organization_id').eq('id', questionnaireId).single();
+  if (questionnaireError || !questionnaire) throw new Error(`Failed to resolve questionnaire owner: ${questionnaireError?.message}`);
+
+  const { data: opportunities, error: opportunitiesError } = await supabase
+    .schema('sih26044').from('opportunities')
+    .select('id').eq('owner_organization_id', questionnaire.owner_organization_id);
+  if (opportunitiesError) throw new Error(`Failed to list attachable opportunities: ${opportunitiesError.message}`);
+  const opportunityIds = (opportunities || []).map((row) => row.id);
+  if (opportunityIds.length === 0) return [];
+
+  const { data: versions, error: versionsError } = await supabase
+    .schema('sih26044').from('opportunity_versions')
+    .select('id, title, version_number').in('opportunity_id', opportunityIds)
+    .eq('status', 'draft').order('created_at', { ascending: false });
+  if (versionsError) throw new Error(`Failed to list draft opportunity versions: ${versionsError.message}`);
+  return (versions || []).map((row) => ({ id: row.id, title: row.title, versionNumber: row.version_number }));
+}
+
+export async function getOpportunityQuestionnaireAssignment(
+  opportunityVersionId: string,
+): Promise<(OpportunityQuestionnaireAssignment & { version: QuestionnaireVersion }) | null> {
+  const { data: assignment, error } = await supabase.schema('sih26044')
+    .from('opportunity_questionnaire_assignments')
+    .select('id, opportunity_version_id, questionnaire_id, questionnaire_version_id, required, ordinal, created_at')
+    .eq('opportunity_version_id', opportunityVersionId).order('ordinal').limit(1).maybeSingle();
+  if (error) throw new Error(`Failed to load questionnaire requirement: ${error.message}`);
+  if (!assignment) return null;
+  const { data: version, error: versionError } = await supabase.schema('sih26044')
+    .from('questionnaire_versions')
+    .select('id, questionnaire_id, version_number, status, title, description, scope_declaration, scoring_policy, created_by_actor_id, created_at, published_at')
+    .eq('id', assignment.questionnaire_version_id).single();
+  if (versionError || !version) throw new Error(`Failed to load assigned questionnaire version: ${versionError?.message}`);
+  return { ...(assignment as OpportunityQuestionnaireAssignment), version: version as QuestionnaireVersion };
 }
 
 /**
