@@ -13,7 +13,7 @@ import { applicationStageLabel } from './demoScenario';
 function PageIntro({ eyebrow, title, description }: { readonly eyebrow: string; readonly title: string; readonly description: string }) {
   return (
     <header className="mb-8 max-w-4xl">
-      <p className="font-mono-ui text-xs font-black uppercase tracking-[0.2em] text-[#d63c1d]">{eyebrow}</p>
+      <p className="font-mono-ui text-xs font-black uppercase tracking-[0.2em] text-[#a72d16]">{eyebrow}</p>
       <h1 className="mt-2 text-4xl font-black leading-[0.95] tracking-[-0.04em] sm:text-6xl">{title}</h1>
       <p className="mt-4 max-w-3xl text-base leading-relaxed text-black/70 sm:text-lg">{description}</p>
     </header>

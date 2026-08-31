@@ -23,6 +23,8 @@
     "qa:opportunity-readiness": "tsx scripts/opportunity-readiness-qa.ts",
     "qa:demo-isolation": "tsx scripts/demo-isolation-qa.ts",
     "qa:demo-flow": "tsx scripts/demo-flow-qa.ts",
+    "qa:e2e": "playwright test",
+    "qa:e2e:headed": "playwright test --headed",
     "qa:recruiter-projection": "tsx scripts/recruiter-projection-qa.ts",
     "qa:sih-persistence-schema": "tsx scripts/sih-persistence-schema-qa.ts",
     "qa:sih-browser-reads": "tsx scripts/sih-browser-read-contracts-qa.ts",
@@ -41,7 +43,7 @@
     "qa:deployment-smoke": "tsx scripts/deployment-smoke.ts",
     "deploy:sih:preview": "tsx scripts/cloudflare-deploy.ts preview",
     "deploy:sih:production": "tsx scripts/cloudflare-deploy.ts production",
-    "qa:sih-premerge": "npm run typecheck && npm run qa:sih-boundary && npm run qa:demo-isolation && npm run qa:demo-flow && npm run qa:opportunity-readiness && npm run qa:evidence-integrity && npm run qa:recruiter-projection && npm run qa:sih-persistence-schema && npm run qa:sih-browser-reads && npm run qa:connector-framework && npm run qa:runtime-operations && npm run qa:production-convergence && npm run qa:foundation-freeze-hardening && npm run build"
+    "qa:sih-premerge": "npm run typecheck && npm run qa:sih-boundary && npm run qa:demo-isolation && npm run qa:demo-flow && npm run qa:opportunity-readiness && npm run qa:evidence-integrity && npm run qa:recruiter-projection && npm run qa:sih-persistence-schema && npm run qa:sih-browser-reads && npm run qa:connector-framework && npm run qa:runtime-operations && npm run qa:production-convergence && npm run qa:foundation-freeze-hardening && npm run build && npm run qa:e2e"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -109,6 +111,8 @@
     "vaul": "1.1.2"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.62.1",
     "@tailwindcss/vite": "4.1.12",
     "@types/node": "^22.20.1",
     "@types/react": "^18.3.31",

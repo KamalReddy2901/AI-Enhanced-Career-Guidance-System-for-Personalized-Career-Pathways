@@ -39,7 +39,7 @@ export function DemoLayout() {
             <button
               type="button"
               onClick={() => dispatch({ type: 'RESET_CONTROLLED_DEMO' })}
-              className="min-h-11 border-2 border-black bg-[#ff5c35] px-4 py-2 font-mono-ui text-[10px] font-black uppercase tracking-wide text-white shadow-[3px_3px_0_#111] focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
+              className="min-h-11 border-2 border-black bg-[#ff5c35] px-4 py-2 font-mono-ui text-[10px] font-black uppercase tracking-wide text-black shadow-[3px_3px_0_#111] focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#e7ff57]"
             >
               Reset controlled demo
             </button>

@@ -148,6 +148,39 @@ jobs:
       - name: Verify Worker bundle
         run: npx wrangler deploy --dry-run
 
+  browser-e2e:
+    name: Browser E2E and accessibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser E2E and accessibility proof
+        run: npm run qa:e2e
+
+      - name: Retain browser proof on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-e2e-proof
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
   database:
     name: Disposable Supabase D2 Foundation
     runs-on: ubuntu-latest

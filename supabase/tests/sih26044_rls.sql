@@ -1009,14 +1009,14 @@ values
   ('83000000-0000-0000-0000-000000000003', '82000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000001', 'email', 'interview', 1, 'claimed', now() - interval '1 minute', 5, 'notification-outbox-test-3'),
   ('83000000-0000-0000-0000-000000000004', '82000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000001', 'in_app', 'offer-outcome', 1, 'queued', null, 0, 'notification-outbox-test-4');
 
-set local role authenticated;
-set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000002';
-set local "request.jwt.claim.role" = 'authenticated';
 select pg_temp.assert_true(
-  (select count(*) = 0 from sih26044.claim_notification_outbox(10, 60)),
-  'authenticated actors cannot claim another actor notification work'
+  not has_function_privilege(
+    'authenticated',
+    'sih26044.claim_notification_outbox(integer, integer)',
+    'EXECUTE'
+  ),
+  'authenticated browser actors cannot claim notification delivery work'
 );
-reset role;
 
 set local role service_role;
 set local "request.jwt.claim.role" = 'service_role';
