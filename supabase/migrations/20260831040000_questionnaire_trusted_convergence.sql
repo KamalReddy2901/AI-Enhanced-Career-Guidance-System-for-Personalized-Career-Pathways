@@ -42,7 +42,7 @@ create or replace function sih26044.create_questionnaire_atomic(
 returns jsonb
 language plpgsql
 security definer
-set search_path = pg_catalog, sih26044, public
+set search_path = pg_catalog, sih26044
 as $$
 declare
   v_actor_id uuid;
@@ -149,6 +149,7 @@ $$;
 comment on function sih26044.create_questionnaire_atomic is
   'Atomically create questionnaire with version and questions. Actor/organization authority verified server-side.';
 
+revoke all on function sih26044.create_questionnaire_atomic from public, anon;
 grant execute on function sih26044.create_questionnaire_atomic to authenticated;
 
 -- ============================================================================
@@ -161,7 +162,7 @@ create or replace function sih26044.publish_questionnaire_atomic(
 returns jsonb
 language plpgsql
 security definer
-set search_path = pg_catalog, sih26044, public
+set search_path = pg_catalog, sih26044
 as $$
 declare
   v_actor_id uuid;
@@ -236,6 +237,7 @@ $$;
 comment on function sih26044.publish_questionnaire_atomic is
   'Publish questionnaire version. Authority verified server-side. Timestamp derived server-side.';
 
+revoke all on function sih26044.publish_questionnaire_atomic from public, anon;
 grant execute on function sih26044.publish_questionnaire_atomic to authenticated;
 
 -- ============================================================================
@@ -248,7 +250,7 @@ create or replace function sih26044.submit_questionnaire_atomic(
 returns jsonb
 language plpgsql
 security definer
-set search_path = pg_catalog, sih26044, public
+set search_path = pg_catalog, sih26044
 as $$
 declare
   v_actor_id uuid;
@@ -336,11 +338,11 @@ begin
 
       -- Score response (deterministic)
       if v_question.question_type = 'single_choice' then
-        -- Placeholder: award full weight if answered (real logic would check correct answer)
-        v_response_score := v_question.scoring_weight;
+        -- No browser-visible answer key exists yet, so choice responses are
+        -- deliberately not scored. Option order is never scoring authority.
+        v_response_score := null;
       elsif v_question.question_type = 'multiple_choice' then
-        -- Placeholder: award full weight if at least one selection
-        v_response_score := v_question.scoring_weight;
+        v_response_score := null;
       elsif v_question.question_type = 'numeric' then
         -- Normalize within range
         declare
@@ -356,12 +358,14 @@ begin
       end if;
 
       -- Update response score
-      update sih26044.questionnaire_responses
-      set response_score = v_response_score
-      where id = v_response.id;
+      if v_response_score is not null then
+        update sih26044.questionnaire_responses
+        set response_score = v_response_score
+        where id = v_response.id;
 
-      v_computed_score := v_computed_score + v_response_score;
-      v_max_score := v_max_score + v_question.scoring_weight;
+        v_computed_score := v_computed_score + v_response_score;
+        v_max_score := v_max_score + v_question.scoring_weight;
+      end if;
     end loop;
   end if;
 
@@ -388,6 +392,7 @@ $$;
 comment on function sih26044.submit_questionnaire_atomic is
   'Finalize questionnaire submission with deterministic server-side scoring. Timestamp derived server-side.';
 
+revoke all on function sih26044.submit_questionnaire_atomic from public, anon;
 grant execute on function sih26044.submit_questionnaire_atomic to authenticated;
 
 -- ============================================================================
@@ -506,6 +511,42 @@ create policy questionnaire_versions_read on sih26044.questionnaire_versions
     ))
   );
 
+-- Starting a submission is the one intentional direct write on submissions.
+-- Bind opportunity-specific questionnaires to the exact published opportunity
+-- version supplied by the student; reusable published questionnaires may be
+-- started without an opportunity context.
+drop policy if exists questionnaire_submissions_student_write
+  on sih26044.questionnaire_submissions;
+create policy questionnaire_submissions_student_insert
+  on sih26044.questionnaire_submissions
+  for insert
+  to authenticated
+  with check (
+    respondent_actor_id = sih26044.current_actor_id()
+    and submitted_at is null
+    and exists (
+      select 1
+      from sih26044.questionnaire_versions qv
+      where qv.id = questionnaire_version_id
+        and qv.status = 'published'
+        and (
+          (qv.scope_declaration <> 'opportunity_specific'
+            and opportunity_id is null
+            and opportunity_version_id is null)
+          or exists (
+            select 1
+            from sih26044.opportunity_questionnaire_assignments oqa
+            join sih26044.opportunity_versions ov
+              on ov.id = oqa.opportunity_version_id
+            where oqa.questionnaire_id = qv.questionnaire_id
+              and oqa.opportunity_version_id = questionnaire_submissions.opportunity_version_id
+              and ov.opportunity_id = questionnaire_submissions.opportunity_id
+              and ov.status = 'published'
+          )
+        )
+    )
+  );
+
 -- ============================================================================
 -- ATTESTATION: Questionnaire submission outcomes as assessed evidence
 -- ============================================================================
@@ -537,3 +578,43 @@ comment on column sih26044.questionnaire_submissions.computed_score is
 grant execute on function sih26044.create_questionnaire_atomic to service_role;
 grant execute on function sih26044.publish_questionnaire_atomic to service_role;
 grant execute on function sih26044.submit_questionnaire_atomic to service_role;
+
+-- ============================================================================
+-- DATA API ACLS: expose only the operations intentionally used by the browser
+-- ============================================================================
+--
+-- RLS decides which rows an authenticated actor may reach; table/column grants
+-- decide which operations are exposed through PostgREST at all. High-impact
+-- questionnaire creation, publication, and submission finalization remain RPC
+-- only. In particular, the browser can never write authoritative score fields.
+
+revoke all on table sih26044.questionnaires from anon, authenticated;
+revoke all on table sih26044.questionnaire_versions from anon, authenticated;
+revoke all on table sih26044.questionnaire_questions from anon, authenticated;
+revoke all on table sih26044.opportunity_questionnaire_assignments from anon, authenticated;
+revoke all on table sih26044.questionnaire_submissions from anon, authenticated;
+revoke all on table sih26044.questionnaire_responses from anon, authenticated;
+
+grant select on table
+  sih26044.questionnaires,
+  sih26044.questionnaire_versions,
+  sih26044.questionnaire_questions,
+  sih26044.opportunity_questionnaire_assignments,
+  sih26044.questionnaire_submissions,
+  sih26044.questionnaire_responses
+to authenticated;
+
+-- Opportunity owners deliberately retain RLS-bounded assignment editing.
+grant insert, update, delete on table
+  sih26044.opportunity_questionnaire_assignments
+to authenticated;
+
+-- Students may open an owned draft submission. Finalization is RPC-only.
+grant insert on table sih26044.questionnaire_submissions to authenticated;
+
+-- Draft answers may be saved directly, but authoritative scoring is never a
+-- browser-writable column. answered_at remains database-derived on insert.
+grant insert (submission_id, question_id, response_value)
+  on table sih26044.questionnaire_responses to authenticated;
+grant update (response_value)
+  on table sih26044.questionnaire_responses to authenticated;

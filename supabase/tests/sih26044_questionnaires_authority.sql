@@ -53,6 +53,33 @@ values
   ('40000000-0000-0000-0000-000000000002'::uuid, 'recruiter'),
   ('40000000-0000-0000-0000-000000000003'::uuid, 'learner');
 
+-- Published opportunity used to prove exact questionnaire assignment/context.
+insert into sih26044.opportunities (
+  id, owner_organization_id, status, created_by_actor_id
+) values (
+  '50000000-0000-0000-0000-000000000001'::uuid,
+  '20000000-0000-0000-0000-000000000001'::uuid,
+  'published',
+  '30000000-0000-0000-0000-000000000001'::uuid
+);
+
+insert into sih26044.opportunity_versions (
+  id, opportunity_id, version_number, status, title, description,
+  opportunity_type, audiences, source_system, source_captured_at,
+  source_literal_text, created_by_actor_id, published_at
+) values (
+  '50000000-0000-0000-0000-000000000002'::uuid,
+  '50000000-0000-0000-0000-000000000001'::uuid,
+  1, 'published', 'Questionnaire authority fixture', 'Published fixture',
+  'internship', array['student']::sih26044.opportunity_audience[],
+  'controlled_test', statement_timestamp(), 'Controlled test fixture',
+  '30000000-0000-0000-0000-000000000001'::uuid, statement_timestamp()
+);
+
+update sih26044.opportunities
+set current_version_id = '50000000-0000-0000-0000-000000000002'::uuid
+where id = '50000000-0000-0000-0000-000000000001'::uuid;
+
 -- Note: Supabase's auth.uid() function already reads from request.jwt.claim.sub,
 -- so we just need to SET LOCAL that variable when switching to authenticated role.
 -- No need to override auth.uid() itself (which requires auth schema permissions).
@@ -185,6 +212,15 @@ begin
     raise exception 'FAIL: Questionnaire not published';
   end if;
 
+  insert into sih26044.opportunity_questionnaire_assignments (
+    opportunity_version_id, questionnaire_id, required, ordinal
+  ) values (
+    '50000000-0000-0000-0000-000000000002'::uuid,
+    (v_result->>'questionnaire_id')::uuid,
+    true,
+    0
+  );
+
   raise notice 'TEST 4 PASSED: Recruiter A published questionnaire';
 end;
 $$;
@@ -215,8 +251,8 @@ begin
 
   raise exception 'FAIL: Published questionnaire version was mutated';
 exception when others then
-  if sqlerrm like '%PUBLISHED_VERSION_IMMUTABLE%' then
-    raise notice 'TEST 5 PASSED: Published version is immutable';
+  if sqlstate = '42501' or sqlerrm like '%PUBLISHED_VERSION_IMMUTABLE%' then
+    raise notice 'TEST 5 PASSED: Browser cannot mutate a published version';
   else
     raise exception using message = 'TEST 5 FAILED: Wrong error: ' || sqlerrm;
   end if;
@@ -249,12 +285,13 @@ begin
 
   -- Start submission via RLS-allowed INSERT
   insert into sih26044.questionnaire_submissions (
-    questionnaire_version_id, respondent_actor_id, opportunity_id
+    questionnaire_version_id, respondent_actor_id, opportunity_id, opportunity_version_id
   )
   values (
     v_version_id,
     '30000000-0000-0000-0000-000000000003'::uuid,
-    null
+    '50000000-0000-0000-0000-000000000001'::uuid,
+    '50000000-0000-0000-0000-000000000002'::uuid
   )
   returning id into v_submission_id;
 
@@ -329,13 +366,14 @@ begin
   where submission_id = v_submission_id
   limit 1;
 
-  -- Try to set response_score directly (should be ignored or blocked)
+  -- Direct score writes are outside the browser's column-level ACL.
   update sih26044.questionnaire_responses
   set response_score = 999.0
   where id = v_response_id;
 
-  -- RLS allows the UPDATE but scoring must come from server finalization
-  raise notice 'TEST 8: Browser UPDATE allowed but score authority is server-side (checked in TEST 10)';
+  raise exception 'FAIL: Browser forged response_score';
+exception when insufficient_privilege then
+  raise notice 'TEST 8 PASSED: Browser cannot write authoritative response_score';
 end;
 $$;
 
@@ -401,8 +439,8 @@ begin
 
   raise exception 'FAIL: Submitted submission was mutated';
 exception when others then
-  if sqlerrm like '%SUBMITTED_SUBMISSION_IMMUTABLE%' then
-    raise notice 'TEST 10 PASSED: Submission finalized with server-derived score % and is now immutable', v_computed_score;
+  if sqlstate = '42501' or sqlerrm like '%SUBMITTED_SUBMISSION_IMMUTABLE%' then
+    raise notice 'TEST 10 PASSED: Submission finalized with server-derived score % and browser mutation is blocked', v_computed_score;
   elsif sqlerrm like '%FAIL%' then
     raise;
   else
@@ -447,7 +485,10 @@ begin
 
   raise exception 'FAIL: Student submitted for another actor';
 exception when others then
-  if sqlerrm like '%SUBMISSION_NOT_FOUND_OR_ALREADY_SUBMITTED%' or sqlerrm like '%not owned by actor%' then
+  if sqlstate = '42501'
+    or sqlerrm like '%SUBMISSION_NOT_FOUND_OR_ALREADY_SUBMITTED%'
+    or sqlerrm like '%not owned by actor%'
+    or sqlerrm like '%row-level security%' then
     raise notice 'TEST 11 PASSED: Student cannot submit for another actor';
   elsif sqlerrm like '%FAIL%' then
     raise;

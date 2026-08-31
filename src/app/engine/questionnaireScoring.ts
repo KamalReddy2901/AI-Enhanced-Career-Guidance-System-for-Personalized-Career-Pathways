@@ -44,25 +44,13 @@ export function scoreResponse(
 
   switch (question.question_type) {
     case 'single_choice': {
-      // Simple correct-answer scoring (assumes first option is correct, or custom logic)
-      // In production, this would reference a correct_answers field in choice_options
-      const value = response.response_value as string;
-      const options = question.choice_options || [];
-      const selectedIndex = options.findIndex((opt) => opt.value === value);
-
-      // Placeholder logic: award full weight if answered, partial for specific indices
-      // Real implementation would check against correct answer metadata
-      if (selectedIndex === 0) return weight; // Assuming first is "correct" for demo
-      if (selectedIndex >= 0) return weight * 0.5; // Partial credit
-      return 0;
+      // Choice questions remain unscored until a separate, non-browser-readable
+      // answer-key contract exists. Option order is never scoring authority.
+      return null;
     }
 
     case 'multiple_choice': {
-      // Award proportional credit based on number of correct selections
-      // Placeholder: award full weight if at least one selection
-      const values = response.response_value as string[];
-      if (values.length > 0) return weight;
-      return 0;
+      return null;
     }
 
     case 'numeric': {
@@ -104,6 +92,7 @@ export function computeQuestionnaireScore(
 
   const questionScores: QuestionnaireScoreResult['question_scores'] = [];
   let totalScore = 0;
+  let maxScore = 0;
 
   for (const question of questions) {
     const response = responseMap.get(question.id);
@@ -121,6 +110,7 @@ export function computeQuestionnaireScore(
     });
 
     totalScore += responseScore;
+    maxScore += maxPossible;
   }
 
   // Determine band if configured
@@ -136,7 +126,7 @@ export function computeQuestionnaireScore(
 
   return {
     computed_score: totalScore,
-    max_score: scoringPolicy.rules.max_score,
+    max_score: maxScore,
     scoring_policy_version: scoringPolicy.version,
     question_scores: questionScores,
     band,
