@@ -32,7 +32,8 @@ export class SihTrustedApiClient {
     const token = data.session?.access_token;
     if (error || !token) throw new SihTrustedApiError('UNAUTHENTICATED', 401, 'Sign in is required.');
 
-    const response = await this.request(
+    const response = await this.request.call(
+      globalThis,
       `${this.workerOrigin.replace(/\/$/, '')}${path}`,
       {
         method,
