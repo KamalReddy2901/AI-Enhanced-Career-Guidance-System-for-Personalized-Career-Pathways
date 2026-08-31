@@ -24,17 +24,20 @@ begin
     raise exception 'ACTOR_NOT_FOUND' using errcode = 'SIH01';
   end if;
 
-  select version, questionnaire.owner_organization_id
-  into v_source, v_organization_id
+  select version.* into v_source
   from sih26044.questionnaire_versions version
-  join sih26044.questionnaires questionnaire on questionnaire.id = version.questionnaire_id
   where version.id = p_source_version_id
     and version.status in ('published', 'archived')
-  for update of questionnaire;
+  for update of version;
 
   if v_source.id is null then
     raise exception 'PUBLISHED_SOURCE_VERSION_REQUIRED' using errcode = 'SIH04';
   end if;
+
+  select questionnaire.owner_organization_id into v_organization_id
+  from sih26044.questionnaires questionnaire
+  where questionnaire.id = v_source.questionnaire_id
+  for update;
 
   if not exists (
     select 1
