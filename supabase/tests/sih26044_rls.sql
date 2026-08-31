@@ -678,7 +678,19 @@ reset role;
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000006';
-select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records), 'unrelated verifier cannot read requested evidence');
+select pg_temp.assert_true(
+  (select count(*) = 0
+   from sih26044.evidence_records
+   where id in (
+     '60000000-0000-0000-0000-000000000001',
+     '60000000-0000-0000-0000-000000000004'
+   ))
+  and
+  (select count(*) = 1
+   from sih26044.evidence_records
+   where id = '60000000-0000-0000-0000-000000000005'),
+  'unrelated verifier cannot read requested evidence after actor-targeted consent ends, but can read an active request targeted to their organization'
+);
 select pg_temp.assert_blocked(
   $sql$select sih26044.is_consent_active(
     '62000000-0000-0000-0000-000000000002',
