@@ -30,6 +30,7 @@ const [
   applicationRecruiterPanel,
   applicationTimeline,
   applicationLifecycleMigration,
+  trustedApiClient,
 ] = await Promise.all([
   readFile(join(root, 'src/app/routes.ts'), 'utf8'),
   readFile(join(root, 'src/app/sih/SihProductionContext.tsx'), 'utf8'),
@@ -57,6 +58,7 @@ const [
   readFile(join(root, 'src/app/components/sih/recruiter/HumanStageActionPanel.tsx'), 'utf8'),
   readFile(join(root, 'src/app/components/sih/application/ApplicationRecruitmentTimeline.tsx'), 'utf8'),
   readFile(join(root, 'supabase/migrations/20260831100000_application_recruitment_lifecycle.sql'), 'utf8'),
+  readFile(join(root, 'src/app/services/sih/SihTrustedApiClient.ts'), 'utf8'),
 ]);
 
 for (const route of ['career','opportunities','evidence','verification','applications','industry/opportunities','industry/opportunities/new','industry/applicants','faculty','faculty/collaborations','institution','institution/skills-intelligence']) {
@@ -169,6 +171,8 @@ assert.match(migration, /'resolved',\s*'review_required',\s*'unresolved'/i);
 assert.match(worker, /65_536/);
 assert.match(worker, /SIH_RATE_LIMITER\.limit/);
 assert.match(config, /\[\[ratelimits\]\][\s\S]*name\s*=\s*"SIH_RATE_LIMITER"/);
+assert.match(trustedApiClient, /this\.request\.call\(\s*globalThis,/, 'Trusted browser requests must preserve the native fetch receiver');
+assert.doesNotMatch(trustedApiClient, /this\.request\s*\(/, 'Native fetch must not be invoked as an unbound instance method');
 
 assert.match(studentPages, /getExactSubmittedApplicationSnapshot/);
 assert.match(studentPages, /listApplicationRecruitmentRecords/);
