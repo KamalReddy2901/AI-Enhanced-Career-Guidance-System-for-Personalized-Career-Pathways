@@ -44,7 +44,7 @@ function ProductionFrame({
   const { loading, error, actorId } = useSihProduction();
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[#d63c1d]">{eyebrow}</p>
+      <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[var(--accent-news)]">{eyebrow}</p>
       <h1 className="mt-2 text-4xl font-black tracking-tight">{title}</h1>
       <p className="mt-3 max-w-3xl text-sm leading-6 text-black/65">{description}</p>
       {loading ? (
@@ -709,7 +709,7 @@ export function ApplicationsPage() {
           {rows.map((application) => (
             <Link key={application.id} to={`/applications/${application.id}`}>
               <article className="border-2 border-black bg-white p-5 shadow-[4px_4px_0_#111] transition-transform hover:-translate-y-1">
-                <p className="font-mono-ui text-[10px] font-black uppercase text-[#d63c1d]">{application.currentStage.replaceAll('_', ' ')}</p>
+                <p className="font-mono-ui text-[10px] font-black uppercase text-[var(--accent-news)]">{application.currentStage.replaceAll('_', ' ')}</p>
                 <h2 className="mt-2 break-all text-lg font-black">{application.id.substring(0, 8)}...</h2>
                 <dl className="mt-4 grid gap-2 text-xs">
                   <div><dt className="font-mono-ui uppercase text-black/45">Opportunity version</dt><dd className="mt-1 break-all font-mono-ui">{application.opportunityVersionId.substring(0, 12)}...</dd></div>

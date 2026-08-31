@@ -53,7 +53,7 @@ function IndustryFrame({
   const { loading, error, actorId } = useSihProduction();
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[#d63c1d]">{eyebrow}</p>
+      <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[var(--accent-news)]">{eyebrow}</p>
       <h1 className="mt-2 text-4xl font-black tracking-tight">{title}</h1>
       <p className="mt-3 max-w-3xl text-sm leading-6 text-black/65">{description}</p>
       {loading ? (
@@ -223,7 +223,7 @@ export function IndustryOpportunitiesPage() {
             <article key={row.versionId} className="border-2 border-black bg-white p-5 shadow-[4px_4px_0_#111]">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="font-mono-ui text-[10px] font-black uppercase text-[#d63c1d]">Version {row.versionNumber} · {row.versionStatus}</p>
+                  <p className="font-mono-ui text-[10px] font-black uppercase text-[var(--accent-news)]">Version {row.versionNumber} · {row.versionStatus}</p>
                   <h2 className="mt-2 text-xl font-black">{row.title}</h2>
                 </div>
                 <span className="border border-black bg-[#e7ff57] px-2 py-1 font-mono-ui text-[9px] font-black uppercase">{row.opportunityType.replaceAll('_', ' ')}</span>
@@ -449,7 +449,7 @@ export function IndustryEditOpportunityPage() {
           </>
         ) : (
           <section className="mx-auto max-w-4xl border-2 border-black bg-white p-6 shadow-[4px_4px_0_#111]">
-            <p className="font-mono-ui text-[10px] font-black uppercase tracking-wide text-[#d63c1d]">Published version {bundle.version.version} · frozen</p>
+            <p className="font-mono-ui text-[10px] font-black uppercase tracking-wide text-[var(--accent-news)]">Published version {bundle.version.version} · frozen</p>
             <h2 className="mt-2 text-2xl font-black">{bundle.version.title}</h2>
             <p className="mt-3 text-sm leading-6 text-black/65">This exact published version remains immutable for historical readiness and application snapshots. A change starts a successor draft under the same opportunity identity.</p>
             <div className="mt-5 border-2 border-black bg-[#fff4c7] p-4 text-sm leading-6">

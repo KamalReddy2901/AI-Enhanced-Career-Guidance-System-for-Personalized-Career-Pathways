@@ -22,7 +22,7 @@ const DELIVERY_OPTIONS: readonly DevelopmentDeliveryMode[] = ['online', 'onsite'
 function Frame({ eyebrow, title, description, children }: { readonly eyebrow: string; readonly title: string; readonly description: string; readonly children: ReactNode }) {
   const { loading, error, actorId } = useSihProduction();
   return <div className="mx-auto max-w-6xl px-4 py-10">
-    <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[#d63c1d]">{eyebrow}</p>
+    <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[var(--accent-news)]">{eyebrow}</p>
     <h1 className="mt-2 text-4xl font-black tracking-tight">{title}</h1>
     <p className="mt-3 max-w-3xl text-sm leading-6 text-black/65">{description}</p>
     {loading ? <Notice>Loading authenticated authority…</Notice> : error ? <Notice>{error}</Notice> : !actorId ? <Notice>Sign in with a provisioned CareerCase role to use this production workspace.</Notice> : <div className="mt-8">{children}</div>}

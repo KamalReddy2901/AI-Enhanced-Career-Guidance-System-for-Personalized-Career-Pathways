@@ -77,7 +77,7 @@ export function CollaborationHubPage() {
     <div className="mx-auto max-w-6xl px-4 py-10">
       <div className="flex flex-wrap items-end justify-between gap-5">
         <div>
-          <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[#d63c1d]">Academia–industry ecosystem</p>
+          <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[var(--accent-news)]">Academia–industry ecosystem</p>
           <h1 className="mt-2 text-4xl font-black tracking-tight">Collaboration</h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-black/65">
             Discover collaboration records visible through your authenticated organization or participant authority. Proposals preserve explicit partners and literal objectives; approval and later lifecycle actions remain separate human decisions.
@@ -109,7 +109,7 @@ export function CollaborationHubPage() {
               <article key={engagement.id} className="border-2 border-black bg-white p-5 shadow-[4px_4px_0_#111]">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="font-mono-ui text-[10px] font-black uppercase text-[#d63c1d]">{engagement.kind.replaceAll('_', ' ')}</p>
+                    <p className="font-mono-ui text-[10px] font-black uppercase text-[var(--accent-news)]">{engagement.kind.replaceAll('_', ' ')}</p>
                     <h2 className="mt-2 text-xl font-black">{engagement.objectives[0] ?? 'Collaboration engagement'}</h2>
                   </div>
                   <span className="border border-black bg-[#e7ff57] px-2 py-1 font-mono-ui text-[9px] font-black uppercase">{engagement.status}</span>
@@ -221,7 +221,7 @@ export function CollaborationProposalPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
-      <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[#d63c1d]">Human-authored · proposed status only</p>
+      <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[var(--accent-news)]">Human-authored · proposed status only</p>
       <h1 className="mt-2 text-4xl font-black tracking-tight">Propose Collaboration</h1>
       <p className="mt-3 max-w-3xl text-sm leading-6 text-black/65">
         Create an auditable proposed engagement with explicit organizations and literal objectives. This action does not approve participation, verify skills, create evidence, or imply endorsement.
@@ -260,7 +260,7 @@ export function CollaborationProposalPage() {
               {directoryLoading ? (
                 <p className="mt-4 text-sm">Loading registered organizations…</p>
               ) : directoryError ? (
-                <p className="mt-4 text-sm text-[#d63c1d]">{directoryError}</p>
+                <p className="mt-4 text-sm text-[var(--accent-news)]">{directoryError}</p>
               ) : partners.length === 0 ? (
                 <p className="mt-4 text-sm">No other active registered organization is currently available.</p>
               ) : (
@@ -286,7 +286,7 @@ export function CollaborationProposalPage() {
               </div>
             </section>
 
-            {submitError && <div className="border-l-4 border-[#d63c1d] bg-[#f7f4ed] p-4 text-sm text-[#d63c1d]">{submitError}</div>}
+            {submitError && <div className="border-l-4 border-[var(--accent-news)] bg-[#f7f4ed] p-4 text-sm text-[var(--accent-news)]">{submitError}</div>}
 
             <div className="flex flex-wrap gap-3">
               <button type="submit" disabled={submitting || selectedPartners.length === 0 || objectivesText.trim().length === 0} className="min-h-11 border-2 border-black bg-black px-5 py-3 font-mono-ui text-xs font-black uppercase text-white disabled:opacity-40">

@@ -40,7 +40,7 @@ function Frame({
 }) {
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
-      <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[#d63c1d]">
+      <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[var(--accent-news)]">
         {eyebrow}
       </p>
       <h1 className="mt-2 text-4xl font-black tracking-tight">{title}</h1>
@@ -143,7 +143,7 @@ export function IndustryQuestionnairesPage() {
               key={row.id}
               className="border-2 border-black bg-white p-5 shadow-[4px_4px_0_#111]"
             >
-              <p className="font-mono-ui text-[10px] font-black uppercase text-[#d63c1d]">
+              <p className="font-mono-ui text-[10px] font-black uppercase text-[var(--accent-news)]">
                 {row.status}
               </p>
               <h2 className="mt-2 text-xl font-black">
@@ -312,7 +312,7 @@ export function IndustryQuestionnaireReviewPage() {
           {data.version.status === "draft" ? (
             <button
               disabled={publishing}
-              className="min-h-11 border-2 border-black bg-[#d63c1d] px-5 py-3 font-mono-ui text-xs font-black uppercase text-white disabled:opacity-50"
+              className="min-h-11 border-2 border-black bg-[var(--accent-news)] px-5 py-3 font-mono-ui text-xs font-black uppercase text-white disabled:opacity-50"
               onClick={async () => {
                 setPublishing(true);
                 try {
@@ -674,7 +674,7 @@ function SubmissionCard({
         </button>
       </div>
       {error ? (
-        <p role="alert" className="mt-3 text-sm text-[#d63c1d]">
+        <p role="alert" className="mt-3 text-sm text-[var(--accent-news)]">
           {error}
         </p>
       ) : null}

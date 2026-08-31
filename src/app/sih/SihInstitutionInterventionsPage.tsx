@@ -78,7 +78,7 @@ function InterventionCard({
     <article className="border-2 border-black bg-white p-5 shadow-[4px_4px_0_#111]">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="font-mono-ui text-[10px] font-black uppercase tracking-wide text-[#d63c1d]">
+          <p className="font-mono-ui text-[10px] font-black uppercase tracking-wide text-[var(--accent-news)]">
             {humanize(intervention.kind)}
           </p>
           <h3 className="mt-1 text-xl font-black">{intervention.title}</h3>
@@ -317,7 +317,7 @@ export function InstitutionInterventionsPage() {
     <div className="mx-auto max-w-7xl px-4 py-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[#d63c1d]">
+          <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[var(--accent-news)]">
             Institution actions · human owned
           </p>
           <h1 className="mt-2 text-4xl font-black tracking-tight">Institution Interventions</h1>

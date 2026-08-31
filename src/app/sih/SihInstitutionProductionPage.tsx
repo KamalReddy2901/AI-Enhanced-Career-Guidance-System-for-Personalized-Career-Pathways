@@ -179,7 +179,7 @@ export function InstitutionSkillsIntelligencePage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
-      <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[#d63c1d]">
+      <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[var(--accent-news)]">
         Skills Intelligence · aggregate only
       </p>
       <h1 className="mt-2 text-4xl font-black tracking-tight">Institution Skills Intelligence</h1>
@@ -235,7 +235,7 @@ export function InstitutionSkillsIntelligencePage() {
             {result ? (
               <>
                 <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <article className="border-2 border-black bg-black p-5 text-white shadow-[4px_4px_0_#d63c1d]">
+                  <article className="border-2 border-black bg-black p-5 text-white shadow-[4px_4px_0_var(--accent-news)]">
                     <p className="font-mono-ui text-[10px] font-black uppercase text-white/60">Reporting cohort</p>
                     <p className="mt-2 text-3xl font-black">
                       {result.cohort?.suppressed ? 'Suppressed' : result.cohort?.size ?? '—'}
@@ -260,7 +260,7 @@ export function InstitutionSkillsIntelligencePage() {
                 </Notice>
 
                 {result.accessMode === 'institution_admin' && selectedOrganizationId ? (
-                  <section className="flex flex-wrap items-center justify-between gap-4 border-2 border-black bg-black p-5 text-white shadow-[4px_4px_0_#d63c1d]">
+                  <section className="flex flex-wrap items-center justify-between gap-4 border-2 border-black bg-black p-5 text-white shadow-[4px_4px_0_var(--accent-news)]">
                     <div>
                       <h2 className="text-lg font-black">Turn a reportable signal into a human-owned action</h2>
                       <p className="mt-1 max-w-3xl text-sm leading-6 text-white/65">

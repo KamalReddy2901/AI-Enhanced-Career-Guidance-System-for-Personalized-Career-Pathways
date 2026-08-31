@@ -81,7 +81,7 @@ function buildNavItems(
   if (user) {
     items.push({
       label: 'My Career',
-      to: '/dashboard',
+      to: '/career',
       icon: <BookOpen size={13} />,
       children: [
         { label: 'Career Passport', to: '/passport', icon: <FileText size={12} /> },
@@ -102,7 +102,8 @@ function buildNavItems(
       children: [
         { label: 'Evidence Ledger', to: '/evidence', icon: <FileText size={12} /> },
         { label: 'Verification', to: '/verification', icon: <Layers size={12} /> },
-        { label: 'Development', to: '/development', icon: <Target size={12} /> },
+        { label: 'Close This Gap', to: '/gap-closure', icon: <Target size={12} /> },
+        { label: 'Development', to: '/development', icon: <BarChart2 size={12} /> },
       ],
     });
   }
