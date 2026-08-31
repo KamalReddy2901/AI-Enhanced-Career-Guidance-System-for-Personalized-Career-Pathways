@@ -16,12 +16,14 @@ const admin = createClient(url, serviceKey, { auth: { persistSession: false, aut
 const ids = {
   institutionA: 'f0440000-0000-4000-8000-000000000001', employerA: 'f0440000-0000-4000-8000-000000000002',
   issuerA: 'f0440000-0000-4000-8000-000000000003', employerB: 'f0440000-0000-4000-8000-000000000004',
+  governmentA: 'f0440000-0000-4000-8000-000000000005',
 } as const;
 const organizations = [
   { id: ids.institutionA, legal_name: 'Controlled SIH Test Institute A', display_name: 'Controlled Test Institute A', kind: 'educational_institution' },
   { id: ids.employerA, legal_name: 'Controlled SIH Test Employer A', display_name: 'Controlled Test Employer A', kind: 'employer' },
   { id: ids.issuerA, legal_name: 'Controlled SIH Test Issuer A', display_name: 'Controlled Test Issuer A', kind: 'verification_issuer' },
   { id: ids.employerB, legal_name: 'Controlled SIH Isolation Employer B', display_name: 'Controlled Isolation Employer B', kind: 'employer' },
+  { id: ids.governmentA, legal_name: 'Controlled SIH Government Program A', display_name: 'Controlled Government Program A', kind: 'government' },
 ] as const;
 const personas = [
   { slug: 'student', name: 'Controlled Student', orgId: ids.institutionA, role: 'learner' },
@@ -30,7 +32,7 @@ const personas = [
   { slug: 'recruiter', name: 'Controlled Recruiter A', orgId: ids.employerA, role: 'recruiter' },
   { slug: 'recruiter-b', name: 'Controlled Recruiter B', orgId: ids.employerB, role: 'recruiter' },
   { slug: 'institution-admin', name: 'Controlled Institution Admin', orgId: ids.institutionA, role: 'institution_admin' },
-  { slug: 'policy-analyst', name: 'Controlled Policy Analyst', orgId: ids.institutionA, role: 'policy_program_analyst' },
+  { slug: 'policy-analyst', name: 'Controlled Policy Analyst', orgId: ids.governmentA, role: 'policy_program_analyst' },
 ] as const;
 const listed = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 }); assert.ifError(listed.error);
 const actorIds = new Map<string, string>();
