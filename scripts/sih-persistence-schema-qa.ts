@@ -306,6 +306,8 @@ const requiredHelpers = [
   'record_application_recruitment_action',
   'enqueue_notification',
   'claim_notification_outbox',
+  'schedule_notification_outbox',
+  'reconcile_notification_outbox',
   'record_authoritative_audit',
 ];
 for (const helper of requiredHelpers) {

@@ -61,12 +61,58 @@ export interface ConnectorContext {
   readonly signal?: AbortSignal;
 }
 
+/** Provider webhook envelope. Provider-specific payload fields stay opaque until an authorized adapter maps them. */
+export interface ConnectorWebhookEvent {
+  readonly externalEventId: string;
+  readonly receivedAt: IsoTimestamp;
+  readonly payload: Readonly<Record<string, unknown>>;
+  readonly signature?: string;
+}
+
+export interface ConnectorWebhookResult {
+  readonly accepted: boolean;
+  readonly duplicate: boolean;
+  readonly records: readonly NormalizedConnectorRecord[];
+}
+
+/** Explicit recruiter projection fields permitted in an ATS export. */
+export const ATS_EXPORT_ALLOWED_FIELDS = [
+  'applicant', 'applicationId', 'applicationSnapshotId', 'applicationStage',
+  'consentRecordId', 'educationSummary', 'evidence', 'opportunityId',
+  'opportunityVersionId', 'readinessBand', 'readinessResultId', 'requirements',
+  'sharedWorkSamples',
+] as const;
+
+const ATS_FORBIDDEN_KEY = /riasec|work.?values?|private.?aspiration|counsel|family|guardian|financial|health|suitability|hiring.?probability|candidate.?rank|automatic.?rejection/i;
+
+function assertAtsExportSafe(value: unknown, path = 'payload'): void {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => assertAtsExportSafe(item, `${path}[${index}]`));
+    return;
+  }
+  if (!value || typeof value !== 'object') return;
+  for (const [key, nested] of Object.entries(value)) {
+    if (ATS_FORBIDDEN_KEY.test(key)) throw new Error(`ATS export contains prohibited field: ${path}.${key}`);
+    assertAtsExportSafe(nested, `${path}.${key}`);
+  }
+}
+
+export function minimizeAtsExportPayload(payload: Readonly<Record<string, unknown>>): Readonly<Record<string, unknown>> {
+  const minimized = Object.fromEntries(
+    ATS_EXPORT_ALLOWED_FIELDS.filter(field => Object.prototype.hasOwnProperty.call(payload, field))
+      .map(field => [field, payload[field]]),
+  );
+  assertAtsExportSafe(minimized);
+  return minimized;
+}
+
 export interface ConnectorAdapter {
   readonly descriptor: ConnectorDescriptor;
   readonly authRequirement: ConnectorAuthRequirement;
   readonly syncDirection: ConnectorSyncDirection;
   readonly list?: (context: ConnectorContext, cursor?: string) => Promise<ConnectorPage<NormalizedConnectorRecord>>;
   readonly export?: (context: ConnectorContext, records: readonly NormalizedConnectorRecord[]) => Promise<void>;
+  readonly webhook?: (context: ConnectorContext, event: ConnectorWebhookEvent) => Promise<readonly NormalizedConnectorRecord[]>;
   readonly disconnect?: (context: ConnectorContext) => Promise<void>;
 }
 
