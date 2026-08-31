@@ -51,6 +51,13 @@ const validProjection = buildProductionRecruiterProjection({
       literalClaim: 'Completed full-stack project supporting counselor registration workflow',
       provenance: 'artifact_backed',
       verificationState: 'human_verified',
+      verificationAssertions: [{
+        verificationRequestId: '71000000-0000-4000-8000-000000000001',
+        verificationState: 'human_verified',
+        action: 'verified_by_human',
+        sequenceNumber: 2,
+        occurredAt: '2026-08-31T00:00:00Z',
+      }],
       artifactIds: ['90000000-0000-4000-8000-000000000001' as any],
       artifactDisplayNames: ['Project Artifact PDF'],
     },
@@ -74,6 +81,13 @@ const allowedTopLevel = [
 ].sort();
 
 assert.deepEqual(Object.keys(validProjection).sort(), allowedTopLevel);
+assert.deepEqual(Object.keys(validProjection.evidence[0]).sort(), [
+  'artifactDisplayNames', 'artifactIds', 'evidenceRecordId', 'literalClaim',
+  'provenance', 'verificationAssertions', 'verificationState',
+].sort());
+assert.deepEqual(Object.keys(validProjection.evidence[0].verificationAssertions[0]).sort(), [
+  'action', 'occurredAt', 'sequenceNumber', 'verificationRequestId', 'verificationState',
+].sort());
 assert.equal((validProjection.applicant as any).syntheticPersona, undefined, 'Must not have syntheticPersona in production projection');
 
 // 2. Test recursive key inspection catches prohibited keys
