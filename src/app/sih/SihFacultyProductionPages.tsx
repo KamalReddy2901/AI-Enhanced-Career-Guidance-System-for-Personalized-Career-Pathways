@@ -25,7 +25,7 @@ function FacultyFrame({
   const { loading, error, actorId } = useSihProduction();
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[#d63c1d]">{eyebrow}</p>
+      <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[var(--accent-news)]">{eyebrow}</p>
       <h1 className="mt-2 text-4xl font-black tracking-tight">{title}</h1>
       <p className="mt-3 max-w-3xl text-sm leading-6 text-black/65">{description}</p>
       {loading ? (
@@ -280,7 +280,7 @@ function FacultyLifecycleWorkspace({
 
   return (
     <section className="mt-8 border-2 border-black bg-[#fff4c7] p-5 shadow-[5px_5px_0_#111]" aria-labelledby="faculty-lifecycle-title">
-      <p className="font-mono-ui text-[10px] font-black uppercase tracking-wide text-[#d63c1d]">Append-only production lifecycle</p>
+      <p className="font-mono-ui text-[10px] font-black uppercase tracking-wide text-[var(--accent-news)]">Append-only production lifecycle</p>
       <h2 id="faculty-lifecycle-title" className="mt-2 text-2xl font-black">Engagement milestones and outcomes</h2>
       <p className="mt-2 max-w-3xl text-sm leading-6 text-black/65">Every action is attributed to the authenticated actor and host organization. Status history and activity records are append-only; completed outcomes do not automatically mint evidence or claim causal impact.</p>
       {error ? <Notice>{error}</Notice> : null}

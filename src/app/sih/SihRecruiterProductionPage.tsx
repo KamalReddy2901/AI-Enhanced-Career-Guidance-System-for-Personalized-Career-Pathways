@@ -223,7 +223,7 @@ export function ApplicantsPage() {
           </label>
           <p className="mt-3 text-xs text-black/65">Only submitted applications with an active purpose-specific application-review consent are visible through the recruiter RLS boundary.</p>
         </div>
-        {loadError && <p className="mt-4 border-l-4 border-[#d63c1d] bg-[#fff1ec] p-3 text-sm" role="alert">{loadError}</p>}
+        {loadError && <p className="mt-4 border-l-4 border-[var(--accent-news)] bg-[#fff1ec] p-3 text-sm" role="alert">{loadError}</p>}
       </div>
       {organizationId && (
         <RecruiterWorkspaceShell

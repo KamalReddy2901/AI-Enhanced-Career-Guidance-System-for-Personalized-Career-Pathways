@@ -78,7 +78,7 @@ export function ApplicationPreparationPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[#d63c1d]">Purpose-specific consent · immutable submission</p>
+      <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[var(--accent-news)]">Purpose-specific consent · immutable submission</p>
       <h1 className="mt-2 text-4xl font-black tracking-tight">Prepare application</h1>
       <p className="mt-3 max-w-3xl text-sm leading-6 text-black/65">
         Choose the evidence to disclose, grant application-review consent to the opportunity owner, then finalize and submit the exact immutable snapshot through trusted authority. Optional aggregate analytics consent is a separate purpose and is never required to apply.

@@ -185,7 +185,7 @@ export function IndustrySkillsIntelligencePage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
-      <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[#d63c1d]">Industry · Skills Intelligence · aggregate only</p>
+      <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[var(--accent-news)]">Industry · Skills Intelligence · aggregate only</p>
       <h1 className="mt-2 text-4xl font-black tracking-tight">Employer Skills Intelligence</h1>
       <p className="mt-3 max-w-4xl text-sm leading-6 text-black/65">
         Privacy-protected descriptive signals for an authenticated employer or one exact published opportunity version. This surface does not rank applicants, predict hiring, or expose private Career Guidance inputs.
@@ -233,7 +233,7 @@ export function IndustrySkillsIntelligencePage() {
             {result ? (
               <>
                 <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <article className="border-2 border-black bg-black p-5 text-white shadow-[4px_4px_0_#d63c1d]">
+                  <article className="border-2 border-black bg-black p-5 text-white shadow-[4px_4px_0_var(--accent-news)]">
                     <p className="font-mono-ui text-[10px] font-black uppercase text-white/60">Consented cohort</p>
                     <p className="mt-2 text-3xl font-black">{result.cohort?.suppressed ? 'Suppressed' : result.cohort?.size ?? '—'}</p>
                   </article>
