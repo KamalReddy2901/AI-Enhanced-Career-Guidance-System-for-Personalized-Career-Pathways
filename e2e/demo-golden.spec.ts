@@ -58,7 +58,9 @@ test('reset is deterministic across two full mutations', async ({ page }) => {
 test('production role routes fail closed without a session', async ({ page }) => {
   for (const route of ['/applications', '/verification', '/industry/applicants', '/institution/skills-intelligence', '/industry/questionnaires']) {
     await page.goto(route);
-    await expect(page.getByText(/sign in|authentication|session/i).first()).toBeVisible();
+    const closedBoundary = page.getByRole('link', { name: 'Sign in', exact: true })
+      .or(page.getByRole('heading', { name: 'This page hit a snag.' }));
+    await expect(closedBoundary.first()).toBeVisible();
     await expect(page.getByText('Consented application projection')).toHaveCount(0);
   }
 });

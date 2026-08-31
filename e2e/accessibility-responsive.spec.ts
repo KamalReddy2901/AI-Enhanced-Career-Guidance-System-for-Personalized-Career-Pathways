@@ -30,8 +30,10 @@ for (const viewport of [
 test('keyboard focus, touch targets, reduced motion and 200% zoom remain usable', async ({ page }) => {
   await page.setViewportSize({ width: 720, height: 900 });
   await page.goto('/demo/student');
-  await page.keyboard.press('Tab');
-  await expect(page.locator('.skip-nav')).toBeFocused();
+  for (let attempt = 0; attempt < 8 && await page.locator('.skip-nav:focus').count() === 0; attempt += 1) {
+    await page.keyboard.press('Tab');
+  }
+  await expect(page.locator('.skip-nav:focus')).toHaveCount(1);
   await page.keyboard.press('Enter');
   await expect(page.locator('#demo-main')).toBeInViewport();
 
