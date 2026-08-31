@@ -8,6 +8,7 @@ const [
   runtime,
   pages,
   studentPages,
+  applicationPreparationPage,
   recruiterPage,
   facultyPages,
   industryPages,
@@ -37,6 +38,7 @@ const [
   readFile(join(root, 'src/app/sih/SihProductionContext.tsx'), 'utf8'),
   readFile(join(root, 'src/app/sih/SihProductionPages.tsx'), 'utf8'),
   readFile(join(root, 'src/app/sih/SihStudentProductionPages.tsx'), 'utf8'),
+  readFile(join(root, 'src/app/sih/SihApplicationPreparationPage.tsx'), 'utf8'),
   readFile(join(root, 'src/app/sih/SihRecruiterProductionPage.tsx'), 'utf8'),
   readFile(join(root, 'src/app/sih/SihFacultyProductionPages.tsx'), 'utf8'),
   readFile(join(root, 'src/app/sih/SihIndustryProductionPages.tsx'), 'utf8'),
@@ -67,6 +69,7 @@ for (const route of ['career','opportunities','evidence','verification','applica
   assert.match(routes, new RegExp(`path:\\s*["']${route.replace('/', '\\/')}`), `Missing production route ${route}`);
 }
 assert.match(routes, /path:\s*["']opportunities\/:opportunityVersionId\/apply["']/);
+assert.match(routes, /SihApplicationPreparationPage/, 'The production apply route must resolve through its dedicated routed page');
 assert.match(routes, /path:\s*["']faculty\/collaborations\/:collaborationId["']/);
 assert.match(routes, /SihStudentProductionPages/);
 assert.match(routes, /SihRecruiterProductionPage/);
@@ -94,6 +97,11 @@ assert.match(studentPages, /gap-closure\?opportunityVersionId=/, 'Every canonica
 assert.match(studentPages, /getSubjectDisclosureProfile/, 'Student application preparation must load the subject-owned disclosure profile');
 assert.match(studentPages, /getLatestReadinessResult/, 'Student disclosure preview must bind to the current canonical readiness result');
 assert.match(studentPages, /disclosure=\{disclosure\}/, 'Student application preparation must render the prospective recruiter disclosure preview');
+assert.match(applicationPreparationPage, /getSubjectDisclosureProfile/, 'The actual routed application page must load the subject-owned disclosure profile');
+assert.match(applicationPreparationPage, /getLatestReadinessResult/, 'The actual routed application page must bind the current canonical readiness result');
+assert.match(applicationPreparationPage, /listArtifactsForEvidence/, 'The actual routed application page must load linked artifacts through the RLS-scoped browser DAL');
+assert.match(applicationPreparationPage, /scanStatus\s*===\s*'clean'/, 'The actual routed application page must disclose only clean work samples');
+assert.match(applicationPreparationPage, /disclosure=\{disclosure\}/, 'The actual routed application page must render the purpose-limited recruiter disclosure preview');
 assert.match(opportunityReads, /resolution_status\s*===\s*'review_required'/);
 assert.match(opportunityReads, /reviewOnly:\s*true/);
 assert.match(opportunityReads, /result_body/);
