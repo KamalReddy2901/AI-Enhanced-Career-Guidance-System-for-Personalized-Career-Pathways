@@ -1,7 +1,7 @@
 # External Integration Adapter Architecture
 
-**Status:** INTEGRATION-READY CONTRACTS  
-**Implementation:** Target architecture only - no live integrations  
+**Status:** PROVIDER-NEUTRAL FRAMEWORK IMPLEMENTED; EXTERNAL PROVIDERS INTEGRATION-READY  
+**Implementation:** Registry, normalized records, pagination, dedupe/reconciliation, retry state, disconnect and explicit DEVELOPMENT/NOOP adapters are implemented in `src/app/services/sih/connectorFramework.ts`. No live external integration is represented.  
 **Last Updated:** 2026-08-31
 
 ---
@@ -16,7 +16,7 @@ CareerCase SIH26044 v1.2 defines **integration-ready adapter contracts** for ext
 - 📋 **INTEGRATION-READY:** Contract defined, no live connection
 - 🎯 **TARGET ARCHITECTURE:** Design intent, requires credentials/authority
 
-**Current Status:** All adapters are **INTEGRATION-READY** or **TARGET ARCHITECTURE** only.
+**Current Status:** The runtime framework is **IMPLEMENTED**; every named external adapter remains **INTEGRATION-READY** or **TARGET ARCHITECTURE** pending approved credentials and contracts.
 
 ---
 
