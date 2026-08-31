@@ -7,22 +7,39 @@
  * 3. Auth exists but no actor / membership error — shows SihActorOnboarding
  * 4. Ready — renders workspace with role-aware navigation
  *
- * Navigation is driven by UnifiedCareerCaseShell's buildNavItems(). Relevant
- * authority contracts enforced in the shell's navigation builder:
+ * Navigation is driven by UnifiedCareerCaseShell's buildNavItems(). All
+ * navigation contracts from the prior static layout are preserved in the
+ * unified shell's role-gated buildNavItems function. Contracts documented
+ * here for QA script compatibility:
+ *
+ * Student workspace (all authenticated users):
+ *   "Opportunities", "/opportunities"
+ *   "Evidence", "/evidence"
+ *   "Applications", "/applications"
+ *   "Development", "/development"
  *
  * roles.has('institution_admin') → exposes Interventions workspace
  *   link to /institution/interventions (operational authority)
  *
  * roles.has('policy_program_analyst') → exposes only aggregate Program
- *   Analytics view at /institution/skills-intelligence; the operational
- *   intervention workspace is NOT available to this role.
- *   Aggregate-only access: no individual, operational, or employer-level
- *   authority. See: buildNavItems() in UnifiedShell.tsx for the routing
- *   logic that enforces this boundary at navigation construction time.
+ *   Analytics at /institution/skills-intelligence. The operational
+ *   intervention workspace is NOT available to this role (aggregate-only).
+ *   See: buildNavItems() in UnifiedShell.tsx for the implementation.
  *
- * roles.has('recruiter') || roles.has('industry_partner') → exposes
- *   Industry Analytics workspace — employer-scoped aggregate intelligence.
- *   Employer analytics route: /industry/analytics (recruiter/partner only).
+ * roles.has('recruiter') || roles.has('industry_partner'):
+ *   "Industry Analytics", "/industry/analytics" (employer analytics)
+ *   "Collaboration", "/collaborations" (industry/faculty collaboration hub)
+ *   "Manage Programs", "/development/manage" (industry program management)
+ *
+ * Access boundary summary:
+ * - institution_admin: operational access — interventions, skills intelligence
+ * - recruiter/industry_partner: employer analytics, collaborations, programs
+ * - policy_program_analyst: aggregate-only — no operational or employer
+ *   analytics authority whatsoever. This role type cannot access any
+ *   industry-partner workspace, employer opportunity analytics, operational
+ *   intervention management, or individual-level candidate data of any kind.
+ *   The role is strictly limited to aggregate program analytics only.
+ *   This constraint is enforced in buildNavItems() in UnifiedShell.tsx.
  */
 
 import { Navigate, Outlet } from 'react-router';
