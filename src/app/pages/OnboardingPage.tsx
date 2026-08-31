@@ -69,7 +69,7 @@ export function OnboardingPage() {
     }
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     if (!segment) return;
     
     const newPassport: CareerPassport = {
@@ -117,6 +117,21 @@ export function OnboardingPage() {
       import('../services/guidanceDb').then(({ logConsent }) => {
         localConsentEntries.forEach(entry => void logConsent(user.id, entry.consent_type, entry.granted, entry.detail));
       });
+    }
+    
+    // Bootstrap SIH student actor if user is authenticated
+    if (user?.id) {
+      try {
+        const { supabase } = await import('../services/supabase');
+        const { bootstrapStudentActor } = await import('../services/sih/bootstrapStudentActor');
+        if (supabase) {
+          const displayName = guardianName || user.email?.split('@')[0] || 'Student';
+          await bootstrapStudentActor(supabase, displayName);
+        }
+      } catch (err) {
+        // Bootstrap failure is not fatal - user can retry via SihActorOnboarding
+        console.warn('Failed to bootstrap student actor:', err);
+      }
     }
     
     sounds.success();

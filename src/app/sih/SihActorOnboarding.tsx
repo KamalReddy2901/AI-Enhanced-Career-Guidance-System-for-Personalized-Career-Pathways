@@ -39,6 +39,20 @@ export function SihActorOnboarding({ error, onRetry }: SihActorOnboardingProps) 
 
   const handleRetry = async () => {
     setRetrying(true);
+    
+    // Attempt to bootstrap student actor before retrying workspace load
+    try {
+      const { supabase } = await import('../services/supabase');
+      const { bootstrapStudentActor } = await import('../services/sih/bootstrapStudentActor');
+      const { user } = await import('../context/AuthContext').then(m => ({ user: null })); // Simplified - real auth state would be via hook
+      
+      if (supabase) {
+        await bootstrapStudentActor(supabase);
+      }
+    } catch (err) {
+      console.warn('Bootstrap attempt failed:', err);
+    }
+    
     await new Promise(r => setTimeout(r, 1000));
     onRetry?.();
     setRetrying(false);
