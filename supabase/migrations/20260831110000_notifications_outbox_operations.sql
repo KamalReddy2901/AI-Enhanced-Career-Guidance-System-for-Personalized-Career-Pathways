@@ -82,15 +82,17 @@ set search_path = pg_catalog, sih26044
 as $$
 declare
   claimed sih26044.notification_outbox%rowtype;
+  is_service_role boolean := coalesce(current_setting('request.jwt.claim.role', true), '') = 'service_role';
   lease_end timestamptz := statement_timestamp() + make_interval(secs => least(greatest(requested_lease_seconds, 30), 900));
 begin
-  if sih26044.current_actor_id() is null then raise exception 'Authenticated SIH actor required'; end if;
+  if not is_service_role and sih26044.current_actor_id() is null then raise exception 'Authenticated SIH actor required'; end if;
   for claimed in
     select o.* from sih26044.notification_outbox o
     where o.status in ('queued', 'scheduled', 'failed')
       and o.available_at <= statement_timestamp()
       and (o.next_retry_at is null or o.next_retry_at <= statement_timestamp())
       and o.attempt_count < 5
+      and (is_service_role or o.actor_id = sih26044.current_actor_id())
     order by o.available_at, o.created_at
     for update skip locked limit least(greatest(requested_limit, 1), 100)
   loop
@@ -107,6 +109,69 @@ $$;
 revoke all on function sih26044.claim_notification_outbox(integer, integer) from public, anon;
 grant execute on function sih26044.claim_notification_outbox(integer, integer) to authenticated;
 grant execute on function sih26044.claim_notification_outbox(integer, integer) to service_role;
+
+create or replace function sih26044.schedule_notification_outbox(
+  requested_outbox_id uuid,
+  requested_available_at timestamptz
+)
+returns boolean
+language plpgsql security definer
+set search_path = pg_catalog, sih26044
+as $$
+declare changed boolean;
+begin
+  if coalesce(current_setting('request.jwt.claim.role', true), '') <> 'service_role' then
+    raise exception 'Only the trusted notification scheduler may schedule delivery';
+  end if;
+  if requested_available_at is null then raise exception 'A notification schedule time is required'; end if;
+  update sih26044.notification_outbox
+    set status = 'scheduled', available_at = requested_available_at,
+        next_retry_at = null, claimed_at = null, lease_until = null
+  where id = requested_outbox_id
+    and status in ('queued', 'failed');
+  changed := found;
+  return changed;
+end
+$$;
+
+revoke all on function sih26044.schedule_notification_outbox(uuid, timestamptz) from public, anon, authenticated;
+grant execute on function sih26044.schedule_notification_outbox(uuid, timestamptz) to service_role;
+
+create or replace function sih26044.reconcile_notification_outbox(
+  requested_limit integer default 100
+)
+returns integer
+language plpgsql security definer
+set search_path = pg_catalog, sih26044
+as $$
+declare reconciled integer;
+begin
+  if coalesce(current_setting('request.jwt.claim.role', true), '') <> 'service_role' then
+    raise exception 'Only the trusted notification worker may reconcile delivery leases';
+  end if;
+  with expired as (
+    select id, attempt_count
+    from sih26044.notification_outbox
+    where status = 'claimed' and lease_until <= statement_timestamp()
+    order by lease_until, created_at
+    for update skip locked
+    limit least(greatest(requested_limit, 1), 500)
+  )
+  update sih26044.notification_outbox o
+  set status = (case when expired.attempt_count >= 5 then 'dead' else 'failed' end)::sih26044.notification_outbox_status,
+      claimed_at = null,
+      lease_until = null,
+      next_retry_at = case when expired.attempt_count >= 5 then null else statement_timestamp() end,
+      last_error_code = case when expired.attempt_count >= 5 then 'MAX_ATTEMPTS_EXCEEDED' else 'LEASE_EXPIRED' end
+  from expired
+  where o.id = expired.id;
+  get diagnostics reconciled = row_count;
+  return reconciled;
+end
+$$;
+
+revoke all on function sih26044.reconcile_notification_outbox(integer) from public, anon, authenticated;
+grant execute on function sih26044.reconcile_notification_outbox(integer) to service_role;
 
 create or replace function sih26044.enqueue_notification(
   requested_event_key text,

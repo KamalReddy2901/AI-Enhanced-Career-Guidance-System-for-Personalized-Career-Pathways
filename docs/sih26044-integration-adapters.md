@@ -1,7 +1,7 @@
 # External Integration Adapter Architecture
 
 **Status:** PROVIDER-NEUTRAL FRAMEWORK IMPLEMENTED; EXTERNAL PROVIDERS INTEGRATION-READY  
-**Implementation:** Registry, normalized records, pagination, dedupe/reconciliation, retry state, disconnect and explicit DEVELOPMENT/NOOP adapters are implemented in `src/app/services/sih/connectorFramework.ts`. No live external integration is represented.  
+**Implementation:** Registry, normalized records, pagination, configuration/health state, idempotent webhook handling, dedupe/reconciliation, retry state, disconnect, privacy-minimized ATS export and explicit DEVELOPMENT/NOOP adapters are implemented in `src/app/services/sih/connectorFramework.ts` and `src/app/domain/connectors.ts`. No live external integration is represented.
 **Last Updated:** 2026-08-31
 
 ---
