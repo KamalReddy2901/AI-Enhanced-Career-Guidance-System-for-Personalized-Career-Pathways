@@ -11,7 +11,8 @@ import GapClosurePlan from '../components/sih/student/gap-closure/GapClosurePlan
 import ApplicationPreparationWorkspace from '../components/sih/student/application/ApplicationPreparationWorkspace';
 import ApplicationFinalizationPanel from '../components/sih/student/application/ApplicationFinalizationPanel';
 import { EvidenceUploadModal } from '../components/sih/student/evidence/EvidenceUploadModal';
-import type { ApplicationReadModel, EvidenceRecordReadModel } from '../services/sih/types';
+import { StudentApplicationDetail } from '../components/sih/student/application/StudentApplicationDetail';
+import type { ApplicationReadModel, EvidenceRecordReadModel, ApplicationEventReadModel } from '../services/sih/types';
 import {
   ProductionOpportunityReads,
   type ProductionOpportunityBundle,
@@ -538,8 +539,10 @@ export function ApplicationPreparationPage() {
 }
 
 export function ApplicationsPage() {
+  const { applicationId } = useParams();
   const { actorId, dal } = useSihProduction();
   const [rows, setRows] = useState<readonly ApplicationReadModel[]>([]);
+  const [events, setEvents] = useState<readonly ApplicationEventReadModel[]>([]);
   const [error, setError] = useState<string>();
 
   useEffect(() => {
@@ -557,6 +560,39 @@ export function ApplicationsPage() {
     };
   }, [actorId, dal]);
 
+  const selectedApplication = rows.find((app) => app.id === applicationId);
+
+  useEffect(() => {
+    if (!selectedApplication || !dal) {
+      setEvents([]);
+      return;
+    }
+    let active = true;
+    void dal.listApplicationEvents(selectedApplication.id)
+      .then((next) => {
+        if (active) setEvents(next);
+      })
+      .catch((reason) => {
+        if (active) setError(reason instanceof Error ? reason.message : 'Unable to load application events.');
+      });
+    return () => {
+      active = false;
+    };
+  }, [selectedApplication, dal]);
+
+  if (selectedApplication) {
+    return (
+      <ProductionFrame
+        eyebrow="Append-only application lifecycle"
+        title="Application Detail"
+        description="Track the human recruitment lifecycle for applications submitted through explicit consent and an exact immutable snapshot."
+      >
+        {error && <Notice>{error}</Notice>}
+        <StudentApplicationDetail application={selectedApplication} events={events} />
+      </ProductionFrame>
+    );
+  }
+
   return (
     <ProductionFrame
       eyebrow="Append-only application lifecycle"
@@ -567,15 +603,16 @@ export function ApplicationsPage() {
       {rows.length === 0 ? <Notice>No production applications yet. Start from a current opportunity.</Notice> : (
         <div className="grid gap-4 md:grid-cols-2">
           {rows.map((application) => (
-            <article key={application.id} className="border-2 border-black bg-white p-5 shadow-[4px_4px_0_#111]">
-              <p className="font-mono-ui text-[10px] font-black uppercase text-[#d63c1d]">{application.currentStage.replaceAll('_', ' ')}</p>
-              <h2 className="mt-2 break-all text-lg font-black">{application.id}</h2>
-              <dl className="mt-4 grid gap-2 text-xs">
-                <div><dt className="font-mono-ui uppercase text-black/45">Opportunity version</dt><dd className="mt-1 break-all">{application.opportunityVersionId}</dd></div>
-                <div><dt className="font-mono-ui uppercase text-black/45">Created</dt><dd className="mt-1">{application.createdAt}</dd></div>
-              </dl>
-              <Link className="mt-4 inline-block underline" to={`/opportunities/${application.opportunityVersionId}`}>Open opportunity version</Link>
-            </article>
+            <Link key={application.id} to={`/applications/${application.id}`}>
+              <article className="border-2 border-black bg-white p-5 shadow-[4px_4px_0_#111] transition-transform hover:-translate-y-1">
+                <p className="font-mono-ui text-[10px] font-black uppercase text-[#d63c1d]">{application.currentStage.replaceAll('_', ' ')}</p>
+                <h2 className="mt-2 break-all text-lg font-black">{application.id.substring(0, 8)}...</h2>
+                <dl className="mt-4 grid gap-2 text-xs">
+                  <div><dt className="font-mono-ui uppercase text-black/45">Opportunity version</dt><dd className="mt-1 break-all font-mono-ui">{application.opportunityVersionId.substring(0, 12)}...</dd></div>
+                  <div><dt className="font-mono-ui uppercase text-black/45">Created</dt><dd className="mt-1">{new Date(application.createdAt).toLocaleDateString()}</dd></div>
+                </dl>
+              </article>
+            </Link>
           ))}
         </div>
       )}
