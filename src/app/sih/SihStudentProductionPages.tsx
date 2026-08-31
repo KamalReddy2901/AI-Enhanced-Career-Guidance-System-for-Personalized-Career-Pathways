@@ -11,6 +11,7 @@ import GapClosurePlan from '../components/sih/student/gap-closure/GapClosurePlan
 import ApplicationPreparationWorkspace from '../components/sih/student/application/ApplicationPreparationWorkspace';
 import ApplicationFinalizationPanel from '../components/sih/student/application/ApplicationFinalizationPanel';
 import { EvidenceUploadModal } from '../components/sih/student/evidence/EvidenceUploadModal';
+import { EvidenceRecordComposer } from '../components/sih/student/evidence/EvidenceRecordComposer';
 import { StudentApplicationDetail } from '../components/sih/student/application/StudentApplicationDetail';
 import type {
   ApplicationReadModel,
@@ -361,11 +362,15 @@ export function EvidencePage() {
   }[]>>(new Map());
   const [error, setError] = useState<string>();
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showEvidenceComposer, setShowEvidenceComposer] = useState(false);
   const [selectedEvidenceForUpload, setSelectedEvidenceForUpload] = useState<EvidenceRecordId | undefined>();
   const [evidenceRefreshVersion, setEvidenceRefreshVersion] = useState(0);
   const opportunityVersionId = searchParams.get('opportunityVersionId');
   const requirementId = searchParams.get('requirementId');
   const source = searchParams.get('source');
+  const { bundle: opportunityBundle } = usePublishedBundle(opportunityVersionId ?? undefined);
+  const requirement = opportunityBundle?.version.requirements.find((item) => item.id === requirementId);
+  const requirementLabel = requirement?.literalSourceWording ?? 'Selected opportunity requirement';
 
   useEffect(() => {
     if (!actorId || !dal) return;
@@ -445,6 +450,15 @@ export function EvidencePage() {
         >
           Upload new artifact
         </button>
+        {opportunityVersionId && requirementId && opportunityBundle && trustedApi && actorId && dal && (
+          <button
+            type="button"
+            onClick={() => setShowEvidenceComposer(true)}
+            className="border-2 border-black bg-white px-4 py-2 font-mono-ui text-xs font-black uppercase"
+          >
+            Add evidence claim
+          </button>
+        )}
       </div>
 
       {error && <Notice>{error}</Notice>}
@@ -503,7 +517,7 @@ export function EvidencePage() {
           requirementContext={requirementId ? {
             opportunityVersionId: opportunityVersionId!,
             requirementId,
-            skillLabel: 'Selected requirement',
+            skillLabel: requirementLabel,
           } : undefined}
           onClose={() => {
             setShowUploadModal(false);
@@ -512,6 +526,26 @@ export function EvidencePage() {
           onSuccess={() => {
             setShowUploadModal(false);
             setSelectedEvidenceForUpload(undefined);
+            refreshEvidence();
+          }}
+        />
+      )}
+      {showEvidenceComposer && trustedApi && actorId && dal && opportunityVersionId && requirementId && opportunityBundle && (
+        <EvidenceRecordComposer
+          actorId={actorId}
+          browserDal={dal}
+          trustedApi={trustedApi}
+          requirementContext={{
+            opportunityId: opportunityBundle.opportunity.id,
+            opportunityVersionId,
+            requirementId,
+            requirementLabel,
+          }}
+          onClose={() => setShowEvidenceComposer(false)}
+          onSuccess={(evidenceRecordId) => {
+            setShowEvidenceComposer(false);
+            setSelectedEvidenceForUpload(evidenceRecordId as EvidenceRecordId);
+            setShowUploadModal(true);
             refreshEvidence();
           }}
         />
