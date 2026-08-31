@@ -1,5 +1,11 @@
 # SIH26044 Golden Demo Implementation Plan
 
+> **HISTORICAL CHECKPOINT — SUPERSEDED 2026-08-31.** The unchecked items,
+> initial-demo non-goals and next steps below describe the pre-convergence
+> prototype. Current demo claims and the deterministic five-minute/fallback
+> path are defined in `docs/sih26044-demo-freeze.md`; current implementation
+> and validation boundaries are in `docs/sih26044-integration-status.md`.
+
 **Goal:** Five-minute demo showing evidence-backed opportunity readiness with verification loop
 
 **Current Status:** All infrastructure exists; need to wire demo path and validate UX

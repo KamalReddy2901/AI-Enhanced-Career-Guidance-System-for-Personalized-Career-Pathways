@@ -436,12 +436,12 @@ All integration events logged:
 
 | Adapter | Contract | Synthetic Generator | Controlled Test | Live Integration |
 |---|---|---|---|---|
-| NCS | ✅ Defined | ✅ Available | ⏳ Pending credentials | ❌ Not implemented |
-| SIDH | ✅ Defined | ✅ Available | ⏳ Pending credentials | ❌ Not implemented |
-| DigiLocker/NAD | ✅ Defined | ✅ Available | ⏳ Pending approval | ❌ Not implemented |
-| AICTE/SIS | ✅ Defined | ✅ Available | ⏳ Institution-specific | ❌ Not implemented |
-| APAAR/ABC | ✅ Defined | ⏳ Pending | ⏳ Pending approval | ❌ Not implemented |
-| NATS/NAPS | ✅ Defined | ✅ Available | ⏳ Pending credentials | ❌ Not implemented |
+| NCS | ✅ Defined | ✅ Available | 📋 Integration-ready | 🔒 Credential-gated |
+| SIDH | ✅ Defined | ✅ Available | 📋 Integration-ready | 🔒 Credential-gated |
+| DigiLocker/NAD | ✅ Defined | ✅ Available | 🎯 Target architecture | 🔒 Approval-gated |
+| AICTE/SIS | ✅ Defined | ✅ Available | 📋 Integration-ready | 🔒 Institution-gated |
+| APAAR/ABC | ✅ Defined | 📋 Controlled adapter | 🎯 Target architecture | 🔒 Approval-gated |
+| NATS/NAPS | ✅ Defined | ✅ Available | 📋 Integration-ready | 🔒 Credential-gated |
 
 **NO FAKE "CONNECTED ✓" INDICATORS** will be shown in UI without live authenticated integration.
 
@@ -455,11 +455,10 @@ All integration events logged:
    - Register as DigiLocker integrator
    - Coordinate with AICTE and institutions
 
-2. **Implement Adapters:**
-   - Create adapter classes implementing contracts
-   - Add credential management
-   - Implement retry/circuit breaker patterns
-   - Add comprehensive error handling
+2. **Authorize provider connections:**
+   - Bind approved credentials/contracts to the implemented registry
+   - Run provider-specific sandbox/controlled tests
+   - Keep provenance, consent, retry and failure state visible
 
 3. **Deploy Controlled Environment:**
    - Staging environment with sandbox APIs

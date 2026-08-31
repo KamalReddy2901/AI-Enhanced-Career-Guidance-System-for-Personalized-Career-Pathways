@@ -1,5 +1,12 @@
 # SIH26044 Accessibility Audit & Roadmap
 
+> **HISTORICAL BASELINE — SUPERSEDED 2026-08-31.** The findings below are a
+> pre-convergence audit. Current implemented foundations, automated static
+> checks and the remaining browser/manual validation gate are recorded in
+> `docs/sih26044-integration-status.md` and
+> `docs/sih26044-browser-e2e-status.md`. This file does not claim WCAG
+> conformance.
+
 **Target:** WCAG 2.2 Level AA Compliance  
 **Last Updated:** 2026-08-31  
 **Status:** Foundation phase complete, progressive enhancement in progress
