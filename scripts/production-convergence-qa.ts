@@ -31,6 +31,7 @@ const [
   applicationTimeline,
   applicationLifecycleMigration,
   trustedApiClient,
+  evidenceRecordComposer,
 ] = await Promise.all([
   readFile(join(root, 'src/app/routes.ts'), 'utf8'),
   readFile(join(root, 'src/app/sih/SihProductionContext.tsx'), 'utf8'),
@@ -59,6 +60,7 @@ const [
   readFile(join(root, 'src/app/components/sih/application/ApplicationRecruitmentTimeline.tsx'), 'utf8'),
   readFile(join(root, 'supabase/migrations/20260831100000_application_recruitment_lifecycle.sql'), 'utf8'),
   readFile(join(root, 'src/app/services/sih/SihTrustedApiClient.ts'), 'utf8'),
+  readFile(join(root, 'src/app/components/sih/student/evidence/EvidenceRecordComposer.tsx'), 'utf8'),
 ]);
 
 for (const route of ['career','opportunities','evidence','verification','applications','industry/opportunities','industry/opportunities/new','industry/applicants','faculty','faculty/collaborations','institution','institution/skills-intelligence']) {
@@ -173,6 +175,11 @@ assert.match(worker, /SIH_RATE_LIMITER\.limit/);
 assert.match(config, /\[\[ratelimits\]\][\s\S]*name\s*=\s*"SIH_RATE_LIMITER"/);
 assert.match(trustedApiClient, /this\.request\.call\(\s*globalThis,/, 'Trusted browser requests must preserve the native fetch receiver');
 assert.doesNotMatch(trustedApiClient, /this\.request\s*\(/, 'Native fetch must not be invoked as an unbound instance method');
+assert.match(studentPages, /EvidenceRecordComposer/, 'Production evidence handoff must expose the weak evidence-record authoring boundary');
+assert.match(evidenceRecordComposer, /insertWeakEvidence/, 'Evidence authoring must use the subject-owned weak evidence boundary');
+assert.match(evidenceRecordComposer, /provenance:\s*'self_reported'/, 'Student evidence claims must remain self-reported');
+assert.match(evidenceRecordComposer, /scopeRequirementId:\s*requirementContext\.requirementId/, 'Evidence claims must bind to the selected opportunity requirement');
+assert.match(evidenceRecordComposer, /trustedApi\.saveEvidenceProjection/, 'Requirement-scoped evidence must persist through the trusted projection boundary');
 
 assert.match(studentPages, /getExactSubmittedApplicationSnapshot/);
 assert.match(studentPages, /listApplicationRecruitmentRecords/);
