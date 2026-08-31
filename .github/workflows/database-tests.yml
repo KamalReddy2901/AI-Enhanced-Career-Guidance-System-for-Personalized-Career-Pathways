@@ -1,0 +1,245 @@
+name: SIH26044 database security tests
+
+on:
+  push:
+    branches:
+      - main
+      - foundation/sih26044-v0.1
+    paths:
+      - .github/workflows/database-tests.yml
+      - supabase/**
+  pull_request:
+    paths:
+      - .github/workflows/database-tests.yml
+      - supabase/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sih-database-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  database-security:
+    name: Clean migration replay and security assertions
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: 2.115.0
+
+      - name: Verify local tooling
+        run: |
+          set -euo pipefail
+          node --version
+          npm --version
+          supabase --version
+          psql --version
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Start disposable local Supabase
+        run: supabase start
+
+      - name: Replay all migrations from a clean local database
+        run: supabase db reset --local
+
+      - name: Inspect Supabase database advisors
+        run: supabase db advisors --local --type all --level warn --fail-on error
+
+      - name: Execute SIH26044 relational and RLS SQL assertions
+        env:
+          PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          case "$PGDATABASE_URL" in
+            postgresql://postgres:postgres@127.0.0.1:54322/postgres) ;;
+            *) echo "Refusing to execute against a non-local database URL" >&2; exit 1 ;;
+          esac
+          psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
+            -f supabase/tests/sih26044_rls.sql
+          sql_assertion_count="$(grep -Ec '^(select|[[:space:]]+perform) pg_temp\.assert_(true|blocked)\(' supabase/tests/sih26044_rls.sql)"
+          test "$sql_assertion_count" -eq 103
+          echo "EXECUTED SQL assertions: $sql_assertion_count"
+
+      - name: Execute SIH26044 opportunity authoring assertions
+        env:
+          PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          case "$PGDATABASE_URL" in
+            postgresql://postgres:postgres@127.0.0.1:54322/postgres) ;;
+            *) echo "Refusing to execute against a non-local database URL" >&2; exit 1 ;;
+          esac
+          psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
+            -f supabase/tests/sih26044_opportunity_authoring.sql
+          authoring_assertion_count="$(grep -Ec '^select pg_temp\.assert_(true|blocked)\(' supabase/tests/sih26044_opportunity_authoring.sql)"
+          test "$authoring_assertion_count" -ge 10
+          echo "EXECUTED opportunity-authoring SQL assertions: $authoring_assertion_count"
+
+      - name: Execute SIH26044 opportunity version edit assertions
+        env:
+          PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          case "$PGDATABASE_URL" in
+            postgresql://postgres:postgres@127.0.0.1:54322/postgres) ;;
+            *) echo "Refusing to execute against a non-local database URL" >&2; exit 1 ;;
+          esac
+          psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
+            -f supabase/tests/sih26044_opportunity_version_edit.sql
+          version_edit_assertion_count="$(grep -Ec '^select pg_temp\.assert_(true|blocked)\(' supabase/tests/sih26044_opportunity_version_edit.sql)"
+          test "$version_edit_assertion_count" -ge 10
+          echo "EXECUTED opportunity-version-edit SQL assertions: $version_edit_assertion_count"
+
+      - name: Execute SIH26044 faculty engagement lifecycle assertions
+        env:
+          PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          case "$PGDATABASE_URL" in
+            postgresql://postgres:postgres@127.0.0.1:54322/postgres) ;;
+            *) echo "Refusing to execute against a non-local database URL" >&2; exit 1 ;;
+          esac
+          psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
+            -f supabase/tests/sih26044_faculty_engagement_lifecycle.sql
+          faculty_lifecycle_assertion_count="$(grep -Ec '^select pg_temp\.assert_(true|blocked)\(' supabase/tests/sih26044_faculty_engagement_lifecycle.sql)"
+          test "$faculty_lifecycle_assertion_count" -ge 12
+          echo "EXECUTED faculty-engagement-lifecycle SQL assertions: $faculty_lifecycle_assertion_count"
+
+      - name: Execute SIH26044 collaboration proposal authoring assertions
+        env:
+          PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          case "$PGDATABASE_URL" in
+            postgresql://postgres:postgres@127.0.0.1:54322/postgres) ;;
+            *) echo "Refusing to execute against a non-local database URL" >&2; exit 1 ;;
+          esac
+          psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
+            -f supabase/tests/sih26044_collaboration_proposals.sql
+          collaboration_proposal_assertion_count="$(grep -Ec '^select pg_temp\.assert_(true|blocked)\(' supabase/tests/sih26044_collaboration_proposals.sql)"
+          test "$collaboration_proposal_assertion_count" -ge 18
+          echo "EXECUTED collaboration-proposal SQL assertions: $collaboration_proposal_assertion_count"
+
+      - name: Execute SIH26044 development program lifecycle assertions
+        env:
+          PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          case "$PGDATABASE_URL" in
+            postgresql://postgres:postgres@127.0.0.1:54322/postgres) ;;
+            *) echo "Refusing to execute against a non-local database URL" >&2; exit 1 ;;
+          esac
+          psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
+            -f supabase/tests/sih26044_development_programs.sql
+          development_program_assertion_count="$(grep -Ec '^select pg_temp\.assert_(true|blocked)\(' supabase/tests/sih26044_development_programs.sql)"
+          test "$development_program_assertion_count" -ge 18
+          echo "EXECUTED development-program SQL assertions: $development_program_assertion_count"
+
+      - name: Execute SIH26044 institution aggregate privacy assertions
+        env:
+          PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          case "$PGDATABASE_URL" in
+            postgresql://postgres:postgres@127.0.0.1:54322/postgres) ;;
+            *) echo "Refusing to execute against a non-local database URL" >&2; exit 1 ;;
+          esac
+          psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
+            -f supabase/tests/sih26044_institution_analytics.sql
+          analytics_assertion_count="$(grep -Ec '^(select|[[:space:]]+perform) pg_temp\.assert_(true|blocked)\(' supabase/tests/sih26044_institution_analytics.sql)"
+          test "$analytics_assertion_count" -ge 10
+          echo "EXECUTED institution-analytics SQL assertions: $analytics_assertion_count"
+
+      - name: Execute SIH26044 institution intervention assertions
+        env:
+          PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          case "$PGDATABASE_URL" in
+            postgresql://postgres:postgres@127.0.0.1:54322/postgres) ;;
+            *) echo "Refusing to execute against a non-local database URL" >&2; exit 1 ;;
+          esac
+          psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
+            -f supabase/tests/sih26044_institution_interventions.sql
+          intervention_assertion_count="$(grep -Ec '^(select|[[:space:]]+perform) pg_temp\.assert_(true|blocked)\(' supabase/tests/sih26044_institution_interventions.sql)"
+          test "$intervention_assertion_count" -ge 15
+          echo "EXECUTED institution-intervention SQL assertions: $intervention_assertion_count"
+
+      - name: Execute SIH26044 industry aggregate privacy assertions
+        env:
+          PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          case "$PGDATABASE_URL" in
+            postgresql://postgres:postgres@127.0.0.1:54322/postgres) ;;
+            *) echo "Refusing to execute against a non-local database URL" >&2; exit 1 ;;
+          esac
+          psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
+            -f supabase/tests/sih26044_industry_analytics.sql
+          industry_assertion_count="$(grep -Ec '^(select|[[:space:]]+perform) pg_temp\.assert_(true|blocked)\(' supabase/tests/sih26044_industry_analytics.sql)"
+          test "$industry_assertion_count" -ge 15
+          echo "EXECUTED industry-analytics SQL assertions: $industry_assertion_count"
+
+      - name: Execute SIH26044 questionnaire schema constraint tests
+        env:
+          PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          case "$PGDATABASE_URL" in
+            postgresql://postgres:postgres@127.0.0.1:54322/postgres) ;;
+            *) echo "Refusing to execute against a non-local database URL" >&2; exit 1 ;;
+          esac
+          psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
+            -f supabase/tests/sih26044_questionnaires.sql
+          echo "EXECUTED questionnaire schema constraint tests: PASSED"
+
+      - name: Execute SIH26044 questionnaire authenticated authority tests
+        env:
+          PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          case "$PGDATABASE_URL" in
+            postgresql://postgres:postgres@127.0.0.1:54322/postgres) ;;
+            *) echo "Refusing to execute against a non-local database URL" >&2; exit 1 ;;
+          esac
+          psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
+            -f supabase/tests/sih26044_questionnaires_authority.sql
+          echo "EXECUTED questionnaire authenticated authority tests: 19 tests PASSED"
+
+      - name: Execute SIH26044 D2 readiness and trust assertions
+        env:
+          PGDATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          psql -X -v ON_ERROR_STOP=1 "$PGDATABASE_URL" \
+            -f supabase/tests/sih26044_d2_readiness.sql
+
+      - name: Execute SIH26044 Storage API lifecycle assertions
+        run: |
+          set -euo pipefail
+          output=$(node scripts/sih-storage-api-integration-test.mjs)
+          echo "$output"
+          storage_assertion_count=$(echo "$output" | grep -o '[0-9]* assertions' | grep -o '[0-9]*')
+          echo "EXECUTED Storage API assertions: $storage_assertion_count"
+          test "$storage_assertion_count" -ge 8
+
+      - name: Stop disposable local Supabase
+        if: always()
+        run: supabase stop --no-backup || true

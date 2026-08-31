@@ -15,5 +15,8 @@
     "tsx": "^4.23.12",
     "typescript": "^5.7.2",
     "wrangler": "^4.121.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.4"
   }
 }

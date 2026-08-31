@@ -2,8 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, foundation/sih26044-v0.1]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -48,8 +49,74 @@ jobs:
       - name: Run trending normalization QA
         run: npm run qa:trending
 
+      - name: Run evidence integrity QA
+        run: npm run qa:evidence-integrity
+
+      - name: Run SIH26044 boundary QA
+        run: npm run qa:sih-boundary
+
+      - name: Run SIH browser read contract QA
+        run: npm run qa:sih-browser-reads
+
+      - name: Run connector framework QA
+        run: npm run qa:connector-framework
+
+      - name: Run runtime operations QA
+        run: npm run qa:runtime-operations
+
+      - name: Run accessibility static QA
+        run: npx tsx scripts/accessibility-static-qa.ts
+
+      - name: Run opportunity readiness QA
+        run: npm run qa:opportunity-readiness
+
+      - name: Run controlled demo isolation QA
+        run: npm run qa:demo-isolation
+
+      - name: Run controlled demo golden flow QA
+        run: npm run qa:demo-flow
+
+      - name: Run recruiter projection privacy QA
+        run: npm run qa:recruiter-projection
+
+      - name: Run SIH26044 persistence schema security QA
+        run: npm run qa:sih-persistence-schema
+
+      - name: Run SIH26044 foundation freeze hardening QA
+        run: npm run qa:foundation-freeze-hardening
+
+      - name: Run production convergence boundary QA
+        run: npm run qa:production-convergence
+
+      - name: Run institution intervention convergence QA
+        run: npx tsx scripts/institution-interventions-qa.ts
+
+      - name: Run industry Skills Intelligence convergence QA
+        run: npx tsx scripts/industry-skills-intelligence-qa.ts
+
+      - name: Run opportunity version edit convergence QA
+        run: npx tsx scripts/opportunity-version-edit-qa.ts
+
+      - name: Run faculty engagement lifecycle convergence QA
+        run: npx tsx scripts/faculty-engagement-lifecycle-qa.ts
+
+      - name: Run collaboration proposal authoring convergence QA
+        run: npm run qa:collaboration-proposal-authoring
+
+      - name: Run development program linkage convergence QA
+        run: npm run qa:development-program-linkage
+
+      - name: Run questionnaire domain logic QA
+        run: npm run qa:questionnaire
+
+      - name: Run hosted validation readiness QA
+        run: npm run qa:hosted-validation
+
       - name: Build production client
         run: npm run build
+
+      - name: Verify deployment preflight
+        run: npm run qa:deployment-preflight
 
   worker:
     name: Cloudflare Worker
@@ -77,3 +144,105 @@ jobs:
 
       - name: Run Worker tests
         run: npm test
+
+      - name: Verify Worker bundle
+        run: npx wrangler deploy --dry-run
+
+  browser-e2e:
+    name: Browser E2E and accessibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser E2E and accessibility proof
+        run: npm run qa:e2e
+
+      - name: Retain browser proof on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-e2e-proof
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
+  database:
+    name: Disposable Supabase D2 Foundation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start minimal disposable Supabase
+        run: npx --yes supabase@latest start -x realtime,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      - name: Run D1 database execution gate
+        run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_rls.sql
+
+      - name: Run opportunity authoring atomicity gate
+        run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_opportunity_authoring.sql
+
+      - name: Run opportunity version edit lifecycle gate
+        run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_opportunity_version_edit.sql
+
+      - name: Run faculty engagement lifecycle gate
+        run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_faculty_engagement_lifecycle.sql
+
+      - name: Run collaboration proposal authoring gate
+        run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_collaboration_proposals.sql
+
+      - name: Run development program lifecycle and linkage gate
+        run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_development_programs.sql
+
+      - name: Run questionnaire lifecycle and tenant isolation gate
+        run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_questionnaires.sql
+
+      - name: Run questionnaire authenticated authority gate
+        run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_questionnaires_authority.sql
+
+      - name: Run institution aggregate privacy gate
+        run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_institution_analytics.sql
+
+      - name: Run institution intervention lifecycle gate
+        run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_institution_interventions.sql
+
+      - name: Run industry aggregate privacy gate
+        run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_industry_analytics.sql
+
+      - name: Run D2 trusted-role and foundation security gate
+        run: docker exec -i supabase_db_careercase-sih26044-foundation psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/tests/sih26044_d2_readiness.sql
+
+      - name: Run Storage API integration gate
+        run: node scripts/sih-storage-api-integration-test.mjs
+
+      - name: Run D2 Foundation Worker integration gate
+        run: npm run qa:d2-readiness-integration
+
+      - name: Stop disposable Supabase
+        if: always()
+        run: npx --yes supabase@latest stop --no-backup

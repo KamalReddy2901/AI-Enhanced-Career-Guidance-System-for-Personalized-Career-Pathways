@@ -1,0 +1,1059 @@
+-- Executable local-only SIH26044 RLS/immutability suite.
+-- Run after all supabase/migrations from a clean local Supabase database.
+-- This file is transactional and leaves no fixture data behind.
+
+begin;
+
+create or replace function pg_temp.assert_true(condition boolean, message text)
+returns void language plpgsql as $$
+begin
+  if condition is not true then raise exception 'ASSERTION FAILED: %', message; end if;
+end
+$$;
+
+create or replace function pg_temp.assert_blocked(command text, message text)
+returns void language plpgsql as $$
+declare
+  affected_rows bigint := 0;
+  blocked boolean := false;
+begin
+  begin
+    execute command;
+    get diagnostics affected_rows = row_count;
+    blocked := affected_rows = 0;
+  exception when others then
+    blocked := true;
+  end;
+  if not blocked then raise exception 'ASSERTION FAILED: %', message; end if;
+end
+$$;
+
+-- Stable fixture IDs.
+insert into auth.users (id) values
+  ('10000000-0000-0000-0000-000000000001'),
+  ('10000000-0000-0000-0000-000000000002'),
+  ('10000000-0000-0000-0000-000000000003'),
+  ('10000000-0000-0000-0000-000000000004'),
+  ('10000000-0000-0000-0000-000000000005'),
+  ('10000000-0000-0000-0000-000000000006'),
+  ('10000000-0000-0000-0000-000000000007')
+on conflict (id) do nothing;
+
+insert into sih26044.actors (id, auth_user_id, display_name) values
+  ('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'Learner A'),
+  ('20000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000002', 'Learner B'),
+  ('20000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000003', 'Recruiter A'),
+  ('20000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000004', 'Recruiter B'),
+  ('20000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000005', 'Assigned Verifier'),
+  ('20000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000006', 'Unrelated Verifier'),
+  ('20000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000007', 'Policy Analyst');
+
+insert into sih26044.organizations (id, legal_name, display_name, kind) values
+  ('30000000-0000-0000-0000-000000000001', 'Industry A Pvt Ltd', 'Industry A', 'employer'),
+  ('30000000-0000-0000-0000-000000000002', 'Industry B Pvt Ltd', 'Industry B', 'employer'),
+  ('30000000-0000-0000-0000-000000000003', 'Issuer Faculty Institute', 'Verifier Org', 'verification_issuer'),
+  ('30000000-0000-0000-0000-000000000004', 'Policy Programme Office', 'Policy Org', 'government');
+
+insert into sih26044.organization_memberships (id, actor_id, organization_id, status) values
+  ('40000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000001', 'active'),
+  ('40000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000004', '30000000-0000-0000-0000-000000000002', 'active'),
+  ('40000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000005', '30000000-0000-0000-0000-000000000003', 'active'),
+  ('40000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000006', '30000000-0000-0000-0000-000000000003', 'active'),
+  ('40000000-0000-0000-0000-000000000005', '20000000-0000-0000-0000-000000000007', '30000000-0000-0000-0000-000000000004', 'active');
+insert into sih26044.organization_membership_roles (membership_id, role) values
+  ('40000000-0000-0000-0000-000000000001', 'recruiter'),
+  ('40000000-0000-0000-0000-000000000002', 'recruiter'),
+  ('40000000-0000-0000-0000-000000000003', 'issuer_verifier'),
+  ('40000000-0000-0000-0000-000000000004', 'issuer_verifier'),
+  ('40000000-0000-0000-0000-000000000005', 'policy_program_analyst');
+
+insert into sih26044.opportunities (id, owner_organization_id, status, created_by_actor_id)
+values ('50000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', 'published', '20000000-0000-0000-0000-000000000003');
+insert into sih26044.opportunity_versions (
+  id, opportunity_id, version_number, status, title, description, opportunity_type,
+  audiences, source_system, source_captured_at, source_literal_text,
+  created_by_actor_id, published_at
+) values (
+  '51000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', 1, 'published',
+  'Controlled role', 'RLS test opportunity', 'internship', array['student']::sih26044.opportunity_audience[],
+  'local_test', now(), 'Controlled literal opportunity source',
+  '20000000-0000-0000-0000-000000000003', now()
+);
+update sih26044.opportunities
+set current_version_id = '51000000-0000-0000-0000-000000000001'
+where id = '50000000-0000-0000-0000-000000000001';
+
+-- Draft opportunity content used to exercise authenticated confirmation hardening.
+insert into sih26044.opportunities (id, owner_organization_id, status, created_by_actor_id)
+values ('50000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000001', 'draft', '20000000-0000-0000-0000-000000000003');
+insert into sih26044.opportunity_versions (
+  id, opportunity_id, version_number, status, title, description, opportunity_type,
+  audiences, source_system, source_captured_at, source_literal_text, created_by_actor_id
+) values (
+  '51000000-0000-0000-0000-000000000002', '50000000-0000-0000-0000-000000000002', 1, 'draft',
+  'Confirmation test role', 'Draft confirmation hardening fixture', 'internship',
+  array['student']::sih26044.opportunity_audience[], 'local_test', now(),
+  'Controlled draft source', '20000000-0000-0000-0000-000000000003'
+);
+insert into sih26044.opportunity_requirements (
+  id, opportunity_version_id, ordinal, category, priority, literal_source_wording,
+  importance, evidence_expectation, hard_gate, canonical_resolution,
+  canonical_skill_id, canonical_skill_label, minimum_proficiency,
+  human_confirmed, confirmed_by_actor_id, confirmed_at, confirmation_method
+) values (
+  '52000000-0000-0000-0000-000000000001', '51000000-0000-0000-0000-000000000002', 0,
+  'skill', 'required', 'SQL fundamentals', 3, 'artifact_expected', false,
+  'exact', 'sql', 'SQL', 2, true, '20000000-0000-0000-0000-000000000003', now(), 'structured_human_entry'
+);
+insert into sih26044.eligibility_rules (
+  id, opportunity_version_id, ordinal, rule_kind, literal_source_wording,
+  typed_rule_definition, human_confirmed, confirmed_by_actor_id, confirmed_at, confirmation_method
+) values (
+  '53000000-0000-0000-0000-000000000001', '51000000-0000-0000-0000-000000000002', 0,
+  'education_level', 'Undergraduate study', '{"kind":"education_level","operator":"at_least","value":"undergraduate"}',
+  true, '20000000-0000-0000-0000-000000000003', now(), 'structured_human_entry'
+);
+
+-- Migration-owner writes simulate a trusted/non-authenticated adapter. Exact
+-- content edits must invalidate stale traces for these writers too.
+update sih26044.opportunity_requirements
+set literal_source_wording = 'SQL fundamentals for trusted review'
+where id = '52000000-0000-0000-0000-000000000001';
+select pg_temp.assert_true(
+  (select not human_confirmed
+    and confirmed_by_actor_id is null
+    and confirmed_at is null
+    and confirmation_method is null
+   from sih26044.opportunity_requirements
+   where id = '52000000-0000-0000-0000-000000000001'),
+  'trusted requirement edit without fresh trace invalidates confirmation'
+);
+update sih26044.opportunity_requirements
+set literal_source_wording = 'SQL fundamentals',
+    human_confirmed = true,
+    confirmed_by_actor_id = '20000000-0000-0000-0000-000000000003',
+    confirmed_at = statement_timestamp(),
+    confirmation_method = 'connector_review'
+where id = '52000000-0000-0000-0000-000000000001';
+select pg_temp.assert_true(
+  (select human_confirmed
+    and literal_source_wording = 'SQL fundamentals'
+    and confirmed_by_actor_id = '20000000-0000-0000-0000-000000000003'
+    and confirmation_method = 'connector_review'
+   from sih26044.opportunity_requirements
+   where id = '52000000-0000-0000-0000-000000000001'),
+  'fresh trusted confirmation binds edited requirement content'
+);
+
+update sih26044.eligibility_rules
+set literal_source_wording = 'Undergraduate study for trusted review'
+where id = '53000000-0000-0000-0000-000000000001';
+select pg_temp.assert_true(
+  (select not human_confirmed
+    and confirmed_by_actor_id is null
+    and confirmed_at is null
+    and confirmation_method is null
+   from sih26044.eligibility_rules
+   where id = '53000000-0000-0000-0000-000000000001'),
+  'trusted eligibility edit without fresh trace invalidates confirmation'
+);
+update sih26044.eligibility_rules
+set literal_source_wording = 'Undergraduate study',
+    human_confirmed = true,
+    confirmed_by_actor_id = '20000000-0000-0000-0000-000000000003',
+    confirmed_at = statement_timestamp(),
+    confirmation_method = 'controlled_fixture'
+where id = '53000000-0000-0000-0000-000000000001';
+select pg_temp.assert_true(
+  (select human_confirmed
+    and literal_source_wording = 'Undergraduate study'
+    and confirmed_by_actor_id = '20000000-0000-0000-0000-000000000003'
+    and confirmation_method = 'controlled_fixture'
+   from sih26044.eligibility_rules
+   where id = '53000000-0000-0000-0000-000000000001'),
+  'fresh trusted confirmation binds edited eligibility content'
+);
+
+insert into sih26044.evidence_records (
+  id, subject_actor_id, literal_claim, provenance, initial_verification_state,
+  scope_kind, scope_literal_skill_label, source_system, source_captured_at
+) values
+  ('60000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'Learner A literal claim', 'self_reported', 'self_confirmed', 'global_skill', 'Quantum Ceramics', 'local_test', now()),
+  ('60000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000002', 'Learner B literal claim', 'self_reported', 'self_confirmed', 'global_skill', 'Ceramics', 'local_test', now()),
+  ('60000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000001', 'Learner A unconsented sibling claim', 'self_reported', 'self_confirmed', 'global_skill', 'Unconsented Sibling', 'local_test', now()),
+  ('60000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000001', 'Learner A withdrawal test claim', 'self_reported', 'self_confirmed', 'global_skill', 'Withdrawal Test', 'local_test', now()),
+  ('60000000-0000-0000-0000-000000000005', '20000000-0000-0000-0000-000000000001', 'Learner A atomic request claim', 'self_reported', 'self_confirmed', 'global_skill', 'Atomic Request Skill', 'local_test', now());
+
+insert into sih26044.opportunity_readiness_results (
+  id, subject_actor_id, opportunity_id, opportunity_version_id, engine_version,
+  evidence_policy_version, input_version, subject_facts_version,
+  evidence_projection_version, readiness_band, result_body, generated_at
+) values
+  ('61000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', '51000000-0000-0000-0000-000000000001', 'engine-b-test', 'evidence-policy-test', 'input-test-a', 'facts-test-a', 'projection-test-a', 'NEEDS_REVIEW', '{"readinessBand":"NEEDS_REVIEW"}', now()),
+  ('61000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000002', '50000000-0000-0000-0000-000000000001', '51000000-0000-0000-0000-000000000001', 'engine-b-test', 'evidence-policy-test', 'input-test-b', 'facts-test-b', 'projection-test-b', 'BUILDING_EVIDENCE', '{"readinessBand":"BUILDING_EVIDENCE"}', now());
+
+insert into sih26044.consent_grants (
+  id, subject_actor_id, grantee_organization_id, purpose, created_by_actor_id
+) values
+  ('62000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', 'application_review', '20000000-0000-0000-0000-000000000001'),
+  ('62000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000003', 'evidence_verification', '20000000-0000-0000-0000-000000000001'),
+  ('62000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000003', 'evidence_verification', '20000000-0000-0000-0000-000000000001');
+insert into sih26044.consent_evidence_records (consent_grant_id, evidence_record_id) values
+  ('62000000-0000-0000-0000-000000000001', '60000000-0000-0000-0000-000000000001'),
+  ('62000000-0000-0000-0000-000000000002', '60000000-0000-0000-0000-000000000001'),
+  ('62000000-0000-0000-0000-000000000003', '60000000-0000-0000-0000-000000000004');
+
+insert into sih26044.verification_requests (
+  id, evidence_record_id, subject_actor_id, requested_verifier_actor_id,
+  requested_verifier_organization_id, consent_grant_id, scope_kind,
+  scope_literal_skill_label, status
+) values (
+  '63000000-0000-0000-0000-000000000001', '60000000-0000-0000-0000-000000000001',
+  '20000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000005',
+  '30000000-0000-0000-0000-000000000003', '62000000-0000-0000-0000-000000000002',
+  'global_skill', 'Quantum Ceramics', 'requested'
+);
+
+insert into sih26044.applications (
+  id, applicant_actor_id, opportunity_id, opportunity_version_id, owner_organization_id, initial_stage
+) values
+  ('70000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', '51000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', 'saved'),
+  ('70000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', '51000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', 'saved');
+insert into sih26044.application_snapshots (
+  id, application_id, opportunity_version_id, readiness_result_id,
+  engine_version, evidence_policy_version, input_version, subject_facts_version,
+  evidence_projection_version, recruiter_projection_version,
+  recruiter_allowlist_projection, captured_at
+) values (
+  '71000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000001',
+  '51000000-0000-0000-0000-000000000001', '61000000-0000-0000-0000-000000000001',
+  'engine-b-test', 'evidence-policy-test', 'input-test-a', 'facts-test-a', 'projection-test-a',
+  'recruiter-projection-test', '{"applicant":{"displayName":"Learner A"},"evidence":[],"requirements":[]}', now()
+);
+insert into sih26044.application_snapshot_evidence values
+  ('71000000-0000-0000-0000-000000000001', '60000000-0000-0000-0000-000000000001');
+insert into sih26044.application_snapshot_consents values
+  ('71000000-0000-0000-0000-000000000001', '62000000-0000-0000-0000-000000000001');
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000001';
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.verification_requests (
+    id, evidence_record_id, subject_actor_id, requested_verifier_actor_id,
+    requested_verifier_organization_id, consent_grant_id, scope_kind,
+    scope_literal_skill_label, status
+  ) values (
+    '63100000-0000-0000-0000-000000000001', '60000000-0000-0000-0000-000000000001',
+    '20000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000005',
+    '30000000-0000-0000-0000-000000000003', '62000000-0000-0000-0000-000000000001',
+    'global_skill', 'Quantum Ceramics', 'requested'
+  ) returning id$sql$,
+  'verification request cannot be created without active evidence_verification consent'
+);
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.verification_requests (
+    id, evidence_record_id, subject_actor_id, requested_verifier_actor_id,
+    requested_verifier_organization_id, consent_grant_id, scope_kind,
+    scope_literal_skill_label, status
+  ) values (
+    '63100000-0000-0000-0000-000000000002', '60000000-0000-0000-0000-000000000003',
+    '20000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000005',
+    '30000000-0000-0000-0000-000000000003', '62000000-0000-0000-0000-000000000002',
+    'global_skill', 'Unconsented Sibling', 'requested'
+  ) returning id$sql$,
+  'verification request cannot be created when consent omits the exact evidence record'
+);
+with inserted as (
+  insert into sih26044.verification_requests (
+    id, evidence_record_id, subject_actor_id, requested_verifier_actor_id,
+    requested_verifier_organization_id, consent_grant_id, scope_kind,
+    scope_literal_skill_label, status
+  ) values (
+    '63000000-0000-0000-0000-000000000002', '60000000-0000-0000-0000-000000000004',
+    '20000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000005',
+    '30000000-0000-0000-0000-000000000003', '62000000-0000-0000-0000-000000000003',
+    'global_skill', 'Withdrawal Test', 'requested'
+  ) returning id
+)
+select pg_temp.assert_true(
+  (select count(*) = 1 from inserted),
+  'authenticated subject can insert verification request with returning'
+);
+select pg_temp.assert_true(
+  (select count(*) = 1 from sih26044.verification_requests where id = '63000000-0000-0000-0000-000000000002'),
+  'authenticated subject can subsequently select own verification request'
+);
+select pg_temp.assert_true(
+  not has_function_privilege('anon', 'sih26044.create_verification_request_with_consent(uuid,uuid,timestamptz)', 'EXECUTE'),
+  'anonymous clients cannot execute atomic verification-request creation'
+);
+select pg_temp.assert_true(
+  not has_function_privilege('anon', 'sih26044.can_read_clean_verification_artifact(text,text)', 'EXECUTE')
+  and has_function_privilege('authenticated', 'sih26044.can_read_clean_verification_artifact(text,text)', 'EXECUTE'),
+  'clean verifier artifact authorization helper is available only to authenticated policy evaluation'
+);
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname = 'sih_private_evidence_select_clean_verifier'
+      and cmd = 'SELECT'
+      and roles = array['authenticated']::name[]
+      and qual like '%can_read_clean_verification_artifact%'
+  ),
+  'Storage SELECT policy delegates verifier artifact access to the clean request-scoped helper'
+);
+with created as (
+  select * from sih26044.create_verification_request_with_consent(
+    '60000000-0000-0000-0000-000000000005',
+    '30000000-0000-0000-0000-000000000003',
+    statement_timestamp() + interval '14 days'
+  )
+)
+select pg_temp.assert_true(
+  (select count(*) = 1 from created),
+  'subject creates consent and bounded verification request atomically'
+);
+select pg_temp.assert_true(
+  (select count(*) = 1
+   from sih26044.verification_requests request
+   join sih26044.consent_grants consent on consent.id = request.consent_grant_id
+   join sih26044.consent_evidence_records link
+     on link.consent_grant_id = consent.id
+    and link.evidence_record_id = request.evidence_record_id
+   where request.evidence_record_id = '60000000-0000-0000-0000-000000000005'
+     and request.subject_actor_id = '20000000-0000-0000-0000-000000000001'
+     and request.scope_kind = 'global_skill'
+     and request.scope_literal_skill_label = 'Atomic Request Skill'
+     and consent.subject_actor_id = request.subject_actor_id
+     and consent.created_by_actor_id = request.subject_actor_id
+     and consent.grantee_organization_id = request.requested_verifier_organization_id
+     and consent.purpose = 'evidence_verification'),
+  'atomic request derives actor and exact evidence scope while binding purpose-specific consent'
+);
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.evidence_records (
+    id, subject_actor_id, literal_claim, provenance, initial_verification_state,
+    scope_kind, scope_literal_skill_label, source_system, source_captured_at
+  ) values (
+    '60100000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001',
+    'Forged issuer claim', 'issuer_verified', 'self_confirmed', 'global_skill', 'SQL', 'browser', now()
+  )$sql$,
+  'learner cannot insert issuer_verified provenance'
+);
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.evidence_records (
+    id, subject_actor_id, literal_claim, provenance, initial_verification_state,
+    scope_kind, scope_literal_skill_label, source_system, source_captured_at
+  ) values (
+    '60100000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001',
+    'Forged human claim', 'human_attested', 'self_confirmed', 'global_skill', 'SQL', 'browser', now()
+  )$sql$,
+  'learner cannot insert human_attested provenance'
+);
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.evidence_records (
+    id, subject_actor_id, literal_claim, provenance, initial_verification_state,
+    scope_kind, scope_literal_skill_label, source_system, source_captured_at
+  ) values (
+    '60100000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000001',
+    'Forged assessment claim', 'assessed', 'self_confirmed', 'global_skill', 'SQL', 'browser', now()
+  )$sql$,
+  'learner cannot insert assessed provenance'
+);
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.evidence_records (
+    id, subject_actor_id, literal_claim, provenance, initial_verification_state,
+    scope_kind, scope_literal_skill_label, source_system, source_captured_at
+  ) values (
+    '60100000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000001',
+    'Forged human state', 'self_reported', 'human_verified', 'global_skill', 'SQL', 'browser', now()
+  )$sql$,
+  'learner cannot insert human_verified initial state'
+);
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.evidence_records (
+    id, subject_actor_id, literal_claim, provenance, initial_verification_state,
+    proposal_source, scope_kind, scope_literal_skill_label, source_system, source_captured_at
+  ) values (
+    '60100000-0000-0000-0000-000000000006', '20000000-0000-0000-0000-000000000001',
+    'Forged connector proposal', 'extracted', 'proposed', 'connector_import',
+    'global_skill', 'SQL', 'browser', now()
+  )$sql$,
+  'browser cannot claim connector_import proposal source'
+);
+insert into sih26044.evidence_records (
+  id, subject_actor_id, literal_claim, provenance, initial_verification_state,
+  scope_kind, scope_literal_skill_label, source_system, source_captured_at
+) values (
+  '60100000-0000-0000-0000-000000000005', '20000000-0000-0000-0000-000000000001',
+  'Permitted self report', 'self_reported', 'self_confirmed', 'global_skill', 'SQL joins', 'browser', now()
+);
+select pg_temp.assert_true(
+  (select count(*) = 1 from sih26044.evidence_records where id = '60100000-0000-0000-0000-000000000005'),
+  'learner can still insert permitted weak evidence'
+);
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.opportunity_readiness_results (
+    id, subject_actor_id, opportunity_id, opportunity_version_id, engine_version,
+    evidence_policy_version, input_version, subject_facts_version,
+    evidence_projection_version, readiness_band, result_body, generated_at
+  ) values (
+    '61100000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001',
+    '50000000-0000-0000-0000-000000000001', '51000000-0000-0000-0000-000000000001',
+    'forged-browser', 'forged-policy', 'forged-input', 'forged-facts', 'forged-projection',
+    'READY_FOR_REVIEW', '{"readinessBand":"READY_FOR_REVIEW"}', now()
+  )$sql$,
+  'learner cannot directly insert canonical readiness result'
+);
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.application_snapshots (
+    id, application_id, opportunity_version_id, readiness_result_id,
+    engine_version, evidence_policy_version, input_version, subject_facts_version,
+    evidence_projection_version, recruiter_projection_version,
+    recruiter_allowlist_projection, captured_at
+  ) values (
+    '71100000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000002',
+    '51000000-0000-0000-0000-000000000001', '61000000-0000-0000-0000-000000000001',
+    'forged-browser', 'forged-policy', 'forged-input', 'forged-facts', 'forged-projection',
+    'forged-projection', '{"applicant":{"private":"injected"}}', now()
+  )$sql$,
+  'learner cannot directly insert application snapshot material'
+);
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.audit_events (
+    id, actor_id, action, resource_type, resource_id
+  ) values (
+    '81100000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001',
+    'forged.audit', 'application', 'forged-resource'
+  )$sql$,
+  'browser cannot author authoritative audit history'
+);
+
+select pg_temp.assert_true(
+  length(sih26044.finalize_application_snapshot('71000000-0000-0000-0000-000000000001')) = 64,
+  'finalized snapshot must receive a reproducible SHA-256 integrity fingerprint'
+);
+insert into sih26044.application_events (
+  id, application_id, from_stage, to_stage, event_kind, actor_id, application_snapshot_id, note
+) values (
+  '72000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000001',
+  'saved', 'applied', 'stage_transition', '20000000-0000-0000-0000-000000000001',
+  '71000000-0000-0000-0000-000000000001', 'Explicit applicant submission'
+);
+select pg_temp.assert_true(
+  (select application_snapshot_id = '71000000-0000-0000-0000-000000000001'::uuid
+   from sih26044.application_events where id = '72000000-0000-0000-0000-000000000001'),
+  'submitted event binds the exact finalized immutable snapshot'
+);
+
+select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records where subject_actor_id = '20000000-0000-0000-0000-000000000002'), 'learner A cannot read learner B evidence');
+select pg_temp.assert_true((select count(*) = 0 from sih26044.opportunity_readiness_results where subject_actor_id = '20000000-0000-0000-0000-000000000002'), 'learner A cannot read learner B readiness');
+select pg_temp.assert_true((select count(*) = 1 from sih26044.opportunity_readiness_results where subject_actor_id = '20000000-0000-0000-0000-000000000001'), 'learner retains read access to own trusted readiness');
+
+-- Storage path helper validation using synthetic path (no actual object required).
+select pg_temp.assert_true(
+  (select array_length(
+      storage.foldername('20000000-0000-0000-0000-000000000001/90000000-0000-0000-0000-000000000001/evidence-a.txt'), 1
+    ) = 2
+   and storage.filename('20000000-0000-0000-0000-000000000001/90000000-0000-0000-0000-000000000001/evidence-a.txt') = 'evidence-a.txt'),
+  'valid storage path uses exactly actor/artifact folders plus filename'
+);
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.artifacts (
+    id, subject_actor_id, storage_object_path, media_type, display_name, integrity_fingerprint
+  ) values (
+    '90000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001',
+    '20000000-0000-0000-0000-000000000001/90000000-0000-0000-0000-000000000001/evidence-a.txt',
+    'text/plain', 'Evidence A', 'sha256:browser-claim'
+  )$sql$,
+  'learner cannot insert canonical artifact metadata'
+);
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.artifacts (
+    id, subject_actor_id, storage_object_path, media_type, display_name,
+    integrity_fingerprint, scan_status
+  ) values (
+    '90000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001',
+    '20000000-0000-0000-0000-000000000001/90000000-0000-0000-0000-000000000001/evidence-a.txt',
+    'text/plain', 'Evidence A', 'sha256:browser-claim', 'clean'
+  )$sql$,
+  'browser cannot claim clean scan status through artifact insertion'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000001';
+-- Artifact metadata and evidence-artifact link assertions moved to Storage API
+-- integration test layer where artifacts are actually created.
+-- Storage overwrite/deletion protection for registered artifacts validated
+-- through authenticated Storage API integration test layer.
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000003';
+select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records), 'recruiter cannot browse the learner evidence ledger');
+select pg_temp.assert_true((select count(*) = 1 from sih26044.applications where id = '70000000-0000-0000-0000-000000000001'), 'own-organization recruiter can read submitted consented application');
+select pg_temp.assert_true((select count(*) = 0 from sih26044.applications where id = '70000000-0000-0000-0000-000000000002'), 'recruiter cannot read saved/unsubmitted application');
+select pg_temp.assert_true((select count(*) = 0 from sih26044.opportunity_readiness_results), 'recruiter cannot browse live readiness history');
+
+select * from sih26044.record_application_recruitment_action(
+  requested_application_id => '70000000-0000-0000-0000-000000000001',
+  requested_expected_from_stage => 'applied', requested_to_stage => 'evidence_requested',
+  requested_kind => 'evidence_request', requested_message => 'Share the project contribution statement.',
+  requested_internal_note => 'Internal review owner: recruiter A'
+);
+select pg_temp.assert_true(
+  (select count(*) = 2 from sih26044.application_recruitment_records
+   where application_id = '70000000-0000-0000-0000-000000000001'),
+  'atomic evidence request records one shared request and one recruiter-internal note'
+);
+select pg_temp.assert_blocked(
+  $sql$update sih26044.application_recruitment_records set message = 'rewritten'$sql$,
+  'recruitment detail history cannot be updated'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000001';
+select pg_temp.assert_true(
+  (select count(*) = 1 from sih26044.application_recruitment_records
+   where application_id = '70000000-0000-0000-0000-000000000001'),
+  'applicant sees shared evidence request but not recruiter-internal note'
+);
+select * from sih26044.record_application_recruitment_action(
+  requested_application_id => '70000000-0000-0000-0000-000000000001',
+  requested_expected_from_stage => 'evidence_requested', requested_to_stage => null,
+  requested_kind => 'evidence_response', requested_message => 'Contribution statement shared through consented evidence.'
+);
+select pg_temp.assert_blocked(
+  $sql$select * from sih26044.record_application_recruitment_action(
+    requested_application_id => '70000000-0000-0000-0000-000000000001',
+    requested_expected_from_stage => 'evidence_requested', requested_to_stage => null,
+    requested_kind => 'feedback', requested_message => 'Shared feedback', requested_internal_note => 'Forged internal note'
+  )$sql$,
+  'applicant cannot create recruiter-internal notes'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000003';
+select * from sih26044.record_application_recruitment_action(
+  requested_application_id => '70000000-0000-0000-0000-000000000001',
+  requested_expected_from_stage => 'evidence_requested', requested_to_stage => 'under_review',
+  requested_kind => 'stage_transition', requested_message => 'Evidence response received.'
+);
+select * from sih26044.record_application_recruitment_action(
+  requested_application_id => '70000000-0000-0000-0000-000000000001',
+  requested_expected_from_stage => 'under_review', requested_to_stage => 'interview',
+  requested_kind => 'interview_scheduled', requested_message => 'Technical discussion scheduled.',
+  requested_scheduled_at => now() + interval '2 days', requested_schedule_timezone => 'Asia/Kolkata',
+  requested_interaction_mode => 'video', requested_location_reference => 'controlled-meeting-reference'
+);
+select * from sih26044.record_application_recruitment_action(
+  requested_application_id => '70000000-0000-0000-0000-000000000001',
+  requested_expected_from_stage => 'interview', requested_to_stage => null,
+  requested_kind => 'interview_completed', requested_message => 'Interview completed by the human panel.'
+);
+select * from sih26044.record_application_recruitment_action(
+  requested_application_id => '70000000-0000-0000-0000-000000000001',
+  requested_expected_from_stage => 'interview', requested_to_stage => 'offered',
+  requested_kind => 'offer', requested_message => 'Controlled internship offer.',
+  requested_expires_at => now() + interval '7 days'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000001';
+select * from sih26044.record_application_recruitment_action(
+  requested_application_id => '70000000-0000-0000-0000-000000000001',
+  requested_expected_from_stage => 'offered', requested_to_stage => 'accepted',
+  requested_kind => 'stage_transition', requested_message => 'Applicant accepted the offer.'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000003';
+select * from sih26044.record_application_recruitment_action(
+  requested_application_id => '70000000-0000-0000-0000-000000000001',
+  requested_expected_from_stage => 'accepted', requested_to_stage => 'active',
+  requested_kind => 'stage_transition', requested_message => 'Engagement started.'
+);
+select * from sih26044.record_application_recruitment_action(
+  requested_application_id => '70000000-0000-0000-0000-000000000001',
+  requested_expected_from_stage => 'active', requested_to_stage => 'completed',
+  requested_kind => 'stage_transition', requested_message => 'Engagement completed.'
+);
+select * from sih26044.record_application_recruitment_action(
+  requested_application_id => '70000000-0000-0000-0000-000000000001',
+  requested_expected_from_stage => 'completed', requested_to_stage => 'outcome_recorded',
+  requested_kind => 'outcome', requested_message => 'Completion outcome recorded by recruiter.',
+  requested_outcome_kind => 'completed'
+);
+select pg_temp.assert_true(
+  (select ae.to_stage = 'outcome_recorded' from sih26044.application_events ae
+    where ae.application_id = '70000000-0000-0000-0000-000000000001'
+    order by ae.sequence_number desc limit 1),
+  'full human recruitment lifecycle reaches outcome_recorded through append-only actions'
+);
+select pg_temp.assert_true(
+  (select count(*) = 1 from sih26044.application_recruitment_records
+   where application_id = '70000000-0000-0000-0000-000000000001' and kind = 'outcome' and outcome_event_id is not null),
+  'outcome action atomically creates linked canonical outcome and recruitment history'
+);
+
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.outcome_events (
+    id, kind, subject_actor_id, organization_id, opportunity_id,
+    application_id, recorded_by_actor_id, occurred_at
+  ) values (
+    '80100000-0000-0000-0000-000000000001', 'selected',
+    '20000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000001',
+    '50000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000001',
+    '20000000-0000-0000-0000-000000000003', now()
+  )$sql$,
+  'outcome cannot target unrelated learner/application'
+);
+insert into sih26044.outcome_events (
+  id, kind, subject_actor_id, organization_id, opportunity_id,
+  application_id, recorded_by_actor_id, occurred_at
+) values (
+  '80100000-0000-0000-0000-000000000002', 'selected',
+  '20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001',
+  '50000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000001',
+  '20000000-0000-0000-0000-000000000003', now()
+);
+select pg_temp.assert_true(
+  (select count(*) = 1 from sih26044.outcome_events where id = '80100000-0000-0000-0000-000000000002'),
+  'valid application-linked outcome can be recorded by authorized human actor'
+);
+
+update sih26044.opportunity_requirements
+set literal_source_wording = 'SQL fundamentals with joins'
+where id = '52000000-0000-0000-0000-000000000001';
+select pg_temp.assert_true(
+  (select not human_confirmed
+    and confirmed_by_actor_id is null
+    and confirmed_at is null
+    and confirmation_method is null
+   from sih26044.opportunity_requirements
+   where id = '52000000-0000-0000-0000-000000000001'),
+  'confirmed requirement edit invalidates stale confirmation'
+);
+select pg_temp.assert_blocked(
+  $sql$update sih26044.opportunity_requirements
+    set human_confirmed = true,
+        confirmed_by_actor_id = '20000000-0000-0000-0000-000000000002',
+        confirmed_at = '2000-01-01T00:00:00Z',
+        confirmation_method = 'structured_human_entry'
+    where id = '52000000-0000-0000-0000-000000000001'$sql$,
+  'confirmation actor cannot be impersonated'
+);
+select pg_temp.assert_blocked(
+  $sql$update sih26044.opportunity_requirements
+    set human_confirmed = true,
+        confirmed_by_actor_id = null,
+        confirmed_at = null,
+        confirmation_method = 'controlled_fixture'
+    where id = '52000000-0000-0000-0000-000000000001'$sql$,
+  'production client cannot claim controlled confirmation method'
+);
+
+update sih26044.eligibility_rules
+set literal_source_wording = 'Current undergraduate study'
+where id = '53000000-0000-0000-0000-000000000001';
+select pg_temp.assert_true(
+  (select not human_confirmed
+    and confirmed_by_actor_id is null
+    and confirmed_at is null
+    and confirmation_method is null
+   from sih26044.eligibility_rules
+   where id = '53000000-0000-0000-0000-000000000001'),
+  'confirmed eligibility edit invalidates stale confirmation'
+);
+
+update sih26044.opportunity_requirements
+set human_confirmed = true,
+    confirmed_by_actor_id = null,
+    confirmed_at = '2000-01-01T00:00:00Z',
+    confirmation_method = 'structured_human_entry'
+where id = '52000000-0000-0000-0000-000000000001';
+update sih26044.eligibility_rules
+set human_confirmed = true,
+    confirmed_by_actor_id = null,
+    confirmed_at = '2000-01-01T00:00:00Z',
+    confirmation_method = 'ai_assisted_review'
+where id = '53000000-0000-0000-0000-000000000001';
+select pg_temp.assert_true(
+  (select human_confirmed
+    and confirmed_by_actor_id = '20000000-0000-0000-0000-000000000003'
+    and confirmed_at <> '2000-01-01T00:00:00Z'
+   from sih26044.opportunity_requirements
+   where id = '52000000-0000-0000-0000-000000000001'),
+  'server derives confirmation actor and timestamp'
+);
+select sih26044.publish_opportunity_version('51000000-0000-0000-0000-000000000002');
+select pg_temp.assert_true(
+  (select status = 'published' from sih26044.opportunity_versions where id = '51000000-0000-0000-0000-000000000002'),
+  'freshly reconfirmed edited content can publish'
+);
+select pg_temp.assert_true(
+  (select count(*) = 1
+   from sih26044.audit_events
+   where actor_id = '20000000-0000-0000-0000-000000000003'
+     and organization_id = '30000000-0000-0000-0000-000000000001'
+     and action = 'opportunity.version_published'
+     and resource_type = 'opportunity_versions'
+     and resource_id = '51000000-0000-0000-0000-000000000002'),
+  'published opportunity version records exact human publisher audit'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000004';
+select pg_temp.assert_true((select count(*) = 0 from sih26044.applications where id = '70000000-0000-0000-0000-000000000001'), 'organization B recruiter cannot read organization A application');
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000005';
+select pg_temp.assert_true(
+  (select count(*) = 2 from sih26044.verification_requests where id in (
+    '63000000-0000-0000-0000-000000000001',
+    '63000000-0000-0000-0000-000000000002'
+  )),
+  'authorized assigned verifier can select active verification requests'
+);
+select pg_temp.assert_true((select count(*) = 1 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000001'), 'assigned verifier can read exactly requested evidence');
+select pg_temp.assert_true((select count(*) = 1 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000004'), 'assigned verifier can read exact evidence covered by withdrawal-test consent');
+select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000003'), 'assigned verifier cannot read unconsented sibling evidence');
+
+-- Authenticated verifier appends verification event while consent is active
+insert into sih26044.verification_events (
+  id, verification_request_id, evidence_record_id, action, actor_id, actor_organization_id, reason
+) values (
+  '64000000-0000-0000-0000-000000000001', '63000000-0000-0000-0000-000000000001',
+  '60000000-0000-0000-0000-000000000001', 'verified_by_issuer',
+  '20000000-0000-0000-0000-000000000005', '30000000-0000-0000-0000-000000000003', 'Bounded issuer review'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000006';
+select pg_temp.assert_true(
+  (select count(*) = 0 from sih26044.verification_requests where id in (
+    '63000000-0000-0000-0000-000000000001',
+    '63000000-0000-0000-0000-000000000002'
+  )),
+  'unrelated authenticated actor cannot select active verification requests'
+);
+reset role;
+
+-- Consent lifecycle regression: expire the consent and verify verifier loses access
+insert into sih26044.consent_lifecycle_events (
+  id, consent_grant_id, action, actor_id, reason
+) values (
+  'b1000000-0000-0000-0000-000000000001',
+  '62000000-0000-0000-0000-000000000002',
+  'expired',
+  '20000000-0000-0000-0000-000000000001',
+  'Consent lifecycle regression test: verify expired consent blocks verifier access and event append'
+);
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000005';
+select pg_temp.assert_true((select count(*) = 0 from sih26044.verification_requests where id = '63000000-0000-0000-0000-000000000001'), 'expired consent removes assigned verifier request access');
+select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000001'), 'assigned verifier cannot read evidence after consent expires');
+select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000002'), 'assigned verifier still cannot browse unrelated evidence after consent expires');
+
+-- Verifier cannot append verification event after consent expires
+select pg_temp.assert_blocked(
+  $sql$insert into sih26044.verification_events (
+    id, verification_request_id, evidence_record_id, action, actor_id, actor_organization_id, reason
+  ) values (
+    '64000000-0000-0000-0000-000000000002', '63000000-0000-0000-0000-000000000001',
+    '60000000-0000-0000-0000-000000000001', 'corrected',
+    '20000000-0000-0000-0000-000000000005', '30000000-0000-0000-0000-000000000003', 'Attempted correction after expiry'
+  )$sql$,
+  'assigned verifier cannot append verification event after consent expires'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000001';
+insert into sih26044.consent_lifecycle_events (
+  id, consent_grant_id, action, actor_id, reason
+) values (
+  'b1000000-0000-0000-0000-000000000002',
+  '62000000-0000-0000-0000-000000000003',
+  'withdrawn',
+  '20000000-0000-0000-0000-000000000001',
+  'Consent lifecycle regression test: verify withdrawal blocks verifier access'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000005';
+select pg_temp.assert_true((select count(*) = 0 from sih26044.verification_requests where id = '63000000-0000-0000-0000-000000000002'), 'withdrawn consent removes assigned verifier request access');
+select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000004'), 'withdrawn consent removes assigned verifier exact-evidence access');
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000006';
+select pg_temp.assert_true(
+  (select count(*) = 0
+   from sih26044.evidence_records
+   where id in (
+     '60000000-0000-0000-0000-000000000001',
+     '60000000-0000-0000-0000-000000000004'
+   ))
+  and
+  (select count(*) = 1
+   from sih26044.evidence_records
+   where id = '60000000-0000-0000-0000-000000000005'),
+  'unrelated verifier cannot read requested evidence after actor-targeted consent ends, but can read an active request targeted to their organization'
+);
+select pg_temp.assert_blocked(
+  $sql$select sih26044.is_consent_active(
+    '62000000-0000-0000-0000-000000000002',
+    '20000000-0000-0000-0000-000000000001',
+    '30000000-0000-0000-0000-000000000003',
+    'evidence_verification'
+  )$sql$,
+  'low-level trust helper cannot leak unauthorized state'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000007';
+select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records), 'policy analyst cannot read individual evidence');
+select pg_temp.assert_true((select count(*) = 0 from sih26044.opportunity_readiness_results), 'policy analyst cannot read individual readiness');
+select pg_temp.assert_true((select count(*) = 0 from sih26044.applications), 'policy analyst cannot read individual applications');
+reset role;
+
+-- Atomic verifier-decision completion fixtures. These remain inside this
+-- transaction and are discarded by the final rollback.
+insert into auth.users (id) values ('10000000-0000-0000-0000-000000000008') on conflict (id) do nothing;
+insert into sih26044.actors (id, auth_user_id, display_name) values
+  ('20000000-0000-0000-0000-000000000008', '10000000-0000-0000-0000-000000000008', 'Faculty Verifier');
+insert into sih26044.organization_memberships (id, actor_id, organization_id, status) values
+  ('40000000-0000-0000-0000-000000000008', '20000000-0000-0000-0000-000000000008', '30000000-0000-0000-0000-000000000003', 'active');
+insert into sih26044.organization_membership_roles (membership_id, role) values
+  ('40000000-0000-0000-0000-000000000008', 'faculty');
+
+insert into sih26044.evidence_records (
+  id, subject_actor_id, literal_claim, provenance, initial_verification_state,
+  scope_kind, scope_literal_skill_label, source_system, source_captured_at
+) values
+  ('60000000-0000-0000-0000-000000000011', '20000000-0000-0000-0000-000000000001', 'Atomic human decision', 'self_reported', 'unverified', 'global_skill', 'Atomic Human', 'local_test', now()),
+  ('60000000-0000-0000-0000-000000000012', '20000000-0000-0000-0000-000000000001', 'Atomic issuer decision', 'self_reported', 'unverified', 'global_skill', 'Atomic Issuer', 'local_test', now()),
+  ('60000000-0000-0000-0000-000000000013', '20000000-0000-0000-0000-000000000001', 'Atomic dispute', 'self_reported', 'unverified', 'global_skill', 'Atomic Dispute', 'local_test', now()),
+  ('60000000-0000-0000-0000-000000000014', '20000000-0000-0000-0000-000000000001', 'Expired request', 'self_reported', 'unverified', 'global_skill', 'Expired Request', 'local_test', now()),
+  ('60000000-0000-0000-0000-000000000015', '20000000-0000-0000-0000-000000000001', 'Withdrawn consent', 'self_reported', 'unverified', 'global_skill', 'Withdrawn Consent', 'local_test', now()),
+  ('60000000-0000-0000-0000-000000000016', '20000000-0000-0000-0000-000000000001', 'Expired consent', 'self_reported', 'unverified', 'global_skill', 'Expired Consent', 'local_test', now());
+
+insert into sih26044.consent_grants (
+  id, subject_actor_id, grantee_organization_id, purpose, created_by_actor_id,
+  granted_at, expires_at
+) values
+  ('62000000-0000-0000-0000-000000000011', '20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000003', 'evidence_verification', '20000000-0000-0000-0000-000000000001', now(), null),
+  ('62000000-0000-0000-0000-000000000012', '20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000003', 'evidence_verification', '20000000-0000-0000-0000-000000000001', now(), null),
+  ('62000000-0000-0000-0000-000000000013', '20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000003', 'evidence_verification', '20000000-0000-0000-0000-000000000001', now(), null),
+  ('62000000-0000-0000-0000-000000000014', '20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000003', 'evidence_verification', '20000000-0000-0000-0000-000000000001', now(), null),
+  ('62000000-0000-0000-0000-000000000015', '20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000003', 'evidence_verification', '20000000-0000-0000-0000-000000000001', now(), null),
+  ('62000000-0000-0000-0000-000000000016', '20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000003', 'evidence_verification', '20000000-0000-0000-0000-000000000001', now(), null);
+insert into sih26044.consent_evidence_records (consent_grant_id, evidence_record_id) values
+  ('62000000-0000-0000-0000-000000000011', '60000000-0000-0000-0000-000000000011'),
+  ('62000000-0000-0000-0000-000000000012', '60000000-0000-0000-0000-000000000012'),
+  ('62000000-0000-0000-0000-000000000013', '60000000-0000-0000-0000-000000000013'),
+  ('62000000-0000-0000-0000-000000000014', '60000000-0000-0000-0000-000000000014'),
+  ('62000000-0000-0000-0000-000000000015', '60000000-0000-0000-0000-000000000015'),
+  ('62000000-0000-0000-0000-000000000016', '60000000-0000-0000-0000-000000000016');
+
+insert into sih26044.verification_requests (
+  id, evidence_record_id, subject_actor_id, requested_verifier_actor_id,
+  requested_verifier_organization_id, consent_grant_id, scope_kind,
+  scope_literal_skill_label, status, requested_at, expires_at
+) values
+  ('63000000-0000-0000-0000-000000000011', '60000000-0000-0000-0000-000000000011', '20000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000008', '30000000-0000-0000-0000-000000000003', '62000000-0000-0000-0000-000000000011', 'global_skill', 'Atomic Human', 'requested', now(), null),
+  ('63000000-0000-0000-0000-000000000012', '60000000-0000-0000-0000-000000000012', '20000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000005', '30000000-0000-0000-0000-000000000003', '62000000-0000-0000-0000-000000000012', 'global_skill', 'Atomic Issuer', 'accepted', now(), null),
+  ('63000000-0000-0000-0000-000000000013', '60000000-0000-0000-0000-000000000013', '20000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000008', '30000000-0000-0000-0000-000000000003', '62000000-0000-0000-0000-000000000013', 'global_skill', 'Atomic Dispute', 'requested', now(), null),
+  ('63000000-0000-0000-0000-000000000014', '60000000-0000-0000-0000-000000000014', '20000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000008', '30000000-0000-0000-0000-000000000003', '62000000-0000-0000-0000-000000000014', 'global_skill', 'Expired Request', 'requested', now() - interval '2 hours', now() - interval '1 hour'),
+  ('63000000-0000-0000-0000-000000000015', '60000000-0000-0000-0000-000000000015', '20000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000008', '30000000-0000-0000-0000-000000000003', '62000000-0000-0000-0000-000000000015', 'global_skill', 'Withdrawn Consent', 'requested', now(), null),
+  ('63000000-0000-0000-0000-000000000016', '60000000-0000-0000-0000-000000000016', '20000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000008', '30000000-0000-0000-0000-000000000003', '62000000-0000-0000-0000-000000000016', 'global_skill', 'Expired Consent', 'requested', now(), null);
+
+-- Both requests above were validly created with active exact-evidence consent.
+-- Later append-only lifecycle changes must make terminal completion fail closed.
+insert into sih26044.consent_lifecycle_events (consent_grant_id, action, actor_id, reason) values
+  ('62000000-0000-0000-0000-000000000015', 'withdrawn', '20000000-0000-0000-0000-000000000001', 'Atomic withdrawal test'),
+  ('62000000-0000-0000-0000-000000000016', 'expired', '20000000-0000-0000-0000-000000000001', 'Atomic expiry test');
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000008';
+select pg_temp.assert_true(
+  (select request_status = 'closed' and event_action = 'verified_by_human'
+   from sih26044.complete_verification_request_decision('63000000-0000-0000-0000-000000000011', '60000000-0000-0000-0000-000000000011', 'verified_by_human', '30000000-0000-0000-0000-000000000003', null)),
+  'assigned faculty verifier can complete verified_by_human'
+);
+reset role;
+select pg_temp.assert_true((select count(*) = 1 from sih26044.verification_events where verification_request_id = '63000000-0000-0000-0000-000000000011' and action = 'verified_by_human'), 'terminal verification event is appended');
+select pg_temp.assert_true((select status = 'closed' from sih26044.verification_requests where id = '63000000-0000-0000-0000-000000000011'), 'terminal decision closes exact verification request');
+select pg_temp.assert_true((select closed_at is not null from sih26044.verification_requests where id = '63000000-0000-0000-0000-000000000011'), 'terminal decision populates request closed_at');
+select pg_temp.assert_true((select vr.closed_at = ve.occurred_at from sih26044.verification_requests vr join sih26044.verification_events ve on ve.verification_request_id = vr.id where vr.id = '63000000-0000-0000-0000-000000000011'), 'terminal event occurred_at equals request closed_at');
+select pg_temp.assert_true(sih26044.current_scoped_verification_state('60000000-0000-0000-0000-000000000011', '63000000-0000-0000-0000-000000000011') = 'human_verified', 'human terminal action maps to human_verified scoped state');
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000005';
+select pg_temp.assert_true(
+  (select event_action = 'verified_by_issuer' from sih26044.complete_verification_request_decision('63000000-0000-0000-0000-000000000012', '60000000-0000-0000-0000-000000000012', 'verified_by_issuer', '30000000-0000-0000-0000-000000000003', null)),
+  'issuer verifier can complete verified_by_issuer'
+);
+reset role;
+select pg_temp.assert_true(sih26044.current_scoped_verification_state('60000000-0000-0000-0000-000000000012', '63000000-0000-0000-0000-000000000012') = 'issuer_verified', 'issuer terminal action maps to issuer_verified scoped state');
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000008';
+select pg_temp.assert_blocked($sql$select * from sih26044.complete_verification_request_decision('63000000-0000-0000-0000-000000000013', '60000000-0000-0000-0000-000000000013', 'verified_by_issuer', '30000000-0000-0000-0000-000000000003', null)$sql$, 'ordinary faculty verifier cannot submit verified_by_issuer');
+select pg_temp.assert_blocked($sql$select * from sih26044.complete_verification_request_decision('63000000-0000-0000-0000-000000000013', '60000000-0000-0000-0000-000000000013', 'disputed', '30000000-0000-0000-0000-000000000003', '   ')$sql$, 'disputed terminal decision requires non-empty reason');
+select pg_temp.assert_true(
+  (select event_action = 'disputed' and event_reason = 'Evidence does not support the claim' from sih26044.complete_verification_request_decision('63000000-0000-0000-0000-000000000013', '60000000-0000-0000-0000-000000000013', 'disputed', '30000000-0000-0000-0000-000000000003', 'Evidence does not support the claim')),
+  'authorized verifier can submit disputed with reason'
+);
+reset role;
+select pg_temp.assert_true(sih26044.current_scoped_verification_state('60000000-0000-0000-0000-000000000013', '63000000-0000-0000-0000-000000000013') = 'disputed', 'disputed terminal action maps to disputed scoped state');
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000006';
+select pg_temp.assert_blocked($sql$select * from sih26044.complete_verification_request_decision('63000000-0000-0000-0000-000000000014', '60000000-0000-0000-0000-000000000014', 'verified_by_human', '30000000-0000-0000-0000-000000000003', null)$sql$, 'unrelated actor cannot complete verification request');
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000005';
+select pg_temp.assert_blocked($sql$select * from sih26044.complete_verification_request_decision('63000000-0000-0000-0000-000000000015', '60000000-0000-0000-0000-000000000015', 'verified_by_human', '30000000-0000-0000-0000-000000000003', null)$sql$, 'wrong assigned verifier cannot complete verification request');
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000008';
+select pg_temp.assert_blocked($sql$select * from sih26044.complete_verification_request_decision('63000000-0000-0000-0000-000000000015', '60000000-0000-0000-0000-000000000015', 'verified_by_human', '30000000-0000-0000-0000-000000000001', null)$sql$, 'wrong organization cannot complete verification request');
+select pg_temp.assert_blocked($sql$select * from sih26044.complete_verification_request_decision('63000000-0000-0000-0000-000000000015', '60000000-0000-0000-0000-000000000014', 'verified_by_human', '30000000-0000-0000-0000-000000000003', null)$sql$, 'wrong evidence ID cannot complete verification request');
+select pg_temp.assert_blocked($sql$select * from sih26044.complete_verification_request_decision('63000000-0000-0000-0000-000000000014', '60000000-0000-0000-0000-000000000014', 'verified_by_human', '30000000-0000-0000-0000-000000000003', null)$sql$, 'expired request cannot be completed');
+select pg_temp.assert_blocked($sql$select * from sih26044.complete_verification_request_decision('63000000-0000-0000-0000-000000000015', '60000000-0000-0000-0000-000000000015', 'verified_by_human', '30000000-0000-0000-0000-000000000003', null)$sql$, 'withdrawn consent blocks terminal completion');
+select pg_temp.assert_blocked($sql$select * from sih26044.complete_verification_request_decision('63000000-0000-0000-0000-000000000016', '60000000-0000-0000-0000-000000000016', 'verified_by_human', '30000000-0000-0000-0000-000000000003', null)$sql$, 'expired consent blocks terminal completion');
+select pg_temp.assert_blocked($sql$select * from sih26044.complete_verification_request_decision('63000000-0000-0000-0000-000000000011', '60000000-0000-0000-0000-000000000011', 'disputed', '30000000-0000-0000-0000-000000000003', 'Retry conflict')$sql$, 'second terminal completion attempt fails deterministically');
+reset role;
+select pg_temp.assert_true((select count(*) = 1 from sih26044.verification_events where verification_request_id = '63000000-0000-0000-0000-000000000011' and action in ('verified_by_human', 'verified_by_issuer', 'disputed')), 'only one terminal event exists after retry attempt');
+select pg_temp.assert_true((select provenance = 'self_reported' and initial_verification_state = 'unverified' from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000012'), 'terminal completion preserves evidence provenance and initial verification state');
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000008';
+select pg_temp.assert_true((select count(*) = 0 from sih26044.evidence_records where id = '60000000-0000-0000-0000-000000000003'), 'terminal verifier cannot access unconsented sibling evidence');
+reset role;
+
+-- Seed historical rows as the migration owner, then prove schema triggers reject mutation even when RLS is bypassed.
+insert into sih26044.outcome_events (
+  id, kind, subject_actor_id, organization_id, application_id, recorded_by_actor_id, occurred_at
+) values (
+  '80000000-0000-0000-0000-000000000001', 'selected', '20000000-0000-0000-0000-000000000001',
+  '30000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000001',
+  '20000000-0000-0000-0000-000000000003', now()
+);
+insert into sih26044.audit_events (id, actor_id, organization_id, action, resource_type, resource_id)
+values ('81000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000001', 'application.reviewed', 'application', '70000000-0000-0000-0000-000000000001');
+
+do $$
+declare blocked boolean;
+begin
+  blocked := false;
+  begin update sih26044.opportunity_versions set title = 'Forbidden edit' where id = '51000000-0000-0000-0000-000000000001'; exception when others then blocked := true; end;
+  perform pg_temp.assert_true(blocked, 'published opportunity version cannot be mutated');
+  blocked := false;
+  begin update sih26044.verification_events set reason = 'Forbidden edit' where id = '64000000-0000-0000-0000-000000000001'; exception when others then blocked := true; end;
+  perform pg_temp.assert_true(blocked, 'verification history cannot be updated');
+  blocked := false;
+  begin delete from sih26044.application_events where id = '72000000-0000-0000-0000-000000000001'; exception when others then blocked := true; end;
+  perform pg_temp.assert_true(blocked, 'application history cannot be deleted');
+  blocked := false;
+  begin update sih26044.application_snapshots set engine_version = 'forbidden' where id = '71000000-0000-0000-0000-000000000001'; exception when others then blocked := true; end;
+  perform pg_temp.assert_true(blocked, 'finalized application snapshot cannot be updated');
+  blocked := false;
+  begin delete from sih26044.opportunity_readiness_results where id = '61000000-0000-0000-0000-000000000001'; exception when others then blocked := true; end;
+  perform pg_temp.assert_true(blocked, 'readiness history cannot be deleted');
+  blocked := false;
+  begin update sih26044.outcome_events set kind = 'joined' where id = '80000000-0000-0000-0000-000000000001'; exception when others then blocked := true; end;
+  perform pg_temp.assert_true(blocked, 'outcome history cannot be updated');
+  blocked := false;
+  begin delete from sih26044.audit_events where id = '81000000-0000-0000-0000-000000000001'; exception when others then blocked := true; end;
+  perform pg_temp.assert_true(blocked, 'audit history cannot be deleted');
+  blocked := false;
+  -- Artifact immutability test removed - requires artifact fixture that's now
+  -- tested through Storage API integration layer.
+  -- begin update sih26044.artifacts set integrity_fingerprint = 'forbidden-replacement' where id = '90000000-0000-0000-0000-000000000001'; exception when others then blocked := true; end;
+  -- perform pg_temp.assert_true(blocked, 'artifact core metadata cannot be rewritten by a trusted role');
+end
+$$;
+
+select pg_temp.assert_true(
+  (select public = false from storage.buckets where id = 'career-evidence-private'),
+  'evidence bucket is private'
+);
+-- Cross-actor Storage object access control validated through authenticated
+-- Storage API integration test layer.
+
+-- Notification outbox lifecycle: actor-scoped claims, trusted scheduling,
+-- lease reconciliation, bounded attempts and explicit terminal dead state.
+insert into sih26044.notification_events (id, event_key, purpose, actor_id, reference_type, reference_id, payload)
+values
+  ('82000000-0000-0000-0000-000000000001', 'notification-test-1', 'application_update', '20000000-0000-0000-0000-000000000001', 'application', '70000000-0000-0000-0000-000000000001', '{}'),
+  ('82000000-0000-0000-0000-000000000002', 'notification-test-2', 'expiry_revocation', '20000000-0000-0000-0000-000000000001', 'application', '70000000-0000-0000-0000-000000000001', '{}'),
+  ('82000000-0000-0000-0000-000000000003', 'notification-test-3', 'interview', '20000000-0000-0000-0000-000000000001', 'application', '70000000-0000-0000-0000-000000000001', '{}'),
+  ('82000000-0000-0000-0000-000000000004', 'notification-test-4', 'offer_outcome', '20000000-0000-0000-0000-000000000001', 'application', '70000000-0000-0000-0000-000000000001', '{}');
+insert into sih26044.notification_outbox (id, event_id, actor_id, channel, template_key, template_version, status, lease_until, attempt_count, idempotency_key)
+values
+  ('83000000-0000-0000-0000-000000000001', '82000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'in_app', 'application-update', 1, 'queued', null, 0, 'notification-outbox-test-1'),
+  ('83000000-0000-0000-0000-000000000002', '82000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001', 'in_app', 'expiry-reminder', 1, 'claimed', now() - interval '1 minute', 1, 'notification-outbox-test-2'),
+  ('83000000-0000-0000-0000-000000000003', '82000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000001', 'email', 'interview', 1, 'claimed', now() - interval '1 minute', 5, 'notification-outbox-test-3'),
+  ('83000000-0000-0000-0000-000000000004', '82000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000001', 'in_app', 'offer-outcome', 1, 'queued', null, 0, 'notification-outbox-test-4');
+
+select pg_temp.assert_true(
+  not has_function_privilege(
+    'authenticated',
+    'sih26044.claim_notification_outbox(integer, integer)',
+    'EXECUTE'
+  ),
+  'authenticated browser actors cannot claim notification delivery work'
+);
+
+set local role service_role;
+set local "request.jwt.claim.role" = 'service_role';
+select pg_temp.assert_true(
+  sih26044.reconcile_notification_outbox(10) = 2,
+  'trusted worker reconciles expired notification leases'
+);
+reset role;
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000001';
+set local "request.jwt.claim.role" = 'authenticated';
+select pg_temp.assert_true(
+  (select status = 'dead' and last_error_code = 'MAX_ATTEMPTS_EXCEEDED' from sih26044.notification_outbox where id = '83000000-0000-0000-0000-000000000003'),
+  'notification attempts at the bound become dead'
+);
+reset role;
+set local role service_role;
+set local "request.jwt.claim.role" = 'service_role';
+select pg_temp.assert_true(
+  sih26044.schedule_notification_outbox('83000000-0000-0000-0000-000000000004', statement_timestamp() + interval '1 hour'),
+  'trusted scheduler can place a notification in scheduled state'
+);
+reset role;
+set local role authenticated;
+set local "request.jwt.claim.sub" = '10000000-0000-0000-0000-000000000001';
+set local "request.jwt.claim.role" = 'authenticated';
+select pg_temp.assert_true(
+  (select status = 'scheduled' from sih26044.notification_outbox where id = '83000000-0000-0000-0000-000000000004'),
+  'scheduled notification remains unavailable until its due time'
+);
+reset role;
+set local role service_role;
+set local "request.jwt.claim.role" = 'service_role';
+select pg_temp.assert_true(
+  (select count(*) = 1 from sih26044.claim_notification_outbox(10, 60) where id = '83000000-0000-0000-0000-000000000001'),
+  'trusted worker claims due notification work with a lease'
+);
+reset role;
+
+rollback;

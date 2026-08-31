@@ -1,0 +1,10 @@
+# Disposable local-only Supabase configuration for SIH26044 database validation.
+# This project is never linked to a hosted Supabase project.
+project_id = "careercase-sih26044-foundation"
+
+[api]
+schemas = ["public", "storage", "graphql_public", "sih26044"]
+
+[db]
+port = 54322
+major_version = 17

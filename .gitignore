@@ -13,6 +13,8 @@
 
 # testing
 /coverage
+/playwright-report
+/test-results
 
 # next.js
 /.next/
@@ -27,6 +29,8 @@
 .DS_Store
 *.pem
 .kiro/
+supabase/.branches/
+supabase/.temp/
 
 # debug
 npm-debug.log*

@@ -517,6 +517,71 @@ export function DashboardPage() {
           </div>
         </div>
       </section>
+
+      {/* ── SIH26044 Bridge: From Career Direction to Opportunities ─────── */}
+      <section className="px-6 pb-16" aria-labelledby="sih-bridge-heading">
+        <div className="mx-auto max-w-6xl">
+          <div className="border-t-2 border-black/10 pt-10">
+            <div className="flex items-center gap-3 mb-2">
+              <p className="font-mono-ui text-[9px] uppercase tracking-[0.2em] text-[var(--accent-news)]">
+                SIH26044 · Opportunity Readiness
+              </p>
+            </div>
+            <h2
+              id="sih-bridge-heading"
+              className="font-[Playfair_Display] text-2xl font-bold mb-3 text-[var(--ink)]"
+            >
+              From Career Direction to Opportunity
+            </h2>
+            <p className="font-[Inter] text-sm text-black/55 leading-relaxed mb-6 max-w-2xl">
+              Your Career Passport and direction belong to you. When you are ready to
+              explore specific opportunities, CareerCase shows what you can prove, what
+              is unknown, and what to do before you apply.
+            </p>
+            <div className="grid sm:grid-cols-3 gap-4">
+              <Link
+                to="/opportunities"
+                className="group flex flex-col gap-3 border-2 border-black bg-white p-5 shadow-[3px_3px_0_#000] hover:shadow-[5px_5px_0_#000] transition-all"
+              >
+                <p className="font-mono-ui text-[11px] font-black uppercase tracking-[0.08em]">Discover Opportunities</p>
+                <p className="font-[Inter] text-[11px] text-black/50 leading-relaxed flex-1">
+                  Internships, projects, jobs, workshops, and collaborations.
+                  Evidence-backed readiness for each one.
+                </p>
+                <span className="font-mono-ui text-[9px] uppercase tracking-[0.1em] text-black/30 group-hover:text-black transition-colors">
+                  Open →
+                </span>
+              </Link>
+              <Link
+                to="/evidence"
+                className="group flex flex-col gap-3 border-2 border-black/20 bg-white p-5 hover:border-black hover:shadow-[3px_3px_0_#000] transition-all"
+              >
+                <p className="font-mono-ui text-[11px] font-black uppercase tracking-[0.08em]">Evidence Ledger</p>
+                <p className="font-[Inter] text-[11px] text-black/50 leading-relaxed flex-1">
+                  Add artifacts, request verification, and build the evidence
+                  that supports your opportunity readiness.
+                </p>
+                <span className="font-mono-ui text-[9px] uppercase tracking-[0.1em] text-black/30 group-hover:text-black transition-colors">
+                  Open →
+                </span>
+              </Link>
+              <Link
+                to="/applications"
+                className="group flex flex-col gap-3 border-2 border-black/20 bg-white p-5 hover:border-black hover:shadow-[3px_3px_0_#000] transition-all"
+              >
+                <p className="font-mono-ui text-[11px] font-black uppercase tracking-[0.08em]">Applications</p>
+                <p className="font-[Inter] text-[11px] text-black/50 leading-relaxed flex-1">
+                  Prepare, preview your disclosure, submit immutable
+                  snapshots, and track your application timeline.
+                </p>
+                <span className="font-mono-ui text-[9px] uppercase tracking-[0.1em] text-black/30 group-hover:text-black transition-colors">
+                  Open →
+                </span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

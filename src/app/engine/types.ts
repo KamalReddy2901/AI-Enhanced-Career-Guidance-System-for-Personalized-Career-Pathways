@@ -20,8 +20,23 @@ export type EvidenceType =
   | 'self_reported' 
   | 'inferred_from_resume' 
   | 'assessed' 
-  | 'credentialed' 
+  | 'credentialed'
+  | 'credential_claim'
+  | 'pathway_activity'
   | 'inferred_from_activity';
+
+/**
+ * Verification is deliberately independent from how evidence originated.
+ * `credentialed` is retained for backward compatibility, but is authoritative
+ * only when verificationState is explicitly `issuer_verified`.
+ */
+export type EvidenceVerificationState =
+  | 'unreviewed'
+  | 'self_attested'
+  | 'human_attested'
+  | 'issuer_verified'
+  | 'disputed'
+  | 'revoked';
 
 // ─── Skill Evidence & Claims ──────────────────────────────────────────────────
 export interface SkillEvidence {
@@ -29,6 +44,13 @@ export interface SkillEvidence {
   description: string;
   confidence: number;           // 0–1
   observedAt: string;           // ISO date
+  verificationState?: EvidenceVerificationState;
+}
+
+export interface SkillClaimProposal {
+  status: 'proposed';
+  source: 'ai_resume_extraction' | 'literal_resume_extraction';
+  claim: SkillClaim;
 }
 
 export interface SkillClaim {

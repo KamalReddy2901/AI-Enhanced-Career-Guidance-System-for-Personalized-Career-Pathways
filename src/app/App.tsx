@@ -1,11 +1,7 @@
 import { Suspense } from 'react';
 import { RouterProvider } from 'react-router';
 import { router } from './routes';
-import { AppProvider } from './context/AppContext';
-import { AuthProvider } from './context/AuthContext';
-import { GuidanceProvider } from './context/GuidanceContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { LanguageProvider } from './i18n';
 
 function PageFallback() {
   return (
@@ -27,17 +23,9 @@ function PageFallback() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <GuidanceProvider>
-          <LanguageProvider>
-          <AppProvider>
-            <Suspense fallback={<PageFallback />}>
-              <RouterProvider router={router} />
-            </Suspense>
-          </AppProvider>
-          </LanguageProvider>
-        </GuidanceProvider>
-      </AuthProvider>
+      <Suspense fallback={<PageFallback />}>
+        <RouterProvider router={router} />
+      </Suspense>
     </ErrorBoundary>
   );
 }

@@ -17,7 +17,7 @@ import type {
   PathwayPlan,
 } from "../engine/types";
 import { useAuth } from "./AuthContext";
-import { calculateCompleteness } from "../engine/skillProfile";
+import { calculateCompleteness, normalizeSkillClaims } from "../engine/skillProfile";
 import { GUIDANCE_ENGINE_VERSION } from "../engine/matching";
 
 // ─── Context Types ────────────────────────────────────────────────────────────
@@ -92,7 +92,7 @@ export function normalizeStoredPassport(value: CareerPassport): CareerPassport {
   const normalized: CareerPassport = {
     ...value,
     experiences: Array.isArray(value.experiences) ? value.experiences : [],
-    skills: Array.isArray(value.skills) ? value.skills : [],
+    skills: Array.isArray(value.skills) ? normalizeSkillClaims(value.skills) : [],
     values: legacy.values
       ? {
           stability: numberOr(legacy.values.stability, numberOr(legacy.values.support, 50)),
@@ -200,7 +200,11 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
           const { migrateLocalGuidanceToCloud } = await import("../services/guidanceDb");
           const migration = await migrateLocalGuidanceToCloud(user.id);
           if (!cancelled) {
-            if (migration.passport) setPassport(normalizeStoredPassport(migration.passport));
+            if (migration.passport) {
+              const normalizedPassport = normalizeStoredPassport(migration.passport);
+              setPassport(normalizedPassport);
+              localStorage.setItem(PASSPORT_STORAGE_KEY, JSON.stringify(normalizedPassport));
+            }
             setPathways(migration.pathways);
             localStorage.setItem("cc_guidance_last_sync", JSON.stringify({ userId: user.id, at: new Date().toISOString(), uploaded: migration.uploaded }));
           }

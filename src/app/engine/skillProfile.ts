@@ -4,11 +4,18 @@
 // ══════════════════════════════════════════════════════════════════════════════
 
 import { skillById } from '../data/knowledge';
-import type { SkillClaim, SkillEvidence, CareerPassport, Proficiency } from './types';
+import type {
+  CareerPassport,
+  EvidenceVerificationState,
+  Proficiency,
+  SkillClaim,
+  SkillClaimProposal,
+  SkillEvidence,
+} from './types';
 
 // ─── Resume Extraction → Canonical Skills ────────────────────────────────────
 
-interface ExtractedSkill {
+export interface ExtractedSkill {
   name: string;
   proficiency: Proficiency;
   evidence: string;
@@ -19,12 +26,32 @@ export interface SkillMatchResult {
   unmatched: string[];
 }
 
+const normalizeSkillText = (value: string) => value
+  .normalize('NFKC')
+  .toLocaleLowerCase('en')
+  .replace(/[^\p{L}\p{N}+#]+/gu, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+/** Stable, literal-derived IDs keep custom claims distinct without pretending
+ * that they belong to the canonical taxonomy. */
+export function customSkillId(label: string): string {
+  const comparisonLabel = normalizeSkillText(label) || 'custom skill';
+  let hash = 2166136261;
+  for (let index = 0; index < comparisonLabel.length; index += 1) {
+    hash ^= comparisonLabel.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  const slug = comparisonLabel.replace(/\s+/g, '-').slice(0, 48) || 'custom-skill';
+  return `custom:${slug}:${(hash >>> 0).toString(36)}`;
+}
+
 /** Resolve a stable display label, including claims saved before custom-skill
  * names became a first-class field. */
 export function skillClaimName(claim: SkillClaim): string {
   const canonical = skillById.get(claim.skillId)?.name;
   if (canonical) return canonical;
-  if (claim.name?.trim()) return claim.name.trim();
+  if (claim.name?.trim()) return claim.name;
   const legacy = claim.evidence
     .map(item => item.description.match(/^Manually added:\s*(.+)$/i)?.[1]?.trim())
     .find(Boolean);
@@ -37,36 +64,136 @@ export function extractLiteralResumeSkills(resumeText: string): ExtractedSkill[]
   const lines = resumeText.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
   const extracted: ExtractedSkill[] = [];
   const ambiguousAliases = new Set(['planning','education','service','support','management','operations','training','instruction','security','finance','analysis','research']);
+  const candidateLabels = lines.flatMap(line => {
+    const withoutBullet = line.replace(/^[-*•‣▪◦]+\s*/, '');
+    const withoutHeading = withoutBullet.replace(/^(?:skills?|competencies|technologies|tools)\s*:\s*/i, '');
+    return [withoutHeading, ...withoutHeading.split(/[,;|]/)].map(label => ({ label: label.trim(), evidence: line }));
+  });
   for (const skill of skillById.values()) {
-    const phrases = [skill.name, ...skill.aliases.filter(alias=>!ambiguousAliases.has(alias.toLowerCase()))].sort((a, b) => b.length - a.length);
-    const evidence = lines.find(line => phrases.some(phrase => {
-      const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, 'i').test(line);
-    }));
-    if (!evidence) continue;
-    extracted.push({ name: skill.name, proficiency: 2, evidence });
+    const phrases = [skill.name, ...skill.aliases.filter(alias=>!ambiguousAliases.has(alias.toLowerCase()))]
+      .map(normalizeSkillText);
+    const candidate = candidateLabels.find(({ label }) => phrases.includes(normalizeSkillText(label)));
+    if (!candidate) continue;
+    extracted.push({ name: skill.name, proficiency: 2, evidence: candidate.evidence });
     if (extracted.length === 25) break;
   }
   return extracted;
 }
 
 export function combineEvidenceConfidence(evidence: SkillEvidence[]): number {
-  return Math.min(.97, 1 - evidence.reduce((product, item) => product * (1 - item.confidence), 1));
+  return evidence.reduce((highest, item) => Math.max(highest, effectiveEvidenceConfidence(item)), 0);
+}
+
+function defaultVerificationState(evidence: SkillEvidence): EvidenceVerificationState {
+  if (evidence.type === 'self_reported' || evidence.type === 'pathway_activity') return 'self_attested';
+  return 'unreviewed';
+}
+
+function evidenceConfidenceCap(evidence: SkillEvidence): number {
+  const verificationState = evidence.verificationState ?? defaultVerificationState(evidence);
+  if (verificationState === 'revoked' || verificationState === 'disputed') return 0;
+  if (verificationState === 'issuer_verified' && evidence.type === 'credentialed') return .97;
+  if (verificationState === 'human_attested') return .9;
+  if (evidence.type === 'assessed') return .82;
+  if (evidence.type === 'self_reported') return .65;
+  return .6;
+}
+
+export function effectiveEvidenceConfidence(evidence: SkillEvidence): number {
+  const confidence = Number.isFinite(evidence.confidence)
+    ? Math.max(0, Math.min(1, evidence.confidence))
+    : 0;
+  return Math.min(confidence, evidenceConfidenceCap(evidence));
+}
+
+/**
+ * Normalize evidence written before provenance and verification were separated.
+ * A legacy `credentialed` entry without explicit issuer verification is treated
+ * as a claim, never upgraded based on its wording or confidence.
+ */
+export function normalizeSkillEvidence(evidence: SkillEvidence): SkillEvidence {
+  const looksLikePathwayCompletion = /^Completed pathway step:/i.test(evidence.description);
+  const issuerVerified = evidence.verificationState === 'issuer_verified';
+  const type = evidence.type === 'credentialed' && !issuerVerified
+    ? (looksLikePathwayCompletion ? 'pathway_activity' : 'credential_claim')
+    : evidence.type;
+  const verificationState = evidence.verificationState
+    ?? (type === 'self_reported' || type === 'pathway_activity' ? 'self_attested' : 'unreviewed');
+  const normalized = { ...evidence, type, verificationState };
+  return { ...normalized, confidence: effectiveEvidenceConfidence(normalized) };
+}
+
+export function normalizeSkillClaim(claim: SkillClaim): SkillClaim {
+  const existingSkillId = typeof claim.skillId === 'string' ? claim.skillId.trim() : '';
+  const literalName = skillById.has(existingSkillId) ? undefined : skillClaimName(claim);
+  const skillId = skillById.has(existingSkillId)
+    ? existingSkillId
+    : (literalName && literalName !== 'Custom skill'
+        ? customSkillId(literalName)
+        : (existingSkillId || customSkillId('Custom skill')));
+  const evidence = claim.evidence.map(normalizeSkillEvidence);
+  return {
+    ...claim,
+    skillId,
+    ...(literalName ? { name: literalName } : {}),
+    evidence,
+    confidence: combineEvidenceConfidence(evidence),
+  };
+}
+
+export function normalizeSkillClaims(claims: SkillClaim[]): SkillClaim[] {
+  return mergeNormalizedSkillClaims(claims.map(normalizeSkillClaim));
+}
+
+function mergeNormalizedSkillClaims(claims: SkillClaim[]): SkillClaim[] {
+  const skillMap = new Map<string, SkillClaim>();
+  for (const claim of claims) {
+    const current = skillMap.get(claim.skillId);
+    if (!current) {
+      skillMap.set(claim.skillId, { ...claim, evidence: [...claim.evidence] });
+      continue;
+    }
+    const evidence = [...current.evidence, ...claim.evidence];
+    skillMap.set(claim.skillId, {
+      ...current,
+      name: current.name || claim.name,
+      proficiency: Math.max(current.proficiency, claim.proficiency) as Proficiency,
+      evidence,
+      confidence: combineEvidenceConfidence(evidence),
+    });
+  }
+  return [...skillMap.values()];
+}
+
+export function createSkillClaimProposals(
+  claims: SkillClaim[],
+  source: SkillClaimProposal['source'],
+): SkillClaimProposal[] {
+  return claims.map(claim => ({ status: 'proposed', source, claim: normalizeSkillClaim(claim) }));
+}
+
+/** User confirmation attests that the extraction is an accurate representation
+ * of their resume. It does not turn AI extraction into human/issuer provenance. */
+export function confirmSkillClaimProposals(proposals: SkillClaimProposal[]): SkillClaim[] {
+  return proposals.map(({ claim }) => normalizeSkillClaim({
+    ...claim,
+    evidence: claim.evidence.map(evidence => ({
+      ...evidence,
+      verificationState: evidence.verificationState === 'issuer_verified'
+        ? 'issuer_verified'
+        : 'self_attested',
+    })),
+  }));
 }
 
 /**
  * Match extracted skill names → canonical skillIds
- * Uses case-insensitive name/alias matching
- * UPDATED: Auto-adds unmatched skills as custom skills (name field) instead of requiring manual confirmation
+ * Uses case-insensitive exact name/alias matching. It deliberately performs no
+ * token, substring, fuzzy, or synonym matching. Unresolved text remains literal.
  */
 export function matchSkillsToKB(extracted: ExtractedSkill[]): SkillMatchResult {
   const matched: SkillClaim[] = [];
   const unmatched: string[] = [];
-  const normalize = (value: string) => value
-    .toLowerCase()
-    .replace(/[^a-z0-9+#]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
   const makeClaim = (skillId: string, ex: ExtractedSkill, confidence: number): SkillClaim => ({
     skillId,
     proficiency: ex.proficiency,
@@ -76,12 +203,13 @@ export function matchSkillsToKB(extracted: ExtractedSkill[]): SkillMatchResult {
       description: ex.evidence,
       confidence,
       observedAt: new Date().toISOString(),
+      verificationState: 'unreviewed',
     }],
   });
   
   const makeCustomClaim = (ex: ExtractedSkill, confidence: number): SkillClaim => ({
-    skillId: undefined!,  // No KB match
-    name: ex.name,        // Preserve original extracted name
+    skillId: customSkillId(ex.name),
+    name: ex.name,
     proficiency: ex.proficiency,
     confidence,
     evidence: [{
@@ -89,42 +217,25 @@ export function matchSkillsToKB(extracted: ExtractedSkill[]): SkillMatchResult {
       description: ex.evidence,
       confidence,
       observedAt: new Date().toISOString(),
+      verificationState: 'unreviewed',
     }],
   });
 
   for (const ex of extracted) {
-    const normalized = normalize(ex.name);
+    const normalized = normalizeSkillText(ex.name);
     if (!normalized) continue;
     
     // Try exact match first
     const exact = [...skillById].find(([, skill]) =>
-      [skill.name, ...skill.aliases].some(alias => normalize(alias) === normalized),
+      [skill.name, ...skill.aliases].some(alias => normalizeSkillText(alias) === normalized),
     );
     if (exact) {
       matched.push(makeClaim(exact[0], ex, .72));
       continue;
     }
     
-    // Try partial match
-    let found = false;
-    for (const [skillId, skill] of skillById) {
-      const nameLower = normalize(skill.name);
-      const tokens = normalized.split(/\s+/);
-      const skillTokens = nameLower.split(/\s+/);
-      // A partial match is only safe when it contains a meaningful token. This
-      // avoids mapping a one-letter language such as "C" to arbitrary skills.
-      if (tokens.some(token => token.length >= 4 && skillTokens.includes(token))) {
-        matched.push(makeClaim(skillId, ex, .5));
-        found = true;
-        break;
-      }
-    }
-
-    // NEW: If no KB match found, auto-add as custom skill with lower confidence
-    if (!found) {
-      matched.push(makeCustomClaim(ex, .6));  // 0.6 confidence for custom skills
-      unmatched.push(ex.name);  // Still track for UI display (informational only)
-    }
+    matched.push(makeCustomClaim(ex, .6));
+    unmatched.push(ex.name);
   }
 
   return { matched, unmatched: [...new Set(unmatched)] };
@@ -139,30 +250,10 @@ export function mergeSkillClaims(
   existing: SkillClaim[],
   newClaims: SkillClaim[]
 ): SkillClaim[] {
-  const skillMap = new Map<string, SkillClaim>();
-
-  // Start with existing
-  existing.forEach(claim => {
-    skillMap.set(claim.skillId, { ...claim });
-  });
-
-  // Merge new claims
-  newClaims.forEach(newClaim => {
-    const existing = skillMap.get(newClaim.skillId);
-    if (existing) {
-      // Append evidence
-      existing.evidence.push(...newClaim.evidence);
-      // Update proficiency if higher
-      if (newClaim.proficiency > existing.proficiency) {
-        existing.proficiency = newClaim.proficiency;
-      }
-      existing.confidence = combineEvidenceConfidence(existing.evidence);
-    } else {
-      skillMap.set(newClaim.skillId, newClaim);
-    }
-  });
-
-  return Array.from(skillMap.values());
+  return mergeNormalizedSkillClaims([
+    ...existing.map(normalizeSkillClaim),
+    ...newClaims.map(normalizeSkillClaim),
+  ]);
 }
 
 /**
@@ -172,11 +263,7 @@ export function addSkillEvidence(
   claim: SkillClaim,
   evidence: SkillEvidence
 ): SkillClaim {
-  return {
-    ...claim,
-    evidence: [...claim.evidence, evidence],
-    confidence: combineEvidenceConfidence([...claim.evidence, evidence]),
-  };
+  return normalizeSkillClaim({ ...claim, evidence: [...claim.evidence, evidence] });
 }
 
 // ─── Passport Completeness Calculation ───────────────────────────────────────

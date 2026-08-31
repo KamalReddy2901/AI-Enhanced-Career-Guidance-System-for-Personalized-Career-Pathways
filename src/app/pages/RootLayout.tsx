@@ -1,12 +1,11 @@
 import { useEffect } from 'react';
 import { Navigate, Outlet, useNavigate, useLocation } from 'react-router';
 import { Toaster } from 'sonner';
-import { Navbar } from '../components/Navbar';
 import { OnboardingTour } from '../components/OnboardingTour';
-import { Breadcrumb } from '../components/Breadcrumb';
 import { BottomNav } from '../components/BottomNav';
 import { InstallPrompt } from '../components/InstallPrompt';
 import { PageTransition } from '../motion/PageTransition';
+import { UnifiedCareerCaseShell } from '../components/UnifiedShell';
 import { useAuth } from '../context/AuthContext';
 import { useGuidance } from '../context/GuidanceContext';
 
@@ -19,7 +18,6 @@ export function RootLayout() {
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Components such as dialogs may deliberately consume a shortcut.
       if (e.defaultPrevented) return;
 
       // Ctrl/Cmd + K: Focus search
@@ -54,14 +52,14 @@ export function RootLayout() {
         return;
       }
 
-      // Ctrl/Cmd + P: Print (only on job detail page)
+      // Ctrl/Cmd + P: Print on job detail page
       if ((e.ctrlKey || e.metaKey) && e.key === 'p' && location.pathname === '/job/detail') {
         e.preventDefault();
         window.print();
         return;
       }
 
-      // Escape: Go back
+      // Escape: Go back (if no dialogs open)
       if (e.key === 'Escape') {
         const modals = document.querySelectorAll('[role="dialog"]');
         if (modals.length > 0) return;
@@ -84,7 +82,16 @@ export function RootLayout() {
 
   const isPublicRoute = location.pathname === '/' || location.pathname === '/auth';
   if (loading) {
-    return <div className="min-h-screen bg-background flex items-center justify-center"><span className="font-mono-ui text-xs text-black/40">Loading your case file…</span></div>;
+    return (
+      <div
+        className="min-h-screen bg-[var(--paper)] flex items-center justify-center"
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+      >
+        <span className="font-mono-ui text-xs text-black/40">Loading CareerCase…</span>
+      </div>
+    );
   }
   if (!user && !isPublicRoute) {
     const redirect = `${location.pathname}${location.search}${location.hash}`;
@@ -96,26 +103,20 @@ export function RootLayout() {
     '/recommendations',
     '/pathways',
     '/pathway/',
-  ].some((path) => location.pathname === path || location.pathname.startsWith(`${path}/`) || (path.endsWith('/') && location.pathname.startsWith(path)));
-  // All profile-dependent entry points share the same guard. The dashboard is
-  // intentionally left accessible so it can explain the first required step.
+  ].some((path) =>
+    location.pathname === path ||
+    location.pathname.startsWith(`${path}/`) ||
+    (path.endsWith('/') && location.pathname.startsWith(path))
+  );
   if (user && !guidanceLoading && requiresPassport && !passport) {
     return <Navigate to="/onboarding" replace />;
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Skip navigation link for keyboard/screen-reader users */}
-      <a href="#main-content" className="skip-nav">
-        Skip to main content
-      </a>
-      <Navbar />
-      <main id="main-content">
-        <Breadcrumb />
-        <PageTransition>
-          <Outlet />
-        </PageTransition>
-      </main>
+    <UnifiedCareerCaseShell>
+      <PageTransition>
+        <Outlet />
+      </PageTransition>
       <Toaster
         position="top-right"
         toastOptions={{
@@ -134,6 +135,6 @@ export function RootLayout() {
       <OnboardingTour />
       <BottomNav />
       <InstallPrompt />
-    </div>
+    </UnifiedCareerCaseShell>
   );
 }

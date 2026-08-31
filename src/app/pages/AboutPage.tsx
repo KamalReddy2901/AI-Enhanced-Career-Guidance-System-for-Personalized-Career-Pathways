@@ -29,13 +29,13 @@ export function AboutPage() {
           </h2>
           <div className="prose prose-lg max-w-none">
             <p className="text-[var(--ink-soft)] leading-relaxed mb-4">
-              CareerCase is a deterministic, evidence-led career guidance prototype designed for India's workforce. Unlike a free-form chatbot, it uses a versioned demonstration knowledge base of 100 NCO-mapped occupations, each connected to skills, qualifications, and career pathways.
+              CareerCase is an evidence-backed opportunity readiness and skills intelligence platform connecting students, industry, faculty, and institutions across the complete lifecycle of skill development, internships, and placements. Built for SIH26044 — the Smart India Hackathon 2026 problem statement "Portal for Academia–Industry Collaboration for Skill Mapping, Internships and Placement."
             </p>
             <p className="text-[var(--ink-soft)] leading-relaxed mb-4">
-              Our system creates a "Career Passport" for each user—a living document that captures your interests, aptitudes, values, skills, and aspirations. This passport becomes the foundation for personalized career recommendations and pathway planning.
+              The original CareerCase career-guidance engine is preserved and enhanced. It creates a Career Passport capturing your interests, aptitudes, values, skills, and aspirations — the foundation for understanding career direction. SIH26044 extends that foundation with a separate Opportunity Readiness engine (Engine B), evidence ledger, verification workflows, consented applications, faculty collaboration, and institution-level Skills Intelligence.
             </p>
             <p className="text-[var(--ink-soft)] leading-relaxed">
-              CareerCase is designed to complement initiatives such as the Skill India Digital Hub (SIDH), National Career Service (NCS), and Pradhan Mantri Kaushal Vikas Yojana (PMKVY). Direct platform integrations are future work.
+              CareerCase is designed to complement — not duplicate — existing initiatives such as the National Career Service (NCS), Skill India Digital Hub (SIDH), and the AICTE Internship Portal. Those systems own opportunity inventory and national skilling programs. CareerCase adds the evidence, readiness, and intervention layer that makes those opportunities more trustworthy and actionable.
             </p>
           </div>
         </section>
@@ -381,7 +381,7 @@ export function AboutPage() {
           <h2 className="font-display text-3xl mb-4">Team & Acknowledgments</h2>
           <div className="prose max-w-none">
             <p className="text-sm text-[var(--ink-soft)] mb-4">
-              CareerCase is built for the Smart India Hackathon 2026 problem statement SIH260480: AI-Enhanced Career Guidance System for Personalized Career Pathways.
+              CareerCase is built for the Smart India Hackathon 2026 problem statement <strong>SIH26044</strong>: "Portal for Academia–Industry Collaboration for Skill Mapping, Internships and Placement." The original CareerCase career-guidance core was preserved and extended — not replaced — by the SIH26044 opportunity-readiness, application, and skills-intelligence system.
             </p>
             <div className="bg-[var(--paper-raised)] border border-[var(--ink-faint)] p-6">
               <h3 className="font-semibold mb-3">Data Sources & Standards</h3>
@@ -402,7 +402,7 @@ export function AboutPage() {
             <div>
               <h3 className="font-display text-2xl mb-2">Ready to explore?</h3>
               <p className="text-sm text-[var(--ink-soft)]">
-                Start your career journey with structured, evidence-led guidance.
+                Build your Career Passport, discover opportunities, and understand your readiness.
               </p>
             </div>
             <div className="flex gap-3">

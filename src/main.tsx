@@ -5,7 +5,9 @@ import "./styles/index.css";
 // PostHog analytics — only injects when VITE_POSTHOG_KEY is set
 // No npm package needed; uses the official PostHog snippet injected into the page
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
-if (POSTHOG_KEY && typeof window !== "undefined") {
+const isControlledDemoPath = typeof window !== "undefined"
+  && (window.location.pathname === "/demo" || window.location.pathname.startsWith("/demo/"));
+if (POSTHOG_KEY && typeof window !== "undefined" && !isControlledDemoPath) {
   try {
     const script = document.createElement("script");
     script.innerHTML = `

@@ -83,7 +83,7 @@ export function AuthPage() {
   }
 
   if (!isSupabaseConfigured) {
-    return <div className="min-h-screen bg-background flex items-center justify-center p-6"><div className="max-w-md border border-black/10 bg-white p-8"><h1 className="font-display text-3xl">Account service unavailable</h1><p className="mt-3 font-[Inter] text-sm leading-relaxed text-black/60">CareerCase requires its Supabase account service before a journey can begin. Add the public Supabase URL and anon key to the deployment environment, then reload.</p></div></div>;
+    return <div className="min-h-screen bg-[var(--paper)] flex items-center justify-center p-6"><div className="max-w-md border-2 border-black bg-white p-8 shadow-[4px_4px_0_#000]"><p className="font-mono-ui text-[9px] uppercase tracking-[0.15em] text-[var(--accent-news)] mb-3">Configuration required</p><h1 className="font-[Playfair_Display] text-2xl font-bold">Authentication not configured</h1><p className="mt-3 font-[Inter] text-sm leading-relaxed text-black/60">CareerCase requires Supabase public credentials to enable authenticated journeys. The deployment environment is missing <code className="bg-black/5 px-1 font-mono text-xs">VITE_SUPABASE_URL</code> and/or <code className="bg-black/5 px-1 font-mono text-xs">VITE_SUPABASE_ANON_KEY</code>. Set these in Cloudflare Pages environment variables and redeploy.</p><p className="mt-4 font-[Inter] text-sm text-black/50">In the meantime, you can explore the <a href="/demo" className="underline text-black hover:text-[var(--accent-news)] transition-colors">controlled demo</a> without an account.</p></div></div>;
   }
 
   return (
@@ -97,7 +97,7 @@ export function AuthPage() {
           <BrandMark compact className="transition-opacity group-hover:opacity-70" />
         </button>
         <span className="font-[JetBrains_Mono] text-black/20 hidden sm:block" style={{ fontSize: '0.6rem' }}>
-          AI career exploration
+          Career Guidance × Opportunity Readiness
         </span>
       </div>
 
