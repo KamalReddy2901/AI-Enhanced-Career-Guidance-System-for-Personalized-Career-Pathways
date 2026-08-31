@@ -10,7 +10,9 @@ Run `npm run qa:sih-premerge`, `cd worker && npm test`, `npm run qa:deployment-p
 
 Use Supabase’s managed backup/PITR controls. Restore into an isolated project first, replay migrations, run the full database-tests workflow, then perform authenticated role/tenant/consent smoke checks. Never test restore by overwriting the production project. Record restore point, migration SHA, test result, and operator.
 
-## Worker failure modes
+## Worker observability and failure modes
+
+Every Worker response carries `X-Request-ID`, `X-Correlation-ID`, and `X-Operation-Duration-Ms`. The Worker emits privacy-safe structured `request.completed` records containing route, status, duration, and process-local request/failure counters; bodies, tokens, provider payloads, and user identifiers are never logged. Durable notification/job attempt and failure state remains in the outbox tables and is reconciled by the trusted worker RPCs.
 
 - `401/403`: session, actor, consent, or organization authority failure; do not retry blindly.
 - `429`: respect bounded retry/backoff and `Retry-After`.

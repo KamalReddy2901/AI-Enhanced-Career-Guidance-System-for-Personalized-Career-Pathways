@@ -17,5 +17,5 @@ assert.match(connectors, /sourceCapturedAt/);
 for (const term of ['notification_events', 'notification_preferences', 'notification_outbox', 'idempotency_key', 'attempt_count', 'next_retry_at', 'claim_notification_outbox', 'enqueue_notification', 'reconcile_notification_outbox', 'schedule_notification_outbox', 'skip locked']) assert.match(notificationMigration, new RegExp(term, 'i'));
 assert.match(notifications, /noopNotificationProvider|DEVELOPMENT/);
 for (const language of ['en', 'hi', 'te']) assert.match(sihI18n, new RegExp(`^\u0020*${language}:`, 'm'));
-for (const term of ['/healthz', 'X-Request-ID', 'X-Correlation-ID', 'nosniff', 'Content-Security-Policy', '64 KiB']) assert.match(worker, new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
+for (const term of ['/healthz', 'X-Request-ID', 'X-Correlation-ID', 'X-Operation-Duration-Ms', 'request.completed', 'failureCount', 'nosniff', 'Content-Security-Policy', '64 KiB']) assert.match(worker, new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
 console.log('Runtime operations QA passed.');

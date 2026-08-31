@@ -35,6 +35,8 @@ test('health endpoint exposes request correlation and hardened response headers'
   const response = await worker.fetch(new Request('https://worker.test/healthz', { headers: { 'X-Correlation-ID': 'qa-correlation' } }), env);
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('X-Correlation-ID'), 'qa-correlation');
+  assert.match(response.headers.get('X-Request-ID') ?? '', /^[0-9a-f-]{36}$/i);
+  assert.match(response.headers.get('X-Operation-Duration-Ms') ?? '', /^\d+$/);
   assert.equal(response.headers.get('X-Content-Type-Options'), 'nosniff');
   assert.equal(response.headers.get('X-Frame-Options'), 'DENY');
 });
@@ -374,6 +376,9 @@ test('existing AI route keeps authentication, proxying, and operational headers'
     assert.match(calls[0][0], /\/auth\/v1\/user$/);
     assert.match(calls[1][0], /api\.groq\.com/);
     assert.ok(response.headers.get('X-CareerCase-AI-Model'));
+    assert.match(response.headers.get('X-Request-ID') ?? '', /^[0-9a-f-]{36}$/i);
+    assert.match(response.headers.get('X-Correlation-ID') ?? '', /^[0-9a-f-]{36}$/i);
+    assert.match(response.headers.get('X-Operation-Duration-Ms') ?? '', /^\d+$/);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -384,6 +389,17 @@ test('existing AI route still requires a Supabase session', async () => {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
   }), env);
   assert.equal(response.status, 401);
+  assert.match(response.headers.get('X-Operation-Duration-Ms') ?? '', /^\d+$/);
+});
+
+test('unknown Worker routes return correlation-safe observability headers', async () => {
+  const response = await worker.fetch(new Request('https://worker.test/not-found', {
+    headers: { 'X-Request-ID': 'qa-request', 'X-Correlation-ID': 'qa-correlation' },
+  }), env);
+  assert.equal(response.status, 404);
+  assert.equal(response.headers.get('X-Request-ID'), 'qa-request');
+  assert.equal(response.headers.get('X-Correlation-ID'), 'qa-correlation');
+  assert.match(response.headers.get('X-Operation-Duration-Ms') ?? '', /^\d+$/);
 });
 
 test('existing AI response-format fallback and streaming paths remain operational', async () => {

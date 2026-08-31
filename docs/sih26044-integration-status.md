@@ -2,7 +2,7 @@
 
 Last updated: 2026-08-31
 
-This is the current repository status ledger after PRs #61 and #62. Earlier
+This is the current repository status ledger after PRs #61–#64. Earlier
 checkpoint documents are historical and must not be read as the current
 implementation state.
 

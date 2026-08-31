@@ -25,8 +25,8 @@ function cors(origin: string | null) {
   return {
     'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Usage-Type, X-Stream',
-    'Access-Control-Expose-Headers': 'X-CareerCase-AI-Model, X-CareerCase-Key-Pool-Size',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Usage-Type, X-Stream, X-Request-ID, X-Correlation-ID',
+    'Access-Control-Expose-Headers': 'X-CareerCase-AI-Model, X-CareerCase-Key-Pool-Size, X-Request-ID, X-Correlation-ID, X-Operation-Duration-Ms',
     'Access-Control-Max-Age': '86400',
   };
 }
@@ -67,6 +67,45 @@ export function jsonResponse(
 }
 
 const groqKeyPool = new KeyPool();
+
+// Process-local telemetry is intentionally limited to counters and route
+// metadata. It never contains request bodies, credentials, provider payloads,
+// or user identifiers. Durable job metrics remain in the outbox tables.
+const workerMetrics = { requests: 0, failures: 0 };
+
+function withObservability(
+  response: Response,
+  requestId: string,
+  correlationId: string,
+  startedAt: number,
+  route: string,
+  method: string,
+): Response {
+  const durationMs = Math.max(0, Date.now() - startedAt);
+  workerMetrics.requests += 1;
+  if (response.status >= 500) workerMetrics.failures += 1;
+  const headers = new Headers(response.headers);
+  headers.set('X-Request-ID', requestId);
+  headers.set('X-Correlation-ID', correlationId);
+  headers.set('X-Operation-Duration-Ms', String(durationMs));
+  console.log(JSON.stringify({
+    event: 'request.completed',
+    requestId,
+    correlationId,
+    method,
+    route,
+    status: response.status,
+    durationMs,
+    requestCount: workerMetrics.requests,
+    failureCount: workerMetrics.failures,
+    ...(response.status >= 400 ? { errorCode: `HTTP_${response.status}` } : {}),
+  }));
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
 
 // Groq (like OpenAI) rejects response_format: json_object with HTTP 400
 // unless at least one message contains the word "json". Prose callers such
@@ -166,47 +205,46 @@ async function proxyToGroq(
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const startedAt = Date.now();
+    const url = new URL(request.url);
     const origin = request.headers.get('Origin');
     const requestId = request.headers.get('X-Request-ID')?.slice(0, 120) || crypto.randomUUID();
     const correlationId = request.headers.get('X-Correlation-ID')?.slice(0, 120) || requestId;
+    const finish = (response: Response) => withObservability(
+      response, requestId, correlationId, startedAt, url.pathname, request.method,
+    );
 
     if (origin && !ALLOWED_ORIGINS.has(origin)) {
-      return jsonResponse({ error: 'Origin not allowed' }, 403, origin);
+      return finish(jsonResponse({ error: 'Origin not allowed' }, 403, origin));
     }
 
     if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: { ...cors(origin), 'X-Request-ID': requestId, 'X-Correlation-ID': correlationId } });
+      return finish(new Response(null, { status: 204, headers: { ...cors(origin) } }));
     }
 
-    const url = new URL(request.url);
-
     if (url.pathname === '/healthz' && request.method === 'GET') {
-      return jsonResponse({ ok: true, service: 'careercase-worker', environment: env.ENVIRONMENT ?? 'unknown' }, 200, origin, {
-        'X-Request-ID': requestId, 'X-Correlation-ID': correlationId,
-      });
+      return finish(jsonResponse({ ok: true, service: 'careercase-worker', environment: env.ENVIRONMENT ?? 'unknown' }, 200, origin));
     }
 
     if (url.pathname === '/sih' || url.pathname.startsWith('/sih/')) {
-      return handleSihRequest(request, env, (data, status = 200) => jsonResponse(data, status, origin, {
-        'X-Request-ID': requestId, 'X-Correlation-ID': correlationId,
-      }));
+      return finish(await handleSihRequest(request, env, (data, status = 200) => jsonResponse(data, status, origin)));
     }
 
     if (url.pathname !== '/ai' || request.method !== 'POST') {
-      return jsonResponse({ error: 'Not found' }, 404, origin);
+      return finish(jsonResponse({ error: 'Not found' }, 404, origin));
     }
 
     if (!await hasValidSupabaseSession(request, env)) {
-      return jsonResponse({ error: 'Sign in is required to use AI features' }, 401, origin);
+      return finish(jsonResponse({ error: 'Sign in is required to use AI features' }, 401, origin));
     }
 
     let body: unknown;
     const declaredLength = Number(request.headers.get('Content-Length') ?? 0);
-    if (declaredLength > 65_536) return jsonResponse({ error: 'Request body exceeds the 64 KiB limit.' }, 413, origin, { 'X-Request-ID': requestId, 'X-Correlation-ID': correlationId });
+    if (declaredLength > 65_536) return finish(jsonResponse({ error: 'Request body exceeds the 64 KiB limit.' }, 413, origin));
     try {
       body = await request.json();
     } catch {
-      return jsonResponse({ error: 'Invalid JSON body' }, 400, origin, { 'X-Request-ID': requestId, 'X-Correlation-ID': correlationId });
+      return finish(jsonResponse({ error: 'Invalid JSON body' }, 400, origin));
     }
 
     const usageType = request.headers.get('X-Usage-Type') ?? 'unknown';
@@ -215,9 +253,9 @@ export default {
 
     const keys = [...new Set(env.GROQ_API_KEYS.split(',').map(k => k.trim()).filter(k => k.startsWith('gsk_')))];
     if (!keys.length) {
-      return jsonResponse({ error: 'Server misconfigured — no API keys' }, 500, origin, { 'X-Request-ID': requestId, 'X-Correlation-ID': correlationId });
+      return finish(jsonResponse({ error: 'Server misconfigured — no API keys' }, 500, origin));
     }
 
-    return proxyToGroq(body, modelTier, keys, isStream, origin);
+    return finish(await proxyToGroq(body, modelTier, keys, isStream, origin));
   },
 };
