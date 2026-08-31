@@ -109,6 +109,20 @@ const productionDependencies: SihRouteDependencies = {
 };
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const protectedRouteKeys = new Set([
+  'POST /sih/readiness/recompute',
+  'PUT /sih/readiness/subject-facts',
+  'POST /sih/readiness/evidence-projections',
+  'POST /sih/artifacts/register',
+  'POST /sih/evidence/derive-artifact-backed',
+  'POST /sih/applications/snapshot',
+  'POST /sih/questionnaires/create',
+  'POST /sih/questionnaires/successor',
+  'PUT /sih/questionnaires/draft',
+  'POST /sih/questionnaires/attach',
+  'POST /sih/questionnaires/publish',
+  'POST /sih/questionnaires/submit',
+]);
 
 function errorBody(error: SihRouteError): SihErrorBody {
   return { ok: false, error: { code: error.code, message: error.message } };
@@ -136,14 +150,21 @@ export async function handleSihRequest(
   const url = new URL(request.url);
 
   try {
-    const declaredLength = Number(request.headers.get('Content-Length') ?? 0);
-    if (declaredLength > 65_536) {
-      throw new SihRouteError('INVALID_REQUEST', 413, 'Request body exceeds the 64 KiB limit.');
-    }
     if (env.SIH_RATE_LIMITER) {
       const callerKey = request.headers.get('Authorization') ?? 'unauthenticated';
       const { success } = await env.SIH_RATE_LIMITER.limit({ key: `${callerKey}:${url.pathname}` });
       if (!success) throw new SihRouteError('RATE_LIMITED', 429, 'Too many requests. Retry shortly.');
+    }
+    const routeKey = `${request.method} ${url.pathname}`;
+    if (dependencies === productionDependencies && protectedRouteKeys.has(routeKey)) {
+      // Authenticate before reading or validating any protected payload. The
+      // request-scoped cache in auth.ts lets route dependencies reuse this
+      // exact identity without a second Auth or actor lookup.
+      await authenticateAndResolveActor(request, env);
+    }
+    const declaredLength = Number(request.headers.get('Content-Length') ?? 0);
+    if (declaredLength > 65_536) {
+      throw new SihRouteError('INVALID_REQUEST', 413, 'Request body exceeds the 64 KiB limit.');
     }
     // 1. Recompute readiness
     if (url.pathname === '/sih/readiness/recompute' && request.method === 'POST') {

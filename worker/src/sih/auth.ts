@@ -4,6 +4,8 @@ import type { RequestIdentity, SihEnv } from './types';
 import { SihRouteError } from './types';
 
 const BEARER_PATTERN = /^Bearer ([A-Za-z0-9._~-]+)$/;
+type ResolvedAuthentication = { identity: RequestIdentity; client: SupabaseClient };
+const authenticationByRequest = new WeakMap<Request, Promise<ResolvedAuthentication>>();
 
 export function extractBearerToken(request: Request): string {
   const match = request.headers.get('Authorization')?.match(BEARER_PATTERN);
@@ -14,7 +16,19 @@ export function extractBearerToken(request: Request): string {
 export async function authenticateAndResolveActor(
   request: Request,
   env: SihEnv,
-): Promise<{ identity: RequestIdentity; client: SupabaseClient }> {
+): Promise<ResolvedAuthentication> {
+  const cached = authenticationByRequest.get(request);
+  if (cached) return cached;
+
+  const pending = resolveAuthentication(request, env);
+  authenticationByRequest.set(request, pending);
+  return pending;
+}
+
+async function resolveAuthentication(
+  request: Request,
+  env: SihEnv,
+): Promise<ResolvedAuthentication> {
   const accessToken = extractBearerToken(request);
   const client = createUserContextClient(env, accessToken);
   const { data: userData, error: userError } = await client.auth.getUser(accessToken);
