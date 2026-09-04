@@ -1,5 +1,5 @@
 import { useEffect, useRef, useMemo } from 'react';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { JOB_TITLES } from '../data/jobs';
 
 interface ScrollingTitlesProps {
@@ -9,8 +9,9 @@ interface ScrollingTitlesProps {
 }
 
 export function ScrollingTitles({ highlightedJob, paused = false, dimmed = false }: ScrollingTitlesProps) {
+  const reducedMotion = useReducedMotion();
   const rows = useMemo(() => {
-    const shuffled = [...JOB_TITLES].sort(() => Math.random() - 0.5);
+    const shuffled = [...JOB_TITLES].sort();
     const rowCount = 12;
     const perRow = Math.ceil(shuffled.length / rowCount);
     return Array.from({ length: rowCount }, (_, i) => {
@@ -35,7 +36,7 @@ export function ScrollingTitles({ highlightedJob, paused = false, dimmed = false
             titles={row.titles}
             direction={row.direction}
             speed={row.speed}
-            paused={paused}
+            paused={paused || Boolean(reducedMotion)}
             highlightedJob={highlightedJob}
           />
         ))}

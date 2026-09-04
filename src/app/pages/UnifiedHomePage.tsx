@@ -19,6 +19,7 @@ import {
   AlertCircle, HelpCircle, ChevronRight, ExternalLink,
 } from 'lucide-react';
 import { StickFigure } from '../components/StickFigure';
+import { ScrollingTitles } from '../components/ScrollingTitles';
 import { BrandMark } from '../components/BrandMark';
 import { useAuth } from '../context/AuthContext';
 
@@ -131,13 +132,13 @@ export function UnifiedHomePage() {
 
       {/* ── Fixed Ribbon ────────────────────────────────────────────────── */}
       <div
-        className="fixed top-14 left-0 right-0 z-40 overflow-hidden pointer-events-none"
+        className="relative overflow-hidden pointer-events-none"
         aria-hidden="true"
-        style={{ height: '26px' }}
+        style={{ height: '34px' }}
       >
         <div
           className="flex items-center gap-8 font-mono-ui text-[9px] uppercase tracking-[0.18em] text-[var(--accent-news)] bg-[var(--accent-news)]/5 border-b border-[var(--accent-news)]/20 px-6"
-          style={{ height: '26px', whiteSpace: 'nowrap' }}
+          style={{ height: '34px', whiteSpace: 'nowrap' }}
         >
           <span>SIH26044 — Academia × Industry Collaboration Portal</span>
           <span aria-hidden>·</span>
@@ -155,20 +156,13 @@ export function UnifiedHomePage() {
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <section
-        className="relative pt-[3.5rem] pb-16 md:pb-24 border-b-2 border-black overflow-hidden"
+        className="relative pt-14 pb-16 sm:pt-20 lg:pt-24 lg:pb-24 border-b-2 border-black overflow-hidden"
         aria-labelledby="hero-heading"
       >
-        {/* Editorial grid background */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.03]"
-          aria-hidden="true"
-          style={{
-            backgroundImage: 'repeating-linear-gradient(0deg, #000 0, #000 1px, transparent 1px, transparent 60px), repeating-linear-gradient(90deg, #000 0, #000 1px, transparent 1px, transparent 60px)',
-          }}
-        />
+        <ScrollingTitles dimmed paused />
 
         <div className="relative mx-auto max-w-7xl px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left: copy */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -181,7 +175,7 @@ export function UnifiedHomePage() {
 
               <h1
                 id="hero-heading"
-                className="font-[Playfair_Display] text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] text-[var(--ink)]"
+                className="font-[Playfair_Display] text-[clamp(2.35rem,5.2vw,4.5rem)] font-bold leading-[1.05] text-[var(--ink)]"
               >
                 From evidence
                 <br />
@@ -378,7 +372,7 @@ export function UnifiedHomePage() {
       {/* ── ENGINE A — CAREER GUIDANCE ──────────────────────────────────── */}
       <section className="py-16 md:py-20 border-b-2 border-black" aria-labelledby="engine-a-heading">
         <div className="mx-auto max-w-7xl px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <SectionKicker>Engine A · Career Guidance (Private)</SectionKicker>
               <SectionTitle id="engine-a-heading">
@@ -432,7 +426,7 @@ export function UnifiedHomePage() {
       {/* ── OPPORTUNITY READINESS (Engine B) ───────────────────────────── */}
       <section className="py-16 md:py-20 border-b-2 border-black bg-[var(--ink)] text-white" aria-labelledby="engine-b-heading">
         <div className="mx-auto max-w-7xl px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-start">
+          <div className="grid lg:grid-cols-2 gap-12 items-start">
             <div>
               <p className="font-mono-ui text-[9.5px] uppercase tracking-[0.2em] text-[var(--accent-news)] mb-2">
                 Engine B · Opportunity Readiness
@@ -583,7 +577,7 @@ export function UnifiedHomePage() {
       {/* ── TRUSTED APPLICATION ─────────────────────────────────────────── */}
       <section className="py-16 md:py-20 border-b-2 border-black" aria-labelledby="application-heading">
         <div className="mx-auto max-w-7xl px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-start">
+          <div className="grid lg:grid-cols-2 gap-12 items-start">
             <div>
               <SectionKicker>Consented Application</SectionKicker>
               <SectionTitle id="application-heading">
@@ -721,7 +715,7 @@ export function UnifiedHomePage() {
       {/* ── INSTITUTION INTELLIGENCE ────────────────────────────────────── */}
       <section className="py-16 md:py-20 border-b-2 border-black" aria-labelledby="intelligence-heading">
         <div className="mx-auto max-w-7xl px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-start">
+          <div className="grid lg:grid-cols-2 gap-12 items-start">
             {/* Example intervention card */}
             <div
               className="border-2 border-black p-6 shadow-[4px_4px_0_#000]"
