@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { BrandMark } from './BrandMark';
 import { useAuth } from '../context/AuthContext';
+import { PresentationSwitcher } from './PresentationSwitcher';
 import { LanguageSwitcher } from '../i18n';
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -68,8 +69,8 @@ function buildNavItems(
 
   const items: NavItem[] = [];
 
-  // ── Opportunities — visible to everyone once signed in ──────────────────
-  if (user) {
+  // ── Opportunities — first-class discovery ──────────────────
+  {
     items.push({
       label: 'Opportunities',
       to: '/opportunities',
@@ -78,12 +79,15 @@ function buildNavItems(
   }
 
   // ── My Career — Career Guidance (Engine A) ──────────────────────────────
-  if (user) {
+  {
     items.push({
       label: 'My Career',
       to: '/career',
       icon: <BookOpen size={13} />,
       children: [
+        { label: 'Career Home', to: '/dashboard', icon: <BookOpen size={12} /> },
+        { label: 'Explore Careers', to: '/job?fresh=1', icon: <Target size={12} /> },
+        { label: 'Roadmap', to: '/roadmap', icon: <BarChart2 size={12} /> },
         { label: 'Career Passport', to: '/passport', icon: <FileText size={12} /> },
         { label: 'Career Direction', to: '/recommendations', icon: <Target size={12} /> },
         { label: 'Assessments', to: '/assess', icon: <Layers size={12} /> },
@@ -183,21 +187,21 @@ function DesktopDropdownMenu({ item }: { item: NavItem }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const isActive = item.children
-    ? item.children.some(c => location.pathname.startsWith(c.to))
+    ? item.children.some(c => location.pathname.startsWith(c.to.split('?')[0]))
     : location.pathname === item.to || location.pathname.startsWith(item.to + '/');
 
   return (
     <div
       className="relative"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
+      onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}
+      onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); setOpen(false); event.currentTarget.querySelector('button')?.focus(); } }}
     >
       <button
         type="button"
-        className={`flex h-11 items-center gap-1.5 px-2.5 font-mono-ui text-[10.5px] font-black uppercase tracking-[0.08em] transition-colors
-          ${isActive ? 'text-black' : 'text-black/50 hover:text-black/80'}`}
+        className={`focus-visible:outline-2 focus-visible:outline-[var(--accent-news)] flex h-11 items-center gap-1.5 px-2.5 font-mono-ui text-[10.5px] font-black uppercase tracking-[0.08em] transition-colors
+          ${isActive ? 'text-black' : 'text-black/65 hover:text-black/80'}`}
         aria-expanded={open}
-        aria-haspopup="menu"
+        onClick={() => setOpen(value => !value)}
       >
         {item.label}
         <ChevronDown size={10} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -211,13 +215,11 @@ function DesktopDropdownMenu({ item }: { item: NavItem }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.12 }}
-            role="menu"
           >
             {item.children!.map(child => (
               <NavLink
                 key={child.to}
                 to={child.to}
-                role="menuitem"
                 className={({ isActive }) =>
                   `flex items-center gap-2.5 border-b border-black/8 px-4 py-2.5 font-mono-ui text-[10px] font-black uppercase tracking-[0.08em] transition-colors last:border-b-0
                   ${isActive ? 'bg-black text-white' : 'hover:bg-black/5'}`
@@ -245,7 +247,7 @@ function DesktopNavItem({ item }: { item: NavItem }) {
       to={item.to}
       className={({ isActive: navActive }) =>
         `flex h-11 items-center gap-1.5 px-2.5 font-mono-ui text-[10.5px] font-black uppercase tracking-[0.08em] transition-colors
-        ${navActive || isActive ? 'text-black' : 'text-black/50 hover:text-black/80'}`
+        ${navActive || isActive ? 'text-black' : 'text-black/65 hover:text-black/80'}`
       }
     >
       {item.label}
@@ -304,6 +306,7 @@ export function UnifiedCareerCaseShell({
           className="sticky top-0 z-50 border-b-2 border-black bg-[var(--paper)]/95 backdrop-blur-sm"
           role="banner"
         >
+          <PresentationSwitcher />
           <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-0 h-14">
             {/* BrandMark */}
             <Link
@@ -316,7 +319,7 @@ export function UnifiedCareerCaseShell({
 
             {/* Tagline (desktop only) */}
             <span
-              className="hidden lg:block font-mono-ui text-[9px] uppercase tracking-[0.15em] text-black/30 ml-1"
+              className="hidden 2xl:block font-mono-ui text-[9px] uppercase tracking-[0.15em] text-black/30 ml-1"
               aria-hidden="true"
             >
               Career Guidance × Opportunity Readiness
@@ -328,7 +331,7 @@ export function UnifiedCareerCaseShell({
             {/* Desktop nav */}
             {navItems.length > 0 && (
               <nav
-                className="hidden md:flex items-center gap-0"
+                className="hidden xl:flex items-center gap-0"
                 aria-label="CareerCase primary navigation"
               >
                 {navItems.map(item => (
@@ -338,7 +341,7 @@ export function UnifiedCareerCaseShell({
             )}
 
             {/* Desktop right: language + account */}
-            <div className="hidden md:flex items-center gap-2 ml-2">
+            <div className="hidden xl:flex items-center gap-2 ml-2">
               <LanguageSwitcher compact />
 
               {user ? (
@@ -361,25 +364,21 @@ export function UnifiedCareerCaseShell({
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.12 }}
-                        role="menu"
                       >
                         <Link
                           to="/settings"
-                          role="menuitem"
                           className="flex items-center gap-2.5 border-b border-black/8 px-4 py-2.5 font-mono-ui text-[10px] font-black uppercase tracking-[0.08em] hover:bg-black/5 transition-colors"
                         >
                           <Settings size={11} /> Settings
                         </Link>
                         <Link
                           to="/help"
-                          role="menuitem"
                           className="flex items-center gap-2.5 border-b border-black/8 px-4 py-2.5 font-mono-ui text-[10px] font-black uppercase tracking-[0.08em] hover:bg-black/5 transition-colors"
                         >
                           <HelpCircle size={11} /> Help
                         </Link>
                         <button
                           type="button"
-                          role="menuitem"
                           onClick={() => { void signOut(); }}
                           className="flex w-full items-center gap-2.5 px-4 py-2.5 font-mono-ui text-[10px] font-black uppercase tracking-[0.08em] hover:bg-black/5 transition-colors text-left"
                         >
@@ -403,7 +402,7 @@ export function UnifiedCareerCaseShell({
             {/* Mobile hamburger */}
             <button
               type="button"
-              className="flex md:hidden h-11 w-11 items-center justify-center text-black/60 hover:text-black transition-colors"
+              className="flex xl:hidden h-11 w-11 items-center justify-center text-black/60 hover:text-black transition-colors"
               onClick={() => setMobileOpen(prev => !prev)}
               aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={mobileOpen}
@@ -418,7 +417,7 @@ export function UnifiedCareerCaseShell({
             {mobileOpen && (
               <motion.div
                 id="mobile-nav"
-                className="md:hidden border-t-2 border-black bg-[var(--paper)] overflow-y-auto max-h-[70vh]"
+                className="xl:hidden border-t-2 border-black bg-[var(--paper)] overflow-y-auto max-h-[70vh]"
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}

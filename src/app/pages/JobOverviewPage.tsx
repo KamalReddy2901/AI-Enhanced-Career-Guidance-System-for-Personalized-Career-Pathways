@@ -26,23 +26,24 @@ function JobSearchEmptyState() {
   }, [searchJobPreliminary, setCurrentJob, navigate]);
 
   return (
-    <div className="relative min-h-[80vh] overflow-hidden flex flex-col items-center justify-center px-6 py-24" data-testid="job-search-empty-state">
+    <div className="relative min-h-[80vh] overflow-hidden flex flex-col items-center justify-center px-5 py-14 sm:py-20" data-testid="job-search-empty-state">
       <ScrollingTitles dimmed />
-      <div className="relative z-10 w-full max-w-xl text-center">
+      <div className="relative z-10 w-full max-w-3xl text-center">
         <div className="flex justify-center mb-8">
           <StickFigure pose="searching" size={80} />
         </div>
-        <p className="label-caps mb-3 text-[var(--accent-news)]">CareerCase · Explore</p>
-        <h1 className="font-display text-4xl leading-snug tracking-tight text-[var(--ink)] mb-3">
+        <p className="label-caps mb-3 text-[var(--ink)]">CareerCase · Explore</p>
+        <h1 className="font-display text-4xl sm:text-5xl leading-snug tracking-tight text-[var(--ink)] mb-3">
           What do you want<br/>to explore?
         </h1>
+        <p className="mb-8 font-[Inter] text-black/75">Investigate a profession. Discover its work, skills and possible pathways.</p>
         <MagnifierSearch
           onSearchComplete={handleSearchComplete}
           isAnimating={isSearchAnimating}
           setIsAnimating={setIsSearchAnimating}
         />
         <div className="mt-8 border-t border-[var(--accent-news)]/45 pt-4 text-left">
-          <p className="mb-4 text-center font-mono-ui text-[0.62rem] uppercase tracking-[.14em] text-[var(--accent-news)]">Explore tools</p>
+          <p className="mb-4 text-center font-mono-ui text-[0.62rem] uppercase tracking-[.14em] text-[var(--ink)]">Explore tools</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {[
               { label: 'Roadmap', icon: <Map size={16}/>, path: '/roadmap', note: 'Career journey' },
@@ -56,10 +57,10 @@ function JobSearchEmptyState() {
               onClick={() => { sounds.click(); navigate(tool.path); }} 
               className="group flex flex-col items-center justify-center gap-2 border-2 border-black/10 bg-[var(--paper)] p-4 text-center transition-all hover:border-[var(--accent-news)] hover:bg-black/[.015] focus-visible:border-[var(--accent-news)] focus-visible:outline-none"
             >
-              <span className="text-[var(--accent-news)] transition-transform group-hover:scale-110">{tool.icon}</span>
+              <span className="text-[var(--ink)] transition-transform group-hover:scale-110">{tool.icon}</span>
               <div>
-                <span className="block font-[Inter] text-[.75rem] font-medium leading-tight text-black/80 whitespace-nowrap">{tool.label}</span>
-                <span className="mt-0.5 block font-[Inter] text-[.65rem] leading-tight text-black/40 whitespace-nowrap">{tool.note}</span>
+                <span className="block font-[Inter] text-[.75rem] font-medium leading-tight text-black/80">{tool.label}</span>
+                <span className="mt-0.5 block font-[Inter] text-[.65rem] leading-tight text-black/75">{tool.note}</span>
               </div>
             </button>)}
           </div>

@@ -63,6 +63,7 @@ test('production role routes fail closed without a session', async ({ page }) =>
     // 2. Redirected to auth showing "Authentication not configured" (CI / no Supabase)
     // 3. Error boundary "This page hit a snag."
     const closedBoundary = page.getByRole('link', { name: 'Sign in', exact: true })
+      .or(page.getByRole('heading', { name: 'Welcome Back', exact: true }))
       .or(page.getByRole('heading', { name: 'Authentication not configured', exact: true }))
       .or(page.getByRole('heading', { name: 'This page hit a snag.' }))
       .or(page.getByText('Configuration required'))

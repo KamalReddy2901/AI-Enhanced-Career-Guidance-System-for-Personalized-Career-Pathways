@@ -219,6 +219,7 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
           <input
             ref={inputRef}
             type="text"
+            aria-label="Profession to investigate"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -234,10 +235,11 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
             onKeyDown={handleKeyDown}
             placeholder={inputFocused || query ? 'Enter any job title...' : (animatedPlaceholder ? `Try "${animatedPlaceholder}"` : 'Enter any job title...')}
             disabled={isAnimating}
-            className="w-full px-6 py-4 bg-transparent text-black placeholder:text-black/30 font-[Playfair_Display] outline-none disabled:opacity-50"
+            className="min-w-0 w-full px-4 sm:px-6 py-4 bg-transparent text-black placeholder:text-black/60 font-[Playfair_Display] focus-visible:outline-2 focus-visible:outline-black focus-visible:outline-offset-[-4px] disabled:opacity-50"
             style={{ fontSize: '1.15rem', caretColor: 'rgba(0,0,0,0.5)' }}
           />
           <motion.button
+            aria-label="Investigate"
             onClick={() => startSearch()}
             disabled={!query.trim() || isAnimating}
             className="px-6 py-4 bg-black text-white hover:bg-black/85 disabled:bg-black/30 transition-colors flex items-center gap-2.5 shrink-0"
@@ -429,7 +431,7 @@ export function MagnifierSearch({ onSearchComplete, isAnimating, setIsAnimating 
       {/* Helper text */}
       {phase === 'idle' && !isAnimating && (
         <motion.p
-          className="text-center mt-4 font-[Inter] text-black/30"
+          className="text-center mt-4 font-[Inter] text-black/75"
           style={{ fontSize: '0.78rem' }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
