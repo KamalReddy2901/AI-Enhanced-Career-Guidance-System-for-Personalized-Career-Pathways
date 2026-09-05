@@ -34,7 +34,19 @@ declare
   v_duplicate_data_viz uuid := '1d82b147-6dd9-42ab-bf13-a8990f208ffc';
   
   v_cnt int;
+  v_actors_exist boolean;
 begin
+  -- Check if production controlled actors exist
+  -- This migration is production-specific and only runs if controlled fixtures are present
+  select exists(
+    select 1 from sih26044.actors where id = v_actor_student
+  ) into v_actors_exist;
+  
+  if not v_actors_exist then
+    raise notice 'Controlled production actors not present - skipping production-specific repair';
+    return;
+  end if;
+  
   raise notice 'Starting production verification & readiness repair...';
   
   -- ================================================================
