@@ -218,9 +218,9 @@ begin
   );
   
   perform sih26044.save_readiness_evidence_projection(
-    v_evidence_data_viz_canonical, v_actor_student, null, 'data-visualization', 'Data Visualization', null,
-    1, null, 'supports', 'explicit_claim', '2026-08-20'::timestamptz,
-    v_actor_student, 'ai_assisted_review'
+    v_evidence_data_viz_canonical, v_actor_student, null::uuid, 'data-visualization'::text, 'Data Visualization'::text, null::text,
+    1::smallint, null::numeric, 'supports'::sih26044.readiness_capability_assertion, 'explicit_claim'::sih26044.readiness_evidence_directness, '2026-08-20'::timestamptz,
+    v_actor_student, 'ai_assisted_review'::text
   );
   
   raise notice 'Created 4 readiness projections';
