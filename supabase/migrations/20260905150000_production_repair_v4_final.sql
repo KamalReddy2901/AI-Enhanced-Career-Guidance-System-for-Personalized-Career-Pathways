@@ -154,30 +154,30 @@ begin
   insert into sih26044.verification_requests (
     id, evidence_record_id, subject_actor_id,
     requested_verifier_actor_id, requested_verifier_organization_id,
-    consent_grant_id, scope_kind, scope_literal_skill_label,
+    consent_grant_id, scope_kind, scope_skill_id, scope_literal_skill_label,
     status, requested_at, closed_at  -- VALID ENUM: closed (not completed)
   ) values
     (v_vreq_python, v_evidence_python_canonical, v_actor_student,
      v_actor_faculty, v_org_institution, v_consent_python,
-     'global_skill', 'Python', 'closed', '2026-08-09'::timestamptz, '2026-08-10'::timestamptz),
+     'global_skill', 'python', 'Python', 'closed', '2026-08-09'::timestamptz, '2026-08-10'::timestamptz),
     (v_vreq_data_analysis, v_evidence_data_analysis_canonical, v_actor_student,
      v_actor_faculty, v_org_institution, v_consent_data_analysis,
-     'global_skill', 'Data Analysis', 'closed', '2026-08-13'::timestamptz, '2026-08-14'::timestamptz),
+     'global_skill', 'data-analysis', 'Data Analysis', 'closed', '2026-08-13'::timestamptz, '2026-08-14'::timestamptz),
     (v_vreq_research_doc, v_evidence_research_doc_canonical, v_actor_student,
      v_actor_faculty, v_org_institution, v_consent_research_doc,
-     'global_skill', 'Research Documentation', 'closed', '2026-08-16'::timestamptz, '2026-08-17'::timestamptz)
+     'global_skill', 'research-documentation', 'Research Documentation', 'closed', '2026-08-16'::timestamptz, '2026-08-17'::timestamptz)
   on conflict (id) do nothing;
   
   -- Live REQUESTED Data Visualization (pending)
   insert into sih26044.verification_requests (
     id, evidence_record_id, subject_actor_id,
     requested_verifier_actor_id, requested_verifier_organization_id,
-    consent_grant_id, scope_kind, scope_literal_skill_label,
+    consent_grant_id, scope_kind, scope_skill_id, scope_literal_skill_label,
     status, requested_at
   ) values
     (v_vreq_viz_live, v_evidence_data_viz_canonical, v_actor_student,
      v_actor_faculty, v_org_institution, v_consent_viz_live,
-     'global_skill', 'Data Visualization', 'requested', '2026-09-01'::timestamptz)
+     'global_skill', 'data-visualization', 'Data Visualization', 'requested', '2026-09-01'::timestamptz)
   on conflict (id) do nothing;
   
   -- Historical bounded attestation events
