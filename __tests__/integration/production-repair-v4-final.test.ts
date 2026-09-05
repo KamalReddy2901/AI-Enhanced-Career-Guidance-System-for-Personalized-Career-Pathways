@@ -17,6 +17,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { execFileSync, spawnSync } from 'node:child_process';
+import { handleSihRequest } from '../../worker/src/sih/routes';
 
 function localEnvironment() {
   const output = execFileSync('npx', ['--yes', 'supabase@latest', 'status', '-o', 'env'], { encoding: 'utf8' });
@@ -44,8 +45,8 @@ const DATA_VIZ_VREQ = 'f044d200-0000-4000-8000-000000000100';
 
 describe('Production Repair V4 Final - Real Execution', () => {
   let admin: SupabaseClient;
-  let workerUrl: string;
   let facultyToken: string;
+  let workerEnv: any;
 
   beforeAll(async () => {
     const local = localEnvironment();
@@ -57,8 +58,12 @@ describe('Production Repair V4 Final - Real Execution', () => {
       throw new Error('Missing Supabase credentials from local environment');
     }
 
-    workerUrl = process.env.VITE_WORKER_URL || 'http://localhost:8787';
     admin = createClient(apiUrl, serviceKey, { auth: { persistSession: false } });
+    
+    workerEnv = {
+      SUPABASE_URL: apiUrl,
+      SUPABASE_SERVICE_ROLE_KEY: serviceKey,
+    };
 
     // Create faculty auth user and link to controlled fixture
     const anon = createClient(apiUrl, anonKey, { auth: { persistSession: false } });
@@ -130,7 +135,7 @@ describe('Production Repair V4 Final - Real Execution', () => {
     // ================================================================
     console.log('\n🔍 C. Pre-attestation via Worker API...');
     
-    const preResponse = await fetch(`${workerUrl}/sih/readiness/compute`, {
+    const preRequest = new Request('http://localhost/sih/readiness/compute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -139,6 +144,7 @@ describe('Production Repair V4 Final - Real Execution', () => {
       }),
     });
     
+    const preResponse = await handleSihRequest(preRequest, workerEnv);
     if (!preResponse.ok) {
       const errorText = await preResponse.text();
       throw new Error(`Pre-attestation failed: ${preResponse.status} ${errorText}`);
@@ -193,7 +199,7 @@ describe('Production Repair V4 Final - Real Execution', () => {
     // ================================================================
     console.log('\n🔍 E. Post-attestation validation...');
     
-    const postResponse = await fetch(`${workerUrl}/sih/readiness/compute`, {
+    const postRequest = new Request('http://localhost/sih/readiness/compute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -202,6 +208,7 @@ describe('Production Repair V4 Final - Real Execution', () => {
       }),
     });
     
+    const postResponse = await handleSihRequest(postRequest, workerEnv);
     if (!postResponse.ok) {
       const errorText = await postResponse.text();
       throw new Error(`Post-attestation failed: ${postResponse.status} ${errorText}`);
