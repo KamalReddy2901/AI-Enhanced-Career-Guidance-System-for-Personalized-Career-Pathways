@@ -26,6 +26,7 @@ export function VerificationPage() {
   const [actingContexts, setActingContexts] = useState<VerifierActingContextReadModel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [isUnauthorized, setIsUnauthorized] = useState(false);
 
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
 
@@ -65,6 +66,7 @@ export function VerificationPage() {
 
     let active = true;
     setIsLoading(true);
+    setIsUnauthorized(false);
 
     dal.getCurrentVerifierActingContexts()
       .then(async contexts => {
@@ -72,6 +74,7 @@ export function VerificationPage() {
         setActingContexts(contexts);
         if (contexts.length === 0) {
           setRequests([]);
+          setIsUnauthorized(true);
           return;
         }
         const actorId = contexts[0].actorId;
@@ -198,6 +201,19 @@ export function VerificationPage() {
     return (
       <div className="min-h-screen bg-[var(--paper)] p-4 md:p-8 flex items-center justify-center">
         <p className="text-muted-foreground">Please log in to view verification requests.</p>
+      </div>
+    );
+  }
+
+  if (isUnauthorized && !isLoading) {
+    return (
+      <div className="min-h-screen bg-[var(--paper)] p-4 md:p-8 flex items-center justify-center">
+        <div className="max-w-md text-center space-y-4">
+          <h2 className="font-display text-2xl">Unauthorized</h2>
+          <p className="text-muted-foreground">
+            You do not have verifier permissions. This workspace is only accessible to faculty and institutional verifiers.
+          </p>
+        </div>
       </div>
     );
   }

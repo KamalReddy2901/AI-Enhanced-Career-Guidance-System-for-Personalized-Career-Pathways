@@ -24,6 +24,8 @@ import { BrandMark } from './BrandMark';
 import { useAuth } from '../context/AuthContext';
 import { PresentationSwitcher } from './PresentationSwitcher';
 import { LanguageSwitcher } from '../i18n';
+import { SihBrowserDal } from '../services/sih/browserDal';
+import { supabase } from '../services/supabase';
 
 /* ──────────────────────────────────────────────────────────────────────────
    Types
@@ -63,6 +65,7 @@ function buildNavItems(
   user: { id: string } | null,
   sihRoles: ReadonlySet<string>,
   location: string,
+  isVerifier: boolean,
 ): NavItem[] {
   const isAuth = location.startsWith('/auth');
   if (isAuth) return [];
@@ -99,16 +102,25 @@ function buildNavItems(
 
   // ── Build Evidence ───────────────────────────────────────────────────────
   if (user) {
+    const evidenceChildren: NavItem[] = [
+      { label: 'Evidence Ledger', to: '/evidence', icon: <FileText size={12} /> },
+    ];
+    
+    // Verification only for actual verifiers
+    if (isVerifier) {
+      evidenceChildren.push({ label: 'Verification', to: '/verification', icon: <Layers size={12} /> });
+    }
+    
+    evidenceChildren.push(
+      { label: 'Close This Gap', to: '/gap-closure', icon: <Target size={12} /> },
+      { label: 'Development', to: '/development', icon: <BarChart2 size={12} /> },
+    );
+    
     items.push({
       label: 'Evidence',
       to: '/evidence',
       icon: <FileText size={13} />,
-      children: [
-        { label: 'Evidence Ledger', to: '/evidence', icon: <FileText size={12} /> },
-        { label: 'Verification', to: '/verification', icon: <Layers size={12} /> },
-        { label: 'Close This Gap', to: '/gap-closure', icon: <Target size={12} /> },
-        { label: 'Development', to: '/development', icon: <BarChart2 size={12} /> },
-      ],
+      children: evidenceChildren,
     });
   }
 
@@ -140,16 +152,24 @@ function buildNavItems(
 
   // ── Faculty workspace ────────────────────────────────────────────────────
   if (user && sihRoles.has('faculty')) {
+    const facultyChildren: NavItem[] = [];
+    
+    // Verification only for actual verifiers
+    if (isVerifier) {
+      facultyChildren.push({ label: 'Verification', to: '/verification', icon: <Layers size={12} /> });
+    }
+    
+    facultyChildren.push(
+      { label: 'Faculty Opportunities', to: '/faculty/opportunities', icon: <Target size={12} /> },
+      { label: 'Engagements', to: '/faculty/engagements', icon: <Briefcase size={12} /> },
+      { label: 'Collaborations', to: '/faculty/collaborations', icon: <Users size={12} /> },
+    );
+    
     items.push({
       label: 'Faculty',
       to: '/faculty',
       icon: <GraduationCap size={13} />,
-      children: [
-        { label: 'Verification', to: '/verification', icon: <Layers size={12} /> },
-        { label: 'Faculty Opportunities', to: '/faculty/opportunities', icon: <Target size={12} /> },
-        { label: 'Engagements', to: '/faculty/engagements', icon: <Briefcase size={12} /> },
-        { label: 'Collaborations', to: '/faculty/collaborations', icon: <Users size={12} /> },
-      ],
+      children: facultyChildren,
     });
   }
 
@@ -268,9 +288,35 @@ export function UnifiedCareerCaseShell({
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [isVerifier, setIsVerifier] = useState(false);
+
+  // Check verifier status
+  useEffect(() => {
+    if (!user || !supabase) {
+      setIsVerifier(false);
+      return;
+    }
+    
+    const dal = new SihBrowserDal(supabase);
+    let active = true;
+    
+    dal.getCurrentVerifierActingContexts()
+      .then(contexts => {
+        if (active) {
+          setIsVerifier(contexts.length > 0);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setIsVerifier(false);
+        }
+      });
+    
+    return () => { active = false; };
+  }, [user]);
 
   const isAuthPage = location.pathname === '/auth';
-  const navItems = buildNavItems(user, sihRoles, location.pathname);
+  const navItems = buildNavItems(user, sihRoles, location.pathname, isVerifier);
 
   // Close menus on route change
   useEffect(() => {
