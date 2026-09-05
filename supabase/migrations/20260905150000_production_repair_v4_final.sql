@@ -200,21 +200,21 @@ begin
   -- ================================================================
   
   perform sih26044.save_readiness_evidence_projection(
-    v_evidence_python_canonical, v_actor_student, null, 'python', 'Python', null,
-    2, null, 'supports', 'direct', '2026-08-08'::timestamptz,
-    v_actor_student, 'structured_human_entry'
+    v_evidence_python_canonical, v_actor_student, null::uuid, 'python'::text, 'Python'::text, null::text,
+    2::smallint, null::numeric, 'supports'::sih26044.readiness_capability_assertion, 'direct'::sih26044.readiness_evidence_directness, '2026-08-08'::timestamptz,
+    v_actor_student, 'structured_human_entry'::text
   );
   
   perform sih26044.save_readiness_evidence_projection(
-    v_evidence_data_analysis_canonical, v_actor_student, null, 'data-analysis', 'Data Analysis', null,
-    2, null, 'supports', 'direct', '2026-08-12'::timestamptz,
-    v_actor_student, 'structured_human_entry'
+    v_evidence_data_analysis_canonical, v_actor_student, null::uuid, 'data-analysis'::text, 'Data Analysis'::text, null::text,
+    2::smallint, null::numeric, 'supports'::sih26044.readiness_capability_assertion, 'direct'::sih26044.readiness_evidence_directness, '2026-08-12'::timestamptz,
+    v_actor_student, 'structured_human_entry'::text
   );
   
   perform sih26044.save_readiness_evidence_projection(
-    v_evidence_research_doc_canonical, v_actor_student, null, 'research-documentation', 'Research Documentation', null,
-    2, null, 'supports', 'direct', '2026-08-15'::timestamptz,
-    v_actor_student, 'structured_human_entry'
+    v_evidence_research_doc_canonical, v_actor_student, null::uuid, 'research-documentation'::text, 'Research Documentation'::text, null::text,
+    2::smallint, null::numeric, 'supports'::sih26044.readiness_capability_assertion, 'direct'::sih26044.readiness_evidence_directness, '2026-08-15'::timestamptz,
+    v_actor_student, 'structured_human_entry'::text
   );
   
   perform sih26044.save_readiness_evidence_projection(
