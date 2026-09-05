@@ -124,21 +124,21 @@ describe('Production Repair V4 Final - Real Execution', () => {
       on conflict (id) do nothing;
       
       insert into sih26044.opportunities (id, owner_organization_id, status, created_by_actor_id) values
-        ('${FLAGSHIP_OPP_ID}', '${CONTROLLED_INSTITUTION_ID}', 'published', '${CONTROLLED_FACULTY_ID}')
+        ('${FLAGSHIP_OPP_ID}', '${CONTROLLED_INSTITUTION_ID}', 'draft', '${CONTROLLED_FACULTY_ID}')
       on conflict (id) do nothing;
       
       insert into sih26044.opportunity_versions (
         id, opportunity_id, version_number, status, title, description,
         opportunity_type, audiences, source_system, source_captured_at,
-        source_literal_text, created_by_actor_id, published_at
+        source_literal_text, created_by_actor_id
       ) values (
-        '${FLAGSHIP_V2_ID}', '${FLAGSHIP_OPP_ID}', 2, 'published',
+        '${FLAGSHIP_V2_ID}', '${FLAGSHIP_OPP_ID}', 2, 'draft',
         'Clinical Research Data Analyst', 'Test opportunity',
         'internship', array['student']::sih26044.opportunity_audience[],
-        'controlled_test', now(), 'Test', '${CONTROLLED_FACULTY_ID}', now()
+        'controlled_test', now(), 'Test', '${CONTROLLED_FACULTY_ID}'
       ) on conflict (id) do nothing;
       
-      -- Create Data Visualization requirement
+      -- Create Data Visualization requirement BEFORE publishing
       insert into sih26044.opportunity_requirements (
         id, opportunity_version_id, ordinal, category, priority,
         literal_source_wording, importance, evidence_expectation, hard_gate,
@@ -151,7 +151,11 @@ describe('Production Repair V4 Final - Real Execution', () => {
         true, '${CONTROLLED_FACULTY_ID}', now(), 'controlled_fixture'
       ) on conflict (id) do nothing;
       
-      update sih26044.opportunities set current_version_id = '${FLAGSHIP_V2_ID}' where id = '${FLAGSHIP_OPP_ID}';
+      -- NOW publish
+      update sih26044.opportunity_versions set status = 'published', published_at = now()
+      where id = '${FLAGSHIP_V2_ID}';
+      update sih26044.opportunities set status = 'published', current_version_id = '${FLAGSHIP_V2_ID}'
+      where id = '${FLAGSHIP_OPP_ID}';
       
       -- Create readiness subject facts for student
       insert into sih26044.readiness_subject_facts (
