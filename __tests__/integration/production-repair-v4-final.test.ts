@@ -222,6 +222,10 @@ describe('Production Repair V4 Final - Real Execution', () => {
     const migrationPath = 'supabase/migrations/20260905150000_production_repair_v4_final.sql';
     const migrationSQL = readFileSync(migrationPath, 'utf8');
     sql(migrationSQL);
+
+    const baselineRepairPath = 'supabase/migrations/20260905210755_repair_v4_data_viz_self_confirmation.sql';
+    const baselineRepairSQL = readFileSync(baselineRepairPath, 'utf8');
+    sql(baselineRepairSQL);
     
     // Verify migration executed: 4 canonical evidence records
     const evidenceCount = parseInt(spawnSync('docker', [
@@ -285,13 +289,26 @@ describe('Production Repair V4 Final - Real Execution', () => {
     const preData = await preResponse.json();
     const preReadiness = preData.result;
     
-    // Validate Worker computed summary (3 STRONG + 0 WEAK + 0 UNKNOWN = met 3/3)
-    // Data Viz pending verification shows as WEAK_EVIDENCE in projections, but Worker
-    // aggregates closed verifications as STRONG
+    // Validate the exact requirement-level baseline. The Data Visualization
+    // request is pending, so its learner self-confirmation is weak—not strong.
     expect(preReadiness.evidenceCoverage.strong).toBeGreaterThanOrEqual(3);
     expect(preReadiness.requiredCoverage.met).toBe(3);
     expect(preReadiness.requiredCoverage.total).toBe(3);
     expect(preReadiness.eligibilityStatus).toBe('ELIGIBLE');
+    const preRequirements = Object.fromEntries([
+      ...preReadiness.requiredRequirementResults,
+      ...preReadiness.preferredRequirementResults,
+    ].map((result: { literalSourceWording: string; state: string }) => [
+      result.literalSourceWording,
+      result.state,
+    ]));
+    expect(preRequirements).toMatchObject({
+      'Python data cleaning and preprocessing': 'MET_STRONG',
+      'Structured data analysis and interpretation': 'MET_STRONG',
+      'Research methodology documentation': 'MET_STRONG',
+      'Data visualization for research reports': 'MET_WEAK_EVIDENCE',
+      'Familiarity with AYUSH healthcare and traditional medicine terminology': 'UNKNOWN',
+    });
     
     // Verify projection count matches migration (4 evidence records = 4 projections)
     const preProjectionCount = parseInt(spawnSync('docker', [
@@ -347,11 +364,17 @@ describe('Production Repair V4 Final - Real Execution', () => {
     const postData = await postResponse.json();
     const postReadiness = postData.result;
     
-    // After faculty decision closes Data Viz verification, Worker should show improvement
-    // Note: Worker may still show 3 STRONG if it hasn't re-aggregated the new verification yet
-    // The critical validation is that the vreq is CLOSED and a verified_by_human event exists
+    // The faculty decision is the causal state change for the same requirement.
     expect(postReadiness.evidenceCoverage.strong).toBeGreaterThanOrEqual(3);
     expect(postReadiness.requiredCoverage.met).toBe(3);
+    const postRequirements = Object.fromEntries([
+      ...postReadiness.requiredRequirementResults,
+      ...postReadiness.preferredRequirementResults,
+    ].map((result: { literalSourceWording: string; state: string }) => [
+      result.literalSourceWording,
+      result.state,
+    ]));
+    expect(postRequirements['Data visualization for research reports']).toBe('MET_STRONG');
     
     console.log(`   ✅ Post: ${postReadiness.evidenceCoverage.strong} STRONG after verification`);
 
@@ -359,6 +382,7 @@ describe('Production Repair V4 Final - Real Execution', () => {
     
     // STEP 10: Execute v4 repair a SECOND time
     sql(migrationSQL);
+    sql(baselineRepairSQL);
     
     // Verify counts unchanged (no duplicates)
     const evidenceCount2 = parseInt(spawnSync('docker', [
@@ -374,6 +398,13 @@ describe('Production Repair V4 Final - Real Execution', () => {
       `select count(*) from sih26044.verification_requests where subject_actor_id = '${CONTROLLED_STUDENT_ID}';`
     ], { encoding: 'utf8' }).stdout.trim());
     expect(vreqCount2).toBe(4); // Still 4 total (3 closed + 1 now closed)
+
+    const selfConfirmationCount = parseInt(spawnSync('docker', [
+      'exec', '-i', 'supabase_db_careercase-sih26044-foundation',
+      'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c',
+      `select count(*) from sih26044.verification_events where verification_request_id = '${DATA_VIZ_VREQ}' and action = 'self_confirmed';`
+    ], { encoding: 'utf8' }).stdout.trim());
+    expect(selfConfirmationCount).toBe(1);
     
     console.log('   ✅ Idempotency: second execution created no duplicates');
 
