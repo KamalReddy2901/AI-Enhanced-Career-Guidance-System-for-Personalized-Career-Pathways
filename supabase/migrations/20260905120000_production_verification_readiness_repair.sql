@@ -285,26 +285,17 @@ end;
 $$ language plpgsql;
 
 -- ================================================================
--- Phase-1 Idempotency Fix & Phase-2B Organization-Bound Fix
+-- Phase-2B Organization-Bound Verification Fix (Production Only)
 -- ================================================================
+-- NOTE: This section only executes in production where controlled fixtures exist.
+-- In disposable CI/test environments, the seed_controlled_demo_ecosystem_phase2b()
+-- function from migration 100 remains unchanged and continues to create org-bound records.
 
--- Update phase-2B seed function to always include organization IDs in verification consents/requests
-create or replace function sih26044.seed_controlled_demo_ecosystem_phase2b()
-returns jsonb
-language plpgsql
-security definer
-set search_path = pg_catalog, sih26044, extensions
-as $$
+-- For production: Backfill organization IDs on any malformed verification consents/requests
+do $$
 declare
   v_org_institution  uuid := 'f0440000-0000-4000-8000-000000000001';
-  v_org_employer_a   uuid := 'f0440000-0000-4000-8000-000000000002';
-  v_org_employer_b   uuid := 'f0440000-0000-4000-8000-000000000004';
-
   v_actor_student     uuid := 'ef04e316-39b6-4641-8d18-f3564c00f144';
-  v_actor_faculty     uuid := '27e18338-ec21-40da-a6aa-2facacc7bd6e';
-  v_actor_inst_admin  uuid := 'e0e5d6f3-0d0e-47cf-8e4c-2c9a89b1f7f6';
-  v_actor_recruiter   uuid := '8f3a7c1d-5e6f-4a8b-9c0d-1e2f3a4b5c6d';
-  v_actor_recruiter_b uuid := 'a1b2c3d4-e5f6-4789-a0b1-c2d3e4f5a6b7';
   
   v_consent_hist_1 uuid := 'f044e000-0000-4000-8000-000000000001';
   v_consent_hist_2 uuid := 'f044e000-0000-4000-8000-000000000002';
@@ -313,10 +304,15 @@ declare
   v_vreq_python_hist uuid := 'f044d000-0000-4000-8000-000000000001';
   v_vreq_da_hist     uuid := 'f044d000-0000-4000-8000-000000000002';
   v_vreq_data_viz    uuid := 'f044d000-0000-4000-8000-000000000003';
+  
+  v_actors_exist boolean;
 begin
-  -- IMPORTANT: This updated function now creates organization-bound verification consents/requests
-  -- Historical consents/requests (Python, Data Analysis, closed) are updated to include organization
-  -- Active pending request (Data Visualization) is updated to include organization
+  select exists(select 1 from sih26044.actors where id = v_actor_student) into v_actors_exist;
+  
+  if not v_actors_exist then
+    raise notice 'Production actors not present - skipping organization ID backfill';
+    return;
+  end if;
   
   -- Update existing consent grants to include grantee_organization_id
   update sih26044.consent_grants
@@ -330,15 +326,6 @@ begin
   where id in (v_vreq_python_hist, v_vreq_da_hist, v_vreq_data_viz)
     and requested_verifier_organization_id is null;
   
-  raise notice 'Updated phase-2B verification consents/requests to be organization-bound';
-  
-  return jsonb_build_object(
-    'phase2b_seed_fix', 'organization_bound_verification',
-    'updated_consents', 3,
-    'updated_requests', 3
-  );
+  raise notice 'Updated existing verification consents/requests to be organization-bound';
 end;
-$$ language plpgsql;
-
-comment on function sih26044.seed_controlled_demo_ecosystem_phase2b() is
-  'Phase-2B seed function updated to ensure all verification consents/requests are organization-bound. Safe to rerun - updates existing records if needed.';
+$$;
