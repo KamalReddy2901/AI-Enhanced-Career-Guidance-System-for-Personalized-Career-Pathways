@@ -40,7 +40,7 @@ describe('Production Repair V4 Final - Migration Validation', () => {
     expect(migration).toContain('f044d200-0000-4000-8000-000000000100'); // Verification request (live)
     expect(migration).toContain('f044f100-0000-4000-8000-000000000101'); // Verification event
     expect(migration).toContain('f0444100-0000-4000-8000-000000000101'); // v2 requirement
-    expect(migration).toMatch(/f0445100-0000-4000-8000-0000000001\d{2}/); // v2 eligibility (deterministic pattern)
+    expect(migration).toContain('f0445100-0000-4000-8000-00000000'); // v2 eligibility range prefix
 
     // Verify NO collision with Phase-2 IDs
     expect(migration).not.toContain('f044a000-0000-4000-8000-000000000001'); // Phase-2 collab evidence
