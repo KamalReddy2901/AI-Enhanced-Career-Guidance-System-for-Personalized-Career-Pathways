@@ -113,10 +113,10 @@ describe('Production Repair V4 Final - Real Execution', () => {
     
     // Create controlled actors if they don't exist (controlled seed may not have run yet)
     sql(`
-      insert into sih26044.actors (id, display_name, is_verifier) values
-        ('${CONTROLLED_STUDENT_ID}', 'Ananya Rao (Test)', false),
-        ('${CONTROLLED_FACULTY_ID}', 'Dr. Sharma (Test)', true),
-        ('359de147-6dd1-41a9-aa06-8dd1a62d5080', 'Recruiter (Test)', false)
+      insert into sih26044.actors (id, display_name) values
+        ('${CONTROLLED_STUDENT_ID}', 'Ananya Rao (Test)'),
+        ('${CONTROLLED_FACULTY_ID}', 'Dr. Sharma (Test)'),
+        ('359de147-6dd1-41a9-aa06-8dd1a62d5080', 'Recruiter (Test)')
       on conflict (id) do nothing;
       
       insert into sih26044.organizations (id, legal_name, display_name, kind, status) values
