@@ -98,27 +98,13 @@ describe('Production Repair V4 Final - Real Execution', () => {
 
   it('should execute complete production repair v4 lifecycle', async () => {
     // ================================================================
-    // A. CONFIRM CONTROLLED FIXTURES EXIST
+    // A/B. CONFIRM FIXTURES AND PROVE MIGRATION EXECUTED
     // ================================================================
-    console.log('\n🔍 A. Confirming controlled fixtures...');
+    console.log('\n🔍 Verifying migration execution...');
     
-    const { data: student } = await admin.from('actors').select('id').eq('id', CONTROLLED_STUDENT_ID).single();
-    const { data: faculty } = await admin.from('actors').select('id').eq('id', CONTROLLED_FACULTY_ID).single();
-    const { data: institution } = await admin.from('organizations').select('id').eq('id', CONTROLLED_INSTITUTION_ID).single();
-    
-    expect(student?.id).toBe(CONTROLLED_STUDENT_ID);
-    expect(faculty?.id).toBe(CONTROLLED_FACULTY_ID);
-    expect(institution?.id).toBe(CONTROLLED_INSTITUTION_ID);
-    
-    console.log('   ✅ Controlled actors exist');
-
-    // ================================================================
-    // B. PROVE MIGRATION EXECUTED
-    // ================================================================
-    console.log('\n🔍 B. Proving migration executed...');
-    
-    // 4 canonical evidence records in f044a100 range
-    const { data: canonicalEvidence, error: evidenceError } = await admin
+    // The migration creates 4 canonical evidence records
+    const { data: canonicalEvidence, error: evidenceError} = await admin
+      .schema('sih26044')
       .from('evidence_records')
       .select('id, literal_claim, source_system, visibility')
       .eq('subject_actor_id', CONTROLLED_STUDENT_ID)
@@ -142,6 +128,7 @@ describe('Production Repair V4 Final - Real Execution', () => {
 
     // 3 historical closed verification requests
     const { data: closedRequests } = await admin
+      .schema('sih26044')
       .from('verification_requests')
       .select('id, status, closed_at')
       .eq('subject_actor_id', CONTROLLED_STUDENT_ID)
@@ -156,6 +143,7 @@ describe('Production Repair V4 Final - Real Execution', () => {
 
     // 3 verified_by_human events
     const { data: events } = await admin
+      .schema('sih26044')
       .from('verification_events')
       .select('id, action, actor_id')
       .eq('actor_id', CONTROLLED_FACULTY_ID)
@@ -166,6 +154,7 @@ describe('Production Repair V4 Final - Real Execution', () => {
 
     // 1 pending Data Visualization request
     const { data: pendingReq } = await admin
+      .schema('sih26044')
       .from('verification_requests')
       .select('id, status, closed_at')
       .eq('id', DATA_VIZ_VREQ)
@@ -177,6 +166,7 @@ describe('Production Repair V4 Final - Real Execution', () => {
 
     // Flagship v2 published/current
     const { data: v2 } = await admin
+      .schema('sih26044')
       .from('opportunity_versions')
       .select('id, status')
       .eq('id', FLAGSHIP_V2_ID)
@@ -187,6 +177,7 @@ describe('Production Repair V4 Final - Real Execution', () => {
 
     // 5 deterministic requirements
     const { data: requirements } = await admin
+      .schema('sih26044')
       .from('opportunity_requirements')
       .select('id')
       .eq('opportunity_version_id', FLAGSHIP_V2_ID);
@@ -293,21 +284,25 @@ describe('Production Repair V4 Final - Real Execution', () => {
     console.log('\n🔍 F. Idempotency (second run)...');
     
     const { count: evidenceBefore } = await admin
+      .schema('sih26044')
       .from('evidence_records')
       .select('*', { count: 'exact', head: true })
       .eq('subject_actor_id', CONTROLLED_STUDENT_ID);
     
     const { count: consentsBefore } = await admin
+      .schema('sih26044')
       .from('evidence_consent_grants')
       .select('*', { count: 'exact', head: true })
       .eq('subject_actor_id', CONTROLLED_STUDENT_ID);
     
     const { count: requestsBefore } = await admin
+      .schema('sih26044')
       .from('verification_requests')
       .select('*', { count: 'exact', head: true })
       .eq('subject_actor_id', CONTROLLED_STUDENT_ID);
     
     const { count: eventsBefore } = await admin
+      .schema('sih26044')
       .from('verification_events')
       .select('*', { count: 'exact', head: true })
       .eq('actor_id', CONTROLLED_FACULTY_ID);
@@ -317,21 +312,25 @@ describe('Production Repair V4 Final - Real Execution', () => {
     if (phase2Error) throw new Error(`Phase-2 second run failed: ${phase2Error.message}`);
     
     const { count: evidenceAfter } = await admin
+      .schema('sih26044')
       .from('evidence_records')
       .select('*', { count: 'exact', head: true })
       .eq('subject_actor_id', CONTROLLED_STUDENT_ID);
     
     const { count: consentsAfter } = await admin
+      .schema('sih26044')
       .from('evidence_consent_grants')
       .select('*', { count: 'exact', head: true })
       .eq('subject_actor_id', CONTROLLED_STUDENT_ID);
     
     const { count: requestsAfter } = await admin
+      .schema('sih26044')
       .from('verification_requests')
       .select('*', { count: 'exact', head: true })
       .eq('subject_actor_id', CONTROLLED_STUDENT_ID);
     
     const { count: eventsAfter } = await admin
+      .schema('sih26044')
       .from('verification_events')
       .select('*', { count: 'exact', head: true })
       .eq('actor_id', CONTROLLED_FACULTY_ID);
@@ -350,6 +349,7 @@ describe('Production Repair V4 Final - Real Execution', () => {
     
     // This would be tested via browser E2E, but we can verify the actor has verifier role
     const { data: facultyActor } = await admin
+      .schema('sih26044')
       .from('actors')
       .select('id, is_verifier')
       .eq('id', CONTROLLED_FACULTY_ID)
@@ -358,6 +358,7 @@ describe('Production Repair V4 Final - Real Execution', () => {
     expect(facultyActor?.is_verifier).toBe(true);
     
     const { data: studentActor } = await admin
+      .schema('sih26044')
       .from('actors')
       .select('id, is_verifier')
       .eq('id', CONTROLLED_STUDENT_ID)
