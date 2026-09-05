@@ -47,6 +47,7 @@ describe('Production Repair V4 Final - Real Execution', () => {
   let admin: SupabaseClient;
   let facultyToken: string;
   let workerEnv: any;
+  const respond = (data: unknown, status = 200) => Response.json(data, { status });
 
   beforeAll(async () => {
     const local = localEnvironment();
@@ -144,7 +145,7 @@ describe('Production Repair V4 Final - Real Execution', () => {
       }),
     });
     
-    const preResponse = await handleSihRequest(preRequest, workerEnv);
+    const preResponse = await handleSihRequest(preRequest, workerEnv, respond);
     if (!preResponse.ok) {
       const errorText = await preResponse.text();
       throw new Error(`Pre-attestation failed: ${preResponse.status} ${errorText}`);
@@ -208,7 +209,7 @@ describe('Production Repair V4 Final - Real Execution', () => {
       }),
     });
     
-    const postResponse = await handleSihRequest(postRequest, workerEnv);
+    const postResponse = await handleSihRequest(postRequest, workerEnv, respond);
     if (!postResponse.ok) {
       const errorText = await postResponse.text();
       throw new Error(`Post-attestation failed: ${postResponse.status} ${errorText}`);
