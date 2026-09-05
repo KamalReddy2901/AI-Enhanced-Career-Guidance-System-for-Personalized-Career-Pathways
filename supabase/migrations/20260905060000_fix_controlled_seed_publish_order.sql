@@ -689,50 +689,50 @@ Duration: 3 months | Hybrid, Bangalore | ₹12,000/month',
     id, questionnaire_version_id, ordinal, question_type, question_text,
     choice_options, skill_refs, scoring_weight, created_at
   ) values
-    ('f044q000-0000-4000-8000-000000000001', v_qv_data_analyst, 0, 'single_choice',
+    ('f0441001-0000-4000-8000-000000000001', v_qv_data_analyst, 0, 'single_choice',
      'You receive a CSV with 50,000 rows of patient appointments. 15% of rows have NULL in the "diagnosis_code" column. What is your first step?',
      '[{"value":"A","label":"Drop all rows with NULL diagnosis_code immediately"},{"value":"B","label":"Investigate the NULL pattern — check if NULLs cluster by date, provider, or facility before deciding"},{"value":"C","label":"Fill NULLs with the string UNKNOWN and proceed"},{"value":"D","label":"Raise a critical bug and refuse to process the dataset"}]'::jsonb,
      '["data-analysis"]'::jsonb, 4.0, '2026-08-20'::timestamptz),
 
-    ('f044q000-0000-4000-8000-000000000002', v_qv_data_analyst, 1, 'single_choice',
+    ('f0441001-0000-4000-8000-000000000002', v_qv_data_analyst, 1, 'single_choice',
      'Which SQL correctly finds the top 5 departments by average appointment duration, only including departments with at least 100 appointments in August 2026?',
      '[{"value":"A","label":"SELECT dept, AVG(duration) FROM appointments GROUP BY dept LIMIT 5"},{"value":"B","label":"SELECT dept, AVG(duration) FROM appointments WHERE month=8 GROUP BY dept HAVING COUNT(*)>=100 ORDER BY AVG(duration) DESC LIMIT 5"},{"value":"C","label":"SELECT TOP 5 dept, AVG(duration) FROM appointments HAVING COUNT(*)>=100"},{"value":"D","label":"SELECT dept FROM appointments GROUP BY dept LIMIT 5"}]'::jsonb,
      '["sql"]'::jsonb, 4.0, '2026-08-20'::timestamptz),
 
-    ('f044q000-0000-4000-8000-000000000003', v_qv_data_analyst, 2, 'single_choice',
+    ('f0441001-0000-4000-8000-000000000003', v_qv_data_analyst, 2, 'single_choice',
      'A stakeholder asks for a chart comparing 12 months of revenue across 6 product lines. Which chart type is most appropriate?',
      '[{"value":"A","label":"Pie chart"},{"value":"B","label":"Line chart with one series per product line"},{"value":"C","label":"Scatter plot"},{"value":"D","label":"Histogram"}]'::jsonb,
      '["data-visualization"]'::jsonb, 4.0, '2026-08-20'::timestamptz),
 
-    ('f044q000-0000-4000-8000-000000000004', v_qv_data_analyst, 3, 'text',
+    ('f0441001-0000-4000-8000-000000000004', v_qv_data_analyst, 3, 'text',
      'Describe a time you found an unexpected pattern in data. What was your approach to validating it before sharing findings?',
      null, '["data-analysis"]'::jsonb, null, '2026-08-20'::timestamptz),
 
-    ('f044q000-0000-4000-8000-000000000011', v_qv_research_data, 0, 'single_choice',
+    ('f0441001-0000-4000-8000-000000000011', v_qv_research_data, 0, 'single_choice',
      'A colleague proposes combining two datasets from different trials that used slightly different measurement scales. What should happen first?',
      '[{"value":"A","label":"Merge them immediately"},{"value":"B","label":"Check whether the measurement instruments are sufficiently comparable and document the harmonisation decision"},{"value":"C","label":"Use only the larger dataset"},{"value":"D","label":"Report the discrepancy to ethics and stop"}]'::jsonb,
      '["research-documentation"]'::jsonb, null, '2026-08-22'::timestamptz),
 
-    ('f044q000-0000-4000-8000-000000000012', v_qv_research_data, 1, 'text',
+    ('f0441001-0000-4000-8000-000000000012', v_qv_research_data, 1, 'text',
      'How would you document a data cleaning decision so that another researcher can reproduce your analysis six months later?',
      null, '["research-documentation"]'::jsonb, null, '2026-08-22'::timestamptz),
 
-    ('f044q000-0000-4000-8000-000000000013', v_qv_research_data, 2, 'single_choice',
+    ('f0441001-0000-4000-8000-000000000013', v_qv_research_data, 2, 'single_choice',
      'A colleague asks you to email a de-identified patient CSV to their personal address for weekend analysis. You should:',
      '[{"value":"A","label":"Send it — it is de-identified"},{"value":"B","label":"Decline and remind them de-identified research data must remain within approved systems"},{"value":"C","label":"Ask your supervisor first and meanwhile send it"},{"value":"D","label":"Share a link on a public cloud service"}]'::jsonb,
      '["research-documentation"]'::jsonb, null, '2026-08-22'::timestamptz),
 
-    ('f044q000-0000-4000-8000-000000000021', v_qv_product_analytics, 0, 'single_choice',
+    ('f0441001-0000-4000-8000-000000000021', v_qv_product_analytics, 0, 'single_choice',
      'Your signup-to-activation rate dropped from 62% to 48% last week. Which is the most appropriate first action?',
      '[{"value":"A","label":"Immediately roll back the last deployment"},{"value":"B","label":"Segment the drop by traffic source, device, and cohort to identify where it concentrates"},{"value":"C","label":"Email the CEO with the percentage drop"},{"value":"D","label":"Increase paid acquisition to compensate"}]'::jsonb,
      '["data-analysis"]'::jsonb, null, '2026-08-21'::timestamptz),
 
-    ('f044q000-0000-4000-8000-000000000022', v_qv_product_analytics, 1, 'single_choice',
+    ('f0441001-0000-4000-8000-000000000022', v_qv_product_analytics, 1, 'single_choice',
      'An A/B test ran for 3 days and shows a 4% lift with p=0.04. A PM wants to ship immediately. What do you advise?',
      '[{"value":"A","label":"Ship it — the p-value is under 0.05"},{"value":"B","label":"Wait for the pre-specified sample size and duration; early stopping inflates false-positive rates"},{"value":"C","label":"Run a second A/B test to confirm"},{"value":"D","label":"Discard — 3 days is too short"}]'::jsonb,
      '["data-analysis"]'::jsonb, null, '2026-08-21'::timestamptz),
 
-    ('f044q000-0000-4000-8000-000000000023', v_qv_product_analytics, 2, 'text',
+    ('f0441001-0000-4000-8000-000000000023', v_qv_product_analytics, 2, 'text',
      'You present weekly metrics to the product team. Describe how you choose which metrics to highlight and how you communicate a metric that moved unexpectedly.',
      null, '["presentation"]'::jsonb, null, '2026-08-21'::timestamptz)
   on conflict (id, questionnaire_version_id) do nothing;
@@ -754,9 +754,9 @@ Duration: 3 months | Hybrid, Bangalore | ₹12,000/month',
   insert into sih26044.opportunity_questionnaire_assignments (
     id, opportunity_version_id, questionnaire_id, required, ordinal, created_at
   ) values
-    ('f044qa00-0000-4000-8000-000000000001', v_ver_jr_analyst,     v_q_data_analyst,      true, 0, '2026-08-20'::timestamptz),
-    ('f044qa00-0000-4000-8000-000000000002', v_ver_prod_analytics,  v_q_product_analytics, true, 0, '2026-08-21'::timestamptz),
-    ('f044qa00-0000-4000-8000-000000000003', v_ver_research_asst,   v_q_research_data,     true, 0, '2026-08-22'::timestamptz)
+    ('f0441002-0000-4000-8000-000000000001', v_ver_jr_analyst,     v_q_data_analyst,      true, 0, '2026-08-20'::timestamptz),
+    ('f0441002-0000-4000-8000-000000000002', v_ver_prod_analytics,  v_q_product_analytics, true, 0, '2026-08-21'::timestamptz),
+    ('f0441002-0000-4000-8000-000000000003', v_ver_research_asst,   v_q_research_data,     true, 0, '2026-08-22'::timestamptz)
   on conflict (opportunity_version_id, questionnaire_id) do nothing;
 
   select count(*) into v_cnt from sih26044.questionnaire_questions
