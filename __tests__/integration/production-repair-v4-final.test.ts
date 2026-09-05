@@ -5,12 +5,16 @@
  * and validates actual execution results.
  * 
  * Required sequence:
- * A. Prove migration executed (query resulting records)
- * B. Pre-attestation via Worker recompute API
- * C. Faculty decision via authenticated RPC
- * D. Post-attestation validation
- * E. Idempotency (second migration run)
- * F. Verifier guard validation
+ * 1. Provision controlled Phase-1 fixture prerequisites
+ * 2. Confirm student/faculty actors exist and are active
+ * 3. Create disposable auth users
+ * 4. Bind auth_user_id to existing controlled actors
+ * 5. Assert current_actor_id() returns expected IDs
+ * 6. Execute production repair v4 migration
+ * 7. Pre-attestation via Worker recompute
+ * 8. Faculty authenticated RPC decision
+ * 9. Post-attestation validation (Data Viz MET_STRONG)
+ * 10. Idempotency (second repair execution)
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
@@ -45,8 +49,7 @@ const DATA_VIZ_VREQ = 'f044d200-0000-4000-8000-000000000100';
 
 describe('Production Repair V4 Final - Real Execution', () => {
   let admin: SupabaseClient;
-  let studentToken: string;
-  let facultyToken: string;
+  let studentClient: SupabaseClient;
   let facultyClient: SupabaseClient;
   let workerEnv: any;
   const respond = (data: unknown, status = 200) => Response.json(data, { status });
@@ -64,10 +67,56 @@ describe('Production Repair V4 Final - Real Execution', () => {
     admin = createClient(apiUrl, serviceKey, { auth: { persistSession: false } });
     workerEnv = { SUPABASE_URL: apiUrl, SUPABASE_ANON_KEY: anonKey, SUPABASE_ELEVATED_KEY: serviceKey };
 
+    // STEP 1: Provision controlled fixture prerequisites
+    console.log('\n📦 Provisioning controlled fixtures...');
+    sql(`
+      -- Actors
+      insert into sih26044.actors (id, display_name, status) values
+        ('${CONTROLLED_STUDENT_ID}', 'Ananya Rao', 'active'),
+        ('${CONTROLLED_FACULTY_ID}', 'Dr. Sharma', 'active'),
+        ('359de147-6dd1-41a9-aa06-8dd1a62d5080', 'Recruiter A', 'active')
+      on conflict (id) do nothing;
+      
+      -- Organization
+      insert into sih26044.organizations (id, legal_name, display_name, kind, status) values
+        ('${CONTROLLED_INSTITUTION_ID}', 'AIIMS Delhi', 'AIIMS Delhi', 'educational_institution', 'active')
+      on conflict (id) do nothing;
+      
+      -- Student membership
+      insert into sih26044.organization_memberships (id, actor_id, organization_id, status, valid_from) values
+        ('f0440000-0000-4000-8000-300000000001', '${CONTROLLED_STUDENT_ID}', '${CONTROLLED_INSTITUTION_ID}', 'active', now())
+      on conflict (id) do nothing;
+      
+      -- Faculty membership
+      insert into sih26044.organization_memberships (id, actor_id, organization_id, status, valid_from) values
+        ('f0440000-0000-4000-8000-300000000002', '${CONTROLLED_FACULTY_ID}', '${CONTROLLED_INSTITUTION_ID}', 'active', now())
+      on conflict (id) do nothing;
+      
+      -- Subject facts for readiness
+      insert into sih26044.readiness_subject_facts (
+        subject_actor_id, education_level, education_level_confirmed,
+        physical_presence_locations_complete, relevant_languages_complete
+      ) values (
+        '${CONTROLLED_STUDENT_ID}', 'undergraduate', true, true, true
+      ) on conflict (subject_actor_id) do nothing;
+    `);
+
+    // STEP 2: Confirm actors exist and are active
+    const actorCheck = spawnSync('docker', [
+      'exec', '-i', 'supabase_db_careercase-sih26044-foundation',
+      'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c',
+      `select count(*) from sih26044.actors where id in ('${CONTROLLED_STUDENT_ID}', '${CONTROLLED_FACULTY_ID}') and status = 'active';`
+    ], { encoding: 'utf8' });
+    const activeCount = parseInt(actorCheck.stdout.trim());
+    if (activeCount !== 2) {
+      throw new Error(`Expected 2 active controlled actors, found ${activeCount}`);
+    }
+    console.log('   ✅ Controlled actors exist and are active');
+
+    // STEP 3 & 4: Create auth users and bind to existing actors
     const anon = createClient(apiUrl, anonKey, { auth: { persistSession: false } });
     const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     
-    // Create student auth
     const studentEmail = `student-${suffix}@example.invalid`;
     const studentPassword = `Repair-${suffix}-Strong!`;
     const { data: studentCreated, error: studentCreateError } = await admin.auth.admin.createUser({
@@ -76,16 +125,21 @@ describe('Production Repair V4 Final - Real Execution', () => {
     if (studentCreateError || !studentCreated.user) {
       throw new Error(`Student creation failed: ${studentCreateError?.message}`);
     }
+    
+    // Bind auth_user_id to EXISTING actor
     sql(`update sih26044.actors set auth_user_id = '${studentCreated.user.id}' where id = '${CONTROLLED_STUDENT_ID}';`);
+    
     const { data: studentSignIn, error: studentSignInError } = await anon.auth.signInWithPassword({
       email: studentEmail, password: studentPassword,
     });
     if (studentSignInError || !studentSignIn.session) {
       throw new Error(`Student auth failed: ${studentSignInError?.message}`);
     }
-    studentToken = studentSignIn.session.access_token;
+    studentClient = createClient(apiUrl, anonKey, {
+      global: { headers: { Authorization: `Bearer ${studentSignIn.session.access_token}` } },
+      auth: { persistSession: false },
+    });
     
-    // Create faculty auth
     const facultyEmail = `faculty-${suffix}@example.invalid`;
     const facultyPassword = `Repair-${suffix}-Strong!`;
     const { data: facultyCreated, error: facultyCreateError } = await admin.auth.admin.createUser({
@@ -94,183 +148,132 @@ describe('Production Repair V4 Final - Real Execution', () => {
     if (facultyCreateError || !facultyCreated.user) {
       throw new Error(`Faculty creation failed: ${facultyCreateError?.message}`);
     }
+    
+    // Bind auth_user_id to EXISTING actor
     sql(`update sih26044.actors set auth_user_id = '${facultyCreated.user.id}' where id = '${CONTROLLED_FACULTY_ID}';`);
+    
     const { data: facultySignIn, error: facultySignInError } = await anon.auth.signInWithPassword({
       email: facultyEmail, password: facultyPassword,
     });
     if (facultySignInError || !facultySignIn.session) {
       throw new Error(`Faculty auth failed: ${facultySignInError?.message}`);
     }
-    facultyToken = facultySignIn.session.access_token;
     facultyClient = createClient(apiUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${facultyToken}` } },
+      global: { headers: { Authorization: `Bearer ${facultySignIn.session.access_token}` } },
       auth: { persistSession: false },
     });
+    
+    console.log('   ✅ Auth users created and linked');
+
+    // STEP 5: Assert current_actor_id() resolution
+    const { data: studentActorId, error: studentActorError } = await studentClient
+      .schema('sih26044')
+      .rpc('current_actor_id');
+    if (studentActorError) throw new Error(`Student current_actor_id failed: ${studentActorError.message}`);
+    if (studentActorId !== CONTROLLED_STUDENT_ID) {
+      throw new Error(`Student actor ID mismatch: expected ${CONTROLLED_STUDENT_ID}, got ${studentActorId}`);
+    }
+    
+    const { data: facultyActorId, error: facultyActorError } = await facultyClient
+      .schema('sih26044')
+      .rpc('current_actor_id');
+    if (facultyActorError) throw new Error(`Faculty current_actor_id failed: ${facultyActorError.message}`);
+    if (facultyActorId !== CONTROLLED_FACULTY_ID) {
+      throw new Error(`Faculty actor ID mismatch: expected ${CONTROLLED_FACULTY_ID}, got ${facultyActorId}`);
+    }
+    
+    console.log('   ✅ current_actor_id() resolution verified');
   }, 30000);
 
-  it('should execute complete production repair v4 lifecycle', async () => {
-    console.log('\n🔍 A. Ensuring controlled fixtures exist...');
+  it('should execute production repair v4 and validate complete lifecycle', async () => {
+    console.log('\n🔍 A. Executing production repair v4 migration...');
     
-    // Create controlled actors if they don't exist (controlled seed may not have run yet)
-    sql(`
-      insert into sih26044.actors (id, display_name) values
-        ('${CONTROLLED_STUDENT_ID}', 'Ananya Rao (Test)'),
-        ('${CONTROLLED_FACULTY_ID}', 'Dr. Sharma (Test)'),
-        ('359de147-6dd1-41a9-aa06-8dd1a62d5080', 'Recruiter (Test)')
-      on conflict (id) do nothing;
-      
-      insert into sih26044.organizations (id, legal_name, display_name, kind, status) values
-        ('${CONTROLLED_INSTITUTION_ID}', 'AIIMS Delhi Test', 'AIIMS Delhi', 'educational_institution', 'active')
-      on conflict (id) do nothing;
-      
-      insert into sih26044.opportunities (id, owner_organization_id, status, created_by_actor_id) values
-        ('${FLAGSHIP_OPP_ID}', '${CONTROLLED_INSTITUTION_ID}', 'draft', '${CONTROLLED_FACULTY_ID}')
-      on conflict (id) do nothing;
-      
-      insert into sih26044.opportunity_versions (
-        id, opportunity_id, version_number, status, title, description,
-        opportunity_type, audiences, source_system, source_captured_at,
-        source_literal_text, created_by_actor_id
-      ) values (
-        '${FLAGSHIP_V2_ID}', '${FLAGSHIP_OPP_ID}', 2, 'draft',
-        'Clinical Research Data Analyst', 'Test opportunity',
-        'internship', array['student']::sih26044.opportunity_audience[],
-        'controlled_test', now(), 'Test', '${CONTROLLED_FACULTY_ID}'
-      ) on conflict (id) do nothing;
-      
-      -- Create Data Visualization requirement BEFORE publishing
-      insert into sih26044.opportunity_requirements (
-        id, opportunity_version_id, ordinal, category, priority,
-        literal_source_wording, importance, evidence_expectation, hard_gate,
-        canonical_resolution, canonical_skill_id, canonical_skill_label, minimum_proficiency,
-        human_confirmed, confirmed_by_actor_id, confirmed_at, confirmation_method
-      ) values (
-        'f0440000-0000-4000-8000-100000000001', '${FLAGSHIP_V2_ID}', 0, 'skill', 'required',
-        'Data visualization for clinical dashboards', 3, 'any_recorded', false,
-        'exact', 'data-visualization', 'Data Visualization', 2,
-        true, '${CONTROLLED_FACULTY_ID}', now(), 'controlled_fixture'
-      ) on conflict (id) do nothing;
-      
-      -- NOW publish
-      update sih26044.opportunity_versions set status = 'published', published_at = now()
-      where id = '${FLAGSHIP_V2_ID}';
-      update sih26044.opportunities set status = 'published', current_version_id = '${FLAGSHIP_V2_ID}'
-      where id = '${FLAGSHIP_OPP_ID}';
-      
-      -- Create readiness subject facts for student
-      insert into sih26044.readiness_subject_facts (
-        subject_actor_id, education_level, education_level_confirmed,
-        physical_presence_locations_complete, relevant_languages_complete
-      ) values (
-        '${CONTROLLED_STUDENT_ID}', 'undergraduate', true, true, true
-      ) on conflict (subject_actor_id) do nothing;
-      
-      -- Create organization membership for student (RLS requirement)
-      insert into sih26044.organization_memberships (
-        id, actor_id, organization_id, status, valid_from
-      ) values (
-        'f0440000-0000-4000-8000-200000000001', '${CONTROLLED_STUDENT_ID}',
-        '${CONTROLLED_INSTITUTION_ID}', 'active', now()
-      ) on conflict (id) do nothing;
-    `);
+    // STEP 6: Execute the ACTUAL v4 repair migration
+    const migrationPath = 'supabase/migrations/20260905150000_production_repair_v4_final.sql';
+    const migrationSQL = readFileSync(migrationPath, 'utf8');
+    sql(migrationSQL);
     
-    console.log('\n🔍 B. Creating evidence for v4 test...');
-    
-    // Create evidence records for testing
-    sql(`
-      insert into sih26044.evidence_records (
-        id, subject_actor_id, literal_claim, provenance, initial_verification_state,
-        proposal_source, scope_kind, scope_skill_id, scope_literal_skill_label,
-        source_system, source_captured_at, visibility, created_at
-      ) values
-        ('f044a100-0000-4000-8000-000000000101', '${CONTROLLED_STUDENT_ID}',
-         'Python evidence', 'human_attested', 'proposed', 'user_entry',
-         'global_skill', 'python', 'Python',
-         'career_passport_evidence', now(), 'consented_application', now()),
-        ('f044a100-0000-4000-8000-000000000102', '${CONTROLLED_STUDENT_ID}',
-         'Data Analysis evidence', 'human_attested', 'proposed', 'user_entry',
-         'global_skill', 'data-analysis', 'Data Analysis',
-         'career_passport_evidence', now(), 'consented_application', now()),
-        ('f044a100-0000-4000-8000-000000000103', '${CONTROLLED_STUDENT_ID}',
-         'Research Doc evidence', 'human_attested', 'proposed', 'user_entry',
-         'global_skill', 'research-documentation', 'Research Documentation',
-         'career_passport_evidence', now(), 'consented_application', now()),
-        ('f044a100-0000-4000-8000-000000000104', '${CONTROLLED_STUDENT_ID}',
-         'Data Visualization evidence', 'self_declared', 'proposed', 'user_entry',
-         'global_skill', 'data-visualization', 'Data Visualization',
-         'career_passport_evidence', now(), 'consented_application', now())
-      on conflict (id) do nothing;
-      
-      -- Ensure consent grant exists
-      insert into sih26044.consent_grants (
-        id, subject_actor_id, grantee_organization_id, purpose,
-        granted_at, created_by_actor_id, created_at
-      ) values (
-        'f044d100-0000-4000-8000-000000000100', '${CONTROLLED_STUDENT_ID}',
-        '${CONTROLLED_INSTITUTION_ID}', 'evidence_verification',
-        now(), '${CONTROLLED_STUDENT_ID}', now()
-      ) on conflict (id) do nothing;
-      
-      -- Link consent to evidence
-      insert into sih26044.consent_evidence_records (consent_grant_id, evidence_record_id) values
-        ('f044d100-0000-4000-8000-000000000100', 'f044a100-0000-4000-8000-000000000101'),
-        ('f044d100-0000-4000-8000-000000000100', 'f044a100-0000-4000-8000-000000000102'),
-        ('f044d100-0000-4000-8000-000000000100', 'f044a100-0000-4000-8000-000000000103'),
-        ('f044d100-0000-4000-8000-000000000100', 'f044a100-0000-4000-8000-000000000104')
-      on conflict do nothing;
-      
-      -- Ensure pending Data Viz verification request exists
-      insert into sih26044.verification_requests (
-        id, evidence_record_id, subject_actor_id,
-        requested_verifier_actor_id, requested_verifier_organization_id,
-        consent_grant_id, scope_kind, scope_skill_id, scope_literal_skill_label, status, requested_at
-      ) values (
-        '${DATA_VIZ_VREQ}', '${DATA_VIZ_EVIDENCE}', '${CONTROLLED_STUDENT_ID}',
-        '${CONTROLLED_FACULTY_ID}', '${CONTROLLED_INSTITUTION_ID}',
-        'f044d100-0000-4000-8000-000000000100',
-        'global_skill', 'data-visualization', 'Data Visualization', 'requested', now()
-      ) on conflict (id) do nothing;
-    `);
-    
-    const evidenceCount = parseInt(spawnSync('docker', ['exec', '-i', 'supabase_db_careercase-sih26044-foundation', 'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c', `select count(*) from sih26044.evidence_records where subject_actor_id = '${CONTROLLED_STUDENT_ID}';`], { encoding: 'utf8' }).stdout.trim());
+    // Verify migration executed: 4 canonical evidence records
+    const evidenceCount = parseInt(spawnSync('docker', [
+      'exec', '-i', 'supabase_db_careercase-sih26044-foundation',
+      'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c',
+      `select count(*) from sih26044.evidence_records where subject_actor_id = '${CONTROLLED_STUDENT_ID}';`
+    ], { encoding: 'utf8' }).stdout.trim());
     if (evidenceCount < 4) {
-      throw new Error(`Failed to create evidence - expected at least 4, found ${evidenceCount}`);
-    }
-    console.log('   ✅ Evidence exists for testing');
-    
-    // The pending Data Viz request MUST exist for our test to work
-    const pendingCount = parseInt(spawnSync('docker', ['exec', '-i', 'supabase_db_careercase-sih26044-foundation', 'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c', `select count(*) from sih26044.verification_requests where id = '${DATA_VIZ_VREQ}' and status = 'requested' and closed_at is null;`], { encoding: 'utf8' }).stdout.trim());
-    if (pendingCount !== 1) {
-      throw new Error(`Expected 1 pending Data Viz request, found ${pendingCount}`);
+      throw new Error(`V4 repair migration did not create evidence - expected 4+, found ${evidenceCount}`);
     }
     
-    console.log('   ✅ Test data created');
+    // Verify flagship v2 exists with 5 requirements
+    const requirementCount = parseInt(spawnSync('docker', [
+      'exec', '-i', 'supabase_db_careercase-sih26044-foundation',
+      'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c',
+      `select count(*) from sih26044.opportunity_requirements where opportunity_version_id = '${FLAGSHIP_V2_ID}';`
+    ], { encoding: 'utf8' }).stdout.trim());
+    if (requirementCount !== 5) {
+      throw new Error(`Expected 5 flagship v2 requirements, found ${requirementCount}`);
+    }
+    
+    // Verify 3 closed historical vreqs + 1 pending
+    const closedVreqCount = parseInt(spawnSync('docker', [
+      'exec', '-i', 'supabase_db_careercase-sih26044-foundation',
+      'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c',
+      `select count(*) from sih26044.verification_requests where subject_actor_id = '${CONTROLLED_STUDENT_ID}' and status = 'closed';`
+    ], { encoding: 'utf8' }).stdout.trim());
+    if (closedVreqCount !== 3) {
+      throw new Error(`Expected 3 closed vreqs, found ${closedVreqCount}`);
+    }
+    
+    const pendingVreqCount = parseInt(spawnSync('docker', [
+      'exec', '-i', 'supabase_db_careercase-sih26044-foundation',
+      'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c',
+      `select count(*) from sih26044.verification_requests where id = '${DATA_VIZ_VREQ}' and status = 'requested';`
+    ], { encoding: 'utf8' }).stdout.trim());
+    if (pendingVreqCount !== 1) {
+      throw new Error(`Expected 1 pending Data Viz vreq, found ${pendingVreqCount}`);
+    }
+    
+    console.log('   ✅ V4 repair executed: 4 evidence + 5 requirements + 3 closed + 1 pending vreq');
 
     console.log('\n🔍 B. Pre-attestation via Worker recompute...');
     
+    // STEP 7: Student authenticated recompute
     const preRequest = new Request('http://localhost/sih/readiness/recompute', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${studentToken}`, 'Content-Type': 'application/json' },
+      headers: { 
+        'Authorization': studentClient.global.headers!['Authorization'] as string,
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ opportunityVersionId: FLAGSHIP_V2_ID }),
     });
     
     const preResponse = await handleSihRequest(preRequest, workerEnv, respond);
-    if (!preResponse.ok) throw new Error(`Pre-attestation failed: ${preResponse.status}`);
+    if (!preResponse.ok) {
+      const preError = await preResponse.text();
+      throw new Error(`Pre-attestation failed (${preResponse.status}): ${preError}`);
+    }
     
     const preData = await preResponse.json();
     const preReadiness = preData.result;
     
+    // Assert 3 STRONG + 1 WEAK + 1 UNKNOWN + ELIGIBLE
     const pythonPre = preReadiness.requirements.find((r: any) => r.literalSkillLabel === 'Python');
+    const dataAnalysisPre = preReadiness.requirements.find((r: any) => r.literalSkillLabel === 'Data Analysis');
+    const researchDocPre = preReadiness.requirements.find((r: any) => r.literalSkillLabel === 'Research Documentation');
     const dataVizPre = preReadiness.requirements.find((r: any) => r.literalSkillLabel === 'Data Visualization');
+    const clinicalPre = preReadiness.requirements.find((r: any) => r.literalSkillLabel === 'Clinical Data Standards');
     
     expect(pythonPre?.status).toBe('MET_STRONG');
+    expect(dataAnalysisPre?.status).toBe('MET_STRONG');
+    expect(researchDocPre?.status).toBe('MET_STRONG');
     expect(dataVizPre?.status).toBe('MET_WEAK_EVIDENCE');
+    expect(clinicalPre?.status).toBe('UNKNOWN');
     expect(preReadiness.eligibilityStatus).toBe('ELIGIBLE');
     
     console.log('   ✅ Pre: 3 STRONG + 1 WEAK + 1 UNKNOWN + ELIGIBLE');
 
-    console.log('\n🔍 C. Faculty decision via authenticated RPC...');
+    console.log('\n🔍 C. Faculty authenticated RPC decision...');
     
+    // STEP 8: Faculty decision on pending Data Viz vreq
     const { data: decisionData, error: decisionError } = await facultyClient
       .schema('sih26044')
       .rpc('complete_verification_request_decision', {
@@ -284,13 +287,25 @@ describe('Production Repair V4 Final - Real Execution', () => {
     if (decisionError) throw new Error(`Faculty RPC failed: ${decisionError.message}`);
     expect(decisionData).toBeTruthy();
     
-    console.log('   ✅ Faculty decision');
+    // Verify vreq closed
+    const vreqClosed = parseInt(spawnSync('docker', [
+      'exec', '-i', 'supabase_db_careercase-sih26044-foundation',
+      'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c',
+      `select count(*) from sih26044.verification_requests where id = '${DATA_VIZ_VREQ}' and status = 'closed';`
+    ], { encoding: 'utf8' }).stdout.trim());
+    expect(vreqClosed).toBe(1);
+    
+    console.log('   ✅ Faculty decision executed, vreq closed');
 
     console.log('\n🔍 D. Post-attestation validation...');
     
+    // STEP 9: Student recompute after attestation
     const postRequest = new Request('http://localhost/sih/readiness/recompute', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${studentToken}`, 'Content-Type': 'application/json' },
+      headers: { 
+        'Authorization': studentClient.global.headers!['Authorization'] as string,
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ opportunityVersionId: FLAGSHIP_V2_ID }),
     });
     
@@ -305,30 +320,26 @@ describe('Production Repair V4 Final - Real Execution', () => {
 
     console.log('\n🔍 E. Idempotency validation...');
     
-    // Record counts - should remain stable
-    const evidenceFinal = parseInt(spawnSync('docker', ['exec', '-i', 'supabase_db_careercase-sih26044-foundation', 'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c', `select count(*) from sih26044.evidence_records where subject_actor_id = '${CONTROLLED_STUDENT_ID}';`], { encoding: 'utf8' }).stdout.trim());
-    const consentsFinal = parseInt(spawnSync('docker', ['exec', '-i', 'supabase_db_careercase-sih26044-foundation', 'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c', `select count(*) from sih26044.evidence_consent_grants where subject_actor_id = '${CONTROLLED_STUDENT_ID}';`], { encoding: 'utf8' }).stdout.trim());
+    // STEP 10: Execute v4 repair a SECOND time
+    sql(migrationSQL);
     
-    // Verify our test setup used ON CONFLICT DO NOTHING (idempotent inserts)
-    expect(evidenceFinal).toBeGreaterThanOrEqual(4);
-    expect(consentsFinal).toBeGreaterThanOrEqual(4);
+    // Verify counts unchanged (no duplicates)
+    const evidenceCount2 = parseInt(spawnSync('docker', [
+      'exec', '-i', 'supabase_db_careercase-sih26044-foundation',
+      'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c',
+      `select count(*) from sih26044.evidence_records where subject_actor_id = '${CONTROLLED_STUDENT_ID}';`
+    ], { encoding: 'utf8' }).stdout.trim());
+    expect(evidenceCount2).toBe(evidenceCount); // Same count as first run
     
-    console.log('   ✅ Idempotency: setup used ON CONFLICT DO NOTHING');
+    const vreqCount2 = parseInt(spawnSync('docker', [
+      'exec', '-i', 'supabase_db_careercase-sih26044-foundation',
+      'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c',
+      `select count(*) from sih26044.verification_requests where subject_actor_id = '${CONTROLLED_STUDENT_ID}';`
+    ], { encoding: 'utf8' }).stdout.trim());
+    expect(vreqCount2).toBe(4); // Still 4 total (3 closed + 1 now closed)
+    
+    console.log('   ✅ Idempotency: second execution created no duplicates');
 
-    console.log('\n🔍 F. Verifier guard validation...');
-    
-    const { data: facultyRequests, error: facultyError } = await facultyClient
-      .schema('sih26044')
-      .from('verification_requests')
-      .select('id')
-      .eq('requested_verifier_actor_id', CONTROLLED_FACULTY_ID)
-      .limit(1);
-    
-    if (facultyError) throw new Error(`Faculty verifier query failed: ${facultyError.message}`);
-    expect(facultyRequests).toBeTruthy();
-    expect(Array.isArray(facultyRequests)).toBe(true);
-    
-    console.log('   ✅ Verifier guard: faculty can access verifier context');
-    console.log('\n✅ ALL VALIDATION PASSED');
-  }, 120000);
+    console.log('\n✅ Production Repair V4 lifecycle complete');
+  }, 60000);
 });
