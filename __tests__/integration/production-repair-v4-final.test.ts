@@ -52,11 +52,36 @@ describe('Production Repair V4 Final - Real Execution', () => {
     workerUrl = process.env.VITE_WORKER_URL || 'http://localhost:8787';
     admin = createClient(apiUrl, serviceKey, { auth: { persistSession: false } });
 
-    // Authenticate faculty for decision RPC
+    // Create faculty auth user and link to controlled fixture
     const anon = createClient(apiUrl, anonKey, { auth: { persistSession: false } });
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const facultyEmail = `faculty-${suffix}@example.invalid`;
+    const facultyPassword = `Repair-${suffix}-Strong!`;
+    
+    const { data: created, error: createError } = await admin.auth.admin.createUser({
+      email: facultyEmail,
+      password: facultyPassword,
+      email_confirm: true,
+    });
+    
+    if (createError || !created.user) {
+      throw new Error(`Faculty user creation failed: ${createError?.message || 'no user'}`);
+    }
+    
+    // Link auth user to controlled faculty actor
+    const { error: updateError } = await admin
+      .from('actors')
+      .update({ auth_user_id: created.user.id })
+      .eq('id', CONTROLLED_FACULTY_ID);
+    
+    if (updateError) {
+      throw new Error(`Failed to link auth user to faculty actor: ${updateError.message}`);
+    }
+    
+    // Sign in to get token
     const { data: signInData, error: signInError } = await anon.auth.signInWithPassword({
-      email: 'faculty@controlled.test',
-      password: 'faculty-test-password-2026',
+      email: facultyEmail,
+      password: facultyPassword,
     });
     
     if (signInError || !signInData.session) {
