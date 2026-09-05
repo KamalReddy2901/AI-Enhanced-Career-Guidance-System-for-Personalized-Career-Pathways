@@ -6,6 +6,7 @@ import { StickFigure } from '../components/StickFigure';
 import { BrandMark } from '../components/BrandMark';
 import { useAuth } from '../context/AuthContext';
 import { useGuidance } from '../context/GuidanceContext';
+import { supabase } from '../services/supabase';
 import { toast } from 'sonner';
 import { TextReveal } from '../motion/TextReveal';
 import { sounds } from '../utils/sounds';
@@ -28,23 +29,33 @@ export function AuthPage() {
 
   const requestedRedirect = searchParams.get('redirect');
   
-  // If user has a passport, go to dashboard (or requested redirect)
-  // If no passport exists, send them to onboarding first
-  const getDefaultRedirect = () => {
+  const getRequestedRedirect = () => {
     if (requestedRedirect?.startsWith('/') && !requestedRedirect.startsWith('//')) {
       return requestedRedirect;
     }
-    // Check if passport exists - if not, redirect to onboarding
-    return passport ? '/dashboard' : '/onboarding';
+    return undefined;
   };
 
-  // Already logged in - redirect based on passport state
+  // A provisioned SIH actor has an authoritative, server-backed workspace even
+  // when the legacy local guidance passport has not hydrated in this browser.
+  // Do not route that authenticated actor into legacy onboarding.
   useEffect(() => {
-    if (!loading && !guidanceLoading && user) {
-      const redirect = getDefaultRedirect();
-      navigate(redirect, { replace: true });
-    }
-  }, [user, loading, guidanceLoading, passport, navigate]);
+    if (loading || guidanceLoading || !user) return;
+    let active = true;
+    void (async () => {
+      const requested = getRequestedRedirect();
+      if (requested) {
+        if (active) navigate(requested, { replace: true });
+        return;
+      }
+      const { data: actorId } = supabase
+        ? await supabase.schema('sih26044').rpc('current_actor_id')
+        : { data: null };
+      if (!active) return;
+      navigate(actorId || passport ? '/dashboard' : '/onboarding', { replace: true });
+    })();
+    return () => { active = false; };
+  }, [user, loading, guidanceLoading, passport, navigate, requestedRedirect]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
