@@ -174,7 +174,7 @@ describe('Production Repair V4 Final - Real Execution', () => {
         granted_at, created_by_actor_id, created_at
       ) values (
         'f044d100-0000-4000-8000-000000000100', '${CONTROLLED_STUDENT_ID}',
-        '${CONTROLLED_INSTITUTION_ID}', 'application_review',
+        '${CONTROLLED_INSTITUTION_ID}', 'evidence_verification',
         now(), '${CONTROLLED_STUDENT_ID}', now()
       ) on conflict (id) do nothing;
       
