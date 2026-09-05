@@ -31,7 +31,7 @@
     "qa:connector-framework": "tsx scripts/connector-framework-qa.ts",
     "qa:runtime-operations": "tsx scripts/runtime-operations-qa.ts",
     "qa:d2-readiness-integration": "tsx scripts/d2-readiness-integration.ts",
-    "test:production-repair-v4": "vitest run __tests__/integration/production-repair-v4-final.test.ts",
+    "test:production-repair-v4": "npx --yes vitest@2.1.8 run __tests__/integration/production-repair-v4-final.test.ts",
     "qa:foundation-freeze-hardening": "tsx scripts/foundation-freeze-hardening-qa.ts",
     "qa:production-convergence": "tsx scripts/production-convergence-qa.ts",
     "qa:collaboration-proposal-authoring": "tsx scripts/collaboration-proposal-authoring-qa.ts",
