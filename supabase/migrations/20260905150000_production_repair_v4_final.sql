@@ -177,7 +177,7 @@ begin
   ) values
     (v_vreq_viz_live, v_evidence_data_viz_canonical, v_actor_student,
      v_actor_faculty, v_org_institution, v_consent_viz_live,
-     'global_skill', 'Data Visualization', 'requested', '2026-09-01'::timestamptz, null)
+     'global_skill', 'Data Visualization', 'requested', '2026-09-01'::timestamptz)
   on conflict (id) do nothing;
   
   -- Historical bounded attestation events
