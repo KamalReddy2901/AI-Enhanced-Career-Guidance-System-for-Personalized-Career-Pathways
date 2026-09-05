@@ -88,10 +88,14 @@ describe('Production Repair V4 Final - Real Execution', () => {
         ('f0440000-0000-4000-8000-300000000001', '${CONTROLLED_STUDENT_ID}', '${CONTROLLED_INSTITUTION_ID}', 'active', now())
       on conflict (id) do nothing;
       
-      -- Faculty membership
+      -- Faculty membership with faculty role for verification
       insert into sih26044.organization_memberships (id, actor_id, organization_id, status, valid_from) values
         ('f0440000-0000-4000-8000-300000000002', '${CONTROLLED_FACULTY_ID}', '${CONTROLLED_INSTITUTION_ID}', 'active', now())
       on conflict (id) do nothing;
+      
+      insert into sih26044.organization_membership_roles (membership_id, role, assigned_by_actor_id, valid_from) values
+        ('f0440000-0000-4000-8000-300000000002', 'faculty', '${CONTROLLED_FACULTY_ID}', now())
+      on conflict (membership_id, role) do nothing;
       
       -- Flagship opportunity v1 (prerequisite for v4 migration which creates v2 from v1)
       insert into sih26044.opportunities (
