@@ -243,6 +243,11 @@ jobs:
       - name: Run D2 Foundation Worker integration gate
         run: npm run qa:d2-readiness-integration
 
+      - name: Run production repair v4 integration gate
+        run: npm run test:production-repair-v4
+        env:
+          VITE_WORKER_URL: http://localhost:8787
+
       - name: Stop disposable Supabase
         if: always()
         run: npx --yes supabase@latest stop --no-backup
