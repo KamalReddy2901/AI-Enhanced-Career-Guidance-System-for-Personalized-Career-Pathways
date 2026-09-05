@@ -16,7 +16,7 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 
 function localEnvironment() {
   const output = execFileSync('npx', ['--yes', 'supabase@latest', 'status', '-o', 'env'], { encoding: 'utf8' });
@@ -24,6 +24,14 @@ function localEnvironment() {
     const match = line.match(/^([A-Z_]+)="?(.*?)"?$/);
     return match ? [[match[1], match[2]]] : [];
   })) as Record<string, string>;
+}
+
+function sql(source: string) {
+  const run = spawnSync('docker', [
+    'exec', '-i', 'supabase_db_careercase-sih26044-foundation',
+    'psql', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres', '-d', 'postgres', '-q',
+  ], { input: source, encoding: 'utf8' });
+  if (run.status !== 0) throw new Error(run.stderr || run.stdout);
 }
 
 const CONTROLLED_STUDENT_ID = 'ef04e316-39b6-4641-8d18-f3564c00f144';
@@ -69,14 +77,11 @@ describe('Production Repair V4 Final - Real Execution', () => {
     }
     
     // Link auth user to controlled faculty actor
-    const { error: updateError } = await admin
-      .from('actors')
-      .update({ auth_user_id: created.user.id })
-      .eq('id', CONTROLLED_FACULTY_ID);
-    
-    if (updateError) {
-      throw new Error(`Failed to link auth user to faculty actor: ${updateError.message}`);
-    }
+    sql(`
+      update sih26044.actors
+      set auth_user_id = '${created.user.id}'
+      where id = '${CONTROLLED_FACULTY_ID}';
+    `);
     
     // Sign in to get token
     const { data: signInData, error: signInError } = await anon.auth.signInWithPassword({
