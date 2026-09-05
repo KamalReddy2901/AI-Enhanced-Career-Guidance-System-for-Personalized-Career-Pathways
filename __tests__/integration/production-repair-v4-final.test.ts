@@ -138,7 +138,28 @@ describe('Production Repair V4 Final - Real Execution', () => {
         'controlled_test', now(), 'Test', '${CONTROLLED_FACULTY_ID}', now()
       ) on conflict (id) do nothing;
       
+      -- Create Data Visualization requirement
+      insert into sih26044.opportunity_requirements (
+        id, opportunity_version_id, ordinal, category, priority,
+        literal_source_wording, importance, evidence_expectation, hard_gate,
+        canonical_resolution, canonical_skill_id, canonical_skill_label, minimum_proficiency,
+        human_confirmed, confirmed_by_actor_id, confirmed_at, confirmation_method
+      ) values (
+        'f0440000-0000-4000-8000-100000000001', '${FLAGSHIP_V2_ID}', 0, 'skill', 'required',
+        'Data visualization for clinical dashboards', 3, 'any_recorded', false,
+        'exact', 'data-visualization', 'Data Visualization', 2,
+        true, '${CONTROLLED_FACULTY_ID}', now(), 'controlled_fixture'
+      ) on conflict (id) do nothing;
+      
       update sih26044.opportunities set current_version_id = '${FLAGSHIP_V2_ID}' where id = '${FLAGSHIP_OPP_ID}';
+      
+      -- Create readiness subject facts for student
+      insert into sih26044.readiness_subject_facts (
+        subject_actor_id, education_level, education_level_confirmed,
+        physical_presence_locations_complete, relevant_languages_complete
+      ) values (
+        '${CONTROLLED_STUDENT_ID}', 'undergraduate', true, true, true
+      ) on conflict (subject_actor_id) do nothing;
     `);
     
     console.log('\n🔍 B. Creating evidence for v4 test...');
