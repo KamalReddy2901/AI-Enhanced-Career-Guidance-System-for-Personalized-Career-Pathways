@@ -11,8 +11,17 @@
  * 7. Verifier UI role guard
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { execFileSync } from 'node:child_process';
+
+function localEnvironment() {
+  const output = execFileSync('npx', ['--yes', 'supabase@latest', 'status', '-o', 'env'], { encoding: 'utf8' });
+  return Object.fromEntries(output.split('\n').flatMap(line => {
+    const match = line.match(/^([A-Z_]+)="?(.*?)"?$/);
+    return match ? [[match[1], match[2]]] : [];
+  })) as Record<string, string>;
+}
 
 const CONTROLLED_STUDENT_ID = 'ef04e316-39b6-4641-8d18-f3564c00f144';
 const CONTROLLED_FACULTY_ID = '27e18338-ec21-40da-a6aa-2facacc7bd6e';
@@ -26,15 +35,17 @@ describe('Production Repair V4 Final - Full CI Integration', () => {
   let workerUrl: string;
 
   beforeAll(() => {
-    const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    workerUrl = process.env.VITE_WORKER_URL || 'http://localhost:8787';
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+    const local = localEnvironment();
+    const apiUrl = local.API_URL;
+    const serviceKey = local.SECRET_KEY || local.SERVICE_ROLE_KEY;
+    
+    if (!apiUrl || !serviceKey) {
+      throw new Error('Missing Supabase credentials from local environment');
     }
 
-    supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    workerUrl = process.env.VITE_WORKER_URL || 'http://localhost:8787';
+
+    supabase = createClient(apiUrl, serviceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
   });
