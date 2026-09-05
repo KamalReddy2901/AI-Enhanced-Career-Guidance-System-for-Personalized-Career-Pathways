@@ -50,6 +50,7 @@ const DATA_VIZ_VREQ = 'f044d200-0000-4000-8000-000000000100';
 describe('Production Repair V4 Final - Real Execution', () => {
   let admin: SupabaseClient;
   let studentClient: SupabaseClient;
+  let studentToken: string;
   let facultyClient: SupabaseClient;
   let workerEnv: any;
   const respond = (data: unknown, status = 200) => Response.json(data, { status });
@@ -159,8 +160,9 @@ describe('Production Repair V4 Final - Real Execution', () => {
     if (studentSignInError || !studentSignIn.session) {
       throw new Error(`Student auth failed: ${studentSignInError?.message}`);
     }
+    studentToken = studentSignIn.session.access_token;
     studentClient = createClient(apiUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${studentSignIn.session.access_token}` } },
+      global: { headers: { Authorization: `Bearer ${studentToken}` } },
       auth: { persistSession: false },
     });
     
@@ -264,7 +266,7 @@ describe('Production Repair V4 Final - Real Execution', () => {
     const preRequest = new Request('http://localhost/sih/readiness/recompute', {
       method: 'POST',
       headers: { 
-        'Authorization': studentClient.global.headers!['Authorization'] as string,
+        'Authorization': `Bearer ${studentToken}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ opportunityVersionId: FLAGSHIP_V2_ID }),
@@ -327,7 +329,7 @@ describe('Production Repair V4 Final - Real Execution', () => {
     const postRequest = new Request('http://localhost/sih/readiness/recompute', {
       method: 'POST',
       headers: { 
-        'Authorization': studentClient.global.headers!['Authorization'] as string,
+        'Authorization': `Bearer ${studentToken}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ opportunityVersionId: FLAGSHIP_V2_ID }),
