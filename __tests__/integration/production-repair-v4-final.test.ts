@@ -279,7 +279,11 @@ describe('Production Repair V4 Final - Real Execution', () => {
     }
     
     const preData = await preResponse.json();
+    console.log('   Pre-attestation response:', JSON.stringify(preData, null, 2));
     const preReadiness = preData.result;
+    if (!preReadiness || !preReadiness.requirements) {
+      throw new Error(`Invalid readiness structure: ${JSON.stringify(preData)}`);
+    }
     
     // Assert 3 STRONG + 1 WEAK + 1 UNKNOWN + ELIGIBLE
     const pythonPre = preReadiness.requirements.find((r: any) => r.literalSkillLabel === 'Python');
