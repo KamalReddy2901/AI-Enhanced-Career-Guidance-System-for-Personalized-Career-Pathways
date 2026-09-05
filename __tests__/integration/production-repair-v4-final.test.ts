@@ -204,9 +204,9 @@ describe('Production Repair V4 Final - Real Execution', () => {
     const consentsBefore = parseInt(spawnSync('docker', ['exec', '-i', 'supabase_db_careercase-sih26044-foundation', 'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c', `select count(*) from sih26044.evidence_consent_grants where subject_actor_id = '${CONTROLLED_STUDENT_ID}';`], { encoding: 'utf8' }).stdout.trim());
     
     // Run migration again - should be idempotent (no duplicates)
-    const migrationPath = 'supabase/migrations/20260905150000_production_repair_v4_final.sql';
-    const migrationContent = readFileSync(migrationPath, 'utf8');
-    sql(migrationContent);
+    const migrationPath2 = 'supabase/migrations/20260905150000_production_repair_v4_final.sql';
+    const migrationContent2 = readFileSync(migrationPath2, 'utf8');
+    sql(migrationContent2);
     
     const evidenceAfter = parseInt(spawnSync('docker', ['exec', '-i', 'supabase_db_careercase-sih26044-foundation', 'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c', `select count(*) from sih26044.evidence_records where subject_actor_id = '${CONTROLLED_STUDENT_ID}';`], { encoding: 'utf8' }).stdout.trim());
     const consentsAfter = parseInt(spawnSync('docker', ['exec', '-i', 'supabase_db_careercase-sih26044-foundation', 'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c', `select count(*) from sih26044.evidence_consent_grants where subject_actor_id = '${CONTROLLED_STUDENT_ID}';`], { encoding: 'utf8' }).stdout.trim());
