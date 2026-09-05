@@ -190,12 +190,12 @@ describe('Production Repair V4 Final - Real Execution', () => {
       insert into sih26044.verification_requests (
         id, evidence_record_id, subject_actor_id,
         requested_verifier_actor_id, requested_verifier_organization_id,
-        consent_grant_id, scope_kind, scope_literal_skill_label, status, requested_at
+        consent_grant_id, scope_kind, scope_skill_id, scope_literal_skill_label, status, requested_at
       ) values (
         '${DATA_VIZ_VREQ}', '${DATA_VIZ_EVIDENCE}', '${CONTROLLED_STUDENT_ID}',
         '${CONTROLLED_FACULTY_ID}', '${CONTROLLED_INSTITUTION_ID}',
         'f044d100-0000-4000-8000-000000000100',
-        'global_skill', 'Data Visualization', 'requested', now()
+        'global_skill', 'data-visualization', 'Data Visualization', 'requested', now()
       ) on conflict (id) do nothing;
     `);
     
