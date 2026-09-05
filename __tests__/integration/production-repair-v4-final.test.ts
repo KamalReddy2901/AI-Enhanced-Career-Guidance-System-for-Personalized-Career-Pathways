@@ -92,6 +92,30 @@ describe('Production Repair V4 Final - Real Execution', () => {
         ('f0440000-0000-4000-8000-300000000002', '${CONTROLLED_FACULTY_ID}', '${CONTROLLED_INSTITUTION_ID}', 'active', now())
       on conflict (id) do nothing;
       
+      -- Flagship opportunity v1 (prerequisite for v4 migration which creates v2 from v1)
+      insert into sih26044.opportunities (
+        id, owner_organization_id, status, created_by_actor_id, created_at
+      ) values (
+        '${FLAGSHIP_OPP_ID}', '${CONTROLLED_INSTITUTION_ID}', 'published',
+        '359de147-6dd1-41a9-aa06-8dd1a62d5080', now()
+      ) on conflict (id) do nothing;
+      
+      insert into sih26044.opportunity_versions (
+        id, opportunity_id, version_number, status,
+        title, description, opportunity_type, audiences,
+        source_system, source_literal_text, source_captured_at,
+        created_by_actor_id, published_at, created_at
+      ) values (
+        'f0443000-0000-4000-8000-000000000001', '${FLAGSHIP_OPP_ID}', 1, 'published',
+        'Clinical Research Data & Standardization Intern', 'Test opportunity v1',
+        'internship', array['student']::sih26044.opportunity_audience[],
+        'controlled_test', 'Test v1', now(),
+        '359de147-6dd1-41a9-aa06-8dd1a62d5080', now(), now()
+      ) on conflict (id) do nothing;
+      
+      update sih26044.opportunities set current_version_id = 'f0443000-0000-4000-8000-000000000001'
+      where id = '${FLAGSHIP_OPP_ID}';
+      
       -- Subject facts for readiness
       insert into sih26044.readiness_subject_facts (
         subject_actor_id, education_level, education_level_confirmed,
