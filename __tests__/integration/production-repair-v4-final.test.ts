@@ -164,6 +164,14 @@ describe('Production Repair V4 Final - Real Execution', () => {
       ) values (
         '${CONTROLLED_STUDENT_ID}', 'undergraduate', true, true, true
       ) on conflict (subject_actor_id) do nothing;
+      
+      -- Create organization membership for student (RLS requirement)
+      insert into sih26044.organization_memberships (
+        id, actor_id, organization_id, status, valid_from
+      ) values (
+        'f0440000-0000-4000-8000-200000000001', '${CONTROLLED_STUDENT_ID}',
+        '${CONTROLLED_INSTITUTION_ID}', 'active', now()
+      ) on conflict (id) do nothing;
     `);
     
     console.log('\n🔍 B. Creating evidence for v4 test...');
