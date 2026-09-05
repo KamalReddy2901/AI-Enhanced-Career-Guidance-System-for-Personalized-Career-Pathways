@@ -109,10 +109,41 @@ describe('Production Repair V4 Final - Real Execution', () => {
   }, 30000);
 
   it('should execute complete production repair v4 lifecycle', async () => {
-    console.log('\n🔍 A. Ensuring evidence exists for v4 test...');
+    console.log('\n🔍 A. Ensuring controlled fixtures exist...');
     
-    // V4 migration may not have created evidence if v2/v3 caused conflicts
-    // Manually ensure the 4 canonical evidence records exist for testing
+    // Create controlled actors if they don't exist (controlled seed may not have run yet)
+    sql(`
+      insert into sih26044.actors (id, display_name, is_verifier) values
+        ('${CONTROLLED_STUDENT_ID}', 'Ananya Rao (Test)', false),
+        ('${CONTROLLED_FACULTY_ID}', 'Dr. Sharma (Test)', true),
+        ('359de147-6dd1-41a9-aa06-8dd1a62d5080', 'Recruiter (Test)', false)
+      on conflict (id) do nothing;
+      
+      insert into sih26044.organizations (id, legal_name, display_name, kind, status) values
+        ('${CONTROLLED_INSTITUTION_ID}', 'AIIMS Delhi Test', 'AIIMS Delhi', 'educational_institution', 'active')
+      on conflict (id) do nothing;
+      
+      insert into sih26044.opportunities (id, owner_organization_id, status, created_by_actor_id) values
+        ('${FLAGSHIP_OPP_ID}', '${CONTROLLED_INSTITUTION_ID}', 'published', '${CONTROLLED_FACULTY_ID}')
+      on conflict (id) do nothing;
+      
+      insert into sih26044.opportunity_versions (
+        id, opportunity_id, version_number, status, title, description,
+        opportunity_type, audiences, source_system, source_captured_at,
+        source_literal_text, created_by_actor_id, published_at
+      ) values (
+        '${FLAGSHIP_V2_ID}', '${FLAGSHIP_OPP_ID}', 2, 'published',
+        'Clinical Research Data Analyst', 'Test opportunity',
+        'internship', array['student']::sih26044.opportunity_audience[],
+        'controlled_test', now(), 'Test', '${CONTROLLED_FACULTY_ID}', now()
+      ) on conflict (id) do nothing;
+      
+      update sih26044.opportunities set current_version_id = '${FLAGSHIP_V2_ID}' where id = '${FLAGSHIP_OPP_ID}';
+    `);
+    
+    console.log('\n🔍 B. Creating evidence for v4 test...');
+    
+    // Create evidence records for testing
     sql(`
       insert into sih26044.evidence_records (
         id, subject_actor_id, literal_claim, provenance, initial_verification_state,
