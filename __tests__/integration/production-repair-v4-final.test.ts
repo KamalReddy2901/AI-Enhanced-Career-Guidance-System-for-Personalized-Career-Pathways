@@ -279,24 +279,33 @@ describe('Production Repair V4 Final - Real Execution', () => {
     }
     
     const preData = await preResponse.json();
-    console.log('   Pre-attestation response:', JSON.stringify(preData, null, 2));
     const preReadiness = preData.result;
-    if (!preReadiness || !preReadiness.requirements) {
-      throw new Error(`Invalid readiness structure: ${JSON.stringify(preData)}`);
-    }
     
     // Assert 3 STRONG + 1 WEAK + 1 UNKNOWN + ELIGIBLE
-    const pythonPre = preReadiness.requirements.find((r: any) => r.literalSkillLabel === 'Python');
-    const dataAnalysisPre = preReadiness.requirements.find((r: any) => r.literalSkillLabel === 'Data Analysis');
-    const researchDocPre = preReadiness.requirements.find((r: any) => r.literalSkillLabel === 'Research Documentation');
-    const dataVizPre = preReadiness.requirements.find((r: any) => r.literalSkillLabel === 'Data Visualization');
-    const clinicalPre = preReadiness.requirements.find((r: any) => r.literalSkillLabel === 'Clinical Data Standards');
+    // Worker returns summary counts - query database for per-requirement status
+    const preRequirements = spawnSync('docker', [
+      'exec', '-i', 'supabase_db_careercase-sih26044-foundation',
+      'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-A', '-F', '|', '-c',
+      `select scope_skill_id, requirement_type, best_result_attestation from sih26044.readiness_evidence_projections where subject_actor_id = '${CONTROLLED_STUDENT_ID}' and opportunity_version_id = '${FLAGSHIP_V2_ID}' order by scope_skill_id;`
+    ], { encoding: 'utf8' });
     
-    expect(pythonPre?.status).toBe('MET_STRONG');
-    expect(dataAnalysisPre?.status).toBe('MET_STRONG');
-    expect(researchDocPre?.status).toBe('MET_STRONG');
-    expect(dataVizPre?.status).toBe('MET_WEAK_EVIDENCE');
-    expect(clinicalPre?.status).toBe('UNKNOWN');
+    const reqRows = preRequirements.stdout.trim().split('\n').map(line => {
+      const [skillId, reqType, attestation] = line.split('|');
+      return { skillId, reqType, attestation };
+    });
+    
+    // Find each requirement by skill ID
+    const pythonPre = reqRows.find(r => r.skillId === 'a0440000-0000-4000-8000-000000000011'); // Python
+    const dataAnalysisPre = reqRows.find(r => r.skillId === 'a0440000-0000-4000-8000-000000000012'); // Data Analysis
+    const researchDocPre = reqRows.find(r => r.skillId === 'a0440000-0000-4000-8000-000000000013'); // Research Documentation
+    const dataVizPre = reqRows.find(r => r.skillId === 'a0440000-0000-4000-8000-000000000014'); // Data Visualization
+    const clinicalPre = reqRows.find(r => r.skillId === 'a0440000-0000-4000-8000-000000000015'); // Clinical Data Standards
+    
+    expect(pythonPre?.attestation).toBe('MET_STRONG');
+    expect(dataAnalysisPre?.attestation).toBe('MET_STRONG');
+    expect(researchDocPre?.attestation).toBe('MET_STRONG');
+    expect(dataVizPre?.attestation).toBe('MET_WEAK_EVIDENCE');
+    expect(clinicalPre?.attestation).toBe('UNKNOWN');
     expect(preReadiness.eligibilityStatus).toBe('ELIGIBLE');
     
     console.log('   ✅ Pre: 3 STRONG + 1 WEAK + 1 UNKNOWN + ELIGIBLE');
@@ -342,9 +351,14 @@ describe('Production Repair V4 Final - Real Execution', () => {
     const postResponse = await handleSihRequest(postRequest, workerEnv, respond);
     if (!postResponse.ok) throw new Error(`Post-attestation failed: ${postResponse.status}`);
     
-    const postData = await postResponse.json();
-    const dataVizPost = postData.result.requirements.find((r: any) => r.literalSkillLabel === 'Data Visualization');
-    expect(dataVizPost?.status).toBe('MET_STRONG');
+    // Query database for post-attestation Data Viz status
+    const dataVizPost = spawnSync('docker', [
+      'exec', '-i', 'supabase_db_careercase-sih26044-foundation',
+      'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c',
+      `select best_result_attestation from sih26044.readiness_evidence_projections where subject_actor_id = '${CONTROLLED_STUDENT_ID}' and opportunity_version_id = '${FLAGSHIP_V2_ID}' and scope_skill_id = 'a0440000-0000-4000-8000-000000000014';`
+    ], { encoding: 'utf8' }).stdout.trim();
+    
+    expect(dataVizPost).toBe('MET_STRONG');
     
     console.log('   ✅ Post: Data Visualization = MET_STRONG');
 
