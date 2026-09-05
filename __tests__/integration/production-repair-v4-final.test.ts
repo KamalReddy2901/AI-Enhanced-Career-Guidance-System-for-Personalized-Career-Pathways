@@ -109,17 +109,12 @@ describe('Production Repair V4 Final - Real Execution', () => {
   }, 30000);
 
   it('should execute complete production repair v4 lifecycle', async () => {
-    console.log('\n🔍 A. Running v4 repair migration...');
+    console.log('\n🔍 A. Verifying v4 repair executed (migrations run on supabase start)...');
     
-    // Run the migration to create evidence (idempotent if already ran)
-    const migrationPath = 'supabase/migrations/20260905150000_production_repair_v4_final.sql';
-    const migrationContent = readFileSync(migrationPath, 'utf8');
-    sql(migrationContent);
-    
-    // Verify evidence now exists
+    // Migration already ran when Supabase started - verify evidence exists
     const evidenceCount = parseInt(spawnSync('docker', ['exec', '-i', 'supabase_db_careercase-sih26044-foundation', 'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c', `select count(*) from sih26044.evidence_records where subject_actor_id = '${CONTROLLED_STUDENT_ID}';`], { encoding: 'utf8' }).stdout.trim());
     if (evidenceCount < 4) {
-      throw new Error(`Expected at least 4 evidence records, found ${evidenceCount}`);
+      throw new Error(`V4 repair didn't execute - expected at least 4 evidence records, found ${evidenceCount}`);
     }
     
     const closedCount = parseInt(spawnSync('docker', ['exec', '-i', 'supabase_db_careercase-sih26044-foundation', 'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c', `select count(*) from sih26044.verification_requests where subject_actor_id = '${CONTROLLED_STUDENT_ID}' and status = 'closed';`], { encoding: 'utf8' }).stdout.trim());
