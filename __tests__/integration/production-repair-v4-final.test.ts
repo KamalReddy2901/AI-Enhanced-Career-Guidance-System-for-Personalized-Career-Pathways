@@ -16,6 +16,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { execFileSync, spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { handleSihRequest } from '../../worker/src/sih/routes';
 
 function localEnvironment() {
@@ -108,10 +109,12 @@ describe('Production Repair V4 Final - Real Execution', () => {
   }, 30000);
 
   it('should execute complete production repair v4 lifecycle', async () => {
-    console.log('\n🔍 A. Ensuring v4 repair ran (idempotent)...');
+    console.log('\n🔍 A. Running v4 repair migration...');
     
-    // Execute v4 repair to create evidence if not already present
-    sql(`select sih26044.production_repair_v4_canonical_evidence();`);
+    // Run the migration to create evidence (idempotent if already ran)
+    const migrationPath = 'supabase/migrations/20260905150000_production_repair_v4_final.sql';
+    const migrationContent = readFileSync(migrationPath, 'utf8');
+    sql(migrationContent);
     
     // Verify evidence now exists
     const evidenceCount = parseInt(spawnSync('docker', ['exec', '-i', 'supabase_db_careercase-sih26044-foundation', 'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c', `select count(*) from sih26044.evidence_records where subject_actor_id = '${CONTROLLED_STUDENT_ID}';`], { encoding: 'utf8' }).stdout.trim());
@@ -194,12 +197,16 @@ describe('Production Repair V4 Final - Real Execution', () => {
     
     console.log('   ✅ Post: Data Visualization = MET_STRONG');
 
-    console.log('\n🔍 E. Idempotency (second repair run)...');
+    console.log('\n🔍 E. Idempotency validation...');
     
+    // Record counts before second run
     const evidenceBefore = parseInt(spawnSync('docker', ['exec', '-i', 'supabase_db_careercase-sih26044-foundation', 'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c', `select count(*) from sih26044.evidence_records where subject_actor_id = '${CONTROLLED_STUDENT_ID}';`], { encoding: 'utf8' }).stdout.trim());
     const consentsBefore = parseInt(spawnSync('docker', ['exec', '-i', 'supabase_db_careercase-sih26044-foundation', 'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c', `select count(*) from sih26044.evidence_consent_grants where subject_actor_id = '${CONTROLLED_STUDENT_ID}';`], { encoding: 'utf8' }).stdout.trim());
     
-    sql(`select sih26044.production_repair_v4_canonical_evidence();`);
+    // Run migration again - should be idempotent (no duplicates)
+    const migrationPath = 'supabase/migrations/20260905150000_production_repair_v4_final.sql';
+    const migrationContent = readFileSync(migrationPath, 'utf8');
+    sql(migrationContent);
     
     const evidenceAfter = parseInt(spawnSync('docker', ['exec', '-i', 'supabase_db_careercase-sih26044-foundation', 'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c', `select count(*) from sih26044.evidence_records where subject_actor_id = '${CONTROLLED_STUDENT_ID}';`], { encoding: 'utf8' }).stdout.trim());
     const consentsAfter = parseInt(spawnSync('docker', ['exec', '-i', 'supabase_db_careercase-sih26044-foundation', 'psql', '-U', 'postgres', '-d', 'postgres', '-t', '-c', `select count(*) from sih26044.evidence_consent_grants where subject_actor_id = '${CONTROLLED_STUDENT_ID}';`], { encoding: 'utf8' }).stdout.trim());
@@ -207,7 +214,7 @@ describe('Production Repair V4 Final - Real Execution', () => {
     expect(evidenceAfter).toBe(evidenceBefore);
     expect(consentsAfter).toBe(consentsBefore);
     
-    console.log('   ✅ Idempotency: counts unchanged');
+    console.log('   ✅ Idempotency: counts unchanged after second run');
 
     console.log('\n🔍 F. Verifier guard validation...');
     
