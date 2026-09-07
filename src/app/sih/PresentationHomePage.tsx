@@ -36,7 +36,7 @@ export function PresentationHomePage() {
   const story = [
     core[0],
     ['02', 'Student', 'Featured opportunity', 'Open the Clinical Research Data & Standardization Intern opportunity without searching.', flagshipPath],
-    ['03', 'Student', 'Explainable readiness', 'See which requirements are supported, weak or currently unknown.', `${flagshipPath}/readiness`],
+    ['03', 'Student', 'Explainable readiness', 'See which requirements are supported, weak or currently unknown.', flagship ? `${flagshipPath}/readiness` : '/opportunities'],
     ...core.slice(1),
   ] as const;
   function openStep(number: string, to: string) {
