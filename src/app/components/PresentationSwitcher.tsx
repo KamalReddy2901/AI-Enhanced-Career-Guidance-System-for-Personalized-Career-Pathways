@@ -71,10 +71,9 @@ export function PresentationSwitcher() {
     try {
       const fresh = await fixtureClient().auth.signInWithPassword({ email: fixtureEmail(slug), password: presentationPassword });
       if (fresh.error || !fresh.data.session || fresh.data.user?.app_metadata.fixture_namespace !== 'sih26044-controlled-v1') throw new Error('Unavailable');
-      // Use the existing sign-out cleanup before loading another account's career data.
-      await signOut();
-      // Use the shared client for the real sign-in so AuthContext and every
-      // protected route observe the same session transition.
+      // A password sign-in replaces the shared Supabase session atomically.
+      // An intermediate sign-out lets protected routing redirect to /auth before
+      // the replacement authority has settled.
       const result = await signIn(fixtureEmail(slug), presentationPassword);
       if (result.error) throw new Error('Session expired');
       await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
