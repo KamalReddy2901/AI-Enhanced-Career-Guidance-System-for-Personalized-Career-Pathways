@@ -108,6 +108,11 @@ export function FacultyPage() {
       title="Faculty–Industry Collaboration"
       description="Discover authorized faculty internships, industrial training, FDPs, consultancy, collaborative research, mentoring, workshops, guest lectures and live projects. Records are read through existing SIH26044 RLS; inaccessible identities remain undisclosed."
     >
+      <div className="mb-6 border-2 border-black bg-[#fff4c7] p-4">
+        <p className="font-mono-ui text-[10px] font-black uppercase tracking-wide">Evidence verification</p>
+        <p className="mt-1 text-sm text-black/70">Review the bounded evidence requests and completed decisions available to your faculty authority.</p>
+        <Link to="/verification" className="mt-3 inline-flex border-2 border-black bg-white px-3 py-2 font-mono-ui text-[10px] font-black uppercase">Open verification</Link>
+      </div>
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
         <Summary label="Visible engagements" value={bundle.engagements.length} />
         <Summary label="Visible organizations" value={bundle.organizations.length} />
