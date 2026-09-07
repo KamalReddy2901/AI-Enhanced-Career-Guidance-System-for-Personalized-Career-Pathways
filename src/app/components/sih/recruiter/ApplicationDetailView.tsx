@@ -5,15 +5,17 @@ import type {
   ProductionRecruiterWorkSample,
 } from '../../../services/sih/productionRecruiterProjection';
 import type { EvidenceRecordId } from '../../../domain';
+import type { ApplicationStage } from '../../../domain/application';
 import ReadinessBandExplanation from './ReadinessBandExplanation';
 
 interface Props {
   readonly projection: ProductionRecruiterProjection | 'unavailable';
   readonly opportunityTitle?: string;
   readonly presentationApplicantName?: string;
+  readonly currentStage?: ApplicationStage;
 }
 
-export default function ApplicationDetailView({ projection, opportunityTitle, presentationApplicantName }: Props) {
+export default function ApplicationDetailView({ projection, opportunityTitle, presentationApplicantName, currentStage }: Props) {
   if (projection === 'unavailable') {
     return (
       <div className="border-2 border-black bg-[#f7f4ed] p-6 shadow-[4px_4px_0_#111]">
@@ -39,7 +41,7 @@ export default function ApplicationDetailView({ projection, opportunityTitle, pr
             {opportunityTitle && <p className="mt-2 text-sm font-bold">{opportunityTitle}</p>}
           </div>
           <span className="bg-black px-3 py-1 font-mono-ui text-[10px] font-black uppercase text-[#e7ff57]">
-            {projection.applicationStage.replace('_', ' ')}
+            {(currentStage ?? projection.applicationStage).replace('_', ' ')}
           </span>
         </div>
 
