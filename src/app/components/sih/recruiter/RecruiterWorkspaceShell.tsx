@@ -46,11 +46,9 @@ export default function RecruiterWorkspaceShell({
     <div className="mx-auto max-w-6xl space-y-8 p-4 sm:p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-black uppercase tracking-tighter sm:text-4xl">
-          Applicant Workspace
+          Applications to Review
         </h1>
-        <p className="mt-2 font-mono-ui text-sm text-black/70">
-          Organization ID: {recruiterOrganizationId}
-        </p>
+        <p className="mt-2 text-sm text-black/70">Review only consented application snapshots for the active organization. Technical records remain available inside application detail where needed.</p>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-3">
@@ -69,6 +67,7 @@ export default function RecruiterWorkspaceShell({
             <RecruiterAccessState state={projectionAccessState}>
               {projectionAccessState === 'available' && projection && (
                 <>
+                  <aside className="border-l-4 border-black bg-[#fff4c7] p-4" aria-label="Recruiter privacy boundary"><p className="font-mono-ui text-[10px] font-black uppercase tracking-wide">Private career guidance is not shared with recruiters</p><p className="mt-1 text-sm text-black/70">Recruiters see the application snapshot, opportunity-specific readiness, consented evidence, relevant artifacts and application history — never career interests, RIASEC, aptitude internals, values, aspirations, private constraints or counselor history.</p></aside>
                   <ApplicationDetailView projection={projection} />
 
                   <HumanStageActionPanel

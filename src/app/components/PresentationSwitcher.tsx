@@ -6,14 +6,16 @@ import { useAuth } from '../context/AuthContext';
 // These are the existing hosted-sih-fixture.ts identities, not assignable roles.
 const personas = [
   { slug: 'student', label: 'Student', path: '/career' },
-  { slug: 'recruiter', label: 'Recruiter', path: '/industry/opportunities' },
+  { slug: 'recruiter', label: 'Recruiter', path: '/industry/applicants' },
   { slug: 'faculty', label: 'Faculty', path: '/faculty' },
-  { slug: 'institution-admin', label: 'Institution', path: '/institution' },
-  { slug: 'policy-analyst', label: 'Policy', path: '/institution' },
+  { slug: 'institution-admin', label: 'Institution', path: '/institution/interventions' },
+  { slug: 'policy-analyst', label: 'Policy', path: '/institution/skills-intelligence?presentation=policy' },
 ] as const;
 // Deliberately memory-only: refreshing or ending presentation locks the switcher.
 const sessions = new Set<string>();
 let presentationPassword = '';
+/** Deliberately memory-only: presentation controls disappear on reload. */
+export const isPresentationMode = () => sessions.size > 0;
 function fixtureClient() {
   const env = import.meta.env;
   return createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
@@ -84,7 +86,7 @@ export function PresentationSwitcher() {
     }
   }
 
-  const control = 'min-h-11 border border-black/30 px-3 py-2 font-mono-ui text-[10px] uppercase tracking-wide focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-news)] disabled:opacity-40';
+  const control = 'min-h-9 border border-black/30 px-3 py-1.5 font-mono-ui text-[10px] uppercase tracking-wide focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-news)] disabled:opacity-40';
   return (
     <section aria-label="Presentation personas" className="border-b border-black/20 bg-[var(--paper)]">
       <div className="mx-auto max-w-7xl px-4 py-1.5">
@@ -94,8 +96,10 @@ export function PresentationSwitcher() {
           </button>
           {ready && <>
             <div id="presentation-controls" role="group" aria-label="Choose demo persona" className="flex flex-wrap gap-1">
+              <button type="button" className={`${control} hover:bg-black/5`} onClick={() => navigate('/presentation')}>Demo home</button>
               {personas.map(persona => <button key={persona.slug} type="button" disabled={busy || !sessions.has(persona.slug)} aria-pressed={user?.email === fixtureEmail(persona.slug)} className={`${control} ${user?.email === fixtureEmail(persona.slug) ? 'bg-black text-white' : 'hover:bg-black/5'}`} onClick={() => void switchPersona(persona.slug, persona.path)}>{persona.label}</button>)}
             </div>
+            <button type="button" className={control} disabled={busy} onClick={() => navigate('/presentation#platform')}>Full platform</button>
             <button type="button" className={control} disabled={busy} onClick={async () => { sessions.clear(); presentationPassword = ''; setReady(false); setOpen(false); setMessage(''); await signOut(); navigate('/'); }}>End presentation</button>
           </>}
         </div>

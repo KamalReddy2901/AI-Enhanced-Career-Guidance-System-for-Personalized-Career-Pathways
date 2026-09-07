@@ -69,6 +69,7 @@ const FacultyPage = lazy(() => import("./sih/SihFacultyProductionPages").then((m
 const FacultyCollaborationDetailPage = lazy(() => import("./sih/SihFacultyProductionPages").then((m) => ({ default: m.FacultyCollaborationDetailPage })));
 const InstitutionSkillsIntelligencePage = lazy(() => import("./sih/SihInstitutionProductionPage").then((m) => ({ default: m.InstitutionSkillsIntelligencePage })));
 const InstitutionInterventionsPage = lazy(() => import("./sih/SihInstitutionInterventionsPage").then((m) => ({ default: m.InstitutionInterventionsPage })));
+const PresentationHomePage = lazy(() => import("./sih/PresentationHomePage").then((m) => ({ default: m.PresentationHomePage })));
 const DemoOverviewPage = lazy(() => import("./demo/DemoPages").then((m) => ({ default: m.DemoOverviewPage })));
 const DemoStudentPage = lazy(() => import("./demo/DemoPages").then((m) => ({ default: m.DemoStudentPage })));
 const DemoMentorPage = lazy(() => import("./demo/DemoPages").then((m) => ({ default: m.DemoMentorPage })));
@@ -131,6 +132,7 @@ export const router = createBrowserRouter([
         Component: SihProductionLayout,
         children: [
           { path: "career", Component: CareerWorkspacePage },
+          { path: "presentation", Component: PresentationHomePage },
           { path: "opportunities", Component: OpportunitiesPage },
           { path: "opportunities/:opportunityVersionId", Component: OpportunityDetailPage },
           { path: "opportunities/:opportunityVersionId/readiness", Component: ReadinessPage },

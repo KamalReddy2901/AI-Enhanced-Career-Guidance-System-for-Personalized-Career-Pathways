@@ -33,9 +33,7 @@ export default function ApplicationDetailView({ projection }: Props) {
             <h2 className="text-2xl font-black uppercase tracking-tight">
               {projection.applicant.displayName}
             </h2>
-            <p className="font-mono-ui text-[11px] font-black uppercase text-[#d63c1d]">
-              Application Snapshot ID: {projection.applicationSnapshotId.substring(0, 8)}...
-            </p>
+            <p className="font-mono-ui text-[11px] font-black uppercase text-[#d63c1d]">Consented application snapshot</p>
           </div>
           <span className="bg-black px-3 py-1 font-mono-ui text-[10px] font-black uppercase text-[#e7ff57]">
             {projection.applicationStage.replace('_', ' ')}
@@ -102,7 +100,7 @@ export default function ApplicationDetailView({ projection }: Props) {
               <li key={sample.artifactId}>
                 <strong>{sample.displayName}</strong>
                 <span className="ml-2 font-mono-ui text-[10px] text-black/50">
-                  (Artifact ID: {sample.artifactId.substring(0, 8)}...)
+                  (consented work sample)
                 </span>
               </li>
             ))}
