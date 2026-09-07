@@ -25,7 +25,7 @@ function fixtureClient() {
 const fixtureEmail = (slug: string) => `sih26044-controlled-${slug}@example.invalid`;
 
 export function PresentationSwitcher() {
-  const { user, isSupabaseConfigured, signOut } = useAuth();
+  const { user, isSupabaseConfigured, signIn, signOut } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState('');
@@ -70,11 +70,10 @@ export function PresentationSwitcher() {
       if (fresh.error || !fresh.data.session || fresh.data.user?.app_metadata.fixture_namespace !== 'sih26044-controlled-v1') throw new Error('Unavailable');
       // Use the existing sign-out cleanup before loading another account's career data.
       await signOut();
-      const { supabase } = await import('../services/supabase');
-      if (!supabase) throw new Error('Unavailable');
-      const { data, error } = await supabase.auth.setSession(fresh.data.session);
-      if (error || !data.session) throw new Error('Session expired');
-      // Let AuthContext consume Supabase's auth event before a protected route evaluates.
+      // Use the shared client for the real sign-in so AuthContext and every
+      // protected route observe the same session transition.
+      const result = await signIn(fixtureEmail(slug), presentationPassword);
+      if (result.error) throw new Error('Session expired');
       await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       navigate(path);
       setMessage('Controlled account active. Existing permissions apply.');
