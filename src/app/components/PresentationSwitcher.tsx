@@ -74,7 +74,8 @@ export function PresentationSwitcher() {
       if (!supabase) throw new Error('Unavailable');
       const { data, error } = await supabase.auth.setSession(fresh.data.session);
       if (error || !data.session) throw new Error('Session expired');
-
+      // Let AuthContext consume Supabase's auth event before a protected route evaluates.
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       navigate(path);
       setMessage('Controlled account active. Existing permissions apply.');
     } catch {
