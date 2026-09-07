@@ -10,6 +10,7 @@ export interface VerificationRequestInboxProps {
   isLoading?: boolean;
   error?: Error | null;
   onOpenRequest: (requestId: string) => void;
+  presentation?: ReadonlyMap<string, { subjectName: string; evidenceLabel: string; decision?: string }>;
 }
 
 export function VerificationRequestInbox({
@@ -17,6 +18,7 @@ export function VerificationRequestInbox({
   isLoading = false,
   error = null,
   onOpenRequest,
+  presentation,
 }: VerificationRequestInboxProps) {
 
   const renderScope = (scope: EvidenceScopeReadModel) => {
@@ -110,14 +112,16 @@ export function VerificationRequestInbox({
             <div className="flex flex-col gap-1.5 flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold text-base truncate" title={request.subjectActorId}>
-                  Requester: {request.subjectActorId}
+                  {presentation?.get(request.id)?.subjectName ?? 'Evidence owner'}
                 </span>
                 {getStatusBadge(request)}
               </div>
 
               <div className="text-sm text-muted-foreground mt-1 break-words">
-                <span className="font-medium text-foreground">Requested scope:</span> {renderScope(request.scope)}
+                <span className="font-medium text-foreground">{presentation?.get(request.id)?.evidenceLabel ?? renderScope(request.scope)}</span>
               </div>
+
+              {presentation?.get(request.id)?.decision && <div className="text-sm font-semibold text-emerald-800">{presentation.get(request.id)?.decision}</div>}
 
               <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
                 <span className="flex items-center gap-1.5">
