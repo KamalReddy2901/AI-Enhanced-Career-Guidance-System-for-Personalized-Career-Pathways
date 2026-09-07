@@ -779,6 +779,9 @@ export function ApplicationsPage() {
   }, [opportunityReads, rows]);
 
   const selectedApplication = rows.find((app) => app.id === applicationId);
+  const visibleApplications = isPresentationMode()
+    ? rows.filter((application) => application.id === 'a080bafe-ec71-4fd5-99b2-19ed8ac8cb87')
+    : rows;
 
   useEffect(() => {
     if (!selectedApplication || !opportunityReads) { setSelectedOpportunityTitle(undefined); return; }
@@ -886,7 +889,7 @@ export function ApplicationsPage() {
       {error && <Notice>{error}</Notice>}
       {rows.length === 0 ? <Notice>No production applications yet. Start from a current opportunity.</Notice> : (
         <div className="grid gap-4 md:grid-cols-2">
-          {rows.map((application) => (
+          {visibleApplications.map((application) => (
             <Link key={application.id} to={`/applications/${application.id}`}>
               <article className="border-2 border-black bg-white p-5 shadow-[4px_4px_0_#111] transition-transform hover:-translate-y-1">
                 <p className="font-mono-ui text-[10px] font-black uppercase text-[var(--accent-news)]">{application.currentStage.replaceAll('_', ' ')}</p>
