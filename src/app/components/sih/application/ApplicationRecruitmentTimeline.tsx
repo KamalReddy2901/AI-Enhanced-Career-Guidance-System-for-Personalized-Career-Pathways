@@ -1,4 +1,5 @@
 import type { ApplicationRecruitmentRecordReadModel } from '../../../services/sih/types';
+import { isPresentationMode } from '../../PresentationSwitcher';
 
 export function ApplicationRecruitmentTimeline({
   records,
@@ -27,7 +28,7 @@ export function ApplicationRecruitmentTimeline({
                 {record.locationReference && <div><dt className="font-mono-ui text-[9px] uppercase text-black/50">Location / joining reference</dt><dd className="break-all">{record.locationReference}</dd></div>}
                 {record.expiresAt && <div><dt className="font-mono-ui text-[9px] uppercase text-black/50">Expires</dt><dd>{new Date(record.expiresAt).toLocaleString()}</dd></div>}
                 {record.outcomeKind && <div><dt className="font-mono-ui text-[9px] uppercase text-black/50">Recorded outcome</dt><dd>{record.outcomeKind.replaceAll('_', ' ')}</dd></div>}
-                <div><dt className="font-mono-ui text-[9px] uppercase text-black/50">Recorded by actor</dt><dd className="break-all font-mono-ui">{record.actorId}</dd></div>
+                {isPresentationMode() ? <div><dt className="font-mono-ui text-[9px] uppercase text-black/50">Recorded by</dt><dd>Authorized reviewer</dd></div> : <div><dt className="font-mono-ui text-[9px] uppercase text-black/50">Recorded by actor</dt><dd className="break-all font-mono-ui">{record.actorId}</dd></div>}
               </dl>
             </li>
           ))}

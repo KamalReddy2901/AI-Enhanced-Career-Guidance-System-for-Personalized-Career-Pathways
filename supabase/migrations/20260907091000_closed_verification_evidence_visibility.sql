@@ -21,14 +21,11 @@ as $$
         or vr.requested_verifier_actor_id = sih26044.current_actor_id()
       )
       and vr.requested_verifier_organization_id is not null
-      and cg.subject_actor_id = vr.subject_actor_id
-      and cg.grantee_organization_id = vr.requested_verifier_organization_id
-      and cg.purpose = 'evidence_verification'
-      and (cg.expires_at is null or cg.expires_at > statement_timestamp())
-      and not exists (
-        select 1 from sih26044.consent_lifecycle_events cle
-        where cle.consent_grant_id = cg.id
-          and cle.action = 'withdrawn'
+      and sih26044.is_consent_active(
+        cg.id,
+        vr.subject_actor_id,
+        vr.requested_verifier_organization_id,
+        'evidence_verification'
       )
       and sih26044.has_any_active_organization_role(
         vr.requested_verifier_organization_id,
