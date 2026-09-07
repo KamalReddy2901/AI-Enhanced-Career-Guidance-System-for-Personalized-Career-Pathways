@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { createClient } from '@supabase/supabase-js';
 import { useAuth } from '../context/AuthContext';
@@ -16,6 +16,9 @@ const sessions = new Set<string>();
 let presentationPassword = '';
 /** Deliberately memory-only: presentation controls disappear on reload. */
 export const isPresentationMode = () => sessions.size > 0;
+export function requestPresentationPersona(slug: string, path: string) {
+  window.dispatchEvent(new CustomEvent('careercase:presentation-persona', { detail: { slug, path } }));
+}
 function fixtureClient() {
   const env = import.meta.env;
   return createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
@@ -85,6 +88,15 @@ export function PresentationSwitcher() {
       setBusy(false);
     }
   }
+
+  useEffect(() => {
+    const onRequest = (event: Event) => {
+      const detail = (event as CustomEvent<{ slug?: string; path?: string }>).detail;
+      if (detail?.slug && detail.path) void switchPersona(detail.slug, detail.path);
+    };
+    window.addEventListener('careercase:presentation-persona', onRequest);
+    return () => window.removeEventListener('careercase:presentation-persona', onRequest);
+  });
 
   const control = 'min-h-9 border border-black/30 px-3 py-1.5 font-mono-ui text-[10px] uppercase tracking-wide focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-news)] disabled:opacity-40';
   return (

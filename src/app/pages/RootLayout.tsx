@@ -8,6 +8,7 @@ import { PageTransition } from '../motion/PageTransition';
 import { UnifiedCareerCaseShell } from '../components/UnifiedShell';
 import { useAuth } from '../context/AuthContext';
 import { useGuidance } from '../context/GuidanceContext';
+import { isPresentationMode } from '../components/PresentationSwitcher';
 
 export function RootLayout() {
   const navigate = useNavigate();
@@ -61,6 +62,7 @@ export function RootLayout() {
 
       // Escape: Go back (if no dialogs open)
       if (e.key === 'Escape') {
+        if (isPresentationMode()) return;
         const modals = document.querySelectorAll('[role="dialog"]');
         if (modals.length > 0) return;
 

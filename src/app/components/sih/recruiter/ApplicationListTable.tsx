@@ -42,13 +42,15 @@ export default function ApplicationListTable({ applications, selectedApplication
         <tbody className="divide-y divide-black">
           {applications.map(app => {
             const isSelected = app.id === selectedApplicationId;
+            const isFlagship = app.id === 'a080bafe-ec71-4fd5-99b2-19ed8ac8cb87';
             return (
               <tr
                 key={app.id}
                 className={`transition-colors ${isSelected ? 'bg-[#e7ff57]' : 'hover:bg-[#f7f4ed]'}`}
               >
-                <td className="p-3 font-mono-ui text-[11px] font-bold">
-                  Application received
+                <td className="p-3">
+                  <p className="font-bold">{isFlagship ? 'Ananya Rao' : 'Application received'}</p>
+                  {isFlagship && <p className="mt-1 text-xs text-black/65">Clinical Research Data &amp; Standardization Intern · Pravaah Health Systems</p>}
                 </td>
                 <td className="p-3">
                   <span className="bg-black px-2 py-1 font-mono-ui text-[9px] font-black uppercase text-white">

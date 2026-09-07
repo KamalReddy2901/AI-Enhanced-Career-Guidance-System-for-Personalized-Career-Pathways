@@ -293,7 +293,7 @@ export function ReadinessPage() {
           onClick={() => void recompute()}
           className="min-h-11 border-2 border-black bg-[#e7ff57] px-4 font-mono-ui text-xs font-black uppercase disabled:opacity-40"
         >
-          {recomputing ? 'Recomputing…' : result ? 'Recompute canonical readiness' : 'Compute canonical readiness'}
+          {recomputing ? 'Refreshing…' : result ? 'Refresh readiness' : 'Check readiness'}
         </button>
         {bundle && <Link to={`/opportunities/${bundle.version.id}`} className="min-h-11 border-2 border-black px-4 py-3 font-mono-ui text-xs font-black uppercase">Opportunity details</Link>}
         {bundle && result && <Link to={`/gap-closure?opportunityVersionId=${bundle.version.id}`} className="min-h-11 border-2 border-black bg-white px-4 py-3 font-mono-ui text-xs font-black uppercase">Open gap-closure plan</Link>}
