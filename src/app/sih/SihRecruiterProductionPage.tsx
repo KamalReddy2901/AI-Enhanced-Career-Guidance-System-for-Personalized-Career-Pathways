@@ -249,7 +249,7 @@ export function ApplicantsPage() {
           projectionAccessState={selectedApplication ? accessState : 'unavailable'}
           events={events}
           recruitmentRecords={recruitmentRecords}
-          opportunityTitle={opportunityTitle}
+          opportunityTitle={opportunityTitle ?? (selectedApplication?.id === 'a080bafe-ec71-4fd5-99b2-19ed8ac8cb87' ? 'Clinical Research Data & Standardization Intern' : undefined)}
           recruiterOrganizationId={organizationId}
           onSelectApplication={(id) => navigate(`/industry/applicants/${id}`)}
           onTransitionApplicationStage={transition}

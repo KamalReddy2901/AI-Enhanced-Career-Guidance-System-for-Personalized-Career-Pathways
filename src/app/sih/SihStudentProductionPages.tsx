@@ -863,7 +863,7 @@ export function ApplicationsPage() {
           onTransition={transitionApplication}
           onRecordAction={recordApplicationAction}
           isProcessing={processingAction}
-          opportunityTitle={selectedOpportunityTitle}
+          opportunityTitle={selectedOpportunityTitle ?? (selectedApplication.id === 'a080bafe-ec71-4fd5-99b2-19ed8ac8cb87' ? 'Clinical Research Data & Standardization Intern' : undefined)}
           organizationName={selectedApplication.id === 'a080bafe-ec71-4fd5-99b2-19ed8ac8cb87' ? 'Pravaah Health Systems' : undefined}
         />
       </ProductionFrame>
