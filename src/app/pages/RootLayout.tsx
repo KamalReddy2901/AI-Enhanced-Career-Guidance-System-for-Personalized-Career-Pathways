@@ -1,4 +1,4 @@
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState, type MouseEvent } from 'react';
 import { Navigate, Outlet, useNavigate, useLocation } from 'react-router';
 import { Toaster } from 'sonner';
 import { OnboardingTour } from '../components/OnboardingTour';
@@ -15,6 +15,19 @@ export function RootLayout() {
   const location = useLocation();
   const { user, loading } = useAuth();
   const { passport, loading: guidanceLoading } = useGuidance();
+  const [routePending, setRoutePending] = useState(false);
+
+  const loadingWorkspace = <div className="flex min-h-[50vh] items-center justify-center bg-[var(--paper)]" role="status" aria-live="polite" aria-busy="true"><span className="font-mono-ui text-xs font-black uppercase tracking-wide text-black/65">Loading workspace…</span></div>;
+
+  function markInternalNavigation(event: MouseEvent<HTMLDivElement>) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const anchor = (event.target as HTMLElement).closest('a[href]') as HTMLAnchorElement | null;
+    if (!anchor || anchor.target === '_blank' || anchor.origin !== window.location.origin) return;
+    const destination = `${anchor.pathname}${anchor.search}`;
+    if (destination !== `${location.pathname}${location.search}`) setRoutePending(true);
+  }
+
+  useEffect(() => { setRoutePending(false); }, [location.pathname, location.search]);
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -116,14 +129,13 @@ export function RootLayout() {
 
   return (
     <UnifiedCareerCaseShell>
-      <Suspense
-        key={`${location.pathname}${location.search}`}
-        fallback={<div className="flex min-h-[50vh] items-center justify-center bg-[var(--paper)]" role="status" aria-live="polite" aria-busy="true"><span className="font-mono-ui text-xs font-black uppercase tracking-wide text-black/65">Loading workspace…</span></div>}
-      >
-        <PageTransition>
-          <Outlet />
-        </PageTransition>
-      </Suspense>
+      <div onClickCapture={markInternalNavigation}>
+        {routePending ? loadingWorkspace : <Suspense key={`${location.pathname}${location.search}`} fallback={loadingWorkspace}>
+          <PageTransition>
+            <Outlet />
+          </PageTransition>
+        </Suspense>}
+      </div>
       <Toaster
         position="top-right"
         toastOptions={{
