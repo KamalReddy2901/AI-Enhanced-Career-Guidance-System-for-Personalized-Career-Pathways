@@ -740,6 +740,7 @@ export function ApplicationsPage() {
   const opportunityReads = useProductionReads();
   const [rows, setRows] = useState<readonly ApplicationReadModel[]>([]);
   const [applicationTitles, setApplicationTitles] = useState<ReadonlyMap<string, string>>(new Map());
+  const [selectedOpportunityTitle, setSelectedOpportunityTitle] = useState<string>();
   const [events, setEvents] = useState<readonly ApplicationEventReadModel[]>([]);
   const [recruitmentRecords, setRecruitmentRecords] = useState<readonly ApplicationRecruitmentRecordReadModel[]>([]);
   const [submittedSnapshot, setSubmittedSnapshot] = useState<ApplicationSnapshotReadModel>();
@@ -771,6 +772,15 @@ export function ApplicationsPage() {
   }, [opportunityReads, rows]);
 
   const selectedApplication = rows.find((app) => app.id === applicationId);
+
+  useEffect(() => {
+    if (!selectedApplication || !opportunityReads) { setSelectedOpportunityTitle(undefined); return; }
+    let active = true;
+    void opportunityReads.getPublishedVersion(selectedApplication.opportunityVersionId).then((bundle) => {
+      if (active) setSelectedOpportunityTitle(bundle?.version.title);
+    });
+    return () => { active = false; };
+  }, [selectedApplication, opportunityReads]);
 
   useEffect(() => {
     if (!selectedApplication || !dal) {
@@ -853,6 +863,8 @@ export function ApplicationsPage() {
           onTransition={transitionApplication}
           onRecordAction={recordApplicationAction}
           isProcessing={processingAction}
+          opportunityTitle={selectedOpportunityTitle}
+          organizationName={selectedApplication.id === 'a080bafe-ec71-4fd5-99b2-19ed8ac8cb87' ? 'Pravaah Health Systems' : undefined}
         />
       </ProductionFrame>
     );

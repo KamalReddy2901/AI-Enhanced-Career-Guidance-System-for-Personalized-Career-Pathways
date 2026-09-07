@@ -9,9 +9,10 @@ import ReadinessBandExplanation from './ReadinessBandExplanation';
 
 interface Props {
   readonly projection: ProductionRecruiterProjection | 'unavailable';
+  readonly opportunityTitle?: string;
 }
 
-export default function ApplicationDetailView({ projection }: Props) {
+export default function ApplicationDetailView({ projection, opportunityTitle }: Props) {
   if (projection === 'unavailable') {
     return (
       <div className="border-2 border-black bg-[#f7f4ed] p-6 shadow-[4px_4px_0_#111]">
@@ -34,6 +35,7 @@ export default function ApplicationDetailView({ projection }: Props) {
               {projection.applicant.displayName}
             </h2>
             <p className="font-mono-ui text-[11px] font-black uppercase text-[#d63c1d]">Consented application snapshot</p>
+            {opportunityTitle && <p className="mt-2 text-sm font-bold">{opportunityTitle}</p>}
           </div>
           <span className="bg-black px-3 py-1 font-mono-ui text-[10px] font-black uppercase text-[#e7ff57]">
             {projection.applicationStage.replace('_', ' ')}

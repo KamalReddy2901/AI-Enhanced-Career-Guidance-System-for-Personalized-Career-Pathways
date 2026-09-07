@@ -10,6 +10,7 @@ import type {
 } from '../services/sih/types';
 import type { ProductionRecruiterProjection } from '../services/sih/productionRecruiterProjection';
 import { ProductionRecruiterReads } from '../services/sih/productionRecruiterReads';
+import { ProductionOpportunityReads } from '../services/sih/productionOpportunityReads';
 import { supabase } from '../services/supabase';
 import { useSihProduction } from './SihProductionContext';
 
@@ -35,6 +36,7 @@ export function ApplicantsPage() {
   const navigate = useNavigate();
   const { actorId, memberships, dal, loading: authorityLoading, error: authorityError } = useSihProduction();
   const recruiterReads = useMemo(() => (supabase ? new ProductionRecruiterReads(supabase) : null), []);
+  const opportunityReads = useMemo(() => (supabase ? new ProductionOpportunityReads(supabase) : null), []);
   const recruiterMemberships = useMemo(
     () => memberships.filter((membership) => membership.roles.some((role) => role === 'recruiter' || role === 'industry_partner')),
     [memberships],
@@ -47,6 +49,7 @@ export function ApplicantsPage() {
   const [accessState, setAccessState] = useState<AccessState>('unavailable');
   const [loadError, setLoadError] = useState<string>();
   const [transitioning, setTransitioning] = useState(false);
+  const [opportunityTitle, setOpportunityTitle] = useState<string>();
 
   useEffect(() => {
     if (!organizationId && recruiterMemberships[0]) {
@@ -82,6 +85,15 @@ export function ApplicantsPage() {
   }, [dal, organizationId]);
 
   const selectedApplication = applications.find((application) => application.id === applicationId);
+
+  useEffect(() => {
+    if (!selectedApplication || !opportunityReads) { setOpportunityTitle(undefined); return; }
+    let active = true;
+    void opportunityReads.getPublishedVersion(selectedApplication.opportunityVersionId).then((bundle) => {
+      if (active) setOpportunityTitle(bundle?.version.title);
+    });
+    return () => { active = false; };
+  }, [selectedApplication, opportunityReads]);
 
   const refreshSelected = useCallback(async () => {
     if (!dal || !recruiterReads || !selectedApplication) {
@@ -237,6 +249,7 @@ export function ApplicantsPage() {
           projectionAccessState={selectedApplication ? accessState : 'unavailable'}
           events={events}
           recruitmentRecords={recruitmentRecords}
+          opportunityTitle={opportunityTitle}
           recruiterOrganizationId={organizationId}
           onSelectApplication={(id) => navigate(`/industry/applicants/${id}`)}
           onTransitionApplicationStage={transition}
