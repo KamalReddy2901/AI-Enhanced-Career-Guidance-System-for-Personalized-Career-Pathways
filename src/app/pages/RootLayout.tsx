@@ -24,7 +24,14 @@ export function RootLayout() {
     const anchor = (event.target as HTMLElement).closest('a[href]') as HTMLAnchorElement | null;
     if (!anchor || anchor.target === '_blank' || anchor.origin !== window.location.origin) return;
     const destination = `${anchor.pathname}${anchor.search}`;
-    if (destination !== `${location.pathname}${location.search}`) setRoutePending(true);
+    if (destination !== `${location.pathname}${location.search}` && isPresentationMode()) {
+      // Capture runs before React Router's Link handler. Prevent the browser's
+      // default navigation before hiding the clicked link, then preserve the
+      // memory-only presentation session with an explicit client transition.
+      event.preventDefault();
+      setRoutePending(true);
+      navigate(`${destination}${anchor.hash}`);
+    }
   }
 
   useEffect(() => { setRoutePending(false); }, [location.pathname, location.search]);
