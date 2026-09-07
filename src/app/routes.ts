@@ -90,6 +90,7 @@ export const router = createBrowserRouter([
           { index: true, Component: UnifiedHomePage },
           { path: "legacy-career-home", Component: HomePage },
           { path: "auth", Component: AuthPage },
+          { path: "presentation", Component: PresentationHomePage },
           { path: "job", Component: JobOverviewPage },
           { path: "job/detail", Component: JobDetailPage },
           { path: "simulation", Component: SimulationPage },
@@ -132,7 +133,6 @@ export const router = createBrowserRouter([
         Component: SihProductionLayout,
         children: [
           { path: "career", Component: CareerWorkspacePage },
-          { path: "presentation", Component: PresentationHomePage },
           { path: "opportunities", Component: OpportunitiesPage },
           { path: "opportunities/:opportunityVersionId", Component: OpportunityDetailPage },
           { path: "opportunities/:opportunityVersionId/readiness", Component: ReadinessPage },
