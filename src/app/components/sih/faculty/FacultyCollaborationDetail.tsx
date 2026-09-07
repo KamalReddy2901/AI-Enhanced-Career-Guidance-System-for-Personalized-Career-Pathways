@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import type { Actor, CollaborationEngagement, Organization } from '../../../domain';
 import { FacultyEngagementWorkspace } from './FacultyEngagementWorkspace';
+import { isPresentationMode } from '../../PresentationSwitcher';
 import {
   collaborationGroup,
   collaborationGroupLabel,
@@ -52,7 +53,7 @@ export function FacultyCollaborationDetail({
         <p className="font-mono-ui text-xs font-black uppercase tracking-[0.2em] text-[#d63c1d]">{collaborationGroupLabel(group)}</p>
         <h1 className="mt-2 text-4xl font-black leading-[0.95] sm:text-6xl">{engagement.objectives[0] ?? 'Collaboration engagement'}</h1>
         <p className="mt-4 text-base leading-relaxed text-black/70">
-          Read-only canonical collaboration detail. Participant and organization identities are shown only where existing authorization permits them.
+          {isPresentationMode() ? 'Read-only collaboration detail. Participant and organization identities are shown only where the faculty persona has access.' : 'Read-only canonical collaboration detail. Participant and organization identities are shown only where existing authorization permits them.'}
         </p>
       </header>
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.8fr]">

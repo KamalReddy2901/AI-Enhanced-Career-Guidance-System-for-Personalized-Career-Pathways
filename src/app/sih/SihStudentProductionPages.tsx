@@ -183,9 +183,9 @@ export function OpportunityDetailPage() {
     <ProductionFrame
       eyebrow="Immutable opportunity version"
       title="Opportunity requirements"
-      description="Literal source wording, canonical resolution and eligibility structure stay visible. Unresolved language remains literal rather than being guessed."
+      description={isPresentationMode() ? 'Review the published requirements, eligibility structure and source wording for this opportunity.' : 'Literal source wording, canonical resolution and eligibility structure stay visible. Unresolved language remains literal rather than being guessed.'}
     >
-      {loading ? <Notice>Loading canonical opportunity version…</Notice> : error || !bundle ? <Notice>{error ?? 'Opportunity unavailable.'}</Notice> : (
+      {loading ? <Notice>{isPresentationMode() ? 'Loading opportunity…' : 'Loading canonical opportunity version…'}</Notice> : error || !bundle ? <Notice>{error ?? 'Opportunity unavailable.'}</Notice> : (
         <>
           {/clinical research data & standardization intern/i.test(bundle.version.title) && (
             <div className="mb-5 border-2 border-black bg-[#fff4c7] p-4">

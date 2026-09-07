@@ -44,6 +44,20 @@ test('My Career supports keyboard disclosure and Escape', async ({ page }) => {
   await expect(trigger).toBeFocused();
 });
 
+test('Presentation Mode uses presenter-facing language', async ({ page }) => {
+  await page.route('**/src/app/context/AuthContext.tsx*', route => route.fulfill({
+    contentType: 'application/javascript',
+    body: `export const AuthProvider = ({children}) => children;
+      export const useAuth = () => ({user:null,session:null,loading:false,isSupabaseConfigured:true,signOut:async()=>{},signIn:async()=>({error:null})});`,
+  }));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Presentation Mode' }).click();
+  const controls = page.locator('#presentation-controls');
+  await expect(controls.getByText('Presentation password', { exact: true })).toBeVisible();
+  await expect(controls).toContainText('prepared demo personas');
+  await expect(controls).not.toContainText(/controlled|fixture|synthetic/i);
+});
+
 test('Explore investigates a grounded profession', async ({ page }) => {
   await page.goto('/job?fresh=1');
   await page.getByRole('textbox').first().fill('Software Engineer');

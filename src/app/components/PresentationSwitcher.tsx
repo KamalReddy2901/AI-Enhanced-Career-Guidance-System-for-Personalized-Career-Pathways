@@ -40,7 +40,7 @@ export function PresentationSwitcher() {
   async function unlock(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true);
-    setMessage('Checking controlled accounts…');
+    setMessage('Preparing presentation personas…');
     try {
       // An isolated client validates credentials without replacing the visitor's session.
       const client = fixtureClient();
@@ -53,7 +53,7 @@ export function PresentationSwitcher() {
       }
       presentationPassword = sessions.size ? password : '';
       setReady(sessions.size > 0);
-      setMessage(sessions.size ? 'Choose a controlled persona. This signs out the current account.' : 'Could not unlock controlled accounts. Check the fixture password.');
+      setMessage(sessions.size ? 'Choose a presentation persona.' : 'Could not start Presentation Mode. Check the presentation password.');
     } catch {
       sessions.clear();
       setReady(false);
@@ -67,7 +67,7 @@ export function PresentationSwitcher() {
   async function switchPersona(slug: string, path: string) {
     if (!sessions.has(slug) || busy) return;
     setBusy(true);
-    setMessage('Opening controlled persona…');
+    setMessage('Opening presentation persona…');
     try {
       const fresh = await fixtureClient().auth.signInWithPassword({ email: fixtureEmail(slug), password: presentationPassword });
       if (fresh.error || !fresh.data.session || fresh.data.user?.app_metadata.fixture_namespace !== 'sih26044-controlled-v1') throw new Error('Unavailable');
@@ -78,11 +78,11 @@ export function PresentationSwitcher() {
       if (result.error) throw new Error('Session expired');
       await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       navigate(path);
-      setMessage('Controlled account active. Existing permissions apply.');
+      setMessage('Presentation persona ready.');
     } catch {
       sessions.delete(slug);
       setReady(sessions.size > 0);
-      setMessage('Session unavailable. Unlock presentation again to retry.');
+      setMessage('Presentation session unavailable. Unlock Presentation Mode to retry.');
     } finally {
       setBusy(false);
     }
@@ -115,11 +115,11 @@ export function PresentationSwitcher() {
           </>}
         </div>
         {open && !ready && <form id="presentation-controls" onSubmit={unlock} className="flex flex-wrap items-end gap-3 py-3">
-          <label className="flex flex-col gap-1 font-mono-ui text-xs">Controlled fixture password
+          <label className="flex flex-col gap-1 font-mono-ui text-xs">Presentation password
             <input type="password" autoComplete="off" required value={password} onChange={event => setPassword(event.target.value)} className="min-h-11 w-full max-w-64 border border-black bg-transparent px-3 focus-visible:outline-2" />
           </label>
           <button type="submit" disabled={busy} className={`${control} bg-black text-white`}>{busy ? 'Unlocking…' : 'Unlock personas'}</button>
-          <p className="w-full text-xs text-black/70">Existing synthetic accounts only. Your real account’s permissions are never changed. The unlock password stays in memory until you end or reload the presentation.</p>
+          <p className="w-full text-xs text-black/70">Presentation uses prepared demo personas. Your current account permissions are unchanged. The presentation password remains in memory only until you end or reload.</p>
         </form>}
         <p role="status" className="text-xs text-black/70">{message}</p>
       </div>
