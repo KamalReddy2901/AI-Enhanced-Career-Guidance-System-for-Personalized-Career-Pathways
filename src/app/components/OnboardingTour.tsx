@@ -5,6 +5,7 @@ import {
   Star, Scale, MessageSquare, Map,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { isPresentationMode } from './PresentationSwitcher';
 
 const TOUR_KEY = 'careersim_onboarded_v2';
 
@@ -238,7 +239,7 @@ export function OnboardingTour() {
   const [step, setStep] = useState(0);
 
   useEffect(() => {
-    if (!user) return; // Only show tour to logged-in users
+    if (!user || isPresentationMode()) return; // Presentation has its own operator controls.
     const done = localStorage.getItem(TOUR_KEY);
     if (!done) {
       const t = setTimeout(() => setVisible(true), 900);
