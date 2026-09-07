@@ -38,6 +38,15 @@ function formatLabel(value: string): string {
   return value.replaceAll('_', ' ');
 }
 
+function presentationRequirementLabel(literal: string): string {
+  if (/research methodology|research documentation/i.test(literal)) return 'Research Documentation';
+  if (/structured data analysis/i.test(literal)) return 'Structured Data Analysis';
+  if (/data visualization/i.test(literal)) return 'Data Visualization';
+  if (/ayush/i.test(literal)) return 'AYUSH familiarity';
+  if (/python/i.test(literal)) return 'Python';
+  return literal;
+}
+
 function stateDescription(state: RequirementReadinessResult['state']): string {
   switch (state) {
     case 'UNKNOWN':
@@ -224,7 +233,8 @@ export default function ReadinessCasefile({
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center border-2 border-black bg-white font-black" aria-hidden="true">{stateSymbol(requirement.state)}</span>
                     <div>
                       <p className="font-mono-ui text-[10px] font-black uppercase text-[#d63c1d]">{formatLabel(requirement.category)} · {formatLabel(requirement.priority)}</p>
-                      <p className="mt-1 font-bold leading-relaxed">{requirement.literalSourceWording}</p>
+                      <p className="mt-1 font-bold leading-relaxed">{presentationRequirementLabel(requirement.literalSourceWording)}</p>
+                      {presentationRequirementLabel(requirement.literalSourceWording) !== requirement.literalSourceWording && <p className="mt-1 text-xs text-black/55">Source wording: {requirement.literalSourceWording}</p>}
                     </div>
                   </div>
                   <span className="border-2 border-black px-2 py-1 font-mono-ui text-[10px] font-black uppercase">{formatLabel(requirement.state)}</span>
@@ -233,8 +243,8 @@ export default function ReadinessCasefile({
                 <p className="mt-4 border-l-4 border-black pl-3 text-sm leading-relaxed text-black/75">{stateDescription(requirement.state)}</p>
                 <p className="mt-3 text-sm leading-relaxed">{requirement.explanation}</p>
 
-                <div className="mt-4 border-t border-black/20 pt-3">
-                  <p className="font-mono-ui text-[10px] font-black uppercase">Supporting evidence references</p>
+                <details className="mt-4 border-t border-black/20 pt-3">
+                  <summary className="cursor-pointer font-mono-ui text-[10px] font-black uppercase">Technical evidence references</summary>
                   {requirement.supportingEvidenceIds.length === 0 ? (
                     <p className="mt-2 text-sm text-black/60">No evidence record is referenced by this readiness result.</p>
                   ) : (
@@ -243,7 +253,7 @@ export default function ReadinessCasefile({
                   {requirement.supportingProvenance.length > 0 && (
                     <p className="mt-3 font-mono-ui text-[10px] font-bold uppercase text-black/55">Provenance: {requirement.supportingProvenance.map(formatLabel).join(' · ')}</p>
                   )}
-                </div>
+                </details>
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   <span className="border border-black px-2 py-1 font-mono-ui text-[10px] font-bold uppercase">Verification: {requirement.verificationSupported ? 'supported' : 'not supported'}</span>
@@ -262,7 +272,8 @@ export default function ReadinessCasefile({
       </section>
 
       <footer className="mt-8 border-2 border-black bg-[#111] p-4 text-white">
-        <p className="font-mono-ui text-[10px] font-black uppercase tracking-[0.18em] text-[#e7ff57]">Result provenance</p>
+        <details>
+        <summary className="cursor-pointer font-mono-ui text-[10px] font-black uppercase tracking-[0.18em] text-[#e7ff57]">Technical result provenance</summary>
         <dl className="mt-3 grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-6">
           <div><dt className="text-white/50">Result ID</dt><dd className="mt-1 break-all font-mono-ui">{result.resultId}</dd></div>
           <div><dt className="text-white/50">Opportunity ID</dt><dd className="mt-1 break-all font-mono-ui">{result.opportunityId}</dd></div>
@@ -270,7 +281,7 @@ export default function ReadinessCasefile({
           <div><dt className="text-white/50">Engine version</dt><dd className="mt-1 font-mono-ui">{result.engineVersion}</dd></div>
           <div><dt className="text-white/50">Policy version</dt><dd className="mt-1 font-mono-ui">{result.policyVersion}</dd></div>
           <div><dt className="text-white/50">Generated at</dt><dd className="mt-1 font-mono-ui">{result.generatedAt}</dd></div>
-        </dl>
+        </dl></details>
       </footer>
     </section>
   );

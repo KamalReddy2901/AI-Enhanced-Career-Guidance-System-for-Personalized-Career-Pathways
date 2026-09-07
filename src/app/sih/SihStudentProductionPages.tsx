@@ -187,6 +187,12 @@ export function OpportunityDetailPage() {
     >
       {loading ? <Notice>Loading canonical opportunity version…</Notice> : error || !bundle ? <Notice>{error ?? 'Opportunity unavailable.'}</Notice> : (
         <>
+          {/clinical research data & standardization intern/i.test(bundle.version.title) && (
+            <div className="mb-5 border-2 border-black bg-[#fff4c7] p-4">
+              <p className="font-mono-ui text-[10px] font-black uppercase tracking-wide">Featured opportunity</p>
+              <p className="mt-1 text-lg font-black">Pravaah Health Systems</p>
+            </div>
+          )}
           <OpportunityDetail opportunity={bundle.opportunity} opportunityVersion={bundle.version} onBack={() => navigate('/opportunities')} />
           {questionnaire ? (
             <section className="mt-6 border-2 border-black bg-[#fff4c7] p-5" aria-labelledby="assigned-questionnaire-title">
@@ -477,6 +483,7 @@ export function EvidencePage() {
         <div className="grid gap-4 md:grid-cols-2">
           {evidence.map((record) => (
             <article key={record.id} className="border-2 border-black bg-white p-5 shadow-[4px_4px_0_#111]">
+              {record.scope.kind === 'global_skill' && <p className="mb-2 font-mono-ui text-[10px] font-black uppercase tracking-wide text-[var(--accent-news)]">{record.scope.literalSkillLabel}</p>}
               <h2 className="font-black leading-relaxed">{record.literalClaim}</h2>
               <dl className="mt-4 grid gap-2 text-xs">
                 <div><dt className="font-mono-ui uppercase text-black/45">Provenance</dt><dd className="mt-1 font-bold">{record.provenance.replaceAll('_', ' ')}</dd></div>
