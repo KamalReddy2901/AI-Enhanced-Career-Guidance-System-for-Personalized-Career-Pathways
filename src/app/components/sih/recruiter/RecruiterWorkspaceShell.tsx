@@ -18,6 +18,7 @@ interface Props {
   readonly projectionAccessState: AccessState;
   readonly events: readonly ApplicationEventReadModel[];
   readonly recruitmentRecords: readonly ApplicationRecruitmentRecordReadModel[];
+  readonly opportunityTitle?: string;
   
   readonly recruiterOrganizationId: OrganizationId;
   
@@ -35,6 +36,7 @@ export default function RecruiterWorkspaceShell({
   projectionAccessState,
   events,
   recruitmentRecords,
+  opportunityTitle,
   recruiterOrganizationId,
   onSelectApplication,
   onTransitionApplicationStage,
@@ -68,7 +70,7 @@ export default function RecruiterWorkspaceShell({
               {projectionAccessState === 'available' && projection && (
                 <>
                   <aside className="border-l-4 border-black bg-[#fff4c7] p-4" aria-label="Recruiter privacy boundary"><p className="font-mono-ui text-[10px] font-black uppercase tracking-wide">Private career guidance is not shared with recruiters</p><p className="mt-1 text-sm text-black/70">Recruiters see the application snapshot, opportunity-specific readiness, consented evidence, relevant artifacts and application history — never career interests, RIASEC, aptitude internals, values, aspirations, private constraints or counselor history.</p></aside>
-                  <ApplicationDetailView projection={projection} />
+                  <ApplicationDetailView projection={projection} opportunityTitle={opportunityTitle} />
 
                   <HumanStageActionPanel
                     currentStage={selectedApplication.currentStage}

@@ -18,6 +18,8 @@ interface Props {
   readonly onTransition: (toStage: ApplicationStage, sharedMessage?: string) => Promise<void>;
   readonly onRecordAction: (kind: Extract<ApplicationRecruitmentRecordKind, 'evidence_response' | 'feedback'>, sharedMessage: string) => Promise<void>;
   readonly isProcessing: boolean;
+  readonly opportunityTitle?: string;
+  readonly organizationName?: string;
 }
 
 function stageLabel(stage: ApplicationStage): string {
@@ -28,7 +30,7 @@ function eventActionLabel(action: string): string {
   return action.replaceAll('_', ' ');
 }
 
-export function StudentApplicationDetail({ application, events, recruitmentRecords, submittedSnapshot, onTransition, onRecordAction, isProcessing }: Props) {
+export function StudentApplicationDetail({ application, events, recruitmentRecords, submittedSnapshot, onTransition, onRecordAction, isProcessing, opportunityTitle, organizationName }: Props) {
   const [response, setResponse] = useState('');
   const [feedback, setFeedback] = useState('');
   const [actionError, setActionError] = useState<string>();
@@ -48,9 +50,9 @@ export function StudentApplicationDetail({ application, events, recruitmentRecor
             <p className="font-mono-ui text-[10px] font-black uppercase tracking-[0.18em] text-[#d63c1d]">
               Application
             </p>
-            <h2 className="mt-1 text-2xl font-black">
-              {stageLabel(application.currentStage)}
-            </h2>
+            <h2 className="mt-1 text-2xl font-black">{opportunityTitle ?? 'Application detail'}</h2>
+            {organizationName && <p className="mt-1 text-sm font-bold">{organizationName}</p>}
+            <p className="mt-1 font-mono-ui text-[11px] font-black uppercase">{stageLabel(application.currentStage)}</p>
           </div>
           <span className="border-2 border-black bg-[#e7ff57] px-3 py-2 font-mono-ui text-[10px] font-black uppercase">
             {application.currentStage === 'applied' || application.currentStage === 'under_review' || application.currentStage === 'screening'
@@ -66,25 +68,12 @@ export function StudentApplicationDetail({ application, events, recruitmentRecor
         <dl className="mt-6 grid gap-3 border-t-2 border-black pt-4 text-sm sm:grid-cols-2">
           <div>
             <dt className="font-mono-ui text-[10px] font-bold uppercase text-black/50">
-              Application ID
-            </dt>
-            <dd className="mt-1 break-all font-mono-ui text-xs">{application.id}</dd>
-          </div>
-          <div>
-            <dt className="font-mono-ui text-[10px] font-bold uppercase text-black/50">
-              Opportunity Version
-            </dt>
-            <dd className="mt-1 break-all font-mono-ui text-xs">
-              {application.opportunityVersionId}
-            </dd>
-          </div>
-          <div>
-            <dt className="font-mono-ui text-[10px] font-bold uppercase text-black/50">
               Application created
             </dt>
             <dd className="mt-1">{new Date(application.createdAt).toLocaleString()}</dd>
           </div>
         </dl>
+        <details className="mt-4 text-xs text-black/60"><summary className="cursor-pointer font-mono-ui font-bold uppercase">Technical record</summary><p className="mt-2 break-all font-mono-ui">Application: {application.id}<br />Opportunity version: {application.opportunityVersionId}</p></details>
 
         <div className="mt-4 flex gap-3">
           <Link
