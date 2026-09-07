@@ -13,6 +13,7 @@ import { ProductionRecruiterReads } from '../services/sih/productionRecruiterRea
 import { ProductionOpportunityReads } from '../services/sih/productionOpportunityReads';
 import { supabase } from '../services/supabase';
 import { useSihProduction } from './SihProductionContext';
+import { isPresentationMode } from '../components/PresentationSwitcher';
 
 const RECRUITER_TRANSITIONS: Partial<Record<ApplicationStage, readonly ApplicationStage[]>> = {
   applied: ['screening', 'evidence_requested', 'under_review', 'cancelled'],
@@ -85,6 +86,9 @@ export function ApplicantsPage() {
   }, [dal, organizationId]);
 
   const selectedApplication = applications.find((application) => application.id === applicationId);
+  const visibleApplications = isPresentationMode()
+    ? applications.filter((application) => application.id === 'a080bafe-ec71-4fd5-99b2-19ed8ac8cb87')
+    : applications;
 
   useEffect(() => {
     if (!selectedApplication || !opportunityReads) { setOpportunityTitle(undefined); return; }
@@ -243,7 +247,7 @@ export function ApplicantsPage() {
       </div>
       {organizationId && (
         <RecruiterWorkspaceShell
-          applications={applications}
+          applications={visibleApplications}
           selectedApplication={selectedApplication}
           projection={projection}
           projectionAccessState={selectedApplication ? accessState : 'unavailable'}

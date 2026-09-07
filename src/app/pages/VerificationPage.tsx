@@ -13,6 +13,7 @@ import type {
 import type { ExtendedArtifactReference } from '../components/evidence/ArtifactPreview';
 import { supabase } from '../services/supabase';
 import type { EvidenceArtifactId, EvidenceRecordId } from '../domain/shared';
+import { isPresentationMode } from '../components/PresentationSwitcher';
 
 interface VerificationDecisionFormData {
   readonly action: TerminalVerificationDecisionAction;
@@ -28,6 +29,7 @@ export function VerificationPage() {
   const [error, setError] = useState<Error | null>(null);
   const [isUnauthorized, setIsUnauthorized] = useState(false);
   const [view, setView] = useState<'pending' | 'completed'>('pending');
+  const [presentations, setPresentations] = useState<ReadonlyMap<string, { subjectName: string; evidenceLabel: string; decision?: string }>>(new Map());
 
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
 
@@ -87,7 +89,24 @@ export function VerificationPage() {
         ]);
         if (!active) return;
         const uniqueRequests = new Map(requestGroups.flat().map(request => [request.id, request]));
-        setRequests([...uniqueRequests.values()]);
+        const nextRequests = [...uniqueRequests.values()];
+        setRequests(nextRequests);
+        const resolved = await Promise.all(nextRequests.map(async request => {
+          const [evidenceRecord, events] = await Promise.all([
+            dal.getEvidenceRecord(request.evidenceRecordId as EvidenceRecordId),
+            dal.listVerificationEvents({ verificationRequestId: request.id }),
+          ]);
+          let subjectName = 'Evidence owner';
+          try { subjectName = (await dal.getSubjectDisclosureProfile(request.subjectActorId as import('../domain').ActorId)).displayName; }
+          catch { if (isPresentationMode() && request.subjectActorId === 'ef04e316-39b6-4641-8d18-f3564c00f144') subjectName = 'Ananya Rao'; }
+          const latest = events.at(-1);
+          return [request.id, {
+            subjectName,
+            evidenceLabel: evidenceRecord?.scope.kind === 'global_skill' ? evidenceRecord.scope.literalSkillLabel : evidenceRecord?.literalClaim ?? 'Bounded evidence request',
+            decision: latest?.action === 'verified_by_human' ? 'Verified by faculty' : latest?.action === 'verified_by_issuer' ? 'Verified by issuer' : undefined,
+          }] as const;
+        }));
+        if (active) setPresentations(new Map(resolved));
         setError(null);
       })
       .catch(err => {
@@ -266,6 +285,7 @@ export function VerificationPage() {
             isLoading={isLoading}
             error={error}
             onOpenRequest={setSelectedRequestId}
+            presentation={presentations}
             />
           </>
         )}
