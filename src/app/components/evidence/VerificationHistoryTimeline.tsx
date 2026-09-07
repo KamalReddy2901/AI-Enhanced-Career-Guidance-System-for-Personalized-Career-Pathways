@@ -1,5 +1,6 @@
 import React from 'react';
 import type { VerificationAction } from '../../domain/evidence';
+import { isPresentationMode } from '../PresentationSwitcher';
 
 interface VerificationTimelineEvent {
   readonly id: string;
@@ -60,15 +61,13 @@ export function VerificationHistoryTimeline({ events }: VerificationHistoryTimel
                   {new Date(event.occurredAt).toLocaleString()}
                 </span>
               </div>
-              <p className="text-sm font-medium mt-1">
-                Actor: {event.actorId} {event.actorOrganizationId && `(Org: ${event.actorOrganizationId})`}
-              </p>
+              {isPresentationMode() ? <p className="text-sm font-medium mt-1">Recorded by authorized faculty</p> : <p className="text-sm font-medium mt-1">Actor: {event.actorId} {event.actorOrganizationId && `(Org: ${event.actorOrganizationId})`}</p>}
               {event.reason && (
                 <p className="text-sm text-muted-foreground bg-muted/50 p-2 rounded-md mt-1">
                   &quot;{event.reason}&quot;
                 </p>
               )}
-              {event.supersedesEventId && (
+              {event.supersedesEventId && !isPresentationMode() && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Supersedes event: {event.supersedesEventId}
                 </p>

@@ -1,4 +1,5 @@
 import type { ApplicationEventReadModel } from '../../../services/sih/types';
+import { isPresentationMode } from '../../PresentationSwitcher';
 
 interface Props {
   readonly events: readonly ApplicationEventReadModel[];
@@ -43,9 +44,11 @@ export default function ApplicationEventTimeline({ events }: Props) {
                 Stage changed from <strong className="font-mono-ui text-[10px] uppercase">{ev.fromStage.replace('_', ' ')}</strong> to <strong className="font-mono-ui text-[10px] uppercase">{ev.toStage.replace('_', ' ')}</strong>
               </p>
 
-              <div className="mt-1 font-mono-ui text-[9px] text-black/60">
-                Actor: {ev.actorId}
-              </div>
+              {isPresentationMode() ? (
+                <div className="mt-1 font-mono-ui text-[9px] uppercase text-black/60">Recorded by an authorized reviewer</div>
+              ) : (
+                <div className="mt-1 font-mono-ui text-[9px] text-black/60">Actor: {ev.actorId}</div>
+              )}
 
               {ev.reason && (
                 <div className="mt-2 bg-[#f7f4ed] p-2 text-sm text-[#d63c1d]">
