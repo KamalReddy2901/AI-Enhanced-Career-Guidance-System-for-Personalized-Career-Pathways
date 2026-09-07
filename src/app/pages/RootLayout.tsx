@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Navigate, Outlet, useNavigate, useLocation } from 'react-router';
 import { Toaster } from 'sonner';
 import { OnboardingTour } from '../components/OnboardingTour';
@@ -116,9 +116,14 @@ export function RootLayout() {
 
   return (
     <UnifiedCareerCaseShell>
-      <PageTransition>
-        <Outlet />
-      </PageTransition>
+      <Suspense
+        key={`${location.pathname}${location.search}`}
+        fallback={<div className="flex min-h-[50vh] items-center justify-center bg-[var(--paper)]" role="status" aria-live="polite" aria-busy="true"><span className="font-mono-ui text-xs font-black uppercase tracking-wide text-black/65">Loading workspace…</span></div>}
+      >
+        <PageTransition>
+          <Outlet />
+        </PageTransition>
+      </Suspense>
       <Toaster
         position="top-right"
         toastOptions={{
