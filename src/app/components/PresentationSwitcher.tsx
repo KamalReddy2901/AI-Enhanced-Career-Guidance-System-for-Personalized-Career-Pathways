@@ -96,7 +96,7 @@ export function PresentationSwitcher() {
           </button>
           {ready && <>
             <div id="presentation-controls" role="group" aria-label="Choose demo persona" className="flex flex-wrap gap-1">
-              <button type="button" className={`${control} hover:bg-black/5`} onClick={() => navigate('/presentation')}>Demo home</button>
+              <button type="button" disabled={busy || !sessions.has('student')} className={`${control} hover:bg-black/5`} onClick={() => void switchPersona('student', '/presentation')}>Demo home</button>
               {personas.map(persona => <button key={persona.slug} type="button" disabled={busy || !sessions.has(persona.slug)} aria-pressed={user?.email === fixtureEmail(persona.slug)} className={`${control} ${user?.email === fixtureEmail(persona.slug) ? 'bg-black text-white' : 'hover:bg-black/5'}`} onClick={() => void switchPersona(persona.slug, persona.path)}>{persona.label}</button>)}
             </div>
             <button type="button" className={control} disabled={busy} onClick={() => navigate('/presentation#platform')}>Full platform</button>
