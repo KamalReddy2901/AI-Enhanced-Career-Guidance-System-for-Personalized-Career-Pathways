@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import type { AggregateAnalyticsPoint, AggregateAnalyticsResult, AggregateMetric } from '../domain/analytics';
 import type { IsoTimestamp, OrganizationId } from '../domain/shared';
 import { supabase } from '../services/supabase';
@@ -105,6 +105,8 @@ function MetricSection({ metric, points }: { readonly metric: AggregateMetric; r
 }
 
 export function InstitutionSkillsIntelligencePage() {
+  const [searchParams] = useSearchParams();
+  const policyPresentation = searchParams.get('presentation') === 'policy';
   const { actorId, roles, loading: authorityLoading, error: authorityError } = useSihProduction();
   const service = useMemo(() => (supabase ? new ProductionInstitutionReads(supabase) : null), []);
   const [scopes, setScopes] = useState<AnalyticsInstitutionScope[]>([]);
@@ -180,11 +182,11 @@ export function InstitutionSkillsIntelligencePage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
       <p className="font-mono-ui text-[10px] font-black uppercase tracking-[.2em] text-[var(--accent-news)]">
-        Skills Intelligence · aggregate only
+        {policyPresentation ? 'Policy Skills Intelligence' : 'Skills Intelligence'} · aggregate only
       </p>
-      <h1 className="mt-2 text-4xl font-black tracking-tight">Institution Skills Intelligence</h1>
+      <h1 className="mt-2 text-4xl font-black tracking-tight">{policyPresentation ? 'Policy Skills Intelligence' : 'Institution Skills Intelligence'}</h1>
       <p className="mt-3 max-w-4xl text-sm leading-6 text-black/65">
-        Privacy-protected, institution-scoped signals from CareerCase tenant records. These views support human planning and intervention design; they do not rank candidates or establish causal impact.
+        {policyPresentation ? 'Aggregate program signals only. No student or recruiter drill-down.' : 'Privacy-protected, institution-scoped signals from CareerCase tenant records. These views support human planning and intervention design; they do not rank candidates or establish causal impact.'}
       </p>
 
       <div className="mt-8 space-y-6">

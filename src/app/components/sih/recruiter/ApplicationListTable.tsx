@@ -26,7 +26,7 @@ export default function ApplicationListTable({ applications, selectedApplication
         <thead className="bg-[#111] text-white">
           <tr>
             <th className="border-b-2 border-black p-3 font-mono-ui text-[10px] font-black uppercase tracking-wide">
-              Applicant ID
+              Applicant
             </th>
             <th className="border-b-2 border-black p-3 font-mono-ui text-[10px] font-black uppercase tracking-wide">
               Stage
@@ -48,7 +48,7 @@ export default function ApplicationListTable({ applications, selectedApplication
                 className={`transition-colors ${isSelected ? 'bg-[#e7ff57]' : 'hover:bg-[#f7f4ed]'}`}
               >
                 <td className="p-3 font-mono-ui text-[11px] font-bold">
-                  {app.applicantActorId.substring(0, 8)}...
+                  Application received
                 </td>
                 <td className="p-3">
                   <span className="bg-black px-2 py-1 font-mono-ui text-[9px] font-black uppercase text-white">
@@ -64,7 +64,7 @@ export default function ApplicationListTable({ applications, selectedApplication
                     onClick={() => onSelect(app.id)}
                     className="border-2 border-black bg-white px-3 py-1 font-mono-ui text-[10px] font-black uppercase tracking-wide transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#ff5c35]"
                   >
-                    {isSelected ? 'Selected' : 'View'}
+                    {isSelected ? 'Selected' : 'Review application'}
                   </button>
                 </td>
               </tr>

@@ -93,6 +93,10 @@ export function ApplicantsPage() {
     }
     setAccessState('loading');
     setLoadError(undefined);
+    // Never leave a prior applicant's consented projection on screen while a new route resolves.
+    setProjection(undefined);
+    setEvents([]);
+    setRecruitmentRecords([]);
     try {
       const [nextEvents, nextRecords, exact] = await Promise.all([
         dal.listApplicationEvents(selectedApplication.id),
@@ -196,7 +200,7 @@ export function ApplicantsPage() {
   if (!actorId || recruiterMemberships.length === 0) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-10">
-        <h1 className="text-3xl font-black">Applicant Workspace</h1>
+        <h1 className="text-3xl font-black">Applications to Review</h1>
         <p className="mt-4 border-2 border-black bg-white p-5">An active recruiter or industry-partner organization role is required. Organization authority is never inferred from an email domain.</p>
       </div>
     );

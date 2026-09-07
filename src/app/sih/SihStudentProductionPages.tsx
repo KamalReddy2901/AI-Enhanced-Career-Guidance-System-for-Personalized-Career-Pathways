@@ -32,6 +32,7 @@ import { supabase } from '../services/supabase';
 import { getOpportunityQuestionnaireAssignment } from '../services/questionnaireDb';
 import type { OpportunityQuestionnaireAssignment, QuestionnaireVersion } from '../types/questionnaire';
 import { useSihProduction } from './SihProductionContext';
+import { isPresentationMode } from '../components/PresentationSwitcher';
 import type { ProspectiveRecruiterDisclosure } from '../components/sih/student/application/RecruiterDisclosurePreview';
 
 function ProductionFrame({
@@ -86,6 +87,7 @@ function usePublishedBundle(opportunityVersionId?: string) {
     let active = true;
     setLoading(true);
     setError(undefined);
+    setBundle(undefined);
     void reads
       .getPublishedVersion(opportunityVersionId)
       .then((next) => {
@@ -136,6 +138,9 @@ export function OpportunitiesPage() {
       active = false;
     };
   }, [reads]);
+  const displayedBundles = useMemo(() => bundles
+    .filter((bundle) => !isPresentationMode() || !/fixture|acceptance fixture|controlled fixture|production acceptance/i.test(`${bundle.version.title} ${bundle.version.description}`))
+    .sort((left, right) => Number(/clinical research data & standardization intern/i.test(right.version.title)) - Number(/clinical research data & standardization intern/i.test(left.version.title))), [bundles]);
 
   return (
     <ProductionFrame
@@ -143,10 +148,11 @@ export function OpportunitiesPage() {
       title="Opportunities"
       description="Explore current published opportunity versions. Discovery filters do not decide eligibility, readiness or hiring outcomes."
     >
+      {isPresentationMode() && !loading && !error && <div className="mb-5 border-2 border-black bg-[#fff4c7] p-4"><p className="font-mono-ui text-[10px] font-black uppercase tracking-wide">Featured opportunity</p><h2 className="mt-1 text-2xl font-black">Clinical Research Data &amp; Standardization Intern</h2><p className="mt-1 text-sm text-black/70">Pravaah Health Systems · Start here for the core readiness story.</p></div>}
       {loading ? <Notice>Loading published opportunities…</Notice> : error ? <Notice>{error}</Notice> : (
         <OpportunityExplorer
-          opportunities={bundles.map((bundle) => bundle.opportunity)}
-          versions={bundles.map((bundle) => bundle.version)}
+          opportunities={displayedBundles.map((bundle) => bundle.opportunity)}
+          versions={displayedBundles.map((bundle) => bundle.version)}
           onSelectOpportunity={(opportunityId) => {
             const selected = bundles.find((bundle) => bundle.opportunity.id === opportunityId);
             if (selected) navigate(`/opportunities/${selected.version.id}`);
@@ -421,8 +427,8 @@ export function EvidencePage() {
   return (
     <ProductionFrame
       eyebrow="Career Passport evidence"
-      title="Evidence"
-      description="Evidence retains literal claims, provenance, scope and verification state. Weak or self-reported records cannot mathematically become issuer-grade provenance."
+      title="My Verified Evidence"
+      description="Evidence retains a human claim, provenance, scoped verification and privacy context. Verification adds evidence; it does not create an unbounded mastery claim."
     >
       {opportunityVersionId && (
         <div className="mb-5 border-2 border-black bg-[#fff4c7] p-4 text-sm">
@@ -491,7 +497,7 @@ export function EvidencePage() {
                       </li>
                     ))}
                   </ul>
-                  <p className="mt-2 text-[11px] text-black/55">Each assertion belongs to its own verifier request and context; it is not a universal mastery claim.</p>
+                  <p className="mt-2 text-[11px] text-black/55">Student confirmed → faculty verified → readiness updated. Each assertion remains bounded to its own verifier request and context.</p>
                 </div>
               )}
               {(record.provenance === 'self_declared' || record.provenance === 'self_reported') && 
@@ -731,7 +737,9 @@ export function ApplicationPreparationPage() {
 export function ApplicationsPage() {
   const { applicationId } = useParams();
   const { actorId, dal } = useSihProduction();
+  const opportunityReads = useProductionReads();
   const [rows, setRows] = useState<readonly ApplicationReadModel[]>([]);
+  const [applicationTitles, setApplicationTitles] = useState<ReadonlyMap<string, string>>(new Map());
   const [events, setEvents] = useState<readonly ApplicationEventReadModel[]>([]);
   const [recruitmentRecords, setRecruitmentRecords] = useState<readonly ApplicationRecruitmentRecordReadModel[]>([]);
   const [submittedSnapshot, setSubmittedSnapshot] = useState<ApplicationSnapshotReadModel>();
@@ -752,6 +760,15 @@ export function ApplicationsPage() {
       active = false;
     };
   }, [actorId, dal]);
+
+  useEffect(() => {
+    if (!opportunityReads || rows.length === 0) return;
+    let active = true;
+    void Promise.all(rows.map(async row => ({ id: String(row.id), title: (await opportunityReads.getPublishedVersion(row.opportunityVersionId))?.version.title })))
+      .then(entries => { if (active) setApplicationTitles(new Map(entries.filter((entry): entry is { id: string; title: string } => typeof entry.title === 'string').map(entry => [entry.id, entry.title]))); })
+      .catch(() => { if (active) setApplicationTitles(new Map()); });
+    return () => { active = false; };
+  }, [opportunityReads, rows]);
 
   const selectedApplication = rows.find((app) => app.id === applicationId);
 
@@ -854,11 +871,12 @@ export function ApplicationsPage() {
             <Link key={application.id} to={`/applications/${application.id}`}>
               <article className="border-2 border-black bg-white p-5 shadow-[4px_4px_0_#111] transition-transform hover:-translate-y-1">
                 <p className="font-mono-ui text-[10px] font-black uppercase text-[var(--accent-news)]">{application.currentStage.replaceAll('_', ' ')}</p>
-                <h2 className="mt-2 break-all text-lg font-black">{application.id.substring(0, 8)}...</h2>
+                <h2 className="mt-2 text-lg font-black">{applicationTitles.get(application.id) ?? 'Submitted opportunity application'}</h2>
+                <p className="mt-1 text-sm text-black/65">Pravaah Health Systems</p>
                 <dl className="mt-4 grid gap-2 text-xs">
-                  <div><dt className="font-mono-ui uppercase text-black/45">Opportunity version</dt><dd className="mt-1 break-all font-mono-ui">{application.opportunityVersionId.substring(0, 12)}...</dd></div>
-                  <div><dt className="font-mono-ui uppercase text-black/45">Created</dt><dd className="mt-1">{new Date(application.createdAt).toLocaleDateString()}</dd></div>
+                  <div><dt className="font-mono-ui uppercase text-black/45">Submitted</dt><dd className="mt-1">{new Date(application.createdAt).toLocaleDateString()}</dd></div>
                 </dl>
+                <p className="mt-4 font-mono-ui text-[10px] font-black uppercase underline">View application</p>
               </article>
             </Link>
           ))}

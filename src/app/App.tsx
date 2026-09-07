@@ -12,7 +12,7 @@ function PageFallback() {
           style={{ borderWidth: '3px' }}
           aria-hidden="true"
         />
-        <p className="font-[Inter] text-black/35 tracking-wide" style={{ fontSize: '0.8rem' }}>
+          <p className="font-[Inter] text-black/65 tracking-wide" style={{ fontSize: '0.8rem' }}>
           Loading…
         </p>
       </div>

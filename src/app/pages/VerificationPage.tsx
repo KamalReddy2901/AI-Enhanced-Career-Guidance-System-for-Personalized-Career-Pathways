@@ -27,6 +27,7 @@ export function VerificationPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [isUnauthorized, setIsUnauthorized] = useState(false);
+  const [view, setView] = useState<'pending' | 'completed'>('pending');
 
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
 
@@ -154,6 +155,7 @@ export function VerificationPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const visibleRequests = requests.filter(request => view === 'completed' ? request.status === 'closed' : request.status !== 'closed' && request.status !== 'cancelled');
 
   const selectedActingContext = selectedRequest
     ? actingContexts.find(context => context.organizationId === selectedRequest.requestedVerifierOrganizationId)
@@ -223,8 +225,8 @@ export function VerificationPage() {
       <div className="mx-auto max-w-5xl space-y-6">
 
         <header className="mb-8 border-b-2 border-[var(--ink)] pb-6">
-          <h1 className="font-display text-4xl leading-[1.25]">Verifier Dashboard</h1>
-          <p className="mt-2 text-sm text-[var(--ink-soft)]">Review and manage your pending verification requests.</p>
+          <h1 className="font-display text-4xl leading-[1.25]">Verification</h1>
+          <p className="mt-2 text-sm text-[var(--ink-soft)]">Review pending evidence requests and make completed, bounded verification history easy to find.</p>
         </header>
 
         {selectedRequestId && (selectedRequest || isDetailLoading || detailError) ? (
@@ -253,12 +255,19 @@ export function VerificationPage() {
             )}
           </div>
         ) : (
-          <VerificationRequestInbox
-            requests={requests}
+          <>
+            <div className="flex gap-2" role="tablist" aria-label="Verification request status">
+              <button type="button" role="tab" aria-selected={view === 'pending'} onClick={() => setView('pending')} className={`border-2 border-black px-4 py-2 font-mono-ui text-[10px] font-black uppercase ${view === 'pending' ? 'bg-black text-white' : 'bg-white'}`}>Pending ({requests.filter(request => request.status !== 'closed' && request.status !== 'cancelled').length})</button>
+              <button type="button" role="tab" aria-selected={view === 'completed'} onClick={() => setView('completed')} className={`border-2 border-black px-4 py-2 font-mono-ui text-[10px] font-black uppercase ${view === 'completed' ? 'bg-black text-white' : 'bg-white'}`}>Completed ({requests.filter(request => request.status === 'closed').length})</button>
+            </div>
+            {view === 'completed' && !isLoading && visibleRequests.length === 0 && <div className="border-2 border-black bg-white p-5 text-sm">No completed verifications are visible for this verifier context yet. Closed requests will appear here with their bounded history.</div>}
+            <VerificationRequestInbox
+            requests={visibleRequests}
             isLoading={isLoading}
             error={error}
             onOpenRequest={setSelectedRequestId}
-          />
+            />
+          </>
         )}
       </div>
     </div>
