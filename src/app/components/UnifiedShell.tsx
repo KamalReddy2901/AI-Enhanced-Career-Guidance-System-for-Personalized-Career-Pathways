@@ -557,17 +557,17 @@ export function UnifiedCareerCaseShell({
             <div className="flex flex-col md:flex-row md:items-start gap-8 justify-between">
               <div>
                 <BrandMark />
-                <p className="mt-3 max-w-xs font-[Inter] text-[12px] text-black/40 leading-relaxed">
+                <p className="mt-3 max-w-xs font-[Inter] text-[12px] text-black/65 leading-relaxed">
                   Evidence-backed opportunity readiness & skills intelligence
                   for the academia–industry ecosystem.
                 </p>
-                <p className="mt-2 font-mono-ui text-[9px] uppercase tracking-[0.12em] text-black/25">
+                <p className="mt-2 font-mono-ui text-[9px] uppercase tracking-[0.12em] text-black/65">
                   SIH26044 · Portal for Academia–Industry Collaboration
                 </p>
               </div>
               <div className="flex flex-wrap gap-12">
                 <div>
-                  <p className="font-mono-ui text-[9px] uppercase tracking-[0.12em] text-black/30 mb-3">Product</p>
+                  <p className="font-mono-ui text-[9px] uppercase tracking-[0.12em] text-black/65 mb-3">Product</p>
                   <div className="flex flex-col gap-2">
                     {[
                       ['How It Works', '/how-it-works'],
@@ -575,12 +575,12 @@ export function UnifiedCareerCaseShell({
                       ['Integrations', '/integration'],
                       ['Help', '/help'],
                     ].map(([label, to]) => (
-                      <Link key={to} to={to} className="font-mono-ui text-[10px] text-black/50 hover:text-black transition-colors">{label}</Link>
+                      <Link key={to} to={to} className="font-mono-ui text-[10px] text-black/65 hover:text-black transition-colors">{label}</Link>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <p className="font-mono-ui text-[9px] uppercase tracking-[0.12em] text-black/30 mb-3">For</p>
+                  <p className="font-mono-ui text-[9px] uppercase tracking-[0.12em] text-black/65 mb-3">For</p>
                   <div className="flex flex-col gap-2">
                     {[
                       ['Students', '/auth?mode=signup'],
@@ -588,17 +588,17 @@ export function UnifiedCareerCaseShell({
                       ['Faculty', '/auth?mode=signup'],
                       ['Institutions', '/auth?mode=signup'],
                     ].map(([label, to]) => (
-                      <Link key={label} to={to} className="font-mono-ui text-[10px] text-black/50 hover:text-black transition-colors">{label}</Link>
+                      <Link key={label} to={to} className="font-mono-ui text-[10px] text-black/65 hover:text-black transition-colors">{label}</Link>
                     ))}
                   </div>
                 </div>
               </div>
             </div>
             <div className="mt-10 border-t border-black/8 pt-6 flex flex-wrap items-center justify-between gap-3">
-              <p className="font-mono-ui text-[9px] text-black/30 uppercase tracking-[0.1em]">
+              <p className="font-mono-ui text-[9px] text-black/65 uppercase tracking-[0.1em]">
                 © 2026 CareerCase · Eternals · SIH26044
               </p>
-              <p className="font-mono-ui text-[9px] text-black/25 uppercase tracking-[0.08em]">
+              <p className="font-mono-ui text-[9px] text-black/65 uppercase tracking-[0.08em]">
                 MIT License · Curated NCO-2015/NSQF · Evidence-based · Not hiring probability
               </p>
             </div>
