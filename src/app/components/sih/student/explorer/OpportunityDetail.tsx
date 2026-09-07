@@ -54,7 +54,9 @@ export default function OpportunityDetail({
             Source
           </dt>
           <dd className="mt-1 text-sm font-bold">
-            {opportunityVersion.source.sourceSystem}
+            {isPresentationMode() && /controlled|fixture|synthetic/i.test(opportunityVersion.source.sourceSystem)
+              ? 'Prepared presentation source'
+              : opportunityVersion.source.sourceSystem}
           </dd>
         </div>
 

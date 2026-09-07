@@ -241,7 +241,7 @@ export function ApplicantsPage() {
               ))}
             </select>
           </label>
-          <p className="mt-3 text-xs text-black/65">Only submitted applications with an active purpose-specific application-review consent are visible through the recruiter RLS boundary.</p>
+          <p className="mt-3 text-xs text-black/65">{isPresentationMode() ? 'Only submitted applications with active, purpose-specific review consent are visible to this recruiter.' : 'Only submitted applications with an active purpose-specific application-review consent are visible through the recruiter RLS boundary.'}</p>
         </div>
         {loadError && <p className="mt-4 border-l-4 border-[var(--accent-news)] bg-[#fff1ec] p-3 text-sm" role="alert">{loadError}</p>}
       </div>
