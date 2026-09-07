@@ -62,8 +62,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string): Promise<{ error: string | null }> => {
     const { supabase } = await import('../services/supabase');
     if (!supabase) return { error: 'Supabase not configured' };
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { error: error.message };
+    // Keep protected-route evaluation in sync with an explicit user action;
+    // the subscription still receives the same session as the source of truth.
+    setSession(data.session);
+    setUser(data.user);
+    setLoading(false);
     return { error: null };
   };
 
