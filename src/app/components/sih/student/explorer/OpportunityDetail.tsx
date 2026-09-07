@@ -1,4 +1,5 @@
 import type { Opportunity, OpportunityVersion } from '../../../../domain';
+import { isPresentationMode } from '../../../PresentationSwitcher';
 
 type OpportunityDetailProps = {
   readonly opportunity: Opportunity;
@@ -90,7 +91,7 @@ export default function OpportunityDetail({
           <div className="flex items-end justify-between gap-3">
             <div>
               <p className="font-mono-ui text-[10px] font-black uppercase tracking-[0.18em]">
-                Canonical requirements
+                {isPresentationMode() ? 'Published requirements' : 'Canonical requirements'}
               </p>
               <h3 id="requirements-title" className="mt-1 text-2xl font-black">
                 What this opportunity asks for
@@ -144,7 +145,7 @@ export default function OpportunityDetail({
 
         <section aria-labelledby="eligibility-title">
           <p className="font-mono-ui text-[10px] font-black uppercase tracking-[0.18em]">
-            Canonical eligibility
+            {isPresentationMode() ? 'Published eligibility' : 'Canonical eligibility'}
           </p>
 
           <h3 id="eligibility-title" className="mt-1 text-2xl font-black">
@@ -182,9 +183,7 @@ export default function OpportunityDetail({
         </p>
 
         <p className="mt-2 text-sm leading-relaxed text-white/75">
-          This detail view displays the canonical opportunity version and its
-          recorded source information. It does not create or modify
-          opportunity data.
+          {isPresentationMode() ? 'This detail view displays the published opportunity and its recorded source information. It does not create or modify opportunity data.' : 'This detail view displays the canonical opportunity version and its recorded source information. It does not create or modify opportunity data.'}
         </p>
 
         <p className="mt-4 font-mono-ui text-xs font-bold">

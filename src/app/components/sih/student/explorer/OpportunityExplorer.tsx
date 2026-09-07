@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Opportunity, OpportunityType, OpportunityVersion } from '../../../../domain';
 import OpportunityCard from './OpportunityCard';
+import { isPresentationMode } from '../../../PresentationSwitcher';
 
 interface OpportunityExplorerProps {
   readonly opportunities: readonly Opportunity[];
@@ -90,7 +91,7 @@ export function OpportunityExplorer({
           Find an opportunity
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-black/70">
-          Search and filter the controlled opportunity catalogue. Filters only narrow what you see; they do not determine readiness or eligibility.
+          {isPresentationMode() ? 'Search and filter the published opportunity catalogue. Filters only narrow what you see; they do not determine readiness or eligibility.' : 'Search and filter the controlled opportunity catalogue. Filters only narrow what you see; they do not determine readiness or eligibility.'}
         </p>
       </header>
 

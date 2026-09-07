@@ -8,6 +8,7 @@ import {
 } from '../services/sih/productionCollaborationAuthoring';
 import { ProductionFacultyReads, type ProductionFacultyCollaborationBundle } from '../services/sih/productionFacultyReads';
 import { useSihProduction, type SihMembershipContext } from './SihProductionContext';
+import { presentationOrganizationName } from './presentationLabels';
 
 const AUTHOR_ROLES = new Set(['faculty', 'institution_admin', 'industry_partner']);
 
@@ -71,7 +72,7 @@ export function CollaborationHubPage() {
     return () => { active = false; };
   }, [actorId, services]);
 
-  const organizationName = new Map(bundle?.organizations.map((organization) => [organization.id, organization.displayName]) ?? []);
+  const organizationName = new Map(bundle?.organizations.map((organization) => [organization.id, presentationOrganizationName(organization.displayName)]) ?? []);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
@@ -268,7 +269,7 @@ export function CollaborationProposalPage() {
                   {partners.map((partner) => (
                     <label key={partner.organizationId} className="flex min-h-12 items-start gap-3 border border-black p-3 text-sm">
                       <input type="checkbox" checked={selectedPartners.includes(partner.organizationId)} onChange={() => togglePartner(partner.organizationId)} className="mt-1" />
-                      <span><strong>{partner.displayName}</strong><br /><span className="text-xs text-black/55">{partner.kind.replaceAll('_', ' ')}</span></span>
+                      <span><strong>{presentationOrganizationName(partner.displayName)}</strong><br /><span className="text-xs text-black/55">{partner.kind.replaceAll('_', ' ')}</span></span>
                     </label>
                   ))}
                 </div>

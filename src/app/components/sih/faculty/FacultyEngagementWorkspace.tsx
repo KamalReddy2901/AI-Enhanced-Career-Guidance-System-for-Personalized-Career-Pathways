@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { CollaborationEngagement, Organization, Actor } from '../../../domain';
 import { collaborationKindLabel, organizationName, participantNames } from './facultyPresentation';
+import { isPresentationMode } from '../../PresentationSwitcher';
 
 interface FacultyEngagementWorkspaceProps {
   readonly engagement: CollaborationEngagement;
@@ -66,7 +67,7 @@ export function FacultyEngagementWorkspace({ engagement, organizations, personas
               ))}
             </div>
             <p className="mt-4 text-sm leading-relaxed text-black/65">
-              This controlled workspace records a faculty-led interest and coordination step only. It does not create new persistence, eligibility logic or institutional authority.
+              {isPresentationMode() ? 'This workspace records a faculty-led interest and coordination step only. It does not create eligibility or institutional authority.' : 'This controlled workspace records a faculty-led interest and coordination step only. It does not create new persistence, eligibility logic or institutional authority.'}
             </p>
           </div>
 
@@ -114,7 +115,7 @@ export function FacultyEngagementWorkspace({ engagement, organizations, personas
               </div>
               <div>
                 <dt className="font-mono-ui text-[10px] uppercase text-white/50">Participants</dt>
-                <dd className="mt-1">{people.join(', ') || 'No participant list in fixture'}</dd>
+                <dd className="mt-1">{people.join(', ') || (isPresentationMode() ? 'No participant list available' : 'No participant list in fixture')}</dd>
               </div>
             </dl>
           </section>

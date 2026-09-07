@@ -16,6 +16,7 @@ import {
 } from '../services/sih/productionInstitutionReads';
 import { ProductionInstitutionInterventions } from '../services/sih/productionInstitutionInterventions';
 import { useSihProduction } from './SihProductionContext';
+import { presentationOrganizationName } from './presentationLabels';
 
 const sourceWindowDays = 90;
 const followupWindowDays = 30;
@@ -359,7 +360,7 @@ export function InstitutionInterventionsPage() {
                 className="mt-2 min-h-11 w-full border-2 border-black bg-white px-3 text-sm font-bold md:max-w-xl"
               >
                 {scopes.map((scope) => (
-                  <option key={scope.organizationId} value={scope.organizationId}>{scope.displayName}</option>
+                  <option key={scope.organizationId} value={scope.organizationId}>{presentationOrganizationName(scope.displayName)}</option>
                 ))}
               </select>
             </section>

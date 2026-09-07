@@ -8,6 +8,7 @@ import {
   type AnalyticsInstitutionScope,
 } from '../services/sih/productionInstitutionReads';
 import { useSihProduction } from './SihProductionContext';
+import { presentationOrganizationName } from './presentationLabels';
 
 const reportingWindowDays = 90;
 
@@ -219,7 +220,7 @@ export function InstitutionSkillsIntelligencePage() {
                 >
                   {scopes.map((scope) => (
                     <option key={scope.organizationId} value={scope.organizationId}>
-                      {scope.displayName}
+                      {presentationOrganizationName(scope.displayName)}
                     </option>
                   ))}
                 </select>

@@ -22,6 +22,7 @@ import type {
   QuestionnaireResponse,
 } from "../types/questionnaire";
 import { useSihProduction } from "./SihProductionContext";
+import { presentationOrganizationName } from "./presentationLabels";
 
 const AUTHOR_ROLES = new Set([
   "recruiter",
@@ -201,7 +202,7 @@ export function IndustryNewQuestionnairePage() {
           >
             {authorized.map((item) => (
               <option key={item.organizationId} value={item.organizationId}>
-                {item.organizationName}
+                {presentationOrganizationName(item.organizationName)}
               </option>
             ))}
           </select>

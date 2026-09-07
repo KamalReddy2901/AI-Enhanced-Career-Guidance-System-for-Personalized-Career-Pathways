@@ -5,6 +5,7 @@ import type {
   RequirementReadinessResult,
 } from '../../../../domain/readiness';
 import type { OpportunityId, OpportunityRequirementId, OpportunityVersionId } from '../../../../domain/shared';
+import { isPresentationMode } from '../../../PresentationSwitcher';
 
 export type ReadinessAvailability =
   | 'loading'
@@ -113,10 +114,10 @@ function AvailabilityState({
   readonly errorMessage?: string;
 }) {
   const copy = {
-    loading: ['Readiness loading', 'The canonical readiness result is being loaded.'],
-    unavailable: ['Readiness unavailable', 'No canonical readiness result is currently available for this opportunity.'],
-    error: ['Readiness unavailable', errorMessage ?? 'The canonical readiness result could not be loaded.'],
-    unauthorized: ['Readiness unavailable', 'The canonical readiness result is not available for this viewer.'],
+    loading: ['Readiness loading', isPresentationMode() ? 'The readiness result is being loaded.' : 'The canonical readiness result is being loaded.'],
+    unavailable: ['Readiness unavailable', isPresentationMode() ? 'No current readiness result is available for this opportunity.' : 'No canonical readiness result is currently available for this opportunity.'],
+    error: ['Readiness unavailable', errorMessage ?? (isPresentationMode() ? 'The readiness result could not be loaded.' : 'The canonical readiness result could not be loaded.')],
+    unauthorized: ['Readiness unavailable', isPresentationMode() ? 'The readiness result is not available for this viewer.' : 'The canonical readiness result is not available for this viewer.'],
   }[state];
 
   return (
@@ -134,7 +135,7 @@ function StaleState({ result, opportunityVersion }: { readonly result: Opportuni
       <p className="font-mono-ui text-[10px] font-black uppercase tracking-[0.18em] text-[#d63c1d]">Career readiness</p>
       <h2 className="mt-2 text-2xl font-black">Stale readiness result</h2>
       <p className="mt-3 text-sm leading-relaxed">
-        This readiness result belongs to a different canonical opportunity version and is not presented as current.
+        This readiness result belongs to a different published opportunity version and is not presented as current.
       </p>
       <dl className="mt-4 grid gap-3 text-xs sm:grid-cols-2">
         <div><dt className="font-mono-ui uppercase text-black/50">Result opportunity</dt><dd className="mt-1 break-all font-mono-ui">{result.opportunityId}</dd></div>
@@ -180,13 +181,13 @@ export default function ReadinessCasefile({
       <header>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="font-mono-ui text-[10px] font-black uppercase tracking-[0.18em] text-[#d63c1d]">Canonical readiness casefile · current</p>
+            <p className="font-mono-ui text-[10px] font-black uppercase tracking-[0.18em] text-[#d63c1d]">{isPresentationMode() ? 'Explainable readiness · current' : 'Canonical readiness casefile · current'}</p>
             <h2 id="readiness-casefile-title" className="mt-2 text-3xl font-black">{formatLabel(readinessBand)}</h2>
           </div>
           <span className="border-2 border-black bg-[#e7ff57] px-3 py-2 font-mono-ui text-[10px] font-black uppercase">{formatLabel(result.eligibilityStatus)}</span>
         </div>
         <p className="mt-4 max-w-3xl text-sm leading-relaxed text-black/70">
-          This is the canonical Engine B readiness result. The interface displays the result and its supporting evidence references; it does not calculate readiness or infer evidence.
+          {isPresentationMode() ? 'This result shows how the opportunity requirements are supported by available evidence. The interface displays the recorded result; it does not calculate or infer evidence.' : 'This is the canonical Engine B readiness result. The interface displays the result and its supporting evidence references; it does not calculate readiness or infer evidence.'}
         </p>
       </header>
 

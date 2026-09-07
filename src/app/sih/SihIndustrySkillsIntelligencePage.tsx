@@ -8,6 +8,7 @@ import {
 } from '../services/sih/productionIndustryReads';
 import { supabase } from '../services/supabase';
 import { useSihProduction } from './SihProductionContext';
+import { presentationOrganizationName } from './presentationLabels';
 
 const reportingWindowDays = 90;
 
@@ -209,7 +210,7 @@ export function IndustrySkillsIntelligencePage() {
                   onChange={(event) => setOrganizationId(event.target.value as OrganizationId)}
                   className="min-h-11 border-2 border-black bg-white px-3 text-sm normal-case"
                 >
-                  {organizations.map((scope) => <option key={scope.organizationId} value={scope.organizationId}>{scope.displayName}</option>)}
+                  {organizations.map((scope) => <option key={scope.organizationId} value={scope.organizationId}>{presentationOrganizationName(scope.displayName)}</option>)}
                 </select>
               </label>
               <label className="grid gap-2 font-mono-ui text-[10px] font-black uppercase tracking-wide">

@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from "../context/AuthContext";
 import { supabase } from "../services/supabase";
 import { SihBrowserDal } from "../services/sih/browserDal";
 import { SihTrustedApiClient } from "../services/sih/SihTrustedApiClient";
+import { presentationOrganizationName } from "./presentationLabels";
 
 export interface SihMembershipContext {
   readonly organizationId: OrganizationId;
@@ -90,9 +91,9 @@ function Boundary({ children }: { readonly children: ReactNode }) {
         ]);
       const contexts = (membershipRows ?? []).map((row) => ({
         organizationId: row.organization_id as OrganizationId,
-        organizationName:
-          (row.organizations as unknown as { display_name?: string } | null)?.display_name ??
-          "Organization",
+        organizationName: presentationOrganizationName(
+          (row.organizations as unknown as { display_name?: string } | null)?.display_name ?? "Organization",
+        ),
         roles: byMembership.get(row.id as string) ?? [],
       }));
       if (active) {

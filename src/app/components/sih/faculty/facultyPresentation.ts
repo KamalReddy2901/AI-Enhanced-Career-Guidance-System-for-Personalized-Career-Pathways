@@ -1,4 +1,5 @@
 import type { Actor, CollaborationEngagement, CollaborationKind, Organization } from '../../../domain';
+import { presentationOrganizationName } from '../../../sih/presentationLabels';
 
 export type FacultyCollaborationGroup = 'training_fdp' | 'consultancy_research' | 'mentoring_workshop_guest_lecture' | 'other';
 
@@ -28,7 +29,8 @@ export function collaborationStatusLabel(status: CollaborationEngagement['status
 }
 
 export function organizationName(organizationId: Organization['id'], organizations: readonly Organization[]): string {
-  return organizations.find(organization => organization.id === organizationId)?.displayName ?? 'Organization identity not exposed to this viewer';
+  const name = organizations.find(organization => organization.id === organizationId)?.displayName;
+  return name ? presentationOrganizationName(name) : 'Organization identity not exposed to this viewer';
 }
 
 export function participantNames(participantIds: readonly Actor['id'][], personas: readonly Actor[]): string[] {

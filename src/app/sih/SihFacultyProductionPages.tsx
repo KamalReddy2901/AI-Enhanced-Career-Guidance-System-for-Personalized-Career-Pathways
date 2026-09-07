@@ -10,6 +10,7 @@ import {
 import { ProductionFacultyLifecycle } from '../services/sih/productionFacultyLifecycle';
 import { supabase } from '../services/supabase';
 import { useSihProduction } from './SihProductionContext';
+import { isPresentationMode } from '../components/PresentationSwitcher';
 
 function FacultyFrame({
   eyebrow,
@@ -106,7 +107,7 @@ export function FacultyPage() {
     <FacultyFrame
       eyebrow="Faculty · first-class academia–industry lifecycle"
       title="Faculty–Industry Collaboration"
-      description="Discover authorized faculty internships, industrial training, FDPs, consultancy, collaborative research, mentoring, workshops, guest lectures and live projects. Records are read through existing SIH26044 RLS; inaccessible identities remain undisclosed."
+      description={isPresentationMode() ? 'Discover authorized faculty internships, industrial training, FDPs, consultancy, collaborative research, mentoring, workshops, guest lectures and live projects. Identities remain visible only where the faculty persona has access.' : 'Discover authorized faculty internships, industrial training, FDPs, consultancy, collaborative research, mentoring, workshops, guest lectures and live projects. Records are read through existing SIH26044 RLS; inaccessible identities remain undisclosed.'}
     >
       <div className="mb-6 border-2 border-black bg-[#fff4c7] p-4">
         <p className="font-mono-ui text-[10px] font-black uppercase tracking-wide">Evidence verification</p>
@@ -160,7 +161,7 @@ export function FacultyCollaborationDetailPage() {
     <FacultyFrame
       eyebrow="Authorized collaboration record"
       title="Collaboration Detail"
-      description="Canonical engagement details are reconstructed from the collaboration schema. Missing or hidden identities are not inferred."
+      description={isPresentationMode() ? 'Review the authorized engagement record. Missing or private identities are not inferred.' : 'Canonical engagement details are reconstructed from the collaboration schema. Missing or hidden identities are not inferred.'}
     >
       {loading ? (
         <Notice>Loading authorized collaboration detail…</Notice>
