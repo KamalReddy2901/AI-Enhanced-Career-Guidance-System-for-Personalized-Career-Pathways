@@ -1,6 +1,7 @@
 import React from 'react';
 import type { VerificationAction } from '../../domain/evidence';
 import { isPresentationMode } from '../PresentationSwitcher';
+import { presentationVerificationActorLabel, presentationVerificationReason } from './presentationVerification';
 
 interface VerificationTimelineEvent {
   readonly id: string;
@@ -49,6 +50,10 @@ export function VerificationHistoryTimeline({ events }: VerificationHistoryTimel
     <div className="relative pl-6 border-l border-muted-foreground/20 space-y-6">
       {sortedEvents.map((event, index) => {
         const isLast = index === sortedEvents.length - 1;
+        const presentation = isPresentationMode();
+        const displayReason = presentation
+          ? presentationVerificationReason(event.action, event.reason)
+          : event.reason;
         return (
           <div key={event.id} className="relative">
             <span className="absolute -left-[31px] top-1 h-3 w-3 rounded-full bg-primary border-2 border-background" />
@@ -61,13 +66,13 @@ export function VerificationHistoryTimeline({ events }: VerificationHistoryTimel
                   {new Date(event.occurredAt).toLocaleString()}
                 </span>
               </div>
-              {isPresentationMode() ? <p className="text-sm font-medium mt-1">Recorded by authorized faculty</p> : <p className="text-sm font-medium mt-1">Actor: {event.actorId} {event.actorOrganizationId && `(Org: ${event.actorOrganizationId})`}</p>}
-              {event.reason && (
+              {presentation ? <p className="text-sm font-medium mt-1">{presentationVerificationActorLabel(event.action)}</p> : <p className="text-sm font-medium mt-1">Actor: {event.actorId} {event.actorOrganizationId && `(Org: ${event.actorOrganizationId})`}</p>}
+              {displayReason && (
                 <p className="text-sm text-muted-foreground bg-muted/50 p-2 rounded-md mt-1">
-                  &quot;{event.reason}&quot;
+                  &quot;{displayReason}&quot;
                 </p>
               )}
-              {event.supersedesEventId && !isPresentationMode() && (
+              {event.supersedesEventId && !presentation && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Supersedes event: {event.supersedesEventId}
                 </p>

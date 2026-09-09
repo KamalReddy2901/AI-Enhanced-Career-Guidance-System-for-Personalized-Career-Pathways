@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { createClient } from '@supabase/supabase-js';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../services/supabase';
+import { navigateWhenPresentationAuthorityIsReady, readPresentationAuthority } from '../sih/presentationAuthority';
 
 // These are the existing hosted-sih-fixture.ts identities, not assignable roles.
 const personas = [
@@ -76,8 +78,13 @@ export function PresentationSwitcher() {
       // the replacement authority has settled.
       const result = await signIn(fixtureEmail(slug), presentationPassword);
       if (result.error) throw new Error('Session expired');
-      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-      navigate(path);
+      const sharedClient = supabase;
+      if (!sharedClient) throw new Error('Presentation authority is unavailable');
+      await navigateWhenPresentationAuthorityIsReady(
+        () => readPresentationAuthority(sharedClient),
+        { userId: fresh.data.user.id, email: fixtureEmail(slug) },
+        () => navigate(path),
+      );
       setMessage('Presentation persona ready.');
     } catch {
       sessions.delete(slug);
